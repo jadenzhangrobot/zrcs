@@ -39,7 +39,10 @@ class Enable:zrcs_system::Basenode
 
         void  excute_rt(void) override
         {            
-           
+                static int SleepCount=0;
+             
+			          if (SleepCount>50)
+			          {
                   if(Control->motors[motor_id]->enable()==5)
                   {
                       
@@ -48,8 +51,9 @@ class Enable:zrcs_system::Basenode
                   else if (Control->motors[motor_id]->enable()<0) {
                         node_status=FAILURE;
                   } 
-                              
-                                                  
+                  SleepCount=0;
+                }            
+                SleepCount++;                                 
         }
       void exit(void) override
       {

@@ -34,14 +34,14 @@ namespace controller
     {       
      
       xenomai* p=(xenomai*)arg;
-       int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
+       //int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
         while (true) 
         {
             if (p->strategy_!=nullptr)
             {
                p->strategy_();
             }
-           rt_task_wait_period(NULL);
+         //  rt_task_wait_period(NULL);
         }       
     }
     void rtos_task_create(void)override

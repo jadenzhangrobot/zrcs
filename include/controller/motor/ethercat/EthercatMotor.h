@@ -4,6 +4,7 @@
 #include "controller/controller_interface.h"
 #include "EthercatMaster.h"
 #include <cstdint>
+#include <cstdio>
 #include <ecrt.h>
 namespace controller {
 class EthercatMotor:Motor
@@ -191,32 +192,29 @@ class EthercatMotor:Motor
 		// check status B, now transition 2
 		else if ((status_word & 0x4F) == 0x40) {
 			// transition 2 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));
+			
 			setControlWord(std::uint16_t(0x06));
 			return 2;
 		}
 		// check status C, now transition 3
 		else if ((status_word & 0x6F) == 0x21) {
 			// transition 3 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));
+			
 			setControlWord(std::uint16_t(0x07));
 			return 3;
 		}
 		// check status D, now transition 4
 		else if ((status_word & 0x6F) == 0x23) {
 			// transition 4 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x0F));
-			setControlWord(std::uint16_t(0x0F));
-			//imp_->waiting_count_left = 20;
-			
-
-			// check mode to set correct pos, vel or cur //
-			switch (0x08) {
-			case 0x08: setTargetPos(actualPos()); break;
-		
-			default: setTargetPos(actualPos());
-			}
-
+		   
+					setControlWord(std::uint16_t(0x0F));
+					// check mode to set correct pos, vel or cur //
+					switch (0x08) 
+					{
+					case 0x08: setTargetPos(actualPos()); break;
+				
+					default: setTargetPos(actualPos());
+					}
 			return 4;
 		}
 		// check status E, now keep status

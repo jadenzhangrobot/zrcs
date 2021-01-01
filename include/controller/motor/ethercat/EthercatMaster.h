@@ -403,25 +403,29 @@ void sync_distributed_clocks(void)
       {  // int err = rt_task_set_periodic(NULL,TM_NOW, 1000000); 
         
            ecrt_domain_queue(domain1);   
-           ecrt_master_application_time(master, rt_timer_read());
-			     ecrt_master_sync_reference_clock(master);
-			     ecrt_master_sync_slave_clocks(master);    
-          // sync_distributed_clocks();
+         
+           sync_distributed_clocks();
            ecrt_master_send(master); 
-         //  update_master_clock();  
+           update_master_clock();  
+
+          // ecrt_master_application_time(master, rt_timer_read());
+			    // ecrt_master_sync_reference_clock(master);
+			    // ecrt_master_sync_slave_clocks(master);   
       }
 
       void ReceiveData()
       {
-        // static int flag=0;
-        // if (flag==0) {
-        //      wakeup_time = system_time_ns() + 10 * cycle_ns;
-        //      flag=1;
-        // }
+        static int flag=0;
+        if (flag==0) {
+             wakeup_time = system_time_ns() + 10 * cycle_ns;
+             flag=1;
+        }
               
-         // wait_period();
+           wait_period();
           ecrt_master_receive(master);
-          ecrt_domain_process(domain1);            
+          ecrt_domain_process(domain1); 
+         
+
       }
 };
 }

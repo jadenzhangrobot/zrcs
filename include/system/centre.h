@@ -242,7 +242,7 @@ public:
     ec_control->rtos_->rtos_task_create();
     //把实时节点里面的实时函数放到实时线程中运行
     ec_control->rtos_->real_task([&]() {
-      ec_control->transceiver->receive();
+     ec_control->transceiver->receive();
       if (!rtnodeptr_vector.empty()) {
         Bnode = rtnodeptr_vector.front();
         if (Bnode != nullptr) {
