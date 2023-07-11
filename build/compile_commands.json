@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/home/pi/Downloads/zrcs/build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"motion-control\\\" -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -std=gnu++17 -o CMakeFiles/motion_control.dir/src/main.cpp.o -c /home/pi/Downloads/zrcs/src/main.cpp",
+  "file": "/home/pi/Downloads/zrcs/src/main.cpp"
+},
+{
+  "directory": "/home/pi/Downloads/zrcs/build",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"motion-control\\\" -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -std=gnu++17 -o CMakeFiles/motion_control.dir/src/slave.cpp.o -c /home/pi/Downloads/zrcs/src/slave.cpp",
+  "file": "/home/pi/Downloads/zrcs/src/slave.cpp"
+},
+{
+  "directory": "/home/pi/Downloads/zrcs/build/gtest/googlemock",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgmock_main_EXPORTS -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include -isystem /usr/src/googletest/googlemock/include -isystem /usr/src/googletest/googlemock -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -std=c++17 -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /usr/src/googletest/googlemock/src/gmock_main.cc",
+  "file": "/usr/src/googletest/googlemock/src/gmock_main.cc"
+},
+{
+  "directory": "/home/pi/Downloads/zrcs/build/gtest/googlemock",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgmock_EXPORTS -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include -I/usr/src/googletest/googlemock/include -I/usr/src/googletest/googlemock -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -std=c++17 -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /usr/src/googletest/googlemock/src/gmock-all.cc",
+  "file": "/usr/src/googletest/googlemock/src/gmock-all.cc"
+},
+{
+  "directory": "/home/pi/Downloads/zrcs/build/gtest/googletest",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgtest_main_EXPORTS -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -std=c++17 -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /usr/src/googletest/googletest/src/gtest_main.cc",
+  "file": "/usr/src/googletest/googletest/src/gtest_main.cc"
+},
+{
+  "directory": "/home/pi/Downloads/zrcs/build/gtest/googletest",
+  "command": "/usr/bin/aarch64-linux-gnu-g++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgtest_EXPORTS -I/home/pi/Downloads/zrcs/include -I/opt/ros/noetic/include -I/usr/src/googletest/googletest/include -I/usr/src/googletest/googletest  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__COBALT__ -I/usr/xenomai/include/alchemy -D__COBALT_WRAP__ -fpermissive -g -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++17 -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /usr/src/googletest/googletest/src/gtest-all.cc",
+  "file": "/usr/src/googletest/googletest/src/gtest-all.cc"
+}
+]

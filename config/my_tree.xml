@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="BehaviorTree">
+    <!-- ////////// -->
+    <BehaviorTree ID="BehaviorTree">
+        <Repeat num_cycles="1">
+            <Sequence>
+                <Action ID="BtMovehome"/>
+                <Action ID="BtMoveJ" rx="3.1415926" ry="0" rz="1.5708" x="0.61725" y="0.19145" z="-0.005491"/>
+                <Action ID="BtMoveJ" rx="3.1415926" ry="0" rz="1.5708" x="0.61725" y="0.19145" z="0.305491"/>
+                <Action ID="BtMoveJ" rx="3.1415926" ry="0" rz="1.5708" x="0.61725" y="0.39145" z="0.305491"/>
+            </Sequence>
+        </Repeat>
+    </BehaviorTree>
+    <!-- ////////// -->
+    <TreeNodesModel>
+        <Action ID="BtJogabsJ">
+            <input_port default="0" name="motor">motor_id</input_port>
+            <input_port default="0" name="position">motor_position</input_port>
+        </Action>
+        <Action ID="BtMoveJ">
+            <input_port default="3.1415926" name="rx">X-axis rotation</input_port>
+            <input_port default="0" name="ry">Y-axis rotation</input_port>
+            <input_port default="1.5708" name="rz">Z-axis rotation</input_port>
+            <input_port default="0.81725" name="x">X-axis movement</input_port>
+            <input_port default="0.19145" name="y">Y-axis movement</input_port>
+            <input_port default="-0.005491" name="z">Z-axis movement</input_port>
+        </Action>
+        <Action ID="BtMovehome"/>
+        <Action ID="BtMovepp">
+            <input_port default="0" name="mx">X-axis movement</input_port>
+            <input_port default="0" name="my">Y-axis movement</input_port>
+            <input_port default="0" name="mz"/>
+            <input_port default="0" name="rx"/>
+            <input_port default="0" name="ry"/>
+            <input_port default="0" name="rz"/>
+        </Action>
+        <Action ID="BtSfork">
+            <input_port default="0.8" name="motorp1"/>
+            <input_port default="-0.8" name="motorp2"/>
+        </Action>
+    </TreeNodesModel>
+    <!-- ////////// -->
+</root>

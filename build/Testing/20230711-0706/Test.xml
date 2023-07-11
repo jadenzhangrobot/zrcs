@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20230711-0706-Experimental"
+	Name="NanoPi-R6S"
+	Generator="ctest-3.18.4"
+	CompilerName="/usr/bin/aarch64-linux-gnu-g++"
+	CompilerVersion="8.3.0"
+	OSName="Linux"
+	Hostname="NanoPi-R6S"
+	OSRelease="5.10.110"
+	OSVersion="#3 SMP IRQPIPE Fri May 19 13:53:32 CST 2023"
+	OSPlatform="aarch64"
+	Is64Bits="1"
+	VendorString=""
+	VendorID="Unknown Manufacturer"
+	FamilyID="8"
+	ModelID="0"
+	ProcessorCacheSize="0"
+	NumberOfLogicalCPU="8"
+	NumberOfPhysicalCPU="1"
+	TotalVirtualMemory="0"
+	TotalPhysicalMemory="7923"
+	LogicalProcessorsPerPhysical="8"
+	ProcessorClockFrequency="0"
+	>
+	<Testing>
+		<StartDateTime>Jul 11 11:37 UTC</StartDateTime>
+		<StartTestTime>1689075421</StartTestTime>
+		<TestList/>
+		<EndDateTime>Jul 11 11:37 UTC</EndDateTime>
+		<EndTestTime>1689075421</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

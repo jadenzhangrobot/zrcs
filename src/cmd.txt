@@ -1,0 +1,21 @@
+JogabsJ --motor=0 --position=10
+JogabsJ --motor=1 --position=-0.854074
+JogabsJ --motor=2 --position=1.357378
+JogabsJ --motor=3 --position=-2.089311
+JogabsJ --motor=4 --position=-0.200023
+JogabsJ --motor=5 --position=1.586315
+Sfork --motorp1=0 --motorp2=0
+Sfork --motorp1=-0.5 --motorp2=0.5
+Sfork --motorp1=0 --motorp2=0.5
+Sfork --motorp1=0.34 --motorp2=-0.34
+Sfork --angle=0 --length=0.4 --direction=-1
+Sfork --angle=-50 --length=0.4 --direction=1
+
+Stop
+Rsfork --angledir=1
+Rsfork --lengthdir=1
+MoveJ --x=0.81725 --y=0.19145 --z=-0.005491 --rx=3.1415926 --ry=0 --rz=1.5708
+
+MoveJ --x=0.51725 --y=0 --z=0.505491 --rx=3.1415926 --ry=0.2 --rz=0.0708
+
+MoveJ --x=0.41725 --y=0.29145 --z=0.4 --rx=1.015926 --ry=0.15 --rz=1.5
