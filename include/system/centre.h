@@ -78,7 +78,6 @@ public:
     // 指令参数字符串
     std::string cmd_param;
 
-    // std::string::size_type position= cmd.find_first_of(" --");
 
     if (cmd.npos != cmd.find_first_of(" --")) {
       class_name = cmd.substr(0, cmd.find_first_of(" --"));
@@ -94,6 +93,7 @@ public:
     } else {
       Basenode *bf =(Basenode *)classfactory::getInstance().getclassbyname(class_name);
       //把节点状态切换到init状态
+     
       if (bf->config()) {
         if (bf->init()) {
           if (bf->run()) {
@@ -126,11 +126,12 @@ public:
     th_terminal = std::thread([this]() {
       while (flag) {
         //指令字符串
-        std::string cmd;
-
-        std::getline(std::cin, cmd);
+        std::string cmd="JogabsJ --motor=0 --position=10";
+         
+        //std::getline(std::cin, cmd);
         cmd_queue.push(cmd);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+       
       }
     });
     //从行为树获取指令字符串
@@ -152,7 +153,7 @@ public:
           cmd_queue.pop();
         }
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
   );
 

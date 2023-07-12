@@ -10,19 +10,21 @@
 
 #include "system/basenode.h"
 #include "system/centre.h"
+#include <iostream>
 #include <ruckig/ruckig.hpp>
 #include "system/classfactory.h"
 using namespace ruckig;
 
-class JogabsJ:zrcs_system::Basenode
+class JogabsJ:public zrcs_system::Basenode
   {
     public:
             zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
-            Ruckig<6> otg {0.001}; 
-            InputParameter<6> input;
-            OutputParameter<6> output;       
+             Ruckig<6> otg {0.001}; 
+             InputParameter<6> input;
+             OutputParameter<6> output;   
        bool init() override
        {
+         
          cmdline::parser cmd;
          cmd.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
          cmd.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
@@ -38,7 +40,7 @@ class JogabsJ:zrcs_system::Basenode
            for(int i=0;i<6;i++)
            {
              input.current_position[i]=cenobj.ec_control->motors[i]->actualPos();
-             std::cout<<"JogabsJ motor-----"<<i<<"  "<< input.current_position[i]<<std::endl;
+            // std::cout<<"JogabsJ motor-----"<<i<<"  "<< input.current_position[i]<<std::endl;
              input.current_velocity[i]= 0;
              input.current_acceleration[i] =0;
            }
@@ -53,30 +55,37 @@ class JogabsJ:zrcs_system::Basenode
               input.max_jerk[i] =0.5 ;
            }
            input.target_position[cmd.get<int>("motor")]=cmd.get<double>("position");
+           a=a+cmd.get<double>("position");
            return true;
     }
   
       void  excute_rt(void) override
       {         
                                       
-                    if(otg.update(input, output) == Result::Working)            
-                     { 
+                    //  if(otg.update(input, output) == Result::Working)            
+                    //   { 
                        
-                       auto& p = output.new_position;
-                       for (int i=0; i<6; i++) 
-                       {
-                         cenobj.ec_control->motors[i]->setTargetPos(p[i]);
-                         std::cout<<"JogabsJ motor-----"<<i<<"  "<<p[i]<<std::endl;
-                       }    
+                    //    auto& p = output.new_position;
+                    //     for (int i=0; i<6; i++) 
+                    //    {
+                    //    cenobj.ec_control->motors[i]->setTargetPos(p[i]);
+                    // //     // std::cout<<"JogabsJ motor-----"<<i<<"  "<<p[i]<<std::endl;
+                    //    }    
                                                                                          
-                       output.pass_to_input(input);
+                    //     output.pass_to_input(input);
                        
-                     }
-                    else
-                     {
-                         rtnode_status=SUCCESS;          
-                     }
+                    //    }
+                    //  else
+                    //   {
+                          rt_printf("%d\n",a);
+                         rtnode_status=IDLE;          
+                    // }
          
+      }
+      ~JogabsJ()
+      {
+         std::cout<<"-------------"<<a<<std::endl;
+                
       }
   };
 

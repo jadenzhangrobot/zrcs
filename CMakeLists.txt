@@ -4,10 +4,10 @@ project(motion-control)
 #add_compile_options(-std=c++17)
 #add_compile_options(c++17)
 set(CMAKE_CXX_STANDARD 17)
-set(xeno_cflags_params "--alchemy" "--posix" "--cflags")
+set(xeno_cflags_params "--alchemy"  "--cflags")
 execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-set(xeno_ldflags_params "--alchemy" "--posix" "--ldflags")
+set(xeno_ldflags_params "--alchemy"  "--ldflags")
 execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_ldflags_params} OUTPUT_VARIABLE xeno_ldflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(xeno_g++_params "--cc")
@@ -53,6 +53,6 @@ add_executable(motion_control ${SOURCE_FILES})
    ${ruckig}
    pthread
    zmq
-   behaviortree_cpp_v3
+   #behaviortree_cpp_v3
    ${catkin_LIBRARIES}
  )
