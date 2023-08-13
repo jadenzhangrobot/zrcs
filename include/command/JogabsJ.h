@@ -2,7 +2,7 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-03-15 14:49:54
- * @LastEditTime: 2023-06-10 15:24:43
+ * @LastEditTime: 2023-08-03 06:50:30
  * @Description: 关节运动绝对位置指令
  */
 #ifndef JOGABSJ_H
@@ -55,7 +55,7 @@ class JogabsJ:public zrcs_system::Basenode
               input.max_jerk[i] =0.5 ;
            }
            input.target_position[cmd.get<int>("motor")]=cmd.get<double>("position");
-           a=a+cmd.get<double>("position");
+          // a=a+cmd.get<double>("position");
            return true;
     }
   
@@ -77,14 +77,14 @@ class JogabsJ:public zrcs_system::Basenode
                     //    }
                     //  else
                     //   {
-                          rt_printf("%d\n",a);
+                          //rt_printf("%d\n",a);
                          rtnode_status=IDLE;          
                     // }
          
       }
       ~JogabsJ()
       {
-         std::cout<<"-------------"<<a<<std::endl;
+        // std::cout<<"-------------"<<a<<std::endl;
                 
       }
   };

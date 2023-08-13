@@ -2,7 +2,7 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-03-15 10:25:59
- * @LastEditTime: 2023-06-16 10:28:48
+ * @LastEditTime: 2023-08-09 05:32:23
  * @Description: 
  * 
  * Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
@@ -22,9 +22,9 @@ int main(int argc,char** argv)
       static zrcs_system::centre& ct=zrcs_system::centre::getInstance();
       //ct.registerController(GazeboController());
       //ct.registerController(InnfosController());
-     // ct.registerController(UrgazeboController());
-        ct.registerController(GlrbusController());
-        ct.init();
+        ct.registerController(UrgazeboController());
+      //  ct.registerController(GlrbusController());
+        ct.init(argc,argv);
   pause();
   return 0;
 }

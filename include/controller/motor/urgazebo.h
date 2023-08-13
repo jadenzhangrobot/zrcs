@@ -2,17 +2,18 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-05-09 19:21:11
- * @LastEditTime: 2023-06-08 14:33:46
+ * @LastEditTime: 2023-08-09 09:06:29
  * @Description: UR机械臂在gazeobo中仿真环境的通讯接口封装
  * 
  */
 #ifndef URGAZEBO_H
 #define URGAZEBO_H
 #include "../controller_interface.h"
-
 #include "sensor_msgs/JointState.h"
+#include "ros/init.h"
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <cstddef>
 #include <std_msgs/Float64.h>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -23,7 +24,7 @@ namespace controller
     class  Urgazebo
     {
         private:
-            ros::NodeHandle nh;
+           
             ros::Subscriber sub;
             ros::Publisher  pub[6];
         public:
@@ -32,7 +33,17 @@ namespace controller
              inline static std::array<std::atomic<double>,6> receive_effort;
             Urgazebo(/* args */)
             {
-                 for(int i=0;i<6;i++)
+                 
+               
+            }  
+            ~Urgazebo()
+            {
+
+            }
+            void init()
+            {          
+                 ros::NodeHandle nh; 
+                for(int i=0;i<6;i++)
                  {
                       std::string joint_name="joint"+std::to_string(i+1);
 
@@ -40,10 +51,6 @@ namespace controller
                       
                  }
                   sub=nh.subscribe("/joint_states",1,&Urgazebo::callfunc,this);               
-
-            }  
-            ~Urgazebo()
-            {
 
             }
             static Urgazebo &getInstance()
@@ -119,6 +126,12 @@ namespace controller
     private:
          Urgazebo& urgazebo=Urgazebo::getInstance();
     public:
+         auto init()->int override
+        {
+                 
+            //urgazebo.init();
+            return 1;
+        }
         auto send(void)->void override
         {
             urgazebo.send_position();

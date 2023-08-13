@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(motion-control)
 
+add_compile_definitions(Ros)
 #add_compile_options(-std=c++17)
 #add_compile_options(c++17)
 set(CMAKE_CXX_STANDARD 17)
+
+set(xenomai OFF)
+if(xenomai)
 set(xeno_cflags_params "--alchemy"  "--cflags")
 execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -16,6 +20,7 @@ set(CMAKE_C_FLAGS          "${CMAKE_CXX_FLAGS} ${xeno_cflags}")
 set(CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${xeno_cflags} -fpermissive")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${xeno_ldflags}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
+endif()
 include_directories(
   include
   /opt/ros/noetic/include

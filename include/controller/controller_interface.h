@@ -122,6 +122,7 @@ namespace controller
         public:
           auto virtual send(void)->void =0;
           auto virtual receive(void)->void =0;
+          auto virtual init()->int =0;
           virtual ~Transceive(){};
     };
     class Rtos

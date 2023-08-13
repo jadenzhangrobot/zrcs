@@ -97,8 +97,11 @@ class Glrbus
 
          Glrbus(void )
         {
-                      
-              //const char * interface ="enP4p65s0";
+                        
+        }
+        void init()
+        {
+          //const char * interface ="enP4p65s0";
                 const char * interface ="eth1";
                // const char * interface ="lo";
                
@@ -172,7 +175,7 @@ class Glrbus
                         //LOGGER_INFO(strerror(errno));
                    }
            
-           
+
         }
         int bus_send()
         {
@@ -182,7 +185,7 @@ class Glrbus
                contrl_data cd;
                
               
-               sequence++;
+              sequence++;
               cd.sequence=htons(sequence);
               mempcpy(mypacket_send.data(),&cd,sizeof(cd));     
 
@@ -492,7 +495,13 @@ class Glrbus
   {
     private:
          Glrbus& glrbus=Glrbus::getInstance();
-    public:
+    public: 
+        auto init(void)->int  override
+        {
+
+          glrbus.init();
+          return 1;
+        }
         auto send(void)->void override
         {        
              

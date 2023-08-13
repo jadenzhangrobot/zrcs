@@ -2,7 +2,7 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-03-15 13:41:56
- * @LastEditTime: 2023-06-13 10:19:06
+ * @LastEditTime: 2023-08-09 09:04:06
  * @Description: 生成一个centre类，包含所有类，对外提供一个单例
  *
  */
@@ -13,9 +13,11 @@
 #include "cmdline.h"
 #include "controller/controller_interface.h"
 #include "controller/rtos/linux.h"
+#include "ros/init.h"
 #include "zmq.h"
 #include <endian.h>
 #include <queue>
+#include <ros/ros.h>
 namespace zrcs_system {
 class centre {
 private:
@@ -104,7 +106,7 @@ public:
     }
   }
 
-  void init() {
+  void init(int args,char ** argv) {
 
     zmq_thread = std::thread([this]() {
       while (zmq_flag) {
@@ -157,15 +159,21 @@ public:
       }
   );
 
-  th_pubstatus = std::thread([this]() {
+ th_pubstatus = std::thread([this]() {
 
-  });
-
+   });
+    //std::cout<<"hhhhhhh"<<std::endl;
+  //#ifdef Ros
+    ros::init(args,argv,"rt_motion");
+   
+ // #endif
+  ec_control->transceiver->init();
+  
   //创建一个实时任务
   ec_control->rtos_->rtos_task_create();
   //把实时节点里面的实时函数放到实时线程中运行
   ec_control->rtos_->real_task([&]() {
-    // ec_control->transceiver->receive();
+     ec_control->transceiver->receive();
 
     if (!Basenode_queue.empty()) {
       Bnode = Basenode_queue.front();
@@ -178,8 +186,11 @@ public:
           Basenode_queue.pop();
       }
     }
-    // ec_control->transceiver->send();
+     ec_control->transceiver->send();
   });
+  //#ifdef Ros
+    ros::spin();
+  //#endif
 }
 
 };

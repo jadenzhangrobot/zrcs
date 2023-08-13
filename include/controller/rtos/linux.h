@@ -2,7 +2,7 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-03-24 18:47:51
- * @LastEditTime: 2023-05-17 11:12:57
+ * @LastEditTime: 2023-08-10 08:49:02
  * @Description: linux系统线程封装
  * 
  */
@@ -26,8 +26,10 @@ class Nativelinux:Rtos
         my_thread=std::thread([this](void)
         {
             while(1)
-            {
-                strategy_();
+            {  
+                if (strategy_!=nullptr) {
+                      strategy_();
+                }               
                 std::this_thread::sleep_for(std::chrono::milliseconds(control_period));  
             }
         });
@@ -38,7 +40,7 @@ class Nativelinux:Rtos
     }
     void rtos_task_join(void) override
     {
-      my_thread.join();
+       my_thread.join();
     }
 
     void rtos_set_perioic(int perioic) override
