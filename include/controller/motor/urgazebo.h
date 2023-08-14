@@ -24,7 +24,7 @@ namespace controller
     class  Urgazebo
     {
         private:
-           
+            ros::NodeHandle nh; 
             ros::Subscriber sub;
             ros::Publisher  pub[6];
         public:
@@ -42,7 +42,7 @@ namespace controller
             }
             void init()
             {          
-                 ros::NodeHandle nh; 
+               
                 for(int i=0;i<6;i++)
                  {
                       std::string joint_name="joint"+std::to_string(i+1);
@@ -129,7 +129,7 @@ namespace controller
          auto init()->int override
         {
                  
-            //urgazebo.init();
+            urgazebo.init();
             return 1;
         }
         auto send(void)->void override

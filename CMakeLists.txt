@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.1.2)
 project(motion-control)
 
 add_compile_definitions(Ros)
@@ -32,6 +32,9 @@ find_package(catkin REQUIRED COMPONENTS
   #trac_ik_lib
   roscpp
   rospy
+  #orocos_kdl
+  #ruckig
+  # behaviortree_cpp_v3
 )
 
 

@@ -11,7 +11,6 @@
 #include "system/basefun.h"
 #include "system/centre.h"
 #include <iostream>
-
 #include "system/classfactory.h"
 #include"../../src/slave.h"
 using namespace ruckig;

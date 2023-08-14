@@ -11,6 +11,7 @@
 #include "system/basenode.h"
 #include "system/centre.h"
 #include <iostream>
+#include <ostream>
 #include <ruckig/ruckig.hpp>
 #include "system/classfactory.h"
 using namespace ruckig;
@@ -18,13 +19,13 @@ using namespace ruckig;
 class JogabsJ:public zrcs_system::Basenode
   {
     public:
-            zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
-             Ruckig<6> otg {0.001}; 
-             InputParameter<6> input;
-             OutputParameter<6> output;   
+             zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
+             Ruckig<1> otg {0.001}; 
+             InputParameter<1> input;
+             OutputParameter<1> output;
+             int motor_id;   
        bool init() override
-       {
-         
+       {        
          cmdline::parser cmd;
          cmd.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
          cmd.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
@@ -36,56 +37,36 @@ class JogabsJ:public zrcs_system::Basenode
               cmd.parse_check(str);
               cenobj.nrt_cmdParam.pop();
           }   
-           
-           for(int i=0;i<6;i++)
-           {
-             input.current_position[i]=cenobj.ec_control->motors[i]->actualPos();
-            // std::cout<<"JogabsJ motor-----"<<i<<"  "<< input.current_position[i]<<std::endl;
-             input.current_velocity[i]= 0;
-             input.current_acceleration[i] =0;
-           }
+              input.current_position[0]=cenobj.ec_control->motors[cmd.get<int>("motor")]->actualPos();              
+              input.current_velocity[0]= 0;
+              input.current_acceleration[0] =0;
+                               
+              input.target_position[0]=cmd.get<double>("position");
+              input.target_velocity[0] = 0;
+              input.target_acceleration[0] =0;
+              input.max_velocity[0] = 1;
+              input.max_acceleration[0] = 0.5;
+              input.max_jerk[0] =0.5;
+              motor_id=cmd.get<int>("motor"); 
                      
-           for(int i=0;i<6;i++) 
-           {
-              input.target_position[i]=cenobj.ec_control->motors[i]->actualPos();
-              input.target_velocity[i] = 0;
-              input.target_acceleration[i] =0;
-              input.max_velocity[i] = 1;
-              input.max_acceleration[i] = 0.5;
-              input.max_jerk[i] =0.5 ;
-           }
-           input.target_position[cmd.get<int>("motor")]=cmd.get<double>("position");
-          // a=a+cmd.get<double>("position");
            return true;
     }
   
       void  excute_rt(void) override
       {         
                                       
-                    //  if(otg.update(input, output) == Result::Working)            
-                    //   { 
-                       
-                    //    auto& p = output.new_position;
-                    //     for (int i=0; i<6; i++) 
-                    //    {
-                    //    cenobj.ec_control->motors[i]->setTargetPos(p[i]);
-                    // //     // std::cout<<"JogabsJ motor-----"<<i<<"  "<<p[i]<<std::endl;
-                    //    }    
-                                                                                         
-                    //     output.pass_to_input(input);
-                       
-                    //    }
-                    //  else
-                    //   {
-                          //rt_printf("%d\n",a);
-                         rtnode_status=IDLE;          
-                    // }
+                     if(otg.update(input, output) == Result::Working)            
+                      {                        
+                        auto& p = output.new_position;
+                        cenobj.ec_control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
+                        output.pass_to_input(input); 
+                        rtnode_status=RUNNING;                  
+                       }
+                     else
+                      {                         
+                         rtnode_status=SUCCESS;          
+                      }
          
-      }
-      ~JogabsJ()
-      {
-        // std::cout<<"-------------"<<a<<std::endl;
-                
       }
   };
 

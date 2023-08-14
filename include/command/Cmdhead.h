@@ -10,5 +10,5 @@
 // #include "JogJ.h"
 // #include "Stop.h"
 // #include "Rsfork.h"
-// #include "MoveJ.h"
+ #include "MoveJ.h"
 #endif

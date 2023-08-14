@@ -20,7 +20,7 @@ public:
     SUCCESS, //表示执行成功状态，这个状态和IDLE状态的区别在于可以接受指令
     FAILURE  //表示执行错误
   };
-  NodeStatus rtnode_status = IDLE;
+  NodeStatus rtnode_status = SUCCESS;
   Basenode(){};
   virtual ~Basenode() = default;
 
@@ -32,7 +32,7 @@ public:
 
   //由idle状态切换到init状态，对实时节点进行初始化
   virtual bool config() {
-    if (rtnode_status == IDLE) {
+    if (rtnode_status == SUCCESS) {
       rtnode_status = INIT;
     } else {
       return false;
@@ -41,7 +41,7 @@ public:
   }
   //状态由init状态切换到running
   virtual bool run() {
-    if (rtnode_status == INIT || rtnode_status == SUCCESS) {
+    if (rtnode_status == INIT) {
       rtnode_status = RUNNING;
     } else {
       return false;
@@ -60,7 +60,7 @@ public:
   }
   //主要是用于紧急停止
   virtual bool stop() {
-    if (rtnode_status == RUNNING) {
+    if (rtnode_status == RUNNING||SUCCESS) {
       rtnode_status = IDLE;
     } else {
       return false;
@@ -70,6 +70,15 @@ public:
   //紧急停止后的状态恢复
   virtual bool start() {
     if (rtnode_status == IDLE) {
+      rtnode_status = SUCCESS;
+    } else {
+      return false;
+    }
+    return true;
+  }
+  virtual bool fail()
+  {
+    if (rtnode_status == INIT) {
       rtnode_status = SUCCESS;
     } else {
       return false;

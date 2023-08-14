@@ -65,21 +65,19 @@ class Ur
                     -sin(ry),sin(rx)*cos(ry),cos(rx)*cos(ry),z,
                     0,0,0,1};
 
-            for(int i=0;i<4;i++)
+        for(int i=0;i<4;i++)
         {
           for(int j=0;j<4;j++)
           {
                 std::cout <<R[j+i*4] << " ";
             
           }
-          std::cout << std::endl;
-           
-
+          std::cout << std::endl;          
         }
        
 
   
-            double joint1[6]={0,0,0,0,0,0};                         
+        double joint1[6]={0,0,0,0,0,0};                         
         double T[16];
         double target_pose[16];
         this->forward(joint1, T);
@@ -112,7 +110,7 @@ class Ur
             {
                 
                 if((out_joint[i*6+0]>=-PI&&out_joint[i*6+0]<=PI)&&
-                (out_joint[i*6+1]>=-PI&&out_joint[i*6+1]<=PI)&&
+                (out_joint[i*6+1]>=-PI&&out_joint[i*6+1]<=0)&&
                 (out_joint[i*6+2]>=-2.3562&&out_joint[i*6+2]<=2.3562)&&
                 (out_joint[i*6+3]>=-PI&&out_joint[i*6+3]<=PI)&&
                 (out_joint[i*6+4]>=-2.3562&&out_joint[i*6+4]<=2.3562)&&

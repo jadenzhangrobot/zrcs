@@ -17,14 +17,20 @@
 int main(int argc,char** argv)
 {
       
-    
-     // ros::init(argc,argv,"motion_control"); 
+    #ifdef Ros
+      ros::init(argc,argv,"motion_control"); 
+    #endif
       static zrcs_system::centre& ct=zrcs_system::centre::getInstance();
       //ct.registerController(GazeboController());
       //ct.registerController(InnfosController());
         ct.registerController(UrgazeboController());
       //  ct.registerController(GlrbusController());
-        ct.init(argc,argv);
-  pause();
+        ct.init();
+        //ct.cmd_queue.push("Start");
+  #ifdef Ros
+   ros::spin();
+  #else
+   pause();
+  #endif
   return 0;
 }

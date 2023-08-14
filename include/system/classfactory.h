@@ -14,8 +14,8 @@
 #include <map>
 
 #define REGISTER(className)\
-std::unique_ptr<className> ptr_className(new className);\
-RegisterAction g_creatorRegister##className(#className,ptr_className.release())
+std::unique_ptr<className> ptr_##className(new className);\
+RegisterAction g_creatorRegister##className(#className,ptr_##className.release())
 
 class classfactory {
 private:

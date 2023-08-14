@@ -96,17 +96,21 @@ public:
       Basenode *bf =(Basenode *)classfactory::getInstance().getclassbyname(class_name);
       //把节点状态切换到init状态
      
-      if (bf->config()) {
-        if (bf->init()) {
-          if (bf->run()) {
+      // if (bf->config())
+      // {
+      //   if (bf->init())
+      //    {
+      //     if (bf->run()) 
+      //     {
             Basenode_queue.push(bf);
-          }
-        }
-      }
+      //     }
+      //   }
+      // }
+    
     }
   }
 
-  void init(int args,char ** argv) {
+  void init() {
 
     zmq_thread = std::thread([this]() {
       while (zmq_flag) {
@@ -128,11 +132,21 @@ public:
     th_terminal = std::thread([this]() {
       while (flag) {
         //指令字符串
-        std::string cmd="JogabsJ --motor=0 --position=10";
-         
-        //std::getline(std::cin, cmd);
-        cmd_queue.push(cmd);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+       std::string cmd;
+        std::getline(std::cin, cmd);
+      //  std::string cmd1;
+      //     std::string cmd2;
+      //  cmd1="JogabsJ --motor=0 --position=1.5708";
+      
+      //  cmd2="JogabsJ --motor=0 --position=0"; 
+
+
+       
+        
+      //    cmd_queue.push(cmd1);
+      //    cmd_queue.push(cmd2);
+         cmd_queue.push(cmd);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
        
       }
     });
@@ -149,9 +163,12 @@ public:
           if (cmd_param=="Start"){
               if (Bnode!=nullptr){
                Bnode->start();
+               std::cout<<Bnode->getTaskState()<<std::endl; 
               }
           }
+          else {
           this->registerObject(cmd_param);
+          }          
           cmd_queue.pop();
         }
       }
@@ -162,35 +179,39 @@ public:
  th_pubstatus = std::thread([this]() {
 
    });
-    //std::cout<<"hhhhhhh"<<std::endl;
-  //#ifdef Ros
-    ros::init(args,argv,"rt_motion");
    
- // #endif
   ec_control->transceiver->init();
   
   //创建一个实时任务
   ec_control->rtos_->rtos_task_create();
   //把实时节点里面的实时函数放到实时线程中运行
   ec_control->rtos_->real_task([&]() {
-     ec_control->transceiver->receive();
+  ec_control->transceiver->receive();
 
     if (!Basenode_queue.empty()) {
       Bnode = Basenode_queue.front();
+     // std::cout<<Bnode->getTaskState()<<std::endl;   
+       if(Bnode->config())
+       {
+       if (Bnode->init())
+          {
+           if (Bnode->run()) 
+          {
+          }
+          }
+       }
       //检查实时节点的状态，如何状态为running执行节点下的实时函数
       if (Bnode->getTaskState() == Basenode::RUNNING){
         Bnode->excute_rt();
       }
       //检查节点的状态如何节点执行成功，就从队列里面移除节点指针
       if (Bnode->getTaskState() == Basenode::SUCCESS){
-          Basenode_queue.pop();
+          Basenode_queue.pop();          
       }
     }
      ec_control->transceiver->send();
   });
-  //#ifdef Ros
-    ros::spin();
-  //#endif
+ 
 }
 
 };
