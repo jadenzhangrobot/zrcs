@@ -5,6 +5,7 @@ CMakeFiles/motion_control.dir/src/main.cpp.o
  ../include/command/Cmdhead.h
  ../include/command/JogabsJ.h
  ../include/command/MoveJ.h
+ ../include/command/MoveL.h
  ../include/controller/controller_interface.h
  ../include/controller/rtos/linux.h
  ../include/model/urFIKinematin.h

@@ -11,6 +11,7 @@
 #include "behaviortree_cpp_v3/basic_types.h"
 #include "system/basenode.h"
 #include "system/centre.h"
+#include <cmath>
 #include <iostream>
 #include <ruckig/ruckig.hpp>
 #include "system/classfactory.h"
@@ -87,15 +88,19 @@ using namespace ruckig;
 //   }
   
 // };
-class MoveL:public zrcs_system::Basenode
+ class MoveL:public zrcs_system::Basenode
   {
     public:
        
             zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
-            Ruckig<JointNum> otg {0.001}; 
-            InputParameter<JointNum> input;
-            OutputParameter<JointNum> output;
-            Ur ur;         
+            Ruckig<1> otg {0.001}; 
+            InputParameter<1> input;
+            OutputParameter<1> output;
+            Ur ur;
+            double L;
+            double T[16];
+            double joint[6];
+            double pose[6];      
            //int motor_num;        
       bool init() override
       {
@@ -115,34 +120,32 @@ class MoveL:public zrcs_system::Basenode
               cenobj.nrt_cmdParam.pop();
           }   
          
-          
-        
-          double pose[6]={cmd.get<double>("x"),cmd.get<double>("y"),cmd.get<double>("z"),cmd.get<double>("rx"),cmd.get<double>("ry"),cmd.get<double>("rz")};
-          
-          
-           
+           pose[0]=cmd.get<double>("x");
+           pose[1]=cmd.get<double>("y");
+           pose[2]=cmd.get<double>("z");
+           pose[3]=cmd.get<double>("rx");
+           pose[4]=cmd.get<double>("ry");
+           pose[5]=cmd.get<double>("rz");
+                  
            for(int i=0;i<JointNum;i++)
            {
-             input.current_position[i]=cenobj.ec_control->motors[i]->actualPos();
-             //joint[i]=cenobj.ec_control->motors[i]->actualPos();
-             input.current_velocity[i]= 0;
-             input.current_acceleration[i] =0;
+             joint[i]=cenobj.ec_control->motors[i]->actualPos();
            }
-           
-            if (ret<=0) {
+           ur.forward(joint, T);
+           L=std::abs((pose[0]-T[3])*(pose[0]-T[3])+(pose[1]-T[7])*(pose[1]-T[7])+(pose[2]-T[11])*(pose[2]-T[11]));
             
-            }
-           for(int i=0;i<JointNum;i++) 
-           {
-              input.target_position[i]=target_joint[i];
-              std::cout<<target_joint[i]<<std::endl;
-              input.target_velocity[i] = 0;
-              input.target_acceleration[i] =0;
-              input.max_velocity[i] = 1;
-              input.max_acceleration[i] = 0.5;
-              input.max_jerk[i] =0.5 ;
-           }
-           return  true;
+            input.current_position[0]=0;              
+            input.current_velocity[0]= 0;
+            input.current_acceleration[0] =0;
+                              
+            input.target_position[0]=L;
+            input.target_velocity[0] = 0;
+            input.target_acceleration[0] =0;
+            input.max_velocity[0] = 1;
+            input.max_acceleration[0] = 0.5;
+            input.max_jerk[0] =0.5;
+         
+            return  true;
     }
   
       void  excute_rt(void) override
@@ -153,11 +156,16 @@ class MoveL:public zrcs_system::Basenode
                        
                        auto& p = output.new_position;
                        double joint[6];
-                       for (int i=0; i<6;i++) {
-                        joint[i]=cenobj.ec_control->motors[i]->actualPos();
-                       }
+                      
+                       double pose_[6];
+                       pose_[0]=T[3]+(pose[0]-T[3])*(p[0]/L);
+                       pose_[1]=T[7]+(pose[1]-T[7])*(p[0]/L);
+                       pose_[2]=T[11]+(pose[2]-T[11])*(p[0]/L);
+                       pose_[3]=pose[3];
+                       pose_[4]=pose[4];
+                       pose_[5]=pose[5];
                        double target_joint[6];
-                       int ret= ur.r_inverse(joint,pose,target_joint);
+                       int ret= ur.r_inverse(joint,pose_,target_joint);
                        for (int i=0; i<JointNum; i++) 
                        {
                         

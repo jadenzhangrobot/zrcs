@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "gtest/lib/libgtestd.so"
+			"path" : "gtest/lib/libgtest.so"
 		}
 	],
 	"backtrace" : 3,
@@ -74,7 +74,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-g -fPIC  "
+					"fragment" : "-fPIC  "
 				},
 				{
 					"fragment" : "-Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers"
@@ -139,7 +139,7 @@
 		"language" : "CXX"
 	},
 	"name" : "gtest",
-	"nameOnDisk" : "libgtestd.so",
+	"nameOnDisk" : "libgtest.so",
 	"paths" : 
 	{
 		"build" : "gtest/googletest",
