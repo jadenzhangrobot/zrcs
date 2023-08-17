@@ -155,7 +155,7 @@ using namespace ruckig;
                      { 
                        
                        auto& p = output.new_position;
-                       double joint[6];
+                      // double joint[6];
                       
                        double pose_[6];
                        pose_[0]=T[3]+(pose[0]-T[3])*(p[0]/L);

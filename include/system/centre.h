@@ -132,7 +132,7 @@ public:
     th_terminal = std::thread([this]() {
       while (flag) {
         //指令字符串
-       std::string cmd;
+        std::string cmd;
         std::getline(std::cin, cmd);
       //  std::string cmd1;
       //     std::string cmd2;
@@ -176,9 +176,9 @@ public:
       }
   );
 
- th_pubstatus = std::thread([this]() {
+//  th_pubstatus = std::thread([this]() {
 
-   });
+//    });
    
   ec_control->transceiver->init();
   

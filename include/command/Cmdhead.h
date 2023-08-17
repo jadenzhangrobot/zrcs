@@ -12,4 +12,5 @@
 // #include "Rsfork.h"
  #include "MoveJ.h"
  #include "MoveL.h"
+ #include "MoveC.h"
 #endif

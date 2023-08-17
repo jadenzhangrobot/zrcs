@@ -1,11 +1,69 @@
 Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
 Change Dir: /home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/ninja cmTC_9fca3 && [1/2] Building C object CMakeFiles/cmTC_9fca3.dir/src.c.o
-[2/2] Linking C executable cmTC_9fca3
-FAILED: cmTC_9fca3 
-: && /usr/bin/gcc -DCMAKE_HAVE_LIBC_PTHREAD  -rdynamic CMakeFiles/cmTC_9fca3.dir/src.c.o  -o cmTC_9fca3   && :
-/usr/bin/ld: CMakeFiles/cmTC_9fca3.dir/src.c.o: in function `main':
+Run Build Command(s):/usr/bin/make cmTC_d91a5/fast && /usr/bin/make -f CMakeFiles/cmTC_d91a5.dir/build.make CMakeFiles/cmTC_d91a5.dir/build
+make[1]: Entering directory '/home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d91a5.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_d91a5.dir/src.c.o   -c /home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_d91a5
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d91a5.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_d91a5.dir/src.c.o  -o cmTC_d91a5 
+/usr/bin/ld: CMakeFiles/cmTC_d91a5.dir/src.c.o: in function `main':
+src.c:(.text+0x46): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x63): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_d91a5.dir/build.make:87: cmTC_d91a5] Error 1
+make[1]: Leaving directory '/home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_d91a5/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_f4bfc/fast && /usr/bin/make -f CMakeFiles/cmTC_f4bfc.dir/build.make CMakeFiles/cmTC_f4bfc.dir/build
+make[1]: Entering directory '/home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_f4bfc.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_f4bfc.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_f4bfc
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_f4bfc.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_f4bfc.dir/CheckFunctionExists.c.o  -o cmTC_f4bfc  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_f4bfc.dir/build.make:87: cmTC_f4bfc] Error 1
+make[1]: Leaving directory '/home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_f4bfc/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/ninja cmTC_8aa43 && [1/2] Building C object CMakeFiles/cmTC_8aa43.dir/src.c.o
+[2/2] Linking C executable cmTC_8aa43
+FAILED: cmTC_8aa43 
+: && /usr/bin/gcc -DCMAKE_HAVE_LIBC_PTHREAD  -rdynamic CMakeFiles/cmTC_8aa43.dir/src.c.o  -o cmTC_8aa43   && :
+/usr/bin/ld: CMakeFiles/cmTC_8aa43.dir/src.c.o: in function `main':
 src.c:(.text+0x46): undefined reference to `pthread_create'
 /usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
 /usr/bin/ld: src.c:(.text+0x63): undefined reference to `pthread_join'
@@ -36,10 +94,10 @@ int main(void)
 Determining if the function pthread_create exists in the pthreads failed with the following output:
 Change Dir: /home/zrcs/Documents/zrcs/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/ninja cmTC_50426 && [1/2] Building C object CMakeFiles/cmTC_50426.dir/CheckFunctionExists.c.o
-[2/2] Linking C executable cmTC_50426
-FAILED: cmTC_50426 
-: && /usr/bin/gcc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_50426.dir/CheckFunctionExists.c.o  -o cmTC_50426  -lpthreads && :
+Run Build Command(s):/usr/bin/ninja cmTC_57b9e && [1/2] Building C object CMakeFiles/cmTC_57b9e.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_57b9e
+FAILED: cmTC_57b9e 
+: && /usr/bin/gcc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_57b9e.dir/CheckFunctionExists.c.o  -o cmTC_57b9e  -lpthreads && :
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
 ninja: build stopped: subcommand failed.

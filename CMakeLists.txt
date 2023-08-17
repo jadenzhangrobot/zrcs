@@ -5,6 +5,13 @@ add_compile_definitions(Ros)
 #add_compile_options(-std=c++17)
 #add_compile_options(c++17)
 set(CMAKE_CXX_STANDARD 17)
+# 添加调试编译选项
+set(Debug ON)
+if(Debug)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+endif()
+
 
 set(xenomai OFF)
 if(xenomai)

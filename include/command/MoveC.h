@@ -11,12 +11,19 @@
 #include "behaviortree_cpp_v3/basic_types.h"
 #include "system/basenode.h"
 #include "system/centre.h"
+#include <boost/function/function_base.hpp>
 #include <cmath>
+
 #include <iostream>
+#include <ostream>
 #include <ruckig/ruckig.hpp>
 #include "system/classfactory.h"
 #include"../../src/slave.h"
 #include"model/urFIKinematin.h"
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/src/Core/Matrix.h>
+
+
 using namespace ruckig;
 
 // class BtMoveJ : public BT::SyncActionNode
@@ -100,17 +107,43 @@ using namespace ruckig;
             double L;
             double T[16];
             double joint[6];
-            double pose[6];      
-           //int motor_num;        
+           // double pose[6];
+            // double p[3];
+            // double p0[3];
+            // double p1[3];
+            // Eigen::Matrix<double,4,4> R;
+            // Eigen::Matrix<double,4,4> initpose;
+            double wx;
+            double wy;
+            double wz;
+            double wxy;
+            double wxz;
+            double wyz;
+    //   void matrix_multiply(double A[], double B[], double C[])
+    //  {
+    //         for (int i = 0; i < 4; ++i) 
+    //         {
+    //               for (int j = 0; j < 4; ++j) 
+    //               {
+    //                     double sum = 0.00;
+    //                     for (int k = 0; k < 4; ++k)
+    //                     {
+    //                      sum += A[i * 4 + k] * B[k * 4 + j];
+    //                     }
+    //                     C[i * 4 + j] = sum;
+    //               }
+    //         }
+    //  }
+              
       bool init() override
       {
          cmdline::parser cmd;
-         cmd.add<double>("x", 'x', "Move to x-axis", false, 0, cmdline::range(-4.0, 4.0));
-         cmd.add<double>("y", 'y', "Move to x-axis", false, 0, cmdline::range(-3.14, 3.14));
-         cmd.add<double>("z", 'z', "Move to x-axis", false, 0, cmdline::range(-3.14, 3.14));
-         cmd.add<double>("rx", 'r', "Move around the x-axis", false, 3.1415926, cmdline::range(-4.0, 4.0));
-         cmd.add<double>("ry", 'p', "Move around the x-axis", false, 0, cmdline::range(-4.0, 4.0));
-         cmd.add<double>("rz", 'b', "Move around the x-axis", false, 1.5708, cmdline::range(-4.0, 4.0));
+         cmd.add<double>("x0", 'x', " x0-axis", false, 0, cmdline::range(-4.0, 4.0));
+         cmd.add<double>("y0", 'y', " y0-axis", false, 1, cmdline::range(-3.14, 3.14));
+         cmd.add<double>("z0", 'z', " z0-axis", false, 0, cmdline::range(-3.14, 3.14));
+         cmd.add<double>("x1", 'r', " x1-axis", false, 0, cmdline::range(-4.0, 4.0));
+         cmd.add<double>("y1", 'p', " y1=-axis", false, 0, cmdline::range(-4.0, 4.0));
+         cmd.add<double>("z1", 'b', " z1-axis", false, 1, cmdline::range(-4.0, 4.0));
          
          
           if (!cenobj.nrt_cmdParam.empty()) 
@@ -119,31 +152,83 @@ using namespace ruckig;
               cmd.parse_check(str);
               cenobj.nrt_cmdParam.pop();
           }   
-         
-           pose[0]=cmd.get<double>("x");
-           pose[1]=cmd.get<double>("y");
-           pose[2]=cmd.get<double>("z");
-           pose[3]=cmd.get<double>("rx");
-           pose[4]=cmd.get<double>("ry");
-           pose[5]=cmd.get<double>("rz");
+          
+       
+          //  pose[0]=0;
+          //  pose[1]=0;
+          //  pose[2]=0;
+          //  pose[3]=3.1415926;
+          //  pose[4]=0;
+          //  pose[5]=cmd.get<double>("rz");
                   
            for(int i=0;i<JointNum;i++)
            {
              joint[i]=cenobj.ec_control->motors[i]->actualPos();
            }
            ur.forward(joint, T);
-           L=std::abs((pose[0]-T[3])*(pose[0]-T[3])+(pose[1]-T[7])*(pose[1]-T[7])+(pose[2]-T[11])*(pose[2]-T[11]));
-            
+          // L=std::abs((pose[0]-T[3])*(pose[0]-T[3])+(pose[1]-T[7])*(pose[1]-T[7])+(pose[2]-T[11])*(pose[2]-T[11]));
+
+           double x0=T[3];double y0=T[7];double z0=T[11];
+         // double x0=0.5;double y0=0;double z0=0.4;
+          double xm=cmd.get<double>("x0"); double ym=cmd.get<double>("y0");double zm=cmd.get<double>("z0");
+          double xf=cmd.get<double>("x1"); double yf=cmd.get<double>("y1");double zf=cmd.get<double>("z1");
+          Eigen::Matrix<double,3,3> matrix1;
+          matrix1 <<x0,y0,z0,
+                    xm,ym,zm,
+                    xf,yf,zf;
+         Eigen::Matrix<double,3,1> con_;
+         con_ <<1,1,1;
+         Eigen::Matrix<double,3,1> ABC=matrix1.inverse()*con_;
+
+          Eigen::Matrix<double,3,3> matrix2;
+          matrix2<< 2*(xm-x0),2*(ym-y0),2*(zm-z0),
+                    2*(xf-x0),2*(yf-y0),2*(zf-z0),
+                    ABC(0,0),ABC(1,0),ABC(2,0);
+                     
+          Eigen::Matrix<double,3,1> vector;
+          vector<<-(x0*x0)-(y0*y0)-(z0*z0)+xm*xm+ym*ym+zm*zm,-(x0*x0)-(y0*y0)-(z0*z0)+xf*xf+yf*yf+zf*zf,1;
+      
+          //求圆心坐标xyz         
+           Eigen::Matrix<double,3,1> XYZ=matrix2.inverse()*vector;
+
+
+          Eigen::Vector3d  p0w(x0-XYZ(0,0),y0-XYZ(1,0),z0-XYZ(2,0));
+          Eigen::Vector3d  pFw(xf-XYZ(0,0),yf-XYZ(1,0),zf-XYZ(2,0));
+          //计算2个向量之间的夹角
+          double angel=std::acos(p0w.normalized().dot(pFw.normalized()));
+
+
+        // 计算叉乘
+         Eigen::Vector3d W = p0w.cross(pFw);
+         
+         Eigen::Vector3d W_=W.normalized();
+         wx=W_(0);
+         wy=W_(1);
+         wz=W_(2);
+         wxy=wx+wy;
+         wxz=wx+wz;
+         wyz=wy+wz;
+        
+        // R<<cos(a)+wx*wx*(1-cos(a)),wxy*(1-cos(a)-wz*sin(a)),wxz*(1-cos(a))+wy*sin(a),0,
+        //    wxy*(1-cos(a))+wz*sin(a),cos(a)+(wy*wy)*(1-cos(a)),wyz*(1-cos(a))-wx*sin(a),0,
+        //    wxz*(1-cos(a))-wy*sin(a),wyz*(1-cos(a))+wx*sin(a),cos(a)+wz*wz*(1-cos(a)),0,
+        //    1,1,1,1;
+          std::cout<<"XYZ"<<"   "<<XYZ<<std::endl;
+           std::cout<<"p0w"<<"   "<<p0w<<std::endl;
+           std::cout<<"pFw"<<"   "<<pFw<<std::endl;
+           std::cout<<"www"<<"   "<<W_<<std::endl;
+           std::cout<<"angle"<<"   "<<angel<<std::endl;
+        
             input.current_position[0]=0;              
             input.current_velocity[0]= 0;
             input.current_acceleration[0] =0;
                               
-            input.target_position[0]=L;
+            input.target_position[0]=angel;
             input.target_velocity[0] = 0;
             input.target_acceleration[0] =0;
-            input.max_velocity[0] = 1;
-            input.max_acceleration[0] = 0.5;
-            input.max_jerk[0] =0.5;
+            input.max_velocity[0] = 0.2;
+            input.max_acceleration[0] = 0.1;
+            input.max_jerk[0] =0.1;
          
             return  true;
     }
@@ -155,15 +240,27 @@ using namespace ruckig;
                      { 
                        
                        auto& p = output.new_position;
-                       double joint[6];
-                      
+                       double a=p[0];
+                      Eigen::Matrix<double,3,3> R;
+                      R<<cos(a)+wx*wx*(1-cos(a)),wxy*(1-cos(a)-wz*sin(a)),wxz*(1-cos(a))+wy*sin(a),
+                        wxy*(1-cos(a))+wz*sin(a),cos(a)+(wy*wy)*(1-cos(a)),wyz*(1-cos(a))-wx*sin(a),
+                        wxz*(1-cos(a))-wy*sin(a),wyz*(1-cos(a))+wx*sin(a),cos(a)+wz*wz*(1-cos(a));
+                        Eigen::Matrix<double,3,1> xyz(T[3],T[7],T[11]);
+                       Eigen::Matrix<double,3,1> xyz_=R*xyz;
                        double pose_[6];
-                       pose_[0]=T[3]+(pose[0]-T[3])*(p[0]/L);
-                       pose_[1]=T[7]+(pose[1]-T[7])*(p[0]/L);
-                       pose_[2]=T[11]+(pose[2]-T[11])*(p[0]/L);
-                       pose_[3]=pose[3];
-                       pose_[4]=pose[4];
-                       pose_[5]=pose[5];
+                     
+                       pose_[0]=xyz_(0,0);
+                       pose_[1]=xyz_(1,0);
+                       pose_[2]=xyz_(2,0);;
+                       pose_[3]=3.1415926;
+                       pose_[4]=0;
+                       pose_[5]=1.5708;
+                       //double joint[6];
+                      //  double pose_[16];
+                      //  double a=p[0];
+                      
+                     // this->matrix_multiply(R, T, pose_);
+                     
                        double target_joint[6];
                        int ret= ur.r_inverse(joint,pose_,target_joint);
                        for (int i=0; i<JointNum; i++) 
@@ -173,7 +270,7 @@ using namespace ruckig;
                          //std::cout<<"JogabsJ motor-----"<<i<<"  "<<p[i]<<std::endl;
                        }                                                                                             
                        output.pass_to_input(input);
-                        rtnode_status=RUNNING;
+                       rtnode_status=RUNNING;
                      }
                     else
                      {

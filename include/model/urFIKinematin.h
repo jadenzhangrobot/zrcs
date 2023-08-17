@@ -65,15 +65,15 @@ class Ur
                     -sin(ry),sin(rx)*cos(ry),cos(rx)*cos(ry),z,
                     0,0,0,1};
 
-        for(int i=0;i<4;i++)
-        {
-          for(int j=0;j<4;j++)
-          {
-                std::cout <<R[j+i*4] << " ";
+        // for(int i=0;i<4;i++)
+        // {
+        //   for(int j=0;j<4;j++)
+        //   {
+        //         std::cout <<R[j+i*4] << " ";
             
-          }
-          std::cout << std::endl;          
-        }
+        //   }
+        //   std::cout << std::endl;          
+        // }
        
 
   
@@ -82,17 +82,17 @@ class Ur
         double target_pose[16];
         this->forward(joint1, T);
         this->matrix_multiply(T,R,target_pose);
-        for(int i=0;i<4;i++)
-        {
-          for(int j=0;j<4;j++)
-          {
-                std::cout <<T[j+i*4] << " ";
+        // for(int i=0;i<4;i++)
+        // {
+        //   for(int j=0;j<4;j++)
+        //   {
+        //         std::cout <<T[j+i*4] << " ";
             
-          }
-          std::cout << std::endl;
+        //   }
+        //   std::cout << std::endl;
            
 
-        }
+        // }
        
 
       
@@ -147,9 +147,9 @@ class Ur
             
          //std::cout<<"minindex"<<minIndex<<std::endl;   
 
-       for(int i=0;i<ret;i++) 
-          printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
-          out_joint[i*6+0], out_joint[i*6+1], out_joint[i*6+2], out_joint[i*6+3], out_joint[i*6+4], out_joint[i*6+5]);
+      //  for(int i=0;i<ret;i++) 
+      //     printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
+      //     out_joint[i*6+0], out_joint[i*6+1], out_joint[i*6+2], out_joint[i*6+3], out_joint[i*6+4], out_joint[i*6+5]);
         
         
         
@@ -159,6 +159,7 @@ class Ur
         }
         return ret;
     }
+   
   void forward(const double* q, double* T)
   {
       double s1 = sin(*q), c1 = cos(*q); q++;

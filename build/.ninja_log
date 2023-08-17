@@ -1,0 +1,4 @@
+# ninja log v5
+0	3305	1692237186845800950	CMakeFiles/motion_control.dir/src/slave.cpp.o	d7f0d5fdf3b3c45b
+0	3825	1692237187369812558	CMakeFiles/motion_control.dir/src/main.cpp.o	266623342f58be8d
+3825	3909	1692237187453814419	motion_control	9367982a09dd3089
