@@ -159,7 +159,123 @@ class Ur
         }
         return ret;
     }
-   
+    int movec_inverse(double* joint,double* R, double* tatget_joint)
+    {
+      //  double x=pose[0];
+      //  double y=pose[1];
+      //  double z=pose[2];
+      //  double rx=pose[3];//rx
+      //  double ry=pose[4];//ry
+      //  double rz=pose[5];//rz
+       
+     
+      // double r[16]={std::cos(yaw) * std::cos(pitch), -std::cos(yaw) * std::sin(pitch), std::sin(yaw),x,
+      //              std::cos(pitch) * std::sin(yaw) * std::sin(roll) + std::cos(roll) * std::sin(yaw),
+      //              std::cos(yaw) * std::cos(roll) - std::sin(pitch) * std::sin(yaw) * std::sin(roll),
+      //             -std::cos(yaw) * std::sin(roll) - std::cos(roll) * std::sin(pitch) * std::sin(yaw),y,
+      //              std::sin(pitch) * std::sin(yaw) * std::cos(roll) - std::cos(yaw) * std::sin(roll),
+      //              std::cos(yaw) * std::sin(pitch) * std::cos(roll) + std::sin(yaw) * std::sin(roll),
+      //              std::cos(pitch) * std::cos(roll),z,0,0,0,1};
+      
+      // double R[16]={cos(ry)*cos(rz),sin(rx)*sin(ry)*cos(rz)-cos(rx)*sin(rz),cos(rx)*sin(ry)*cos(rz)+sin(rx)*sin(rz),x,
+      //               cos(ry)*sin(rz),sin(rx)*sin(ry)*sin(rz)+cos(rx)*cos(rz),cos(rx)*sin(ry)*sin(rz)-sin(rx)*cos(rz),y,
+      //               -sin(ry),sin(rx)*cos(ry),cos(rx)*cos(ry),z,
+      //               0,0,0,1};
+
+        // for(int i=0;i<4;i++)
+        // {
+        //   for(int j=0;j<4;j++)
+        //   {
+        //         std::cout <<R[j+i*4] << " ";
+            
+        //   }
+        //   std::cout << std::endl;          
+        // }
+       
+
+  
+        double joint1[6]={0,0,0,0,0,0};                         
+        double T[16];
+        double target_pose[16];
+        this->forward(joint1, T);
+        this->matrix_multiply(T,R,target_pose);
+        // for(int i=0;i<4;i++)
+        // {
+        //   for(int j=0;j<4;j++)
+        //   {
+        //         std::cout <<T[j+i*4] << " ";
+            
+        //   }
+        //   std::cout << std::endl;
+           
+
+        // }
+       
+
+      
+        double out_joint[8*6];
+        int ret= this->inverse(R, out_joint,0); 
+     
+        for(int i=0;i<ret*6;i++)
+        {
+           if (out_joint[i]>=PI) {
+              out_joint[i]=out_joint[i]-2*PI;
+           }
+        }
+              double a[ret];
+            for (int i=0;i<ret;i++) 
+            {
+                
+                if((out_joint[i*6+0]>=-PI&&out_joint[i*6+0]<=PI)&&
+                (out_joint[i*6+1]>=-PI&&out_joint[i*6+1]<=0)&&
+                (out_joint[i*6+2]>=-2.3562&&out_joint[i*6+2]<=2.3562)&&
+                (out_joint[i*6+3]>=-PI&&out_joint[i*6+3]<=PI)&&
+                (out_joint[i*6+4]>=-2.3562&&out_joint[i*6+4]<=2.3562)&&
+                (out_joint[i*6+5]>=-2*PI&&out_joint[i*6+5]<=2*PI))
+                {
+                 
+                    double a1=(out_joint[i*6+0]-joint[0])*(out_joint[i*6+0]-joint[0]);
+                    double a2=(out_joint[i*6+1]-joint[1])*(out_joint[i*6+1]-joint[1]);
+                    double a3=(out_joint[i*6+2]-joint[2])*(out_joint[i*6+2]-joint[2]);
+                    double a4=(out_joint[i*6+3]-joint[3])*(out_joint[i*6+3]-joint[3]);
+                    double a5=(out_joint[i*6+4]-joint[4])*(out_joint[i*6+4]-joint[4]);
+                    double a6=(out_joint[i*6+5]-joint[5])*(out_joint[i*6+5]-joint[5]);
+                    a[i]=a1+a3+a5+a2+a4+a6;               
+                }
+                else 
+                {
+                    a[i]=100000000000000;   
+                } 
+               // std::cout<<"a[i]:"<<a[i]<<std::endl;            
+            }
+
+             int minIndex = 0; // 初始化最小值的位置为0
+             int minValue = a[0]; // 初始化最小值为数组的第一个元素
+
+              for (int i = 1; i < ret; i++) 
+              {
+                  // 如果当前元素小于最小值，则更新最小值和最小值的位置
+                  if (a[i] < minValue) 
+                  {
+                      minValue = a[i];
+                      minIndex = i;
+                  }
+              }
+            
+         //std::cout<<"minindex"<<minIndex<<std::endl;   
+
+      //  for(int i=0;i<ret;i++) 
+      //     printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
+      //     out_joint[i*6+0], out_joint[i*6+1], out_joint[i*6+2], out_joint[i*6+3], out_joint[i*6+4], out_joint[i*6+5]);
+        
+        
+        
+        for(int i=0;i<6;i++)
+        {
+          tatget_joint[i]=out_joint[minIndex*6+i];
+        }
+        return ret;
+    }
   void forward(const double* q, double* T)
   {
       double s1 = sin(*q), c1 = cos(*q); q++;
