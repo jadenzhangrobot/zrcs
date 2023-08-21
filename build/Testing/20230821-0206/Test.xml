@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20230821-0206-Experimental"
+	Name="zrcs-Virtual-Machine"
+	Generator="ctest-3.16.3"
+	CompilerName="/usr/bin/g++"
+	CompilerVersion="9.4.0"
+	OSName="Linux"
+	Hostname="zrcs-Virtual-Machine"
+	OSRelease="5.4.0-156-generic"
+	OSVersion="#173-Ubuntu SMP Tue Jul 11 07:25:22 UTC 2023"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="151"
+	ProcessorCacheSize="25600"
+	NumberOfLogicalCPU="18"
+	NumberOfPhysicalCPU="9"
+	TotalVirtualMemory="0"
+	TotalPhysicalMemory="15993"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="2112"
+	>
+	<Testing>
+		<StartDateTime>Aug 21 13:28 CST</StartDateTime>
+		<StartTestTime>1692595694</StartTestTime>
+		<TestList/>
+		<EndDateTime>Aug 21 13:28 CST</EndDateTime>
+		<EndTestTime>1692595694</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

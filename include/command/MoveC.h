@@ -245,7 +245,7 @@ using namespace ruckig;
         //    wxy*(1-cos(a))+wz*sin(a),cos(a)+(wy*wy)*(1-cos(a)),wyz*(1-cos(a))-wx*sin(a),0,
         //    wxz*(1-cos(a))-wy*sin(a),wyz*(1-cos(a))+wx*sin(a),cos(a)+wz*wz*(1-cos(a)),0,
         //    1,1,1,1;
-          std::cout<<"XYZ"<<"   "<<center_xyz<<std::endl;
+           std::cout<<"XYZ"<<"   "<<center_xyz<<std::endl;
            std::cout<<"p0w"<<"   "<<p0w<<std::endl;
            std::cout<<"pFw"<<"   "<<pFw<<std::endl;
            std::cout<<"www"<<"   "<<W_<<std::endl;
@@ -285,17 +285,17 @@ using namespace ruckig;
                       // R<<cos(a)+wx*wx*(1-cos(a)),wxy*(1-cos(a)-wz*sin(a)),wxz*(1-cos(a))+wy*sin(a),
                       //   wxy*(1-cos(a))+wz*sin(a),cos(a)+(wy*wy)*(1-cos(a)),wyz*(1-cos(a))-wx*sin(a),
                       //   wxz*(1-cos(a))-wy*sin(a),wyz*(1-cos(a))+wx*sin(a),cos(a)+wz*wz*(1-cos(a));
-                       Eigen::Vector3d xyz(T[3],T[7],T[11]);
+                       Eigen::Vector3d xyz(T[3]-center_xyz(0,0),T[7]-center_xyz.coeffByOuterInner(1,0),T[11]-center_xyz(2.0));
                        Eigen::Matrix<double,4,4> qcmatrix;
                     
                        qcmatrix<< rotationMatrix,center_xyz,
-                                 0,0,0,1;
+                                  0,0,0,1;
                         
                        double pose_[6];
                        Eigen::Matrix<double,4,1> xyz_;
                        xyz_<<xyz,1;
-                      Eigen::Matrix<double,4,1> txyz;
-                      txyz =qcmatrix*xyz_;
+                       Eigen::Matrix<double,4,1> txyz;
+                       txyz =qcmatrix*xyz_;
                      
                        pose_[0]=txyz(0,0);
                        pose_[1]=txyz(1,0);
@@ -322,8 +322,7 @@ using namespace ruckig;
                      }
                     else
                      {
-                     // if( forcenobj.ec_control->motors[i]->setTargetPos(p[i])==cenobj.ec_control->motors[i]->act)
-                    
+                     // if( forcenobj.ec_control->motors[i]->setTargetPos(p[i])==cenobj.ec_control->motors[i]->act)                    
                       rtnode_status=SUCCESS;     
                                     
                      }
