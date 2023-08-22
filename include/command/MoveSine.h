@@ -19,6 +19,7 @@
 #include "system/classfactory.h"
 #include "system/cmdline.h"
 #include <std_msgs/Float64.h>
+#include "system/ros.h"
 class MoveSine:public zrcs_system::Basenode
   {
     public:
@@ -26,9 +27,8 @@ class MoveSine:public zrcs_system::Basenode
             double  current_position[6];
             double  amplitude;
             double  frequency;
+            zrcs_system::Zrcstopic* ros_h;
              
-            ros::NodeHandle& nh; 
-           ros::Publisher& pub; 
        bool init() override
        {        
          cmdline::parser cmd;
@@ -46,12 +46,7 @@ class MoveSine:public zrcs_system::Basenode
               }   
                amplitude=cmd.get<double>("amplitude");
                frequency=cmd.get<double>("frequency"); 
-              ros::NodeHandle nh_;
-               nh=nh_;
-             ros::Publisher pub_; 
-             pub=pub_;
-            
-             nh.advertise<std_msgs::Float64>("command_error",1000000);     
+              ros_h=new zrcs_system::Zrcstopic;
             return true;
     }
   
@@ -72,8 +67,8 @@ class MoveSine:public zrcs_system::Basenode
                         t=t+0.01;
                           std_msgs::Float64 msg;
                           msg.data=target_position[0]-cenobj.ec_control->motors[0]->actualPos();
-                          
-                    pub.publish(msg);
+                          ros_h->send(msg);
+                   
       }
   };
 
