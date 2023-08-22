@@ -303,14 +303,18 @@ using namespace ruckig;
                        pose_[3]=3.1415926;
                        pose_[4]=0;
                        pose_[5]=1.5708;
-                       //double joint[6];
+                       double joint_[6];
                       //  double pose_[16];
                       //  double a=p[0];
-                      
+                        for(int i=0;i<JointNum;i++)
+                         {
+                           joint[i]=cenobj.ec_control->motors[i]->actualPos();
+                         }
                      // this->matrix_multiply(R, T, pose_);
                      
                        double target_joint[6];
-                       int ret= ur.r_inverse(joint,pose_,target_joint);
+                       int ret= ur.r_inverse(joint_,pose_,target_joint);
+                       //std::cout<<ret<<std::endl;
                        for (int i=0; i<JointNum; i++) 
                        {
                         

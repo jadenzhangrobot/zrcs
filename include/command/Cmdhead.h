@@ -13,4 +13,5 @@
  #include "MoveJ.h"
  #include "MoveL.h"
  #include "MoveC.h"
+ #include "MoveSine.h"
 #endif

@@ -16,6 +16,8 @@
 #include "ros/init.h"
 #include "zmq.h"
 #include <endian.h>
+#include <iostream>
+#include <ostream>
 #include <queue>
 #include <ros/ros.h>
 namespace zrcs_system {
@@ -50,6 +52,8 @@ public:
   // 2--表示指令执行完毕
   // 3--表示指令执行失败
   Zmq_cmd zmq_cmd;
+    
+
   centre(void) {}
 
   ~centre(void) {
@@ -133,12 +137,12 @@ public:
       while (flag) {
         //指令字符串
         std::string cmd;
-        std::getline(std::cin, cmd);
+       std::getline(std::cin, cmd);
       //  std::string cmd1;
       //     std::string cmd2;
-      //  cmd1="JogabsJ --motor=0 --position=1.5708";
+      //  cmd1="MoveJ --x=0 --y=0.6 --z=0.2 --rx=3.1415926 --ry=0 --rz=1.5708";
       
-      //  cmd2="JogabsJ --motor=0 --position=0"; 
+      //  cmd2="MoveJ --x=0 --y=0.6 --z=0.2 --rx=3.1415926 --ry=0 --rz=1.5708"; 
 
 
        

@@ -3,8 +3,10 @@
 #include <boost/function/function_base.hpp>
 #include <boost/mpl/assert.hpp>
 #include <cmath>
+#include <cstdint>
 #include <math.h>
 #include <memory>
+#include <ostream>
 #include <stdio.h>
 #include <iostream>
 //#include <eigen3/Eigen/Dense>
@@ -112,40 +114,50 @@ class Ur
                 if((out_joint[i*6+0]>=-PI&&out_joint[i*6+0]<=PI)&&
                 (out_joint[i*6+1]>=-PI&&out_joint[i*6+1]<=0)&&
                 (out_joint[i*6+2]>=-2.3562&&out_joint[i*6+2]<=2.3562)&&
-                (out_joint[i*6+3]>=-PI&&out_joint[i*6+3]<=PI)&&
+                (out_joint[i*6+3]>=-4&&out_joint[i*6+3]<=1.2)&&
                 (out_joint[i*6+4]>=-2.3562&&out_joint[i*6+4]<=2.3562)&&
                 (out_joint[i*6+5]>=-2*PI&&out_joint[i*6+5]<=2*PI))
                 {
-                 
+                    // if (out_joint[i*6+1]>-1.5708) {
+                       
+                    //   if (out_joint[i*6+2]<0&&out_joint[i*6+3]<-1.5708) {
+                    //   a[i]=100000000000;
+                    //   }                     
+                    // }
+                    
                     double a1=(out_joint[i*6+0]-joint[0])*(out_joint[i*6+0]-joint[0]);
                     double a2=(out_joint[i*6+1]-joint[1])*(out_joint[i*6+1]-joint[1]);
                     double a3=(out_joint[i*6+2]-joint[2])*(out_joint[i*6+2]-joint[2]);
                     double a4=(out_joint[i*6+3]-joint[3])*(out_joint[i*6+3]-joint[3]);
                     double a5=(out_joint[i*6+4]-joint[4])*(out_joint[i*6+4]-joint[4]);
                     double a6=(out_joint[i*6+5]-joint[5])*(out_joint[i*6+5]-joint[5]);
-                    a[i]=a1+a3+a5+a2+a4+a6;               
+                    a[i]=1000*a1+100*a3+10*a5+a2+0.1*a4+0.01*a6;
+                   
+                    //std::cout<<"i"<<"   "<<i<<std::endl;                  
                 }
                 else 
                 {
-                    a[i]=100000000000000;   
+                    a[i]=100000000000;   
                 } 
-               // std::cout<<"a[i]:"<<a[i]<<std::endl;            
+                     
             }
-
+               
              int minIndex = 0; // 初始化最小值的位置为0
-             int minValue = a[0]; // 初始化最小值为数组的第一个元素
-
+             std::uint64_t minValue = a[0]; // 初始化最小值为数组的第一个元素
+              
               for (int i = 1; i < ret; i++) 
               {
+                 
                   // 如果当前元素小于最小值，则更新最小值和最小值的位置
                   if (a[i] < minValue) 
                   {
                       minValue = a[i];
                       minIndex = i;
+                    
                   }
               }
             
-         //std::cout<<"minindex"<<minIndex<<std::endl;   
+        // std::cout<<"minindex"<<"     "<<minIndex<<std::endl;   
 
       //  for(int i=0;i<ret;i++) 
       //     printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
@@ -240,7 +252,8 @@ class Ur
                     double a4=(out_joint[i*6+3]-joint[3])*(out_joint[i*6+3]-joint[3]);
                     double a5=(out_joint[i*6+4]-joint[4])*(out_joint[i*6+4]-joint[4]);
                     double a6=(out_joint[i*6+5]-joint[5])*(out_joint[i*6+5]-joint[5]);
-                    a[i]=a1+a3+a5+a2+a4+a6;               
+                    a[i]=100*a1+a3+a5+a2+a4+a6;   
+                              
                 }
                 else 
                 {
@@ -264,9 +277,9 @@ class Ur
             
          //std::cout<<"minindex"<<minIndex<<std::endl;   
 
-      //  for(int i=0;i<ret;i++) 
-      //     printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
-      //     out_joint[i*6+0], out_joint[i*6+1], out_joint[i*6+2], out_joint[i*6+3], out_joint[i*6+4], out_joint[i*6+5]);
+       for(int i=0;i<ret;i++) 
+          printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
+          out_joint[i*6+0], out_joint[i*6+1], out_joint[i*6+2], out_joint[i*6+3], out_joint[i*6+4], out_joint[i*6+5]);
         
         
         
@@ -580,4 +593,3 @@ class Ur
 };
 
 #endif
-

@@ -164,8 +164,13 @@ using namespace ruckig;
                        pose_[3]=pose[3];
                        pose_[4]=pose[4];
                        pose_[5]=pose[5];
-                       double target_joint[6];
+                       double target_joint[6];                                        
+                      for(int i=0;i<JointNum;i++)
+                      {
+                        joint[i]=cenobj.ec_control->motors[i]->actualPos();
+                      }
                        int ret= ur.r_inverse(joint,pose_,target_joint);
+      
                        for (int i=0; i<JointNum; i++) 
                        {
                         
