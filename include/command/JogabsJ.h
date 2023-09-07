@@ -64,7 +64,7 @@ class JogabsJ:public zrcs_system::Basenode
                        }
                      else
                       {                         
-                         rtnode_status=SUCCESS;          
+                        rtnode_status=SUCCESS;          
                       }
          
       }

@@ -20,6 +20,8 @@
 #include <ostream>
 #include <queue>
 #include <ros/ros.h>
+#include "spd_log.h"
+
 namespace zrcs_system {
 class centre {
 private:
@@ -95,7 +97,8 @@ public:
       class_name = cmd;
     }
     if (!classfactory::getInstance().cmd_exist(class_name)) {
-
+      
+      //Log.my_logger->info("cmd_exist");
     } else {
       Basenode *bf =(Basenode *)classfactory::getInstance().getclassbyname(class_name);
       //把节点状态切换到init状态
@@ -136,20 +139,27 @@ public:
     th_terminal = std::thread([this]() {
       while (flag) {
         //指令字符串
-        std::string cmd;
-       std::getline(std::cin, cmd);
-      //  std::string cmd1;
-      //     std::string cmd2;
-      //  cmd1="MoveJ --x=0 --y=0.6 --z=0.2 --rx=3.1415926 --ry=0 --rz=1.5708";
+       // std::string cmd;
+      // std::getline(std::cin, cmd);
+      static int flag=0;
+      if (flag==0) {
+      std::string cmd1;
+       cmd1="MoveSine";
+       cmd_queue.push(cmd1);
+       flag=1;
+      }
+        
+      // std::string cmd2;
+      
       
       //  cmd2="MoveJ --x=0 --y=0.6 --z=0.2 --rx=3.1415926 --ry=0 --rz=1.5708"; 
 
 
        
         
-      //    cmd_queue.push(cmd1);
+         
       //    cmd_queue.push(cmd2);
-         cmd_queue.push(cmd);
+        // cmd_queue.push(cmd);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
        
       }

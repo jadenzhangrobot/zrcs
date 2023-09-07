@@ -11,9 +11,11 @@
 #include "ros/publisher.h"
 #include "system/basenode.h"
 #include "system/centre.h"
+#include <boost/move/utility_core.hpp>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <ruckig/ruckig.hpp>
 #include "system/classfactory.h"
@@ -27,7 +29,7 @@ class MoveSine:public zrcs_system::Basenode
             double  current_position[6];
             double  amplitude;
             double  frequency;
-            zrcs_system::Zrcstopic* ros_h;
+              zrcs_system::Zrcstopic* ros_h;
              
        bool init() override
        {        
@@ -46,13 +48,14 @@ class MoveSine:public zrcs_system::Basenode
               }   
                amplitude=cmd.get<double>("amplitude");
                frequency=cmd.get<double>("frequency"); 
-              ros_h=new zrcs_system::Zrcstopic;
+               std::unique_ptr<zrcs_system::Zrcstopic> zrcsros_ptr=std::make_unique<zrcs_system::Zrcstopic>("commanderror");
+                ros_h= zrcsros_ptr.release();
             return true;
     }
   
       void  excute_rt(void) override
       {         
-
+                       
                          
                                    
                         static double t=0;
@@ -64,10 +67,11 @@ class MoveSine:public zrcs_system::Basenode
                            
                             cenobj.ec_control->motors[i]->setTargetPos(target_position[i]);  
                         }
-                        t=t+0.01;
-                          std_msgs::Float64 msg;
-                          msg.data=target_position[0]-cenobj.ec_control->motors[0]->actualPos();
-                          ros_h->send(msg);
+                          t=t+0.01;
+                          //std_msgs::Float64 msg;
+                          //msg.data=target_position[0];
+                          //msg.data=target_position[0]-cenobj.ec_control->motors[0]->actualPos();
+                          ros_h->send(target_position[0]);
                    
       }
   };

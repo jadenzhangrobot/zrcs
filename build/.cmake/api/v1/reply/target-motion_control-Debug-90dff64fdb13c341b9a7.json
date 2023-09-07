@@ -191,11 +191,11 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-Wl,-rpath,/opt/ros/noetic/lib/x86_64-linux-gnu:/opt/ros/noetic/lib",
+				"fragment" : "-Wl,-rpath,/usr/local/lib:/opt/ros/noetic/lib",
 				"role" : "libraries"
 			},
 			{
-				"fragment" : "/opt/ros/noetic/lib/x86_64-linux-gnu/libruckig.so",
+				"fragment" : "/usr/local/lib/libruckig.so",
 				"role" : "libraries"
 			},
 			{
