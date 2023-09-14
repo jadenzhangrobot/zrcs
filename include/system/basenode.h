@@ -8,7 +8,11 @@
  */
 #ifndef BASEFUN_H_
 #define BASEFUN_H_
+#include "ros/init.h"
+#include <cstdint>
 #include <fstream>
+#include <queue>
+#include <sstream>
 namespace zrcs_system {
 
 class Basenode {
@@ -18,15 +22,25 @@ public:
     IDLE,    //表示实时线程处于闲暇状态
     RUNNING, //表示实时线程正执行任务
     SUCCESS, //表示执行成功状态，这个状态和IDLE状态的区别在于可以接受指令
-    FAILURE  //表示执行错误
+    FAILURE,  //表示执行错误
+    RTCOMPLETE//节点实时线程执行完毕
   };
+  uint64_t rt_count;
+  std::string node_name;
   NodeStatus rtnode_status = SUCCESS;
+  std::queue<std::string> port_input;
   Basenode(){};
   virtual ~Basenode() = default;
+  
+   virtual bool init(void)
+   { 
+          rt_count=0;
+   }
+  bool init_rt(void) {return true;}
 
-  virtual bool init(void) {return true;}
+   virtual bool excute_rt(void) {return true;}
 
-  virtual void excute_rt(void) {}
+   bool exit_rt(void) {return true;}
 
   virtual NodeStatus getTaskState() { return rtnode_status;}
 
@@ -60,7 +74,7 @@ public:
   }
   //主要是用于紧急停止
   virtual bool stop() {
-    if (rtnode_status == RUNNING||SUCCESS) {
+    if ((rtnode_status == RUNNING)||(rtnode_status == SUCCESS)) {
       rtnode_status = IDLE;
     } else {
       return false;
@@ -78,12 +92,23 @@ public:
   }
   virtual bool fail()
   {
-    if (rtnode_status == INIT) {
-      rtnode_status = SUCCESS;
+    if ((rtnode_status==INIT)||(rtnode_status==RUNNING)||(rtnode_status==RTCOMPLETE)) {
+      rtnode_status = FAILURE;
     } else {
       return false;
     }
     return true;
+  }
+  virtual bool exit()
+  {
+     if (rtnode_status==RUNNING) 
+     {
+       rtnode_status=RTCOMPLETE;
+     }
+     else {
+        return false;
+     }
+    return  true;
   }
 };
 } // namespace zrcs_system

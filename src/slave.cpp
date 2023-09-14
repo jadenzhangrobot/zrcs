@@ -10,11 +10,13 @@
 
  #include "slave.h"
  #include "controller/controller_interface.h"
- //#include "controller/rtos/xenomai.h"
+ #include "controller/rtos/preempt_rt.h"
  #include "system/centre.h"
  #include "controller/motor/rawsocketbus.h"
  #include "controller/motor/urgazebo.h"
  #include <memory>
+  
+
  /**
   * @description: 注册一个gazebo控制器
   * @return {*}
@@ -68,8 +70,8 @@
      //发送接受函数，为了兼容总线协议
      ct->transceiver.reset((controller::Transceive*)(new controller::UrgazeboTransceive()));
       //使用linux操作系统
-     ct->rtos_.reset((controller::Rtos*)(new controller::Nativelinux()));
-
+    // ct->rtos_.reset((controller::Rtos*)(new controller::Nativelinux()));
+    ct->rtos_.reset((controller::Rtos*)(new controller::Preempt_rt()));
     return ct;
  }
 

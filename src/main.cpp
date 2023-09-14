@@ -25,7 +25,7 @@ int main(int argc,char** argv)
       //ct.registerController(InnfosController());
        ct.registerController(UrgazeboController());
       //ct.registerController(GlrbusController());
-        ct.init();
+       ct.init();
             
      
   #ifdef Ros

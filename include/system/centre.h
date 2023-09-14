@@ -18,7 +18,7 @@
 #include <endian.h>
 #include <iostream>
 #include <ostream>
-#include <queue>
+#include <boost/lockfree/queue.hpp>
 #include <ros/ros.h>
 #include "spd_log.h"
 
@@ -33,7 +33,8 @@ private:
   //接受行为树指令线程
   std::thread th_pubstatus;
   //指令对象指针队列
-  std::queue<Basenode *> Basenode_queue;
+  //std::queue<Basenode *> Basenode_queue;
+  boost::lockfree::queue<Basenode*> Basenode_queue;
   Basenode *Bnode = nullptr;
   bool flag = true;
   bool bttree_flag = true;
@@ -56,7 +57,7 @@ public:
   Zmq_cmd zmq_cmd;
     
 
-  centre(void) {}
+  centre(void):Basenode_queue(10000){}
 
   ~centre(void) {
     flag = false;
@@ -199,12 +200,12 @@ public:
   //创建一个实时任务
   ec_control->rtos_->rtos_task_create();
   //把实时节点里面的实时函数放到实时线程中运行
-  ec_control->rtos_->real_task([&]() {
+  ec_control->rtos_->real_task([&](){
   ec_control->transceiver->receive();
 
-    if (!Basenode_queue.empty()) {
-      Bnode = Basenode_queue.front();
-     // std::cout<<Bnode->getTaskState()<<std::endl;   
+    if ((!Basenode_queue.empty())&&(Basenode::SUCCESS))
+     {
+       Basenode_queue.pop(Bnode);   
        if(Bnode->config())
        {
        if (Bnode->init())
@@ -215,12 +216,9 @@ public:
           }
        }
       //检查实时节点的状态，如何状态为running执行节点下的实时函数
-      if (Bnode->getTaskState() == Basenode::RUNNING){
-        Bnode->excute_rt();
-      }
-      //检查节点的状态如何节点执行成功，就从队列里面移除节点指针
-      if (Bnode->getTaskState() == Basenode::SUCCESS){
-          Basenode_queue.pop();          
+      if (Bnode->getTaskState() == Basenode::RUNNING)
+      {
+          Bnode->excute_rt();
       }
     }
      ec_control->transceiver->send();

@@ -26,23 +26,50 @@ class Preempt_rt:Rtos
     pthread_attr_t attr;
     pthread_t thread;
     int ret;
+    struct period_info
+      {
+        struct timespec next_period;
+        long period_ns;
+    };
     // std::thread my_thread;
     // std::uint32_t control_period=1;
     ~Preempt_rt()
     {
-        ret = pthread_join(thread, NULL);
-        if (ret)
-        {
-              LOGGER_INFO("pthread_join error");
-              LOGGER_INFO(strerror(errno));
-        }
+       
 
     }
    std::function<void()> strategy_{ nullptr };
-   
+static void inc_period(struct period_info *pinfo) 
+{
+        pinfo->next_period.tv_nsec += pinfo->period_ns;
+ 
+        while (pinfo->next_period.tv_nsec >= 1000000000) {
+                /* timespec nsec overflow */
+                pinfo->next_period.tv_sec++;
+                pinfo->next_period.tv_nsec -= 1000000000;
+        }
+}
+ 
+static void periodic_task_init(struct period_info *pinfo)
+{
+        /* for simplicity, hardcoding a 1ms period */
+        pinfo->period_ns = 1000000;
+ 
+        clock_gettime(CLOCK_MONOTONIC, &(pinfo->next_period));
+}
+ 
+static void wait_rest_of_period(struct period_info *pinfo)
+{
+        inc_period(pinfo);
+ 
+        /* for simplicity, ignoring possibilities of signal wakes */
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &pinfo->next_period, NULL);
+}
    static void* real_fun(void* arg)
     {
-        
+        struct period_info pinfo;
+ 
+        periodic_task_init(&pinfo);
         Preempt_rt* p=(Preempt_rt*)arg;
         while (true) 
         {
@@ -50,13 +77,8 @@ class Preempt_rt:Rtos
             {
                p->strategy_();
             }
-           struct timespec ts;
-           struct timespec tt;
-             ts.tv_sec=0;
-             ts.tv_nsec=100000000;
-            clock_nanosleep(CLOCK_REALTIME, 0,&ts, NULL);
-            clock_gettime(CLOCK_MONOTONIC,&tt);
-            printf("%ld %ld\n",tt.tv_sec,tt.tv_nsec);
+         
+             wait_rest_of_period(&pinfo);
         }
        
        return nullptr;
@@ -65,49 +87,49 @@ class Preempt_rt:Rtos
     {
        if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1) 
        {
-               LOGGER_INFO("glrbus socket error");
-               LOGGER_INFO(strerror(errno));
+              // LOGGER_INFO("glrbus socket error");
+              // LOGGER_INFO(strerror(errno));
                
         }
  
         /* Initialize pthread attributes (default values) */
         ret = pthread_attr_init(&attr);
         if (ret) {
-                LOGGER_INFO("pthread_attr_init error");
-                LOGGER_INFO(strerror(errno));
+               // LOGGER_INFO("pthread_attr_init error");
+               // LOGGER_INFO(strerror(errno));
         }
  
         /* Set a specific stack size  */
         ret = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
         if (ret) {
-                LOGGER_INFO("pthread_attr_setstacksize error");
-                LOGGER_INFO(strerror(errno));
+               // LOGGER_INFO("pthread_attr_setstacksize error");
+              //  LOGGER_INFO(strerror(errno));
         }
  
         /* Set scheduler policy and priority of pthread */
         ret = pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
         if (ret) {
-                LOGGER_INFO("pthread_attr_setschedpolicy error");
-                LOGGER_INFO(strerror(errno));
+               // LOGGER_INFO("pthread_attr_setschedpolicy error");
+               // LOGGER_INFO(strerror(errno));
         }
         param.sched_priority =99;
         ret = pthread_attr_setschedparam(&attr, &param);
         if (ret) {
-                 LOGGER_INFO("pthread_attr_setschedparam error");
-                LOGGER_INFO(strerror(errno));
+               //  LOGGER_INFO("pthread_attr_setschedparam error");
+              //  LOGGER_INFO(strerror(errno));
         }
         /* Use scheduling parameters of attr */
         ret = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
         if (ret) {
-                LOGGER_INFO("pthread_attr_setinheritsched error");
-                LOGGER_INFO(strerror(errno));
+               // LOGGER_INFO("pthread_attr_setinheritsched error");
+               // LOGGER_INFO(strerror(errno));
         }
  
         /* Create a pthread with specified attributes */
         ret = pthread_create(&thread, &attr,real_fun, (void*)this);
         if (ret) {
-                LOGGER_INFO("pthread_create error");
-                LOGGER_INFO(strerror(errno));
+              //  LOGGER_INFO("pthread_create error");
+              //  LOGGER_INFO(strerror(errno));
         }
     }
     void real_task(std::function<void()> strategy) override
@@ -124,6 +146,12 @@ class Preempt_rt:Rtos
     {
       
     } 	
+
+    void rtos_task_join(void) override
+    {
+         pthread_join(thread, NULL);
+    }
+
 
 };
 
