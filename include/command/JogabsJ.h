@@ -24,32 +24,30 @@ class JogabsJ:public zrcs_system::Basenode
              InputParameter<1> input;
              OutputParameter<1> output;
              int motor_id;   
-       bool init() override
-       {        
-         cmdline::parser cmd;
-         cmd.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
-         cmd.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
-         cmd.add<double>("velocity", 'v', "servo velocity", false, 300, cmdline::range(-10, 10));
-         cmd.add<double>("acceleration", 'a', "servo acceleration", false, 50, cmdline::range(-10, 10));
+      void init() override
+       {             
+         port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
+         port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
+         port_input.add<double>("velocity", 'v', "servo velocity", false, 300, cmdline::range(-10, 10));
+         port_input.add<double>("acceleration", 'a', "servo acceleration", false, 50, cmdline::range(-10, 10));
           if (!cenobj.nrt_cmdParam.empty()) 
           {
               std::string str=cenobj.nrt_cmdParam.front();
-              cmd.parse_check(str);
+              port_input.parse_check(str);
               cenobj.nrt_cmdParam.pop();
           }   
-              input.current_position[0]=cenobj.ec_control->motors[cmd.get<int>("motor")]->actualPos();              
+              input.current_position[0]=cenobj.ec_control->motors[port_input.get<int>("motor")]->actualPos();              
               input.current_velocity[0]= 0;
-              input.current_acceleration[0] =0;
-                               
-              input.target_position[0]=cmd.get<double>("position");
+              input.current_acceleration[0] =0;                               
+              input.target_position[0]=port_input.get<double>("position");
               input.target_velocity[0] = 0;
               input.target_acceleration[0] =0;
               input.max_velocity[0] = 1;
               input.max_acceleration[0] = 0.5;
               input.max_jerk[0] =0.5;
-              motor_id=cmd.get<int>("motor"); 
-                     
-           return true;
+              motor_id=port_input.get<int>("motor");
+              node_status=RUNNING;                 
+          
     }
   
       void  excute_rt(void) override
@@ -59,12 +57,11 @@ class JogabsJ:public zrcs_system::Basenode
                       {                        
                         auto& p = output.new_position;
                         cenobj.ec_control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
-                        output.pass_to_input(input); 
-                        rtnode_status=RUNNING;                  
+                        output.pass_to_input(input);                                   
                        }
                      else
                       {                         
-                        rtnode_status=SUCCESS;          
+                         node_status=SUCCESS;          
                       }
          
       }

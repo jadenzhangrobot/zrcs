@@ -70,8 +70,8 @@
      //发送接受函数，为了兼容总线协议
      ct->transceiver.reset((controller::Transceive*)(new controller::UrgazeboTransceive()));
       //使用linux操作系统
-    // ct->rtos_.reset((controller::Rtos*)(new controller::Nativelinux()));
-    ct->rtos_.reset((controller::Rtos*)(new controller::Preempt_rt()));
+     ct->rtos_.reset((controller::Rtos*)(new controller::Nativelinux()));
+    //ct->rtos_.reset((controller::Rtos*)(new controller::Preempt_rt()));
     return ct;
  }
 

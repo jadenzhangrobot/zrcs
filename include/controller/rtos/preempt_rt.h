@@ -77,7 +77,7 @@ static void wait_rest_of_period(struct period_info *pinfo)
             {
                p->strategy_();
             }
-         
+           std::cout<<"1111"<<std::endl;
              wait_rest_of_period(&pinfo);
         }
        

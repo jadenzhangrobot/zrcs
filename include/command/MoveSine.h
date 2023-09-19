@@ -31,29 +31,29 @@ class MoveSine:public zrcs_system::Basenode
             double  frequency;
               zrcs_system::Zrcstopic* ros_h;
              
-       bool init() override
+        void init() override
        {        
-         cmdline::parser cmd;
-         cmd.add<double>("amplitude", 'a', "servo position", false, 1, cmdline::range(-20.000, 20.000));
-         cmd.add<double>("frequency", 'f', "servo velocity", false, 1, cmdline::range(-101.0000, 101.0000));
+         
+         port_input.add<double>("amplitude", 'a', "servo position", false, 1, cmdline::range(-20.000, 20.000));
+         port_input.add<double>("frequency", 'f', "servo velocity", false, 1, cmdline::range(-101.0000, 101.0000));
        
           if (!cenobj.nrt_cmdParam.empty()) 
           {
               std::string str=cenobj.nrt_cmdParam.front();
-              cmd.parse_check(str);
+              port_input.parse_check(str);
               cenobj.nrt_cmdParam.pop();
           }  
               for (int i=0; i<6; i++) {
                current_position[i]=cenobj.ec_control->motors[i]->actualPos();    
               }   
-               amplitude=cmd.get<double>("amplitude");
-               frequency=cmd.get<double>("frequency"); 
+               amplitude=port_input.get<double>("amplitude");
+               frequency=port_input.get<double>("frequency"); 
                std::unique_ptr<zrcs_system::Zrcstopic> zrcsros_ptr=std::make_unique<zrcs_system::Zrcstopic>("commanderror");
                 ros_h= zrcsros_ptr.release();
-            return true;
-    }
+                node_status=RUNNING;
+       }
   
-      void  excute_rt(void) override
+       void excute_rt(void) override
       {         
                        
                          
@@ -72,6 +72,10 @@ class MoveSine:public zrcs_system::Basenode
                           //msg.data=target_position[0];
                           //msg.data=target_position[0]-cenobj.ec_control->motors[0]->actualPos();
                           ros_h->send(target_position[0]);
+                         
+                        if (t>10000000) {
+                           node_status=SUCCESS;
+                        }
                    
       }
   };
