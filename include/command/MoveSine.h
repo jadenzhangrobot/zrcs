@@ -29,7 +29,7 @@ class MoveSine:public zrcs_system::Basenode
             double  current_position[6];
             double  amplitude;
             double  frequency;
-              zrcs_system::Zrcstopic* ros_h;
+            //zrcs_system::Zrcstopic* ros_h;
              
         void init() override
        {        
@@ -49,7 +49,7 @@ class MoveSine:public zrcs_system::Basenode
                amplitude=port_input.get<double>("amplitude");
                frequency=port_input.get<double>("frequency"); 
                std::unique_ptr<zrcs_system::Zrcstopic> zrcsros_ptr=std::make_unique<zrcs_system::Zrcstopic>("commanderror");
-                ros_h= zrcsros_ptr.release();
+               // ros_h= zrcsros_ptr.release();
                 node_status=RUNNING;
        }
   
@@ -71,7 +71,7 @@ class MoveSine:public zrcs_system::Basenode
                           //std_msgs::Float64 msg;
                           //msg.data=target_position[0];
                           //msg.data=target_position[0]-cenobj.ec_control->motors[0]->actualPos();
-                          ros_h->send(target_position[0]);
+                          //ros_h->send(target_position[0]);
                          
                         if (t>10000000) {
                            node_status=SUCCESS;

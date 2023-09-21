@@ -10,9 +10,11 @@
 
 #include "system/basenode.h"
 #include "system/centre.h"
+#include <cstring>
 #include <iostream>
 #include <ostream>
 #include <ruckig/ruckig.hpp>
+#include <spdlog/spdlog.h>
 #include <unistd.h>
 #include "system/classfactory.h"
 using namespace ruckig;
@@ -23,10 +25,17 @@ class JogabsJ:public zrcs_system::Basenode
              zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
              Ruckig<1> otg {0.001}; 
              InputParameter<1> input;
-             OutputParameter<1> output;
-             int motor_id;   
-      void init() override
+             OutputParameter<1> output;            
+             int motor_id;
+      JogabsJ()
+      {
+          node_name="JogabsJ";
+          motor_id=0;
+      }
+
+       void init() override
        {             
+         
          port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
          port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
          port_input.add<double>("velocity", 'v', "servo velocity", false, 1, cmdline::range(-10.0, 10.0));
@@ -73,7 +82,7 @@ class JogabsJ:public zrcs_system::Basenode
       }
       void exit(void) override
       {
-         std::cout<<"Jogabsj finish"<<std::endl;
+         spdlog::info(node_name+"  finished");
       }
      
   };

@@ -12,13 +12,14 @@
 #include <fstream>
 #include <queue>
 #include <sstream>
+#include <string>
 #include "cmdline.h"
 namespace zrcs_system {
 
 class Basenode {
   public:
 
-  uint64_t node_count;
+  uint64_t node_count=0;
   std::string node_name;
    enum NodeStatus {
     INIT,    //表示实时组件初始化状态
@@ -29,7 +30,8 @@ class Basenode {
   };
    NodeStatus node_status = IDLE;
   cmdline::parser port_input;
-  Basenode(){};
+  Basenode()
+  {};
   virtual ~Basenode() = default;
   
    virtual void init(void)=0;

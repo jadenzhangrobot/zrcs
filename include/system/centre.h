@@ -18,6 +18,7 @@
 #include <iostream>
 #include <ostream>
 #include <ros/ros.h>
+#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
 #include "spd_log.h"
@@ -57,6 +58,10 @@ public:
   std::queue<std::string> cmd_queue;
   // controller对象指针
   controller::Controller *ec_control;
+
+  //日志对象
+    Zrcslog zrcslog;
+
   centre(void):rtnodeptr_vector(&rtpmr),exit_rtnodeptr_vector(&exit_rtpmr){
   }
 
@@ -108,7 +113,7 @@ public:
               }
              if(bf->getTaskState()==Basenode::FAILURE)
                {
-                     
+                  spdlog::error(class_name+"init error");
                }             
              else
               {
@@ -126,16 +131,16 @@ public:
     terminal = std::thread([this]() {
       while (terminal_flag) {
         //指令字符串
-        std::string cmd;
-       std::getline(std::cin, cmd);
-        cmd_queue.push(cmd);
-      // static int cmd_flag=0;
-      // if (cmd_flag==0) {
-      // std::string cmd1;
-      //  cmd1="MoveSine";
-      //  cmd_queue.push(cmd1);
-      //  cmd_flag=1;
-      // }
+       // std::string cmd;
+      // std::getline(std::cin, cmd);
+      //  cmd_queue.push(cmd);
+      static int cmd_flag=0;
+      if (cmd_flag==0) {
+      std::string cmd1;
+       cmd1="JogabsJ --motor=0 --position=3.14 --velocity";
+       cmd_queue.push(cmd1);
+       cmd_flag=1;
+      }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));      
       }
     });
@@ -151,14 +156,12 @@ public:
           }
           else if (cmd_param=="Start"){
               if (Bnode!=nullptr){
-               Bnode->start();
-               std::cout<<Bnode->getTaskState()<<std::endl; 
+               Bnode->start(); 
               }
           }
           else if (cmd_param=="Recover") {
               if (Bnode!=nullptr){
                Bnode->recover();
-               std::cout<<Bnode->getTaskState()<<std::endl; 
               }
           }
           else {
