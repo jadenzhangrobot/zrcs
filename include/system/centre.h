@@ -19,43 +19,56 @@
 #include <ostream>
 #include <ros/ros.h>
 #include <thread>
+#include <vector>
 #include "spd_log.h"
-
+#include <memory_resource>
 namespace zrcs_system {
 class centre {
 private:
+   //节点指针
+   Basenode *Bnode = nullptr;
+   //解析指令的线程
   std::thread cmd_thread;
   //终端字符串接受线程
   std::thread terminal;
-  //指令注册线程
+  //状态发布线程
   std::thread pubstatus;
+  //指令销毁线程
+  std::thread exit_cmd;
 
+ 
 
-  //指令对象指针队列
-  std::queue<Basenode*> Basenode_queue;
-  Basenode *Bnode = nullptr;
-
+  //将要指令对象指针容器
+  std::pmr::monotonic_buffer_resource rtpmr;
+  std::pmr::vector<Basenode*>  rtnodeptr_vector;
+  //执行完成后的指令对象的指针容器
+  std::pmr::monotonic_buffer_resource exit_rtpmr;
+  std::pmr::vector<Basenode*>  exit_rtnodeptr_vector;
 
   
   bool terminal_flag = true;
   bool cmd_thread_flag = true;
   bool pubstatus_flag=true;
+  bool exitcmd_flag=true;
 public:
-  //指令参数队列
+    //指令参数队列
   std::queue<std::string> nrt_cmdParam;
   //指令队列
   std::queue<std::string> cmd_queue;
   // controller对象指针
   controller::Controller *ec_control;
-  centre(void){}
+  centre(void):rtnodeptr_vector(&rtpmr),exit_rtnodeptr_vector(&exit_rtpmr){
+  }
 
   ~centre(void) {
     terminal_flag = false;
     cmd_thread_flag = false;
     pubstatus_flag = false;
+    exitcmd_flag=false;
     cmd_thread.join();
     terminal.join();
     pubstatus.join();
+    exit_cmd.join();
   }
 
   //单例模式 返回一个
@@ -99,7 +112,7 @@ public:
                }             
              else
               {
-                  Basenode_queue.push(bf);
+                  rtnodeptr_vector.push_back(bf);
               }         
         }
       
@@ -158,12 +171,20 @@ public:
       }
   );
 
-  pubstatus = std::thread([this]() {
-    
+  exit_cmd=std::thread([this](){
 
-     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+     while (exitcmd_flag) 
+     {
+       if (!exit_rtnodeptr_vector.empty()) {
+                 exit_rtnodeptr_vector.front()->exit();
+                 delete exit_rtnodeptr_vector.front();
+          exit_rtnodeptr_vector.erase(exit_rtnodeptr_vector.begin());
+       }
+       
+     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    
    });
-   
 
   
 
@@ -175,26 +196,28 @@ public:
   ec_control->rtos_->real_task([&]()
   {
       ec_control->transceiver->receive();
-       if (!Basenode_queue.empty())
-       {    
-          Bnode=Basenode_queue.front();
+        if (!rtnodeptr_vector.empty())
+       {
+           Bnode=rtnodeptr_vector.front();
           if (Bnode!=nullptr) {
                     if (Bnode->getTaskState() == Basenode::RUNNING)
                    {
                         Bnode->excute_rt();
                    }                 
                     else if (Bnode->getTaskState()==Basenode::SUCCESS)
-                   {
-                       Basenode_queue.pop();   
+                   {  
+                       rtnodeptr_vector.erase(rtnodeptr_vector.begin());
+                       exit_rtnodeptr_vector.push_back(Bnode); 
                     //检查实时节点的状态，如何状态为running执行节点下的实时函数           
                    }
                     else if (Bnode->getTaskState()==Basenode::FAILURE)
                    {
-                       Basenode_queue.pop();  
+                       //delete Bnode;
+                      rtnodeptr_vector.erase(rtnodeptr_vector.begin());
+                      exit_rtnodeptr_vector.push_back(Bnode); 
                    }
             }
-      }
-      
+      }    
      ec_control->transceiver->send();
   });
  

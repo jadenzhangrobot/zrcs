@@ -43,7 +43,7 @@
 			}
 		},
 		{
-			"jsonFile" : "cmakeFiles-v1-22b8021dfd354e31782a.json",
+			"jsonFile" : "cmakeFiles-v1-05e9b195fb23255f096b.json",
 			"kind" : "cmakeFiles",
 			"version" : 
 			{
@@ -101,7 +101,7 @@
 						"error" : "unknown request kind 'toolchains'"
 					},
 					{
-						"jsonFile" : "cmakeFiles-v1-22b8021dfd354e31782a.json",
+						"jsonFile" : "cmakeFiles-v1-05e9b195fb23255f096b.json",
 						"kind" : "cmakeFiles",
 						"version" : 
 						{
