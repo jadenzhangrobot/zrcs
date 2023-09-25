@@ -14,6 +14,7 @@
  #include "system/centre.h"
  #include "controller/motor/rawsocketbus.h"
  #include "controller/motor/urgazebo.h"
+ #include "controller/motor/cybergazebo.h"
  #include <memory>
   
 
@@ -74,6 +75,29 @@
     //ct->rtos_.reset((controller::Rtos*)(new controller::Preempt_rt()));
     return ct;
  }
+
+
+ /**
+  * @description: 注册一个cyber在仿真环境gazebo中的控制器
+  * @return {*}
+  */
+ std::unique_ptr<controller::Controller> CybergazeboController(void)
+ {
+    //使用ur在gazebo中的控制器
+    std::unique_ptr<controller::Controller> ct(new controller::Controller);
+    for(int i=0;i<JointNum;i++)
+    {
+        std::unique_ptr<controller::Motor> cm((controller::Motor*)(new controller::CyberMotor(i)));
+        ct->motors.push_back(std::move(cm));
+    }
+     //发送接受函数，为了兼容总线协议
+     ct->transceiver.reset((controller::Transceive*)(new controller::CybergazeboTransceive()));
+      //使用linux操作系统
+     ct->rtos_.reset((controller::Rtos*)(new controller::Nativelinux()));
+    //ct->rtos_.reset((controller::Rtos*)(new controller::Preempt_rt()));
+    return ct;
+ }
+
 
     /**
     * @description: 注册一个Glrbus真实环境中的控制器

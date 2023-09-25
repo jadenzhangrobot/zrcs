@@ -8,16 +8,18 @@
  * Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
  */
 #include "ros/rate.h"
+#include <array>
+#include <iostream>
+#include <ostream>
 #include <ros/ros.h>
 #include <unistd.h>
 #include "slave.h"
 #include "system/centre.h"
 #include "command/Cmdhead.h"
-
+#include "system/basenode.h"  
 
 int main(int argc,char** argv)
 {
-      
     #ifdef Ros
       ros::init(argc,argv,"motion_control"); 
     #endif
@@ -26,9 +28,9 @@ int main(int argc,char** argv)
       //ct.registerController(InnfosController());
        ct.registerController(UrgazeboController());
       //ct.registerController(GlrbusController());
+       ct.registerController(CybergazeboController());
        ct.init();
             
-     
   #ifdef Ros
    ros::spin();
   #else

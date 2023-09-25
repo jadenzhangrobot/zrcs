@@ -41,7 +41,7 @@ private:
 
   //将要指令对象指针容器
   std::pmr::monotonic_buffer_resource rtpmr;
-  std::pmr::vector<Basenode*>  rtnodeptr_vector;
+  std::pmr::vector<Basenode*> rtnodeptr_vector;
   //执行完成后的指令对象的指针容器
   std::pmr::monotonic_buffer_resource exit_rtpmr;
   std::pmr::vector<Basenode*>  exit_rtnodeptr_vector;
@@ -131,16 +131,16 @@ public:
     terminal = std::thread([this]() {
       while (terminal_flag) {
         //指令字符串
-       // std::string cmd;
-      // std::getline(std::cin, cmd);
-      //  cmd_queue.push(cmd);
-      static int cmd_flag=0;
-      if (cmd_flag==0) {
-      std::string cmd1;
-       cmd1="JogabsJ --motor=0 --position=3.14 --velocity";
-       cmd_queue.push(cmd1);
-       cmd_flag=1;
-      }
+       std::string cmd;
+      std::getline(std::cin, cmd);
+       cmd_queue.push(cmd);
+      // static int cmd_flag=0;
+      // if (cmd_flag==0) {
+      // std::string cmd1;
+      //  cmd1="JogabsJ --motor=0 --position=3.14";
+      //  cmd_queue.push(cmd1);
+      //  cmd_flag=1;
+      // }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));      
       }
     });

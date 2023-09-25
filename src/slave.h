@@ -21,4 +21,5 @@ std::unique_ptr<controller::Controller> InnfosController(void);
 std::unique_ptr<controller::Controller> UrgazeboController(void);
 
 std::unique_ptr<controller::Controller> GlrbusController(void);
+std::unique_ptr<controller::Controller> CybergazeboController(void);
 #endif
