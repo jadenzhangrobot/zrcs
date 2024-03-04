@@ -1,40 +1,42 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-15 10:25:59
- * @LastEditTime: 2023-08-09 05:32:23
- * @Description: 
- * 
- * Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
+/**
+ * @copyrightCopyright(c)2024Glroadcorporation
+ * @filename:main.cpp
+ * @brief:
+ * zhangyongjing@oetsky.com
+ * @createdate:2024-01-08
  */
+#include "command/Cmdhead.h"
 #include "ros/rate.h"
-#include <array>
-#include <iostream>
-#include <ostream>
+#include "system/centre.h"
 #include <ros/ros.h>
 #include <unistd.h>
-#include "slave.h"
-#include "system/centre.h"
-#include "command/Cmdhead.h"
-#include "system/basenode.h"  
+int main(int argc, char **argv) {
+//    printf ("Connecting to hello world server…\n");
+//     void *context = zmq_ctx_new ();
+//     void *requester = zmq_socket (context, ZMQ_REQ);
+//     zmq_connect (requester, "tcp://10.16.11.77:5555");
 
-int main(int argc,char** argv)
-{
-    #ifdef Ros
-      ros::init(argc,argv,"motion_control"); 
-    #endif
-       static zrcs_system::centre& ct=zrcs_system::centre::getInstance();
-      //ct.registerController(GazeboController());
-      //ct.registerController(InnfosController());
-       ct.registerController(UrgazeboController());
-      //ct.registerController(GlrbusController());
-       ct.registerController(CybergazeboController());
-       ct.init();
-            
-  #ifdef Ros
-   ros::spin();
-  #else
-   pause();
-  #endif
+//     int request_nbr;
+//     for (request_nbr = 0; request_nbr != 10; request_nbr++) {
+//         char buffer [10];
+//         printf ("Sending Hello %d…\n", request_nbr);
+//         zmq_send (requester, "Hello", 5, 0);
+//         zmq_recv (requester, buffer, 10, 0);
+//         printf ("Received World %d\n", request_nbr);
+//     }
+//     zmq_close (requester);
+//     zmq_ctx_destroy (context);
+//     return 0;
+#ifdef Ros
+  ros::init(argc, argv, "motion_control");
+#endif
+  zrcs_system::centre &ct = zrcs_system::centre::getInstance();
+  ct.registerController<6, controller::zmotionmotor,controller::ZmotionTransceive, controller::Nativelinux>();
+  ct.init();
+#ifdef Ros
+  ros::spin();
+#else
+  pause();
+#endif
   return 0;
 }

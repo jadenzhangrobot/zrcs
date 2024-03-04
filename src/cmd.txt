@@ -4,12 +4,18 @@ JogabsJ --motor=2 --position=1.357378
 JogabsJ --motor=3 --position=-2.089311
 JogabsJ --motor=4 --position=-0.200023
 JogabsJ --motor=5 --position=1.586315
-Sfork --motorp1=0 --motorp2=0
-Sfork --motorp1=-0.5 --motorp2=0.5
-Sfork --motorp1=0 --motorp2=0.5
-Sfork --motorp1=0.34 --motorp2=-0.34
-Sfork --angle=0 --length=0.4 --direction=-1
-Sfork --angle=-50 --length=0.4 --direction=1
+
+MoveJ --x=0 --y=0.6 --z=0.4 --rx=3.1415926 --ry=1.5708 --rz=1.5708
+
+
+
+MoveJ --x=0.6 --y=0 --z=0.4 --rx=3.1415926 --ry=1.5708 --rz=1.5708
+
+
+MoveJ --x=0.6 --y=0.4 --z=0.4 --rx=3.1415926 --ry=1.5708 --rz=1.5708
+
+MoveJ --x=0 --y=0.6 --z=0.4 --rx=3.1415926 --ry=1.5708 --rz=1.5708
+
 
 Stop
 Rsfork --angledir=1

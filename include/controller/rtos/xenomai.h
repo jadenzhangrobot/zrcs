@@ -30,8 +30,7 @@ namespace controller
 
     }
     static void real_fun(void* arg)
-    {
-        
+    {       
       xenomai* p=(xenomai*)arg;
       int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
         while (true) 

@@ -8,72 +8,13 @@
 #ifndef JOGJ_H
 #define JOGJ_H
 
-#include "system/basefun.h"
+#include "system/basenode.h"
+#include "system/centre.h"
 #include "system/centre.h"
 #include <iostream>
 #include "system/classfactory.h"
-#include"../../src/slave.h"
 using namespace ruckig;
 
-class BtJogJ : public BT::SyncActionNode
-{
-public:
-     centre& cenobj=centre::getInstance();
-     BT::Optional<std::string> res ;
-     BT::Optional<std::string> res1;
-     bool condition=true;
-   BtJogJ(const std::string& name, const BT::NodeConfiguration& config) :
-   BT::SyncActionNode(name, config)
-  {
-     
-       res = this->getInput<std::string>("motor");
-       res1 = this->getInput<std::string>("position"); 
-      
-     // std::cout<<"--"+res.value()+" --"+res1.value()<<std::endl;
-     // cenobj.cmd_queue.push("JogabsJ --motor="+res.value()+" --position="+res1.value());     
-  }
-
-  // You must override the virtual function tick()
-  BT::NodeStatus tick() override
-  {
-    // if (condition) {
-    cenobj.cmd_queue.push("JogJ --motor="+res.value()+" --position="+res1.value());
-       ///   condition=false;    
-  //   }
-    while (cenobj.rt_status!=2)
-    {
-        
-    }
-     
-     return BT::NodeStatus::SUCCESS;
-    //return BT::NodeStatus::RUNNING;
-    //std::cout << "ApproachObject: " << this->name() << std::endl;
-  }
-  //  void halt() override
-  //   {
-
-
-
-  //   }
-  static BT::PortsList providedPorts()
-  {
-    BT::PortsList ports;
-    const char* description = "motor_id";
-    ports.emplace(BT::InputPort<std::string>("motor", description));
-    
-    const char* description1 = "motor_position";
-    ports.emplace(BT::InputPort<std::string>("position", description1));
-    
-    // Add multiple InputPorts
-   // ports.emplace("position", BT::InputPort<int>("position"));
-    // Add OutputPort
-
-    return ports;
-   // const char* description = "motor_id";
-    //return {BT::InputPort<std::string>("motor", description)};
-  }
-  
-};
 class JogJ:basefun
   {
     public:

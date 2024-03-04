@@ -1,6 +1,7 @@
 #ifndef ROS_H
 #define ROS_H
 #include <std_msgs/Float64.h>
+#include <actionlib/server/simple_action_server.h>
 #include <ros/ros.h>
 #include <string>
 namespace zrcs_system
@@ -27,7 +28,27 @@ namespace zrcs_system
         return 1;
      }
    };
-  
+  //  typedef actionlib::SimpleActionServer<zrcsbt::zrcs_clientAction> Server;
+  //  void execute(const zrcsbt::zrcs_clientActionGoalConstPtr& goal, Server* as)
+  //  {
+     
+       
+
+  //  }
+   
+  //  class zrcsbt
+  //  {
+  //      public:
+  //      ros::NodeHandle nh;
+       
+  //      zrcsbt()
+  //      {
+  //         Server server(nh, "zrcsaction", boost::bind(&execute, _1, &server), false); 
+  //         server.start();       
+  //      }
+        
+
+  //  };
 }
 
 #endif

@@ -13,6 +13,11 @@
 #include <memory>
 #include <vector>
 #include <functional>
+//#include "rtos/preempt_rt.h"
+//#include "motor/rawsocketbus.h"
+//#include "motor/urgazebo.h"
+//#include "motor/cybergazebo.h"
+//#include "motor/ureffort.h"
 namespace controller
 {
     class Motor
@@ -58,7 +63,7 @@ namespace controller
                 return 0;
               };
       
-            auto virtual actualVel()const->double
+             virtual double actualVel()
             {
 
               return 0;
@@ -101,6 +106,19 @@ namespace controller
           {
                 return 0;
           }
+          /*正运动振镜api*/
+          auto virtual  Set2DGalvanometerPositon(float x,float y)->int
+          {
+
+            return 0;
+          }
+          auto virtual  Get2DGalvanometerPositon(float* x)->int
+          {
+             
+            return 0;
+          }
+          
+
           virtual ~Motor(){};
                     
     };
@@ -157,5 +175,6 @@ namespace controller
         std::vector<std::unique_ptr<Motor>> motors;
        
     };
+    // typedef std::unique_ptr<Controller> control;
 }
 #endif

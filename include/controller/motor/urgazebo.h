@@ -31,6 +31,8 @@ namespace controller
              inline static std::array<std::atomic<double>,6> send_postiton;
              inline static std::array<std::atomic<double>,6> receive_postiton;
              inline static std::array<std::atomic<double>,6> receive_effort;
+             inline static std::array<std::atomic<double>,6> receive_velocity;
+
             Urgazebo(/* args */)
             {
                  
@@ -74,6 +76,15 @@ namespace controller
                     receive_effort[3].store(msg->effort[3]);
                     receive_effort[4].store(msg->effort[4]);
                     receive_effort[5].store(msg->effort[5]);
+
+                    receive_velocity[2].store(msg->velocity[0]);
+                    receive_velocity[1].store(msg->velocity[1]);
+                    receive_velocity[0].store(msg->velocity[2]);
+                    receive_velocity[3].store(msg->velocity[3]);
+                    receive_velocity[4].store(msg->velocity[4]);
+                    receive_velocity[5].store(msg->velocity[5]);
+
+                    
                 
             }
             void send_position()
@@ -109,6 +120,11 @@ namespace controller
             double position=urgazebo.receive_postiton[motor_id].load();
             return position;
         }
+        double actualVel(void) override
+        {
+           double velocity=urgazebo.receive_velocity[motor_id].load();
+           return velocity;
+        }
         int  setTargetToq(double toq) override
         {            
             urgazebo.send_postiton[motor_id].store(toq);
@@ -118,7 +134,8 @@ namespace controller
          {
               double toq=urgazebo.receive_effort[motor_id].load();
               return toq;
-         }             
+         }
+
 
     };
  class UrgazeboTransceive:Transceive

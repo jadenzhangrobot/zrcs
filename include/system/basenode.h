@@ -1,47 +1,55 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-15 11:30:25
- * @LastEditTime: 2023-06-02 11:09:20
- * @Description: 实时系统指令基类
- *
+/**
+ * @copyrightCopyright(c)2024Glroadcorporation
+ * @filename:basenode.h
+ * @brief:
+ * zhangyongjing@oetsky.com
+ * @createdate:2024-01-08
  */
 #ifndef BASEFUN_H_
 #define BASEFUN_H_
-#include <cstdint>
-#include <fstream>
-#include <queue>
-#include <sstream>
-#include <string>
 #include "cmdline.h"
+#include <cstdint>
+#include <string>
+#include "controller/controller_interface.h"
+#include <queue>
 namespace zrcs_system {
 
 class Basenode {
-  public:
-
-  uint64_t node_count=0;
+public:
+  uint64_t node_count = 0;
   std::string node_name;
-   enum NodeStatus {
+  enum NodeStatus {
     INIT,    //表示实时组件初始化状态
     IDLE,    //表示实时线程处于闲暇状态
     RUNNING, //表示实时线程正执行任务
+    EXit,
     SUCCESS, //表示执行成功状态，这个状态和IDLE状态的区别在于可以接受指令
-    FAILURE,  //表示执行错误
+    FAILURE, //表示执行错误
   };
-   NodeStatus node_status = IDLE;
+  NodeStatus node_status = IDLE;
+  std::queue<std::string> *CmdParam;
   cmdline::parser port_input;
+  cmdline::parser port_input_;
+  controller::Controller* Control;
+  
   Basenode()
   {};
   virtual ~Basenode() = default;
-  
-   virtual void init(void)=0;
 
-   virtual void excute_rt(void)=0;
-   virtual void excute_nrt(void){}
+  virtual void init(void) = 0;
 
-   virtual void exit(void) {}
+  virtual void excute_rt(void) = 0;
+  virtual void excute_nrt(void) {}
 
-   virtual NodeStatus getTaskState() { return node_status;}
+  virtual void exit(void) {}
+ 
+   void registered( controller::Controller* ct,std::queue<std::string> *cP)
+  {
+       Control=ct;
+       CmdParam=cP;
+  }
+
+  virtual NodeStatus getTaskState() { return node_status; }
 
   // //由idle状态切换到init状态，对实时节点进行初始化
   // virtual bool config() {
@@ -73,7 +81,7 @@ class Basenode {
   }
   //主要是用于紧急停止
   virtual bool stop() {
-    if ((node_status == RUNNING)||(node_status == SUCCESS)) {
+    if ((node_status == RUNNING) || (node_status == SUCCESS)) {
       node_status = IDLE;
     } else {
       return false;
@@ -91,7 +99,9 @@ class Basenode {
   }
   // virtual bool fail()
   // {
-  //   if ((node_status==INIT)||(node_status==RUNNING)||(node_status==RTCOMPLETE)) {
+  //   if
+  //   ((node_status==INIT)||(node_status==RUNNING)||(node_status==RTCOMPLETE))
+  //   {
   //     node_status = FAILURE;
   //   } else {
   //     return false;
@@ -100,7 +110,7 @@ class Basenode {
   // }
   // virtual bool quit()
   // {
-  //    if (node_status==RUNNING) 
+  //    if (node_status==RUNNING)
   //    {
   //      node_status=RTCOMPLETE;
   //    }

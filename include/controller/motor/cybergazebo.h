@@ -1,10 +1,9 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-05-09 19:21:11
- * @LastEditTime: 2023-08-09 09:06:29
- * @Description: UR机械臂在gazeobo中仿真环境的通讯接口封装
- * 
+/**
+ * @copyrightCopyright(c)2024Glroadcorporation
+ * @filename:cybergazebo.h
+ * @brief:
+ * zhangyongjing@oetsky.com
+ * @createdate:2024-01-05
  */
 #ifndef CYBERGAZEBO_H
 #define CYBERGAZEBO_H

@@ -107,11 +107,9 @@ namespace controller
 
         }
         auto  clearError()->int override
-        {
-            
-                
+        {               
             return 1;
-         }
+        }
          
       
   };
