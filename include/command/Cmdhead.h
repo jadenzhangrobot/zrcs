@@ -2,7 +2,6 @@
 #define CMDHEAD_H
 //#include "Ureffort.h"
 #include "JogabsJ.h"
-#include "HJF/Galvanometer.h"
 //#include "MovePP.h" 
 // #include "Movehome.h" 
 // #include "Enable.h"

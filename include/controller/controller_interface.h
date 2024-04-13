@@ -24,7 +24,7 @@ namespace controller
     {
         public:
             
-            // auto virtual controlWord()const->std::uint16_t = 0;
+            auto virtual controlWord()->std::uint16_t = 0;
             // auto virtual modeOfOperation()const->std::uint8_t = 0;
             // auto virtual targetPos(double j_val)->void;
             // auto virtual targetVel()const->double = 0;
@@ -32,7 +32,7 @@ namespace controller
             // auto virtual offsetVel()const->double = 0;
             // auto virtual offsetCur()const->double = 0;
             
-            //auto virtual setControlWord(std::uint16_t control_word)->void = 0;
+            auto virtual setControlWord(std::uint16_t control_word)->void = 0;
             //auto virtual setModeOfOperation(std::uint8_t mode)->void = 0;
               
             // auto virtual setTargetVel(double vel)->void = 0;
@@ -46,7 +46,7 @@ namespace controller
             // auto virtual setOffsetToq(double toq)->void = 0;
             // auto virtual setErrorCode(std::int32_t code)->void = 0;
 
-            //auto virtual statusWord()const->std::uint16_t = 0;
+            auto virtual statusWord() ->std::uint16_t = 0;
             //auto virtual modeOfDisplay()const->std::uint8_t = 0;
               auto virtual errorCode()->uint32_t 
               {

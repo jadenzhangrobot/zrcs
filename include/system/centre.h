@@ -11,9 +11,6 @@
 #include "classfactory.h"
 #include "controller/controller_interface.h"
 #include "controller/rtos/linux.h"
-#include "ros/duration.h"
-#include "ros/init.h"
-#include <actionlib/server/simple_action_server.h>
 #include <algorithm>
 #include <boost/bind/placeholders.hpp>
 #include <endian.h>
@@ -27,11 +24,10 @@
 #include <vector>
 #include "zmq.h"
 #include "controller/rtos/preempt_rt.h"
+#include "controller/rtos/xenomai.h"
 #include "controller/motor/rawsocketbus.h"
-#include "controller/motor/urgazebo.h"
-#include "controller/motor/cybergazebo.h"
-#include "controller/motor/ureffort.h"
-#include "controller/motor/zmotion.h"
+#include "controller/motor/ethercat/EthercatMotor.h"
+
 namespace zrcs_system {
 
 class centre {
@@ -133,7 +129,6 @@ public:
       class_name = cmd;
     }
     if (!classfactory::getInstance().cmd_exist(class_name)) {
-        ROS_INFO("Cmd not exit");
     } else {
       Basenode *bn =
           (Basenode *)classfactory::getInstance().getclassbyname(class_name);
