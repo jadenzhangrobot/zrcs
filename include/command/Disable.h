@@ -9,47 +9,53 @@
 
 #ifndef DISABLE_H_
 #define DISABLE_H_
-#include "system/basefun.h"
+#include "system/basenode.h"
 #include "system/centre.h"
 #include <iostream>
-class Disable:basefun
+class Disable:zrcs_system::Basenode
 {
    private:
-      int motor_num;
       int motor_id;
    public:
-        centre& cenobj=centre::getInstance();
-        Disable()
-        {         
-            cmdline::parser cmd;
-            cmd.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));         
-            if (!cenobj.nrt_cmdParam.empty()) 
-            {
-                std::string str=cenobj.nrt_cmdParam.front();
-                cmd.parse_check(str);
-                cenobj.nrt_cmdParam.pop();
-            }
-            motor_num=cenobj.ec_control->motors.size();
-            motor_id=cmd.get<int>("motor");
-        }
-        void  excute_rt(void) override
+        Disable(const std::string& node_name="Disable")
         {
-             
-            if(motor_id==motor_num)
-            {
-                for(int i=0;i<motor_num;i++)
-                {
-                    cenobj.ec_control->motors[i]->disable();
-                }
-
-            }
-            else
-            {  
-                  cenobj.ec_control->motors[motor_id]->disable();                                       
-            }
-                   
-             rt_flag=0;
+         
+    
         }
+         void init() override
+       {   
+           port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
+        
+          if (!CmdParam->empty()) 
+          {
+              std::string str=CmdParam->front();
+              port_input.parse_check(str);
+              CmdParam->pop();
+          }   
+                    
+              motor_id=port_input.get<int>("motor");
+              node_status=RUNNING;                 
+          }
+
+
+        void  excute_rt(void) override
+        {            
+           
+                  if(Control->motors[motor_id]->disable()==0)
+                  {
+                      
+                     node_status=SUCCESS;
+                   } 
+                  else {
+                      node_status=FAILURE;
+                   }                     
+                                                  
+        }
+           void exit(void) override
+      {
+           std::cout<<"Disable 执行成功"<<std::endl;
+      }
+
 
 
 };

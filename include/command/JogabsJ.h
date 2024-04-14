@@ -33,16 +33,16 @@ class JogabsJ:public zrcs_system::Basenode
        {   
          port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
          port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
-         port_input.add<double>("velocity", 'v', "servo velocity", false, 1, cmdline::range(-10.0, 10.0));
-         port_input.add<double>("acceleration", 'a', "servo acceleration", false, 0.5, cmdline::range(-10.0, 10.0));
-         port_input.add<double>("jerk", 'j', "servo jerk", false, 0.5, cmdline::range(-10.0, 10.0));
+         port_input.add<double>("velocity", 'v', "servo velocity", false, 4, cmdline::range(-10.0, 10.0));
+         port_input.add<double>("acceleration", 'a', "servo acceleration", false, 1, cmdline::range(-10.0, 10.0));
+         port_input.add<double>("jerk", 'j', "servo jerk", false, 1, cmdline::range(-10.0, 10.0));
           if (!CmdParam->empty()) 
           {
               std::string str=CmdParam->front();
               port_input.parse_check(str);
               CmdParam->pop();
           }   
-             // input.current_position[0]=cenobj.ec_control->motors[port_input.get<int>("motor")]->actualPos();              
+              input.current_position[0]=Control->motors[port_input.get<int>("motor")]->actualPos();              
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
               input.target_position[0]=port_input.get<double>("position");
@@ -62,12 +62,12 @@ class JogabsJ:public zrcs_system::Basenode
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
-                        Control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
+                        Control->motors[motor_id]->setTargetPos(p[motor_id]);                                                                                        
                         output.pass_to_input(input);                              
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {
-                        node_status=SUCCESS; 
+                       node_status=SUCCESS;  
                       }
                      else
                       {                         
@@ -77,7 +77,7 @@ class JogabsJ:public zrcs_system::Basenode
       }
       void exit(void) override
       {
-           // ROS_INFO("JogabsJ finished");
+           std::cout<<"JogabsJ finished"<<std::endl;
       }
      
   };

@@ -17,8 +17,7 @@
 namespace controller {
 #define slaves 1 //slave number
 
-#define DM3E         0,0                       /*EtherCAT address on the bus*/
- #define VID_PID   0x00000083,0x00000005
+#define DM3E         0                     /*EtherCAT address on the bus*/
 #define VID  0x00000083
 #define PID  0x00000005  /*Vendor ID, product code*/
 
@@ -30,37 +29,37 @@ namespace controller {
 
 class EthercatMaster {
   private:
-  uint cycle_ns=1000000;
+ static inline uint cycle_ns=1000000;
 
-  ec_master_t *master = NULL;
+  static inline ec_master_t *master = NULL;
 
    
 
-  ec_pdo_entry_reg_t domain1_regs[100];
-  ec_master_state_t master_state = {};
+ //static inline ec_pdo_entry_reg_t domain1_regs[slaves*7];
+static inline  ec_master_state_t master_state = {};
 
-  ec_domain_t *domain1 = NULL;
-  ec_domain_state_t domain1_state = {};
+static inline  ec_domain_t *domain1 = NULL;
+static inline  ec_domain_state_t domain1_state = {};
 
-  ec_slave_config_t *sc;
-  ec_slave_config_state_t sc_state = {};
+static inline  ec_slave_config_t *sc;
+static inline  ec_slave_config_state_t sc_state = {};
 
  
  
- uint64_t dc_start_time_ns = 0LL;
- uint64_t dc_time_ns = 0;
+ static inline uint64_t dc_start_time_ns = 0LL;
+ static inline uint64_t dc_time_ns = 0;
 
- uint8_t  dc_started = 0;
- int32_t  dc_diff_ns = 0;
- int32_t  prev_dc_diff_ns = 0;
- int64_t  dc_diff_total_ns = 0LL;
- int64_t  dc_delta_total_ns = 0LL;
- int      dc_filter_idx = 0;
- int64_t  dc_adjust_ns;
+ static inline uint8_t  dc_started = 0;
+ static inline int32_t  dc_diff_ns = 0;
+ static inline int32_t  prev_dc_diff_ns = 0;
+ static inline int64_t  dc_diff_total_ns = 0LL;
+ static inline  int64_t  dc_delta_total_ns = 0LL;
+ static inline int      dc_filter_idx = 0;
+ static inline  int64_t  dc_adjust_ns;
 
- int64_t  system_time_base = 0LL;
- uint64_t wakeup_time = 0LL;
- uint64_t overruns = 0LL;
+static inline  int64_t  system_time_base = 0LL;
+static inline  uint64_t wakeup_time = 0LL;
+static inline  uint64_t overruns = 0LL;
 static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
     /*RxPdo 0x1600*/
     {0x6040, 0x00, 16},
@@ -80,7 +79,7 @@ static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
     {0x1A00, 3, device_pdo_entries + 4}
 };
 
-static inline ec_sync_info_t device_syncs[] = {
+static inline ec_sync_info_t device_syncs[5] = {
     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
     { 2, EC_DIR_OUTPUT, 1, device_pdos + 0, EC_WD_ENABLE },
@@ -134,7 +133,7 @@ SRTIME system2count(uint64_t time)
         if ((wakeup_count < current_count)|| (wakeup_count > current_count + (50 * cycle_ns))) 
         {
             rt_printf("%s(): unexpected wake time!\n", __func__);
-            exit(1);
+           // exit(1);
         }
 
         switch (rt_task_sleep_until(wakeup_count)) 
@@ -169,6 +168,7 @@ SRTIME system2count(uint64_t time)
     // calc next wake time (in sys time)
     wakeup_time += cycle_ns;
     //rt_printf("wakeup_time=%ld\n",wakeup_time);
+
 }
 void update_master_clock(void)
 {
@@ -294,8 +294,11 @@ void sync_distributed_clocks(void)
 
   public:
 
-    uint8_t *domain1_pd = NULL;
-    static inline struct{
+ static inline   uint8_t *domain1_pd = NULL;
+
+
+ 
+  typedef struct{
     unsigned int operation_mode[slaves];
     unsigned int ctrl_word[slaves];
     unsigned int target_velocity[slaves];
@@ -303,7 +306,18 @@ void sync_distributed_clocks(void)
     unsigned int status_word[slaves];
     unsigned int current_velocity[slaves];
     unsigned int current_position[slaves];
-}offset;
+}offset1;
+  static inline offset1 offset;
+     ec_pdo_entry_reg_t domain1_regs[8] = {
+    {DM3E,0, VID,PID, 0x6040, 0,&offset.ctrl_word[0]},
+    {DM3E,0, VID,PID, 0x6060, 0, &offset.operation_mode[0]},
+    {DM3E,0, VID,PID, 0x60FF, 0, &offset.target_velocity[0]},
+    {DM3E,0, VID,PID, 0x607A, 0, &offset.target_position[0]},
+    {DM3E,0, VID,PID, 0x6041, 0, &offset.status_word[0]},
+    {DM3E,0, VID,PID, 0x606C, 0, &offset.current_velocity[0]},
+    {DM3E,0, VID,PID, 0x6064, 0, &offset.current_position[0]},
+    {}
+};
   EthercatMaster() {
 
     
@@ -315,74 +329,13 @@ void sync_distributed_clocks(void)
  static EthercatMaster& getInstance(void)
   {
 
-         static EthercatMaster em;
+          static EthercatMaster em;
           return em;
-
+ 
   }
   int EthercatInit()
   {
-      for(int i=0;i<slaves;i++)
-   {    
-        
-        domain1_regs[7*i].alias=0;
-        domain1_regs[7*i].position=i;
-        domain1_regs[7*i].vendor_id=0x00000083;
-        domain1_regs[7*i].product_code=0x00000005;
-        domain1_regs[7*i].index=0x6040;  
-        domain1_regs[7*i].subindex=0;  
-        domain1_regs[7*i].offset=&offset.ctrl_word[i];                
-        
-        domain1_regs[7*i+1].alias=0;
-        domain1_regs[7*i+1].position=i;
-        domain1_regs[7*i+1].vendor_id=0x00000083;
-        domain1_regs[7*i+1].product_code=0x00000005;
-        domain1_regs[7*i+1].index=0x6060;  
-        domain1_regs[7*i+1].subindex=0;  
-        domain1_regs[7*i+1].offset=&offset.operation_mode[i]; 
-        
-        domain1_regs[7*i+2].alias=0;
-        domain1_regs[7*i+2].position=i;
-        domain1_regs[7*i+2].vendor_id=0x00000083;
-        domain1_regs[7*i+2].product_code=0x00000005;
-        domain1_regs[7*i+2].index=0x60ff;  
-        domain1_regs[7*i+2].subindex=0;  
-        domain1_regs[7*i+2].offset=&offset.target_velocity[i]; 
-                
-        domain1_regs[7*i+3].alias=0;
-        domain1_regs[7*i+3].position=i;
-        domain1_regs[7*i+3].vendor_id=0x00000083;
-        domain1_regs[7*i+3].product_code=0x00000005;
-        domain1_regs[7*i+3].index=0x607A;  
-        domain1_regs[7*i+3].subindex=0;  
-        domain1_regs[7*i+3].offset=&offset.target_position[i]; 
-        
-        domain1_regs[7*i+4].alias=0;
-        domain1_regs[7*i+4].position=i;
-        domain1_regs[7*i+4].vendor_id=0x00000083;
-        domain1_regs[7*i+4].product_code=0x00000005;
-        domain1_regs[7*i+4].index=0x6041;  
-        domain1_regs[7*i+4].subindex=0;  
-        domain1_regs[7*i+4].offset=&offset.status_word[i]; 
-        
-        domain1_regs[7*i+5].alias=0;
-        domain1_regs[7*i+5].position=i;
-        domain1_regs[7*i+5].vendor_id=0x00000083;
-        domain1_regs[7*i+5].product_code=0x00000005;
-        domain1_regs[7*i+5].index=0x606c;  
-        domain1_regs[7*i+5].subindex=0;  
-        domain1_regs[7*i+5].offset=&offset.current_velocity[i]; 
-        
-        
-        domain1_regs[7*i+6].alias=0;
-        domain1_regs[7*i+6].position=i;
-        domain1_regs[7*i+6].vendor_id=0x00000083;
-        domain1_regs[7*i+6].product_code=0x00000005;
-        domain1_regs[7*i+6].index=0x6064;  
-        domain1_regs[7*i+6].subindex=0;  
-        domain1_regs[7*i+6].offset=&offset.current_position[i];
-       
-                     
-   }
+  
 
     master = ecrt_request_master(0);
     if (master == nullptr) {
@@ -397,27 +350,27 @@ void sync_distributed_clocks(void)
     }
     for(int i=0;i<slaves;i++)
     {
-	   if (!(sc = ecrt_master_slave_config(master, 0,i, VID_PID)))
+	   if (!(sc = ecrt_master_slave_config(master,DM3E,i, VID,PID)))
 	    {
-		  fprintf(stderr, "Failed to get slave configuration for slave!\n");
-		 exit(EXIT_FAILURE);
+		    fprintf(stderr, "Failed to get slave configuration for slave!\n");
+		    exit(EXIT_FAILURE);
 	    }
 	    printf("Configuring PDOs...\n");
     
-	     if (ecrt_slave_config_pdos(sc, EC_END, device_syncs))
+	    if (ecrt_slave_config_pdos(sc, EC_END, device_syncs)!=0)
 	    {
 	       fprintf(stderr, "Failed to configure slave PDOs!\n");
 	       exit(EXIT_FAILURE);
 	    }
 	    else
 	    {
-		printf("*Success to configuring slave PDOs*\n");
+		    printf("*Success to configuring slave PDOs*\n");
 	    }
 	    if(i==0)
 	    {
 	        ecrt_master_select_reference_clock(master,sc);
 	    } 
-	ecrt_slave_config_dc(sc,0x0300,cycle_ns,150000,0,0);
+	     ecrt_slave_config_dc(sc,0x0300,cycle_ns,300000,0,0);
     }
    
          
@@ -427,15 +380,10 @@ void sync_distributed_clocks(void)
         exit(EXIT_FAILURE);
     }
     
-    //ecrt_slave_config_dc(sc,0x0300,cycle_ns,500000,0,0);
     dc_start_time_ns = system_time_ns();
     dc_time_ns = dc_start_time_ns;
 
-    
-    if ( ecrt_master_select_reference_clock(master, NULL)) 
-    {
-        return -1;
-    }
+  
     if (ecrt_master_activate(master)<0)
     {
         return -1;
@@ -452,16 +400,26 @@ void sync_distributed_clocks(void)
 
 
     void SendData()
-      {
-           ecrt_domain_queue(domain1);       
-           sync_distributed_clocks();
+      {  // int err = rt_task_set_periodic(NULL,TM_NOW, 1000000); 
+        
+           ecrt_domain_queue(domain1);   
+           ecrt_master_application_time(master, rt_timer_read());
+			     ecrt_master_sync_reference_clock(master);
+			     ecrt_master_sync_slave_clocks(master);    
+          // sync_distributed_clocks();
            ecrt_master_send(master); 
-           update_master_clock();  
+         //  update_master_clock();  
       }
 
       void ReceiveData()
       {
-           wait_period();
+        // static int flag=0;
+        // if (flag==0) {
+        //      wakeup_time = system_time_ns() + 10 * cycle_ns;
+        //      flag=1;
+        // }
+              
+         // wait_period();
           ecrt_master_receive(master);
           ecrt_domain_process(domain1);            
       }

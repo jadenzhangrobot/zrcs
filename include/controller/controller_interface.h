@@ -106,18 +106,6 @@ namespace controller
           {
                 return 0;
           }
-          /*正运动振镜api*/
-          auto virtual  Set2DGalvanometerPositon(float x,float y)->int
-          {
-
-            return 0;
-          }
-          auto virtual  Get2DGalvanometerPositon(float* x)->int
-          {
-             
-            return 0;
-          }
-          
 
           virtual ~Motor(){};
                     

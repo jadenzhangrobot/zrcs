@@ -15,14 +15,25 @@ class EthercatMotor:Motor
         {
 
         }
+
+		 int mode(std::uint8_t md) override
+          {
+
+               EC_WRITE_S8(em.domain1_pd + em.offset.operation_mode[motor_id], 0x8);			 
+               return 1;
+          }
         int setTargetPos (double position) override
         {
-             EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position);
+
+			 int32_t position_=(int32_t)(1048576*position);
+             EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position_);
              return 1;  
         }
         double actualPos(void) override
         {
-              return EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]); 
+              std::int32_t pos= EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]);
+			  double pos_=(double)pos/1048576;
+			  return pos_;
         }
         double actualVel(void) override
         {
@@ -51,7 +62,7 @@ class EthercatMotor:Motor
 
           std::uint16_t statusWord() override
          {
-
+              
               return EC_READ_U16(em.domain1_pd + em.offset.status_word[motor_id]);
 
          }
@@ -85,7 +96,7 @@ class EthercatMotor:Motor
 		// disable change state to A/B/C/E to D
 
 		auto status_word = statusWord();
-
+         
 		// check status A, now transition 1 automatically
 		if ((status_word & 0x4F) == 0x00) {
 			// this just set the initial control word...
@@ -173,7 +184,6 @@ class EthercatMotor:Motor
 		// enable change state to A/B/C/D/F/G/H to E
 
 		auto status_word = statusWord();
-
 		// check status A
 		if ((status_word & 0x4F) == 0x00) {
 			return 1;

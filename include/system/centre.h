@@ -129,6 +129,7 @@ public:
       class_name = cmd;
     }
     if (!classfactory::getInstance().cmd_exist(class_name)) {
+      std::cout<<"cmd不存在"<<std::endl;
     } else {
       Basenode *bn =
           (Basenode *)classfactory::getInstance().getclassbyname(class_name);
