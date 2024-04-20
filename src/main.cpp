@@ -13,6 +13,9 @@ int main(int argc, char **argv) {
   zrcs_system::centre &ct = zrcs_system::centre::getInstance();
   ct.registerController<1, controller::EthercatMotor,controller::EthercatTransceive, controller::xenomai>();
   ct.init();
-  pause();
+  while(1)
+  {
+    sleep(1);
+  }
   return 0;
 }

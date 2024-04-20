@@ -19,7 +19,7 @@
 #include <memory_resource>
 #include <mutex>
 #include <queue>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
 #include "zmq.h"
@@ -142,7 +142,7 @@ public:
         bn->init();
       }
       if (bn->getTaskState() == Basenode::FAILURE) {
-        spdlog::error(class_name + "init error");
+       // spdlog::error(class_name + "init error");
       } else {
         rtnodeptr_vector.push_back(bn);
       }

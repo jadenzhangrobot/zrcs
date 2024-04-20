@@ -10,7 +10,7 @@
 
 #include "system/basenode.h"
 #include <ruckig/ruckig.hpp>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 #include <string>
 #include <unistd.h>
 #include "system/classfactory.h"
