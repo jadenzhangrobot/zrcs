@@ -277,11 +277,11 @@ void sync_distributed_clocks(void)
 			     }
                       
                       }
-        //    rt_printf("period_max_time %lld\n",period_max_time);
-		//        rt_printf("period_min_time %lld\n",period_min_time);
-        //    rt_printf("\n");
-        //    rt_printf("diff   %u\n",diff);
-        //    rt_printf("\n");
+           rt_printf("period_max_time %lld\n",period_max_time);
+		           rt_printf("period_min_time %lld\n",period_min_time);
+           rt_printf("\n");
+           rt_printf("diff   %u\n",diff);
+           rt_printf("\n");
         //    rt_printf("u64_reftime %llu\n",u64_reftime);
         //    rt_printf("\n");       
                 	
@@ -318,6 +318,7 @@ void sync_distributed_clocks(void)
     {DM3E,0, VID,PID, 0x6064, 0, &offset.current_position[0]},
     {}
 };
+
   EthercatMaster() {
 
     

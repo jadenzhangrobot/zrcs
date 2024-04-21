@@ -24,9 +24,12 @@ set(xenomai ON)
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
       endif()
 link_directories(/usr/local/lib)
-set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-# 添加头文件路径
-include_directories(${DEVEL_INCLUDE_DIRS}/devel/include)
+set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+# 添加tinyxml头文件和库
+include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
+link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib)
+
+
 include_directories( 
   /usr/local/include
   /usr/include
@@ -40,4 +43,5 @@ add_executable(motion_control ${SOURCE_FILES})
    ruckig
    zmq
    ethercat_rtdm
+   tinyxml2
  )
