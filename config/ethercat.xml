@@ -1,0 +1,26 @@
+<Ethercat>
+    <EthercatMaster>
+    </EthercatMaster>
+<slave idx ="0" type="generic" vid="00000024" pid="00242C04" configPdos="true" name="XACHSE">
+     <dcConf assignActivate="500" sync0Cycle="*1" sync0Shift="250000"/>
+    <syncManager idx="0" dir="out">
+    </syncManager>
+    <syncManager idx="1" dir="in">
+    </syncManager>
+    <syncManager idx="2" dir="out">
+        <pdo idx="1600">
+            <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>
+            <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode" />
+            <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition" />
+        </pdo>
+    </syncManager>
+    <syncManager idx="3" dir="in">
+        <pdo idx="1a00">
+            <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+            <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+            <pdoEntry idx="6061" subIdx="00" bitLen="8" name="disMode"/>
+        </pdo>
+    </syncManager>
+    <watchdog divider="2498" intervals="1000"/>
+</slave>
+</Ethercat>
