@@ -25,15 +25,16 @@ class EthercatMotor:Motor
           }
         int setTargetPos (double position) override
         {
-
-			 int32_t position_=(int32_t)(1048576*position);
+             int32_t position_=(int32_t)(1000*position);
+			// int32_t position_=(int32_t)(1048576*position);
              EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position_);
              return 1;  
         }
         double actualPos(void) override
         {
               std::int32_t pos= EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]);
-			  double pos_=(double)pos/1048576;
+			 // double pos_=(double)pos/1048576;
+			 double pos_=(double)pos/1000;
 			  return pos_;
         }
         double actualVel(void) override

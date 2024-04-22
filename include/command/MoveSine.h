@@ -26,7 +26,7 @@ public:
   void init() override {
 
     port_input.add<double>("amplitude", 'a', "servo position", false, 1,
-                           cmdline::range(-20.000, 20.000));
+                           cmdline::range(-20000.000, 20000.000));
     port_input.add<double>("frequency", 'f', "servo velocity", false, 1,
                            cmdline::range(-101.0000, 101.0000));
 
