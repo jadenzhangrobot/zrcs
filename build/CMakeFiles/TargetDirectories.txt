@@ -1,3 +1,3 @@
-/home/pi/Downloads/zrcs/build/CMakeFiles/rebuild_cache.dir
-/home/pi/Downloads/zrcs/build/CMakeFiles/edit_cache.dir
-/home/pi/Downloads/zrcs/build/CMakeFiles/motion_control.dir
+/home/pi/zrcs/build/CMakeFiles/rebuild_cache.dir
+/home/pi/zrcs/build/CMakeFiles/motion_control.dir
+/home/pi/zrcs/build/CMakeFiles/edit_cache.dir

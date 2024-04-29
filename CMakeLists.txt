@@ -29,6 +29,9 @@ set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
 link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib)
 
+# 添加ruckig头文件和库
+include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include)
+link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib)
 
 include_directories( 
   /usr/local/include

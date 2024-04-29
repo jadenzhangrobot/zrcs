@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/motion_control.dir/src/main.cpp.o"
-  "motion_control"
   "motion_control.pdb"
+  "motion_control"
 )
 
 # Per-language clean rules from dependency scanning.
