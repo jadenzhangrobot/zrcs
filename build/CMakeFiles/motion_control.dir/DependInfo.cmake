@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/pi/zrcs/src/main.cpp" "/home/pi/zrcs/build/CMakeFiles/motion_control.dir/src/main.cpp.o"
+  "/home/ubuntu/zrcs/src/main.cpp" "/home/ubuntu/zrcs/build/CMakeFiles/motion_control.dir/src/main.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
@@ -12,7 +12,6 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../3rdParty/tinyxml2/include"
   "../3rdParty/ruckig/include"
-  "/usr/local/include"
   "../include"
   )
 

@@ -1,6 +1,5 @@
 #ifndef ETHERCATMASTER
 #define ETHERCATMASTER
-#include "ecrt.h"
 #include <iostream>
 #include <alchemy/task.h> 
 #include <alchemy/timer.h> 

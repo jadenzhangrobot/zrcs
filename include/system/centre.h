@@ -22,7 +22,7 @@
 //#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
-#include "zmq.h"
+//#include "zmq.h"
 #include "controller/rtos/preempt_rt.h"
 #include "controller/rtos/xenomai.h"
 #include "controller/motor/rawsocketbus.h"
