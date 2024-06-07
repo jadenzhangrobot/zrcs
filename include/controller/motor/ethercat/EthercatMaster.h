@@ -14,12 +14,13 @@
 #include <sys/mman.h>
 #include "EthercatSlave.h"
 
+
 namespace controller {
 #define slaves 1 //slave number
 
 #define DM3E         0                     /*EtherCAT address on the bus*/
-#define VID  0x0000009a
-#define PID  0x00030924  /*Vendor ID, product code*/
+#define VID  0x00100000
+#define PID  0x000c010d  /*Vendor ID, product code*/
 
 
 #define DC_FILTER_CNT          1024
@@ -76,9 +77,9 @@ static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
 
  static inline ec_pdo_info_t device_pdos[2] = {
     //RxPdo
-    {0x1607, 4, device_pdo_entries + 0 },
+    {0x1600, 4, device_pdo_entries + 0 },
     //TxPdo
-    {0x1A07, 3, device_pdo_entries + 4}
+    {0x1A00, 3, device_pdo_entries + 4}
 };
 
 static inline ec_sync_info_t device_syncs[5] = {
@@ -323,7 +324,7 @@ void sync_distributed_clocks(void)
 
   EthercatMaster():ecslave(new EthercatSlves)
    {
-
+       
     
   }
   ~EthercatMaster()

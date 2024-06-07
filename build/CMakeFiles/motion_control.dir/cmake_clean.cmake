@@ -1,7 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/motion_control.dir/src/main.cpp.o"
-  "ethercatmotion_control"
-  "ethercatmotion_control.pdb"
+  "CMakeFiles/motion_control.dir/src/main.cpp.o.d"
+  "motion_control"
+  "motion_control.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

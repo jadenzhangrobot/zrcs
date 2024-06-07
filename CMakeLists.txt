@@ -2,20 +2,20 @@ cmake_minimum_required(VERSION 3.1.2)
 project(zrcs)
 #add_compile_definitions(Ros)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # 添加调试编译选项
-set(DCMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(VARNAME realtime)
 set(VARNAME debug)
-set(VARNAME platform)
 set(VARNAME ethercat)
+message("debug ${debug}")
       #选择debug模式
       if(${debug})
+      
           set(CMAKE_BUILD_TYPE Debug)
           set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
       endif()
       #编译链接xenomai的库
       if( ${realtime})
-      add_compile_definitions(xenomai=1)
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -38,15 +38,16 @@ include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
 # 添加ruckig头文件和库
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include)
 
-if(platform STREQUAL "amd64")
-  link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/amd64)
-  link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
-elseif(platform STREQUAL "arm64")
-  link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/arm64)
-  link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/amd64)
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/arm64)
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
 else()
-    message("选择编译的平台")
+    message("芯片的架构不符合要求")
 endif()
+
 
 include_directories( 
   /usr/local/include
@@ -58,7 +59,6 @@ include_directories(
 aux_source_directory(./src SOURCE_FILES)
 add_executable(motion_control ${SOURCE_FILES})
  if(${ethercat} )
- add_compile_definitions(ethercat=1)
  target_link_libraries(motion_control
  pthread
  ruckig

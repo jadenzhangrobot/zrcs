@@ -12,7 +12,7 @@
 #include "controller/controller_interface.h"
 #include "controller/rtos/linux.h"
 #include <algorithm>
-#include <boost/bind/placeholders.hpp>
+//#include <boost/bind/placeholders.hpp>
 #include <endian.h>
 #include <functional>
 #include <iostream>
@@ -58,7 +58,7 @@ private:
   bool zmq_flag=true;
  
   //创建一个ros节点
-   Zmq_cmd zmq_cmd; 
+  // Zmq_cmd zmq_cmd; 
   
   
 public:
@@ -154,28 +154,28 @@ public:
                while (zmq_flag) 
                {
                   //frame_test frame;          
-                  char buffer[128]={};
-               // std::string buffer;
-               std::cout<<"----------------------------------"<<std::endl;
-                  int ret= zmq_cmd.sub(buffer); 
-                     printf("%s\n",buffer);        
-                  if(ret<=0)
-                  {
-                     std::cout<<strerror(errno)<<std::endl;
-                  }
-                  else
-                  {
-                        std::string cmd(buffer);
-                        if (cmd!="MotionCtr") 
-                        {
-                             std::cout<<"receive data---  "<<cmd<<std::endl;
-                             //LOGGER_INFO("receive data");
-                             ZmqQueueMute.lock();
-                             cmd_queue.push(cmd);
-                             ZmqQueueMute.unlock();
-                        }
+              //     char buffer[128]={};
+              //  // std::string buffer;
+              //  std::cout<<"----------------------------------"<<std::endl;
+              //     int ret= zmq_cmd.sub(buffer); 
+              //        printf("%s\n",buffer);        
+              //     if(ret<=0)
+              //     {
+              //        std::cout<<strerror(errno)<<std::endl;
+              //     }
+              //     else
+              //     {
+              //           std::string cmd(buffer);
+              //           if (cmd!="MotionCtr") 
+              //           {
+              //                std::cout<<"receive data---  "<<cmd<<std::endl;
+              //                //LOGGER_INFO("receive data");
+              //                ZmqQueueMute.lock();
+              //                cmd_queue.push(cmd);
+              //                ZmqQueueMute.unlock();
+              //           }
                         
-                  }
+              //     }
 
                   
                   std::this_thread::sleep_for(std::chrono::milliseconds(100));   
