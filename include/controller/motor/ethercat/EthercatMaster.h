@@ -16,11 +16,11 @@
 
 
 namespace controller {
-#define slaves 1 //slave number
+//#define slaves 1 //slave number
 
-#define DM3E         0                     /*EtherCAT address on the bus*/
-#define VID  0x00100000
-#define PID  0x000c010d  /*Vendor ID, product code*/
+//#define DM3E         0                     /*EtherCAT address on the bus*/
+//#define VID  0x00100000
+//#define PID  0x000c010d  /*Vendor ID, product code*/
 
 
 #define DC_FILTER_CNT          1024
@@ -63,32 +63,32 @@ static inline  ec_slave_config_state_t sc_state = {};
 static inline  int64_t  system_time_base = 0LL;
 static inline  uint64_t wakeup_time = 0LL;
 static inline  uint64_t overruns = 0LL;
-static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
-    /*RxPdo 0x1600*/
-    {0x6040, 0x00, 16},
-    {0x6060, 0x00, 8 }, 
-    {0x60FF, 0x00, 32},
-    {0x607A, 0x00, 32},
-    /*TxPdo 0x1A00*/
-    {0x6041, 0x00, 16},
-    {0x606C, 0x00, 32},
-    {0x6064, 0x00, 32}
-};
+// static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
+//     /*RxPdo 0x1600*/
+//     {0x6040, 0x00, 16},
+//     {0x6060, 0x00, 8 }, 
+//     {0x60FF, 0x00, 32},
+//     {0x607A, 0x00, 32},
+//     /*TxPdo 0x1A00*/
+//     {0x6041, 0x00, 16},
+//     {0x606C, 0x00, 32},
+//     {0x6064, 0x00, 32}
+// };
 
- static inline ec_pdo_info_t device_pdos[2] = {
-    //RxPdo
-    {0x1600, 4, device_pdo_entries + 0 },
-    //TxPdo
-    {0x1A00, 3, device_pdo_entries + 4}
-};
+//  static inline ec_pdo_info_t device_pdos[2] = {
+//     //RxPdo
+//     {0x1600, 4, device_pdo_entries + 0 },
+//     //TxPdo
+//     {0x1A00, 3, device_pdo_entries + 4}
+// };
 
-static inline ec_sync_info_t device_syncs[5] = {
-    { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
-    { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
-    { 2, EC_DIR_OUTPUT, 1, device_pdos + 0, EC_WD_ENABLE },
-    { 3, EC_DIR_INPUT, 1, device_pdos + 1, EC_WD_ENABLE},
-    { 0xFF}
-};
+// static inline ec_sync_info_t device_syncs[5] = {
+//     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
+//     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
+//     { 2, EC_DIR_OUTPUT, 1, ecslave-> + 0, EC_WD_ENABLE },
+//     { 3, EC_DIR_INPUT, 1, device_pdos + 1, EC_WD_ENABLE},
+//     { 0xFF}
+// };
 uint64_t system_time_ns(void)
 {
    RTIME time = rt_timer_read();
@@ -301,26 +301,26 @@ void sync_distributed_clocks(void)
 
 
  
-  typedef struct{
-    unsigned int operation_mode[slaves];
-    unsigned int ctrl_word[slaves];
-    unsigned int target_velocity[slaves];
-    unsigned int target_position[slaves];
-    unsigned int status_word[slaves];
-    unsigned int current_velocity[slaves];
-    unsigned int current_position[slaves];
-}offset1;
-  static inline offset1 offset;
-     ec_pdo_entry_reg_t domain1_regs[8] = {
-    {DM3E,0, VID,PID, 0x6040, 0,&offset.ctrl_word[0]},
-    {DM3E,0, VID,PID, 0x6060, 0, &offset.operation_mode[0]},
-    {DM3E,0, VID,PID, 0x60FF, 0, &offset.target_velocity[0]},
-    {DM3E,0, VID,PID, 0x607A, 0, &offset.target_position[0]},
-    {DM3E,0, VID,PID, 0x6041, 0, &offset.status_word[0]},
-    {DM3E,0, VID,PID, 0x606C, 0, &offset.current_velocity[0]},
-    {DM3E,0, VID,PID, 0x6064, 0, &offset.current_position[0]},
-    {}
-};
+//   typedef struct{
+//     unsigned int operation_mode[slaves];
+//     unsigned int ctrl_word[slaves];
+//     unsigned int target_velocity[slaves];
+//     unsigned int target_position[slaves];
+//     unsigned int status_word[slaves];
+//     unsigned int current_velocity[slaves];
+//     unsigned int current_position[slaves];
+// }offset1;
+//   static inline offset1 offset;
+//      ec_pdo_entry_reg_t domain1_regs[8] = {
+//     {DM3E,0, VID,PID, 0x6040, 0,&offset.ctrl_word[0]},
+//     {DM3E,0, VID,PID, 0x6060, 0, &offset.operation_mode[0]},
+//     {DM3E,0, VID,PID, 0x60FF, 0, &offset.target_velocity[0]},
+//     {DM3E,0, VID,PID, 0x607A, 0, &offset.target_position[0]},
+//     {DM3E,0, VID,PID, 0x6041, 0, &offset.status_word[0]},
+//     {DM3E,0, VID,PID, 0x606C, 0, &offset.current_velocity[0]},
+//     {DM3E,0, VID,PID, 0x6064, 0, &offset.current_position[0]},
+//     {}
+// };
 
   EthercatMaster():ecslave(new EthercatSlves)
    {
@@ -354,36 +354,47 @@ void sync_distributed_clocks(void)
       std::cout << "创建domain失败" << std::endl;
       return -1;
     }
-    for(int i=0;i<slaves;i++)
+    for(int i=0;i<ecslave->SlavesInfos.size();i++)
     {
-	   if (!(sc = ecrt_master_slave_config(master,DM3E,i, VID,PID)))
+	   if (!(sc = ecrt_master_slave_config(master,0,i, ecslave->SlavesInfos[i].VID,ecslave->SlavesInfos[i].PID)))
 	    {
 		    fprintf(stderr, "Failed to get slave configuration for slave!\n");
-		    exit(EXIT_FAILURE);
+		    return -1;
 	    }
-	    printf("Configuring PDOs...\n");
-    
+    else {
+        std::cout<<"Configuring PDOs"<<std::endl;
+      }    
+    ec_sync_info_t device_syncs[5] = {
+    { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
+    { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
+    { 2, EC_DIR_OUTPUT, 1, ecslave->SlavesInfos[i].SlavePdo.data(), EC_WD_ENABLE },
+    { 3, EC_DIR_INPUT, 1, ecslave->SlavesInfos[i].SlavePdo.data() + 1, EC_WD_ENABLE},
+    { 0xFF}
+};
 	    if (ecrt_slave_config_pdos(sc, EC_END, device_syncs)!=0)
 	    {
 	       fprintf(stderr, "Failed to configure slave PDOs!\n");
-	       exit(EXIT_FAILURE);
+	       return -1;
 	    }
 	    else
 	    {
-		    printf("*Success to configuring slave PDOs*\n");
+		    std::cout<<"Success to configuring slave PDOs"<<std::endl;
 	    }
 	    if(i==0)
 	    {
 	        ecrt_master_select_reference_clock(master,sc);
 	    } 
-	     ecrt_slave_config_dc(sc,0x0300,cycle_ns,300000,0,0);
+	     ecrt_slave_config_dc(sc,ecslave->SlavesInfos[i].assignActivate,ecslave->SlavesInfos[i].sync0Cycle,ecslave->SlavesInfos[i].sync0Shift,0,0);
     }
    
          
     if (ecrt_domain_reg_pdo_entry_list(domain1, domain1_regs)) 
     {
         fprintf(stderr, "PDO entry registration failed!\n");
-        exit(EXIT_FAILURE);
+        return -1;
+    }
+    else {
+        std::cout<<"PDO entry registration"<<std::endl;
     }
     
     dc_start_time_ns = system_time_ns();
