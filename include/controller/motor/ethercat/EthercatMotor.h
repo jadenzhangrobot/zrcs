@@ -20,22 +20,22 @@ class EthercatMotor:Motor
 		 int mode(std::uint8_t md) override
           {
 
-               EC_WRITE_S8(em.domain1_pd + em.offset.operation_mode[motor_id], 0x8);			 
+              // EC_WRITE_S8(em.domain1_pd + em.offset.operation_mode[motor_id], 0x8);			 
                return 1;
           }
         int setTargetPos (double position) override
         {
-             int32_t position_=(int32_t)(1000*position);
+             //int32_t position_=(int32_t)(1000*position);
 			// int32_t position_=(int32_t)(1048576*position);
-             EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position_);
+            // EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position_);
              return 1;  
         }
         double actualPos(void) override
         {
-              std::int32_t pos= EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]);
+              //std::int32_t pos= EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]);
 			 // double pos_=(double)pos/1048576;
-			 double pos_=(double)pos/1000;
-			  return pos_;
+			// double pos_=(double)pos/1000;
+			 // return pos_;
         }
         double actualVel(void) override
         {
@@ -53,19 +53,19 @@ class EthercatMotor:Motor
            std::uint16_t controlWord() override
          {
                 
-               return EC_READ_U16(em.domain1_pd + em.offset.ctrl_word[motor_id]);
+              // return EC_READ_U16(em.domain1_pd + em.offset.ctrl_word[motor_id]);
          }
 
          void setControlWord(std::uint16_t control_word) override
          {
-                EC_WRITE_U16(em.domain1_pd + em.offset.ctrl_word[motor_id], control_word ); 
+               // EC_WRITE_U16(em.domain1_pd + em.offset.ctrl_word[motor_id], control_word ); 
 
          }
 
           std::uint16_t statusWord() override
          {
               
-              return EC_READ_U16(em.domain1_pd + em.offset.status_word[motor_id]);
+            //  return EC_READ_U16(em.domain1_pd + em.offset.status_word[motor_id]);
 
          }
 

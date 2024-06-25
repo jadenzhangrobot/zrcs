@@ -42,7 +42,7 @@ class EthercatSlves
      int init (void)
      {
        
-        if (doc.LoadFile("/home/pi/Documents/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
+        if (doc.LoadFile("/home/hg/work/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
             
                 XMLElement * root= doc.FirstChildElement("Ethercat");
                 if (root) {
@@ -103,13 +103,13 @@ class EthercatSlves
                 if (cycle0Attr) {
                     const char* Value = cycle0Attr->Value();
 
-                    si.sync0Cycle=std::stoi(Value, nullptr, 16);
+                    si.sync0Cycle=std::stoi(Value);
                 }
                 //获取dc的偏移值
                 const XMLAttribute* cycle0ShiftAttr = slaveelem->FindAttribute("sync0Shift");
                 if (cycle0ShiftAttr) {
                     const char* Value = cycle0ShiftAttr->Value();                   
-                    si.sync0Shift=std::stoi(Value, nullptr, 16);
+                    si.sync0Shift=std::stoi(Value);
                 }
                 
                 for (XMLElement* syncManager = slaveelem->FirstChildElement("syncManager"); syncManager; syncManager = syncManager->NextSiblingElement("syncManager")) {

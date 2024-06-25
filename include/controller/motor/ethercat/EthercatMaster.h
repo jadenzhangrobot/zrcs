@@ -1,5 +1,7 @@
 #ifndef ETHERCATMASTER
 #define ETHERCATMASTER
+#include <array>
+#include <cstdint>
 #include <iostream>
 #include <alchemy/task.h> 
 #include <alchemy/timer.h> 
@@ -12,15 +14,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <vector>
 #include "EthercatSlave.h"
 
 
 namespace controller {
-//#define slaves 1 //slave number
+// #define slaves 1 //slave number
 
-//#define DM3E         0                     /*EtherCAT address on the bus*/
-//#define VID  0x00100000
-//#define PID  0x000c010d  /*Vendor ID, product code*/
+// #define DM3E         0                     /*EtherCAT address on the bus*/
+// #define VID  0x00100000
+// #define PID  0x000c010d  /*Vendor ID, product code*/
 
 
 #define DC_FILTER_CNT          1024
@@ -41,8 +44,8 @@ class EthercatMaster {
  //static inline ec_pdo_entry_reg_t domain1_regs[slaves*7];
 static inline  ec_master_state_t master_state = {};
 
-static inline  ec_domain_t *domain1 = NULL;
-static inline  ec_domain_state_t domain1_state = {};
+static inline  ec_domain_t *domain = NULL;
+static inline  ec_domain_state_t domain_state = {};
 
 static inline  ec_slave_config_t *sc;
 static inline  ec_slave_config_state_t sc_state = {};
@@ -63,26 +66,9 @@ static inline  ec_slave_config_state_t sc_state = {};
 static inline  int64_t  system_time_base = 0LL;
 static inline  uint64_t wakeup_time = 0LL;
 static inline  uint64_t overruns = 0LL;
-// static inline ec_pdo_entry_info_t device_pdo_entries[7] = {
-//     /*RxPdo 0x1600*/
-//     {0x6040, 0x00, 16},
-//     {0x6060, 0x00, 8 }, 
-//     {0x60FF, 0x00, 32},
-//     {0x607A, 0x00, 32},
-//     /*TxPdo 0x1A00*/
-//     {0x6041, 0x00, 16},
-//     {0x606C, 0x00, 32},
-//     {0x6064, 0x00, 32}
-// };
+std::vector<ec_pdo_entry_reg_t> domain_reg;
+std::vector<uint32_t> offset;
 
-//  static inline ec_pdo_info_t device_pdos[2] = {
-//     //RxPdo
-//     {0x1600, 4, device_pdo_entries + 0 },
-//     //TxPdo
-//     {0x1A00, 3, device_pdo_entries + 4}
-// };
-
-// static inline ec_sync_info_t device_syncs[5] = {
 //     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
 //     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
 //     { 2, EC_DIR_OUTPUT, 1, ecslave-> + 0, EC_WD_ENABLE },
@@ -300,27 +286,6 @@ void sync_distributed_clocks(void)
   static inline   uint8_t *domain1_pd = NULL;
 
 
- 
-//   typedef struct{
-//     unsigned int operation_mode[slaves];
-//     unsigned int ctrl_word[slaves];
-//     unsigned int target_velocity[slaves];
-//     unsigned int target_position[slaves];
-//     unsigned int status_word[slaves];
-//     unsigned int current_velocity[slaves];
-//     unsigned int current_position[slaves];
-// }offset1;
-//   static inline offset1 offset;
-//      ec_pdo_entry_reg_t domain1_regs[8] = {
-//     {DM3E,0, VID,PID, 0x6040, 0,&offset.ctrl_word[0]},
-//     {DM3E,0, VID,PID, 0x6060, 0, &offset.operation_mode[0]},
-//     {DM3E,0, VID,PID, 0x60FF, 0, &offset.target_velocity[0]},
-//     {DM3E,0, VID,PID, 0x607A, 0, &offset.target_position[0]},
-//     {DM3E,0, VID,PID, 0x6041, 0, &offset.status_word[0]},
-//     {DM3E,0, VID,PID, 0x606C, 0, &offset.current_velocity[0]},
-//     {DM3E,0, VID,PID, 0x6064, 0, &offset.current_position[0]},
-//     {}
-// };
 
   EthercatMaster():ecslave(new EthercatSlves)
    {
@@ -349,8 +314,8 @@ void sync_distributed_clocks(void)
       return -1;
     }
 
-    domain1 = ecrt_master_create_domain(master);
-    if (domain1 == nullptr) {
+    domain = ecrt_master_create_domain(master);
+    if (domain == nullptr) {
       std::cout << "创建domain失败" << std::endl;
       return -1;
     }
@@ -367,8 +332,8 @@ void sync_distributed_clocks(void)
     ec_sync_info_t device_syncs[5] = {
     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
-    { 2, EC_DIR_OUTPUT, 1, ecslave->SlavesInfos[i].SlavePdo.data(), EC_WD_ENABLE },
-    { 3, EC_DIR_INPUT, 1, ecslave->SlavesInfos[i].SlavePdo.data() + 1, EC_WD_ENABLE},
+    { 2, EC_DIR_OUTPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[0], EC_WD_ENABLE },
+    { 3, EC_DIR_INPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[1], EC_WD_ENABLE},
     { 0xFF}
 };
 	    if (ecrt_slave_config_pdos(sc, EC_END, device_syncs)!=0)
@@ -386,9 +351,38 @@ void sync_distributed_clocks(void)
 	    } 
 	     ecrt_slave_config_dc(sc,ecslave->SlavesInfos[i].assignActivate,ecslave->SlavesInfos[i].sync0Cycle,ecslave->SlavesInfos[i].sync0Shift,0,0);
     }
-   
+       int PdoNumberAll=0;
+     for (int i=0 ;i<ecslave->SlavesInfos.size();i++ ){
+        
+         PdoNumberAll=PdoNumberAll+ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size();
+     
+     }
+     domain_reg.resize(ecslave->SlavesInfos.size()*PdoNumberAll);
+     
+     
+      for (int i=0;i<ecslave->SlavesInfos.size();i=i+(ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size())) {
+          for (int j=0;j< (ecslave->SlavesInfos[i].SlavePdoInput.size());j++){
+            domain_reg[i+j].alias=0;
+            domain_reg[i+j].position=i;
+            domain_reg[i+j].vendor_id=ecslave->SlavesInfos[i].VID;
+            domain_reg[i+j].product_code=ecslave->SlavesInfos[i].PID;
+            domain_reg[i+j].index=ecslave->SlavesInfos[i].SlavePdoInput[j].index;
+            domain_reg[i+j].subindex=ecslave->SlavesInfos[i].SlavePdoInput[j].subindex;
+            domain_reg[i+j].offset=&offset[i+j];
+          }
+          for (int k=ecslave->SlavesInfos[i].SlavePdoInput.size();k<(ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size());k++){
+            domain_reg[i+k].alias=0;
+            domain_reg[i+k].position=i;
+            domain_reg[i+k].vendor_id=ecslave->SlavesInfos[i].VID;
+            domain_reg[i+k].product_code=ecslave->SlavesInfos[i].PID;
+            domain_reg[i+k].index=ecslave->SlavesInfos[i].SlavePdoOutput[k-ecslave->SlavesInfos[i].SlavePdoInput.size()].index;
+            domain_reg[i+k].subindex=ecslave->SlavesInfos[i].SlavePdoOutput[k-ecslave->SlavesInfos[i].SlavePdoInput.size()].subindex;
+            domain_reg[i+k].offset=&offset[i+k];
+          }
          
-    if (ecrt_domain_reg_pdo_entry_list(domain1, domain1_regs)) 
+      }
+         
+    if (ecrt_domain_reg_pdo_entry_list(domain, domain_reg.data())) 
     {
         fprintf(stderr, "PDO entry registration failed!\n");
         return -1;
@@ -406,7 +400,7 @@ void sync_distributed_clocks(void)
         return -1;
     }
    
-    if ((domain1_pd = ecrt_domain_data(domain1))==nullptr)
+    if ((domain1_pd = ecrt_domain_data(domain))==nullptr)
     {
          printf("ecrt_domain_data*\n");
        return -1;
@@ -419,7 +413,7 @@ void sync_distributed_clocks(void)
     void SendData()
       {  // int err = rt_task_set_periodic(NULL,TM_NOW, 1000000); 
         
-           ecrt_domain_queue(domain1);   
+           ecrt_domain_queue(domain);   
          
            sync_distributed_clocks();
            ecrt_master_send(master); 
@@ -440,7 +434,7 @@ void sync_distributed_clocks(void)
               
            wait_period();
           ecrt_master_receive(master);
-          ecrt_domain_process(domain1); 
+          ecrt_domain_process(domain); 
          
 
       }
