@@ -1,6 +1,5 @@
 #ifndef ETHERCATSLAVEPDO_H
 #define ETHERCATSLAVEPDO_H
-#include <csignal>
 #include <cstdint>
 #include <cstring>
 #include<iostream>
@@ -28,8 +27,8 @@ class EthercatSlves
      uint32_t sync0Shift;
      uint16_t SmInput;
      uint16_t SmOutput;
-     std::vector<ec_pdo_entry_info_t> SlavePdoInput;
-     std::vector<ec_pdo_entry_info_t> SlavePdoOutput;
+     static inline  std::vector<ec_pdo_entry_info_t> SlavePdoInput;
+     static inline  std::vector<ec_pdo_entry_info_t> SlavePdoOutput;
      std::vector<ec_pdo_info_t>SlavePdo;
      };
      std::vector<SlavesInfo>SlavesInfos;
@@ -147,7 +146,7 @@ class EthercatSlves
                                      const XMLAttribute* bitlenAttr = pdoEntry->FindAttribute("bitLen");
                                     if (bitlenAttr) {
                                         const char* Value = bitlenAttr->Value();
-                                        EcPdo.bit_length=std::stoi(Value, nullptr, 16);
+                                        EcPdo.bit_length=std::stoi(Value);
                                     }
                                     const XMLAttribute* SmObject= syncManager->FindAttribute("idx");
                                     const char* Value=SmObject->Value();
@@ -163,6 +162,7 @@ class EthercatSlves
                             }
                             si.SlavePdo[0].n_entries=si.SlavePdoOutput.size();
                             si.SlavePdo[0].entries=si.SlavePdoOutput.data();
+                            std::cout << "The address of var is: " << si.SlavePdoOutput.data() << std::endl;
                             si.SlavePdo[1].n_entries=si.SlavePdoInput.size();
                             si.SlavePdo[1].entries=si.SlavePdoInput.data();
                        }

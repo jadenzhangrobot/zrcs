@@ -1,6 +1,5 @@
 #ifndef ETHERCATMASTER
 #define ETHERCATMASTER
-#include <array>
 #include <cstdint>
 #include <iostream>
 #include <alchemy/task.h> 
@@ -67,7 +66,7 @@ static inline  int64_t  system_time_base = 0LL;
 static inline  uint64_t wakeup_time = 0LL;
 static inline  uint64_t overruns = 0LL;
 std::vector<ec_pdo_entry_reg_t> domain_reg;
-std::vector<uint32_t> offset;
+static inline std::vector<uint32_t> offset;
 
 //     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
 //     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
@@ -329,13 +328,27 @@ void sync_distributed_clocks(void)
     else {
         std::cout<<"Configuring PDOs"<<std::endl;
       }    
-    ec_sync_info_t device_syncs[5] = {
+
+//      ec_pdo_entry_info_t device_pdo_entries[] = {
+//     /*RxPdo 0x1600*/
+//     {0x6040, 0x00, 16},
+//     {0x60FF, 0x00, 32},
+//     {0x607A, 0x00, 32},
+//     /*TxPdo 0x1A00*/
+//     {0x6041, 0x00, 16},
+//     {0x606C, 0x00, 32},
+//     {0x6064, 0x00, 32}
+// };
+ //ecslave->SlavesInfos[i].SlavePdo[0].entries=device_pdo_entries;
+ //ecslave->SlavesInfos[i].SlavePdo[1].entries=device_pdo_entries+3;
+  static  ec_sync_info_t device_syncs[] = {
     { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
     { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
     { 2, EC_DIR_OUTPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[0], EC_WD_ENABLE },
     { 3, EC_DIR_INPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[1], EC_WD_ENABLE},
     { 0xFF}
 };
+
 	    if (ecrt_slave_config_pdos(sc, EC_END, device_syncs)!=0)
 	    {
 	       fprintf(stderr, "Failed to configure slave PDOs!\n");
@@ -358,7 +371,7 @@ void sync_distributed_clocks(void)
      
      }
      domain_reg.resize(ecslave->SlavesInfos.size()*PdoNumberAll);
-     
+     offset.resize(ecslave->SlavesInfos.size()*PdoNumberAll);
      
       for (int i=0;i<ecslave->SlavesInfos.size();i=i+(ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size())) {
           for (int j=0;j< (ecslave->SlavesInfos[i].SlavePdoInput.size());j++){
@@ -367,8 +380,9 @@ void sync_distributed_clocks(void)
             domain_reg[i+j].vendor_id=ecslave->SlavesInfos[i].VID;
             domain_reg[i+j].product_code=ecslave->SlavesInfos[i].PID;
             domain_reg[i+j].index=ecslave->SlavesInfos[i].SlavePdoInput[j].index;
-            domain_reg[i+j].subindex=ecslave->SlavesInfos[i].SlavePdoInput[j].subindex;
+            domain_reg[i+j].subindex=ecslave->SlavesInfos[i].SlavePdoInput[j].subindex;            
             domain_reg[i+j].offset=&offset[i+j];
+            domain_reg[i+j].bit_position=nullptr;
           }
           for (int k=ecslave->SlavesInfos[i].SlavePdoInput.size();k<(ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size());k++){
             domain_reg[i+k].alias=0;
@@ -378,6 +392,7 @@ void sync_distributed_clocks(void)
             domain_reg[i+k].index=ecslave->SlavesInfos[i].SlavePdoOutput[k-ecslave->SlavesInfos[i].SlavePdoInput.size()].index;
             domain_reg[i+k].subindex=ecslave->SlavesInfos[i].SlavePdoOutput[k-ecslave->SlavesInfos[i].SlavePdoInput.size()].subindex;
             domain_reg[i+k].offset=&offset[i+k];
+            domain_reg[i+k].bit_position=nullptr;
           }
          
       }
@@ -432,12 +447,12 @@ void sync_distributed_clocks(void)
              flag=1;
         }
               
-           wait_period();
+          wait_period();
           ecrt_master_receive(master);
           ecrt_domain_process(domain); 
          
 
       }
-};
+v};
 }
 #endif

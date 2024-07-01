@@ -13,12 +13,19 @@
             "externalConsole": false,//如果为true，则为调试对象启动控制台
             "MIMode": "gdb",//要连接到的控制台启动程序
             "miDebuggerPath": "/usr/bin/gdb",   // 需要自行添加，gdb的路径 
-            //"miDebuggerServerAddress": "111.112.16.4:8005",                                              //自行添加 gdbserver 的ip端口
-            //"setupCommands": [ //为了安装基础调试程序而执行的一个或多个GDB/LLDB命令
-            //    {
-             //       "description": "为 gdb 启用整齐打印",
-              //      "text": "-enable-pretty-printing",
-               ///     "ignoreFailures": true
+            "setupCommands": [
+                {
+                    "description": "Test",
+                    "text": "python import sys;sys.path.insert(0, '/usr/share/gcc/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+            
                 }
             ]
 }
