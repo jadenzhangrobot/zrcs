@@ -12,7 +12,7 @@
             <pdo idx="1a00">
                 <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
                 <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
-                <pdoEntry idx="6061" subIdx="00" bitLen="8" name="disMode"/>
+                <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="disMode"/>               
             </pdo>
         </syncManager>
     </slave>

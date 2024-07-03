@@ -182,7 +182,7 @@ CMAKE_STRIP:FILEPATH=/usr/bin/strip
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //No help, variable specified on the command line.
-debug:UNINITIALIZED=yes
+debug:UNINITIALIZED=YES
 
 //No help, variable specified on the command line.
 ethercat:UNINITIALIZED=YES

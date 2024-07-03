@@ -18,13 +18,6 @@
 
 
 namespace controller {
-// #define slaves 1 //slave number
-
-// #define DM3E         0                     /*EtherCAT address on the bus*/
-// #define VID  0x00100000
-// #define PID  0x000c010d  /*Vendor ID, product code*/
-
-
 #define DC_FILTER_CNT          1024
 #define sign(val) \
     ({ typeof (val) _val = (val); \
@@ -32,15 +25,12 @@ namespace controller {
 
 class EthercatMaster {
   private:
-   EthercatSlves* ecslave;
+  EthercatSlves* ecslave;
 
  static inline uint cycle_ns=1000000;
 
   static inline ec_master_t *master = NULL;
 
-   
-
- //static inline ec_pdo_entry_reg_t domain1_regs[slaves*7];
 static inline  ec_master_state_t master_state = {};
 
 static inline  ec_domain_t *domain = NULL;
@@ -107,9 +97,7 @@ SRTIME system2count(uint64_t time)
          {
           ret = time+system_time_base;
          }
-    return rt_timer_ns2ticks(ret);
-    
-     
+    return rt_timer_ns2ticks(ret);    
 }
   void wait_period(void)
 {
@@ -233,7 +221,6 @@ void sync_distributed_clocks(void)
      if(ref_time<last_ref_time)
      {
       u64_reftime=u64_reftime+(ref_time+4294967296-last_ref_time);
-
      }
      else
       {
@@ -298,10 +285,8 @@ void sync_distributed_clocks(void)
   }
  static EthercatMaster& getInstance(void)
   {
-
           static EthercatMaster em;
-          return em;
- 
+          return em; 
   }
   int EthercatInit()
   {
@@ -329,23 +314,11 @@ void sync_distributed_clocks(void)
         std::cout<<"Configuring PDOs"<<std::endl;
       }    
 
-//      ec_pdo_entry_info_t device_pdo_entries[] = {
-//     /*RxPdo 0x1600*/
-//     {0x6040, 0x00, 16},
-//     {0x60FF, 0x00, 32},
-//     {0x607A, 0x00, 32},
-//     /*TxPdo 0x1A00*/
-//     {0x6041, 0x00, 16},
-//     {0x606C, 0x00, 32},
-//     {0x6064, 0x00, 32}
-// };
- //ecslave->SlavesInfos[i].SlavePdo[0].entries=device_pdo_entries;
- //ecslave->SlavesInfos[i].SlavePdo[1].entries=device_pdo_entries+3;
   static  ec_sync_info_t device_syncs[] = {
-    { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_ENABLE },
-    { 1, EC_DIR_INPUT, 0, NULL, EC_WD_ENABLE },
+    { 0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DEFAULT },
+    { 1, EC_DIR_INPUT, 0, NULL, EC_WD_DEFAULT },
     { 2, EC_DIR_OUTPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[0], EC_WD_ENABLE },
-    { 3, EC_DIR_INPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[1], EC_WD_ENABLE},
+    { 3, EC_DIR_INPUT, 1, &ecslave->SlavesInfos[i].SlavePdo[1], EC_WD_DEFAULT},
     { 0xFF}
 };
 
@@ -393,8 +366,7 @@ void sync_distributed_clocks(void)
             domain_reg[i+k].subindex=ecslave->SlavesInfos[i].SlavePdoOutput[k-ecslave->SlavesInfos[i].SlavePdoInput.size()].subindex;
             domain_reg[i+k].offset=&offset[i+k];
             domain_reg[i+k].bit_position=nullptr;
-          }
-         
+          }         
       }
          
     if (ecrt_domain_reg_pdo_entry_list(domain, domain_reg.data())) 
@@ -418,7 +390,7 @@ void sync_distributed_clocks(void)
     if ((domain1_pd = ecrt_domain_data(domain))==nullptr)
     {
          printf("ecrt_domain_data*\n");
-       return -1;
+         return -1;
     }
     return 1;
   }
@@ -426,17 +398,14 @@ void sync_distributed_clocks(void)
 
 
     void SendData()
-      {  // int err = rt_task_set_periodic(NULL,TM_NOW, 1000000); 
-        
-           ecrt_domain_queue(domain);   
-         
-           sync_distributed_clocks();
+      {         
+            ecrt_domain_queue(domain); 
+            ecrt_master_application_time(master, rt_timer_read());
+			      ecrt_master_sync_reference_clock(master);
+			      ecrt_master_sync_slave_clocks(master);             
+          // sync_distributed_clocks();
            ecrt_master_send(master); 
-           update_master_clock();  
-
-          // ecrt_master_application_time(master, rt_timer_read());
-			    // ecrt_master_sync_reference_clock(master);
-			    // ecrt_master_sync_slave_clocks(master);   
+           //update_master_clock(); 
       }
 
       void ReceiveData()
@@ -447,12 +416,12 @@ void sync_distributed_clocks(void)
              flag=1;
         }
               
-          wait_period();
+          // wait_period();
           ecrt_master_receive(master);
           ecrt_domain_process(domain); 
          
 
       }
-v};
+  };
 }
 #endif

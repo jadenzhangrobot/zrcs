@@ -34,14 +34,14 @@ namespace controller
     {       
      
       xenomai* p=(xenomai*)arg;
-      // int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
+      int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
         while (true) 
         {
             if (p->strategy_!=nullptr)
             {
                p->strategy_();
             }
-       //    rt_task_wait_period(NULL);
+         rt_task_wait_period(NULL);
         }       
     }
     void rtos_task_create(void)override
@@ -53,11 +53,11 @@ namespace controller
           printf("rt_task_create : %s\n", strerror(errno));  
 
         }
-        int cpu_id =2;                // 需要绑定的cpu
-            cpu_set_t mask;                // cpu核的位掩码
-            CPU_ZERO(&mask);               // 置空
-            CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
-        int a= rt_task_set_affinity(&task_desc,&mask); 
+        //    int cpu_id =2;                // 需要绑定的cpu
+        //     cpu_set_t mask;                // cpu核的位掩码
+        //     CPU_ZERO(&mask);               // 置空
+        //     CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
+        // int a= rt_task_set_affinity(&task_desc,&mask); 
         err=rt_task_start(&task_desc,real_fun,(void*)this); 
 
         if(err<0) 

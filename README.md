@@ -3,4 +3,4 @@ zrcs (zhang real time control system)
 需要库ruckig
 ethercat_rtdm
 
-cmake -Drealtime=YES -Ddebug=yes -Dethercat=YES ..
+cmake -Drealtime=YES -Ddebug=YES -Dethercat=YES ..
