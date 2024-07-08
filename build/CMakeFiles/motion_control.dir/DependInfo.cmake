@@ -12,6 +12,7 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../3rdParty/tinyxml2/include"
   "../3rdParty/ruckig/include"
+  "../3rdParty/opcua/include"
   "/usr/local/include"
   "/opt/etherlab/include"
   "../include"

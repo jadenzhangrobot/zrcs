@@ -26,15 +26,14 @@ class EthercatMotor:Motor
         int setTargetPos (double position) override
         {
               
-			  int32_t position_=(int32_t)(1048576*position);
-              EC_WRITE_S32(em.domain1_pd +10,position);
-             return 1;  
+			  int32_t position_=(int32_t)(1048575*position);
+              EC_WRITE_S32(em.domain1_pd +10,position_);
+              return 1;  
         }
         double actualPos(void) override
         {
               std::int32_t pos= EC_READ_S32(em.domain1_pd + 2);
-			  double pos_=(double)pos/1048576;
-			// double pos_=(double)pos/1000;
+			  double pos_=(double)pos/1048575;
 			  return pos_;
         }
         double actualVel(void) override
@@ -185,7 +184,7 @@ class EthercatMotor:Motor
 		// enable change state to A/B/C/D/F/G/H to E
        
 		auto status_word = statusWord();
-		 rt_printf("-----  %lx\n",status_word);
+	
 		// check status A
 		if ((status_word & 0x4F) == 0x00) {
 			return 1;

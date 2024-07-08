@@ -36,22 +36,25 @@ message("debug ${debug}")
       endif()
 link_directories(/usr/local/lib)
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-# 添加tinyxml头文件和库
+# 添加tinyxml头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
-
-
-# 添加ruckig头文件和库
+# 添加ruckig头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include)
-
+# 添加open62541头文件
+include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/include)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/amd64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/amd64)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/arm64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
 else()
     message("芯片的架构不符合要求")
 endif()
+
+
+
 
 
 include_directories( 
@@ -71,12 +74,14 @@ add_executable(motion_control ${SOURCE_FILES})
  ruckig
  ethercat_rtdm
  tinyxml2
+ open62541
 )
 else()
 target_link_libraries(motion_control
 pthread
 ruckig
 tinyxml2
+open62541
 )
 endif()
  

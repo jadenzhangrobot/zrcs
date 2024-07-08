@@ -6,5 +6,5 @@ CXX_FLAGS =  -I/usr/xenomai/include/cobalt -I/usr/xenomai/include -D_GNU_SOURCE 
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/hg/work/zrcs/3rdParty/tinyxml2/include -I/home/hg/work/zrcs/3rdParty/ruckig/include -I/usr/local/include -I/opt/etherlab/include -I/home/hg/work/zrcs/include 
+CXX_INCLUDES = -I/home/hg/work/zrcs/3rdParty/tinyxml2/include -I/home/hg/work/zrcs/3rdParty/ruckig/include -I/home/hg/work/zrcs/3rdParty/opcua/include -I/usr/local/include -I/opt/etherlab/include -I/home/hg/work/zrcs/include 
 

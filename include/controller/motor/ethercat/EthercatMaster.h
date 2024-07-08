@@ -291,7 +291,6 @@ void sync_distributed_clocks(void)
   int EthercatInit()
   {
     ecslave->init();
-
     master = ecrt_request_master(0);
     if (master == nullptr) {
       std::cout << "获取主站失败" << std::endl;
