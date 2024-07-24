@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.1.2)
 project(zrcs)
 #add_compile_definitions(Ros)
+# 设置 C++ 标准为 C++17
 set(CMAKE_CXX_STANDARD 17)
+
+# 强制要求编译器支持 C++17
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 # 设置 G++ 编译器路径

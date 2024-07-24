@@ -41,7 +41,7 @@ class EthercatSlves
      int init (void)
      {
        
-        if (doc.LoadFile("/home/hg/work/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
+        if (doc.LoadFile("/home/pi/Documents/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
             
                 XMLElement * root= doc.FirstChildElement("Ethercat");
                 if (root) {
