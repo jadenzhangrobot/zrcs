@@ -19,22 +19,21 @@ class EthercatMotor:Motor
 
 		 int mode(std::uint8_t md) override
           {
-
-               EC_WRITE_S8(em.domain1_pd + em.offset.operation_mode[motor_id], 0x8);			 
+             	
+			   EC_WRITE_S8(em.domain1_pd + 9,0x8);
                return 1;
           }
         int setTargetPos (double position) override
         {
-             int32_t position_=(int32_t)(1000*position);
-			// int32_t position_=(int32_t)(1048576*position);
-             EC_WRITE_S32(em.domain1_pd + em.offset.target_position[motor_id],position_);
-             return 1;  
+              
+			  int32_t position_=(int32_t)(1048575*position);
+              EC_WRITE_S32(em.domain1_pd +10,position_);
+              return 1;  
         }
         double actualPos(void) override
         {
-              std::int32_t pos= EC_READ_S32(em.domain1_pd + em.offset.current_position[motor_id]);
-			 // double pos_=(double)pos/1048576;
-			 double pos_=(double)pos/1000;
+              std::int32_t pos= EC_READ_S32(em.domain1_pd + 2);
+			  double pos_=(double)pos/1048575;
 			  return pos_;
         }
         double actualVel(void) override
@@ -53,19 +52,19 @@ class EthercatMotor:Motor
            std::uint16_t controlWord() override
          {
                 
-               return EC_READ_U16(em.domain1_pd + em.offset.ctrl_word[motor_id]);
+               return EC_READ_U16(em.domain1_pd + 7);
          }
 
          void setControlWord(std::uint16_t control_word) override
          {
-                EC_WRITE_U16(em.domain1_pd + em.offset.ctrl_word[motor_id], control_word ); 
+                EC_WRITE_U16(em.domain1_pd + 7, control_word ); 
 
          }
 
           std::uint16_t statusWord() override
          {
               
-              return EC_READ_U16(em.domain1_pd + em.offset.status_word[motor_id]);
+              return EC_READ_U16(em.domain1_pd + 0);
 
          }
 
@@ -102,53 +101,52 @@ class EthercatMotor:Motor
 		// check status A, now transition 1 automatically
 		if ((status_word & 0x4F) == 0x00) {
 			// this just set the initial control word...
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		
 			setControlWord(std::uint16_t(0x00));
 			return 1;
 		}
 		// check status B, now keep and return
 		else if ((status_word & 0x4F) == 0x40) {
 			// transition 2 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			
 			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
 		// check status C, now transition 7
 		else if ((status_word & 0x6F) == 0x21) {
 			// transition 3 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		
 			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
 		// check status D, now transition 10
 		else if ((status_word & 0x6F) == 0x23) {
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x06));//change to 0x06 for cooldrive
+			
 			setControlWord(std::uint16_t(0x06));//change to 0x06 for cooldrive
 			return 3;
 		}
 		// check status E, now transition 9
 		else if ((status_word & 0x6F) == 0x27) {
 			// transition 5 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x07));//change to 0x07 for cooldrive
+			
 			setControlWord(std::uint16_t(0x07));//change to 0x07 for cooldrive
 			return 4;
 		}
 		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07) {
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			
 			setControlWord(std::uint16_t(0x00));
 			return 5;
 		}
 		// check status G, now transition 14
 		else if ((status_word & 0x4F) == 0x0F) {
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+		
 			setControlWord(std::uint16_t(0x00));
 			return 6;
 		}
 		// check status H, now transition 15
 		else if ((status_word & 0x4F) == 0x08) {
 			// transition 4 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
 			setControlWord(std::uint16_t(0x80));
 			return 7;
 		}
@@ -184,8 +182,9 @@ class EthercatMotor:Motor
 		// 0x6F    0b 0000 0000 0110 1111
 		// 0x4F    0b 0000 0000 0100 1111
 		// enable change state to A/B/C/D/F/G/H to E
-
+       
 		auto status_word = statusWord();
+	
 		// check status A
 		if ((status_word & 0x4F) == 0x00) {
 			return 1;

@@ -1,6 +1,5 @@
 #ifndef ETHERCATSLAVEPDO_H
 #define ETHERCATSLAVEPDO_H
-#include <csignal>
 #include <cstdint>
 #include <cstring>
 #include<iostream>
@@ -28,8 +27,8 @@ class EthercatSlves
      uint32_t sync0Shift;
      uint16_t SmInput;
      uint16_t SmOutput;
-     std::vector<ec_pdo_entry_info_t> SlavePdoInput;
-     std::vector<ec_pdo_entry_info_t> SlavePdoOutput;
+     static inline  std::vector<ec_pdo_entry_info_t> SlavePdoInput;
+     static inline  std::vector<ec_pdo_entry_info_t> SlavePdoOutput;
      std::vector<ec_pdo_info_t>SlavePdo;
      };
      std::vector<SlavesInfo>SlavesInfos;
@@ -42,7 +41,7 @@ class EthercatSlves
      int init (void)
      {
        
-        if (doc.LoadFile("/home/pi/Documents/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
+        if (doc.LoadFile("/home/hg/work/zrcs/config/ethercat.xml") == tinyxml2::XML_SUCCESS) {
             
                 XMLElement * root= doc.FirstChildElement("Ethercat");
                 if (root) {
@@ -103,13 +102,13 @@ class EthercatSlves
                 if (cycle0Attr) {
                     const char* Value = cycle0Attr->Value();
 
-                    si.sync0Cycle=std::stoi(Value, nullptr, 16);
+                    si.sync0Cycle=std::stoi(Value);
                 }
                 //获取dc的偏移值
                 const XMLAttribute* cycle0ShiftAttr = slaveelem->FindAttribute("sync0Shift");
                 if (cycle0ShiftAttr) {
                     const char* Value = cycle0ShiftAttr->Value();                   
-                    si.sync0Shift=std::stoi(Value, nullptr, 16);
+                    si.sync0Shift=std::stoi(Value);
                 }
                 
                 for (XMLElement* syncManager = slaveelem->FirstChildElement("syncManager"); syncManager; syncManager = syncManager->NextSiblingElement("syncManager")) {
@@ -147,7 +146,7 @@ class EthercatSlves
                                      const XMLAttribute* bitlenAttr = pdoEntry->FindAttribute("bitLen");
                                     if (bitlenAttr) {
                                         const char* Value = bitlenAttr->Value();
-                                        EcPdo.bit_length=std::stoi(Value, nullptr, 16);
+                                        EcPdo.bit_length=std::stoi(Value);
                                     }
                                     const XMLAttribute* SmObject= syncManager->FindAttribute("idx");
                                     const char* Value=SmObject->Value();
@@ -163,6 +162,7 @@ class EthercatSlves
                             }
                             si.SlavePdo[0].n_entries=si.SlavePdoOutput.size();
                             si.SlavePdo[0].entries=si.SlavePdoOutput.data();
+                            std::cout << "The address of var is: " << si.SlavePdoOutput.data() << std::endl;
                             si.SlavePdo[1].n_entries=si.SlavePdoInput.size();
                             si.SlavePdo[1].entries=si.SlavePdoInput.data();
                        }

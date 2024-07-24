@@ -2,20 +2,25 @@ cmake_minimum_required(VERSION 3.1.2)
 project(zrcs)
 #add_compile_definitions(Ros)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_COMPILER "/usr/bin/gcc-9")
+
+# 设置 G++ 编译器路径
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # 添加调试编译选项
 set(VARNAME realtime)
 set(VARNAME debug)
 set(VARNAME ethercat)
+
 message("debug ${debug}")
       #选择debug模式
-      if(${debug})
-      
+      if(${debug})     
           set(CMAKE_BUILD_TYPE Debug)
           set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
       endif()
       #编译链接xenomai的库
       if( ${realtime})
+      message("realtime ${realtime}")
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -31,16 +36,16 @@ message("debug ${debug}")
       endif()
 link_directories(/usr/local/lib)
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-# 添加tinyxml头文件和库
+# 添加tinyxml头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
-
-
-# 添加ruckig头文件和库
+# 添加ruckig头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include)
-
+# 添加open62541头文件
+include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/include)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/amd64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
+   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/amd64)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/arm64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
@@ -49,11 +54,16 @@ else()
 endif()
 
 
+
+
+
 include_directories( 
   /usr/local/include
   /usr/include
-  include                       
+  /opt/etherlab/include
+  include
 )
+link_directories(/opt/etherlab/lib/)
 
 #set(ruckig_LIBRARIES /usr/local/liblibruckig.so)
 aux_source_directory(./src SOURCE_FILES)
@@ -64,12 +74,14 @@ add_executable(motion_control ${SOURCE_FILES})
  ruckig
  ethercat_rtdm
  tinyxml2
+ open62541
 )
 else()
 target_link_libraries(motion_control
 pthread
 ruckig
 tinyxml2
+open62541
 )
 endif()
  

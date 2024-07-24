@@ -44,8 +44,7 @@ class Enable:zrcs_system::Basenode
 			          if (SleepCount>50)
 			          {
                   if(Control->motors[motor_id]->enable()==5)
-                  {
-                      
+                  {                      
                      node_status=SUCCESS;
                    } 
                   else if (Control->motors[motor_id]->enable()<0) {
