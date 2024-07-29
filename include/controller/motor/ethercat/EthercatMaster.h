@@ -339,8 +339,7 @@ void sync_distributed_clocks(void)
        int PdoNumberAll=0;
      for (int i=0 ;i<ecslave->SlavesInfos.size();i++ ){
         
-         PdoNumberAll=PdoNumberAll+ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size();
-     
+         PdoNumberAll=PdoNumberAll+ecslave->SlavesInfos[i].SlavePdoInput.size()+ecslave->SlavesInfos[i].SlavePdoOutput.size();    
      }
      domain_reg.resize(ecslave->SlavesInfos.size()*PdoNumberAll);
      offset.resize(ecslave->SlavesInfos.size()*PdoNumberAll);
