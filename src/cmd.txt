@@ -5,8 +5,7 @@ cmake -Drealtime=yes -Dethercat=yes ..
 Setmode
 Enable
 
-
-JogabsJ --motor=0 --position=10
+JogabsJ --motor=0 --position=0
 JogabsJ --motor=1 --position=-0.854074
 JogabsJ --motor=2 --position=1.357378
 JogabsJ --motor=3 --position=-2.089311

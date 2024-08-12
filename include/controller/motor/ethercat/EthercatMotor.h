@@ -5,36 +5,77 @@
 #include "EthercatMaster.h"
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <ecrt.h>
+#include <string>
 namespace controller {
 class EthercatMotor:Motor
 {
-      EthercatMaster em=EthercatMaster::getInstance();
+     EthercatMaster em=EthercatMaster::getInstance();
      public:
      int motor_id;
+	 int ModeOffset;
+	 int TargetposOffset;
+	 int ControlOffset;
+	 int ActualPos;
+	 int StatusWord;
         EthercatMotor(int id):motor_id(id)
         {
+           ControlOffset= findNumberByKey(em.OutputPdoInfoAndOffset,std::to_string(motor_id)+std::to_string(0x6040)+std::to_string(0x0));
+		   if (ControlOffset<0) {
+			   
+		       throw std::runtime_error("Failed to find 0x6040 offset address");
+		   }
+		   ModeOffset= findNumberByKey(em.OutputPdoInfoAndOffset,std::to_string(motor_id)+std::to_string(0x6060)+std::to_string(0x0));
+		     if (ControlOffset<0) {
+						   
+		      throw std::runtime_error("Failed to find 0x6060 offset address");
+		   }
+
+		    TargetposOffset= findNumberByKey(em.OutputPdoInfoAndOffset,std::to_string(motor_id)+std::to_string(0x607a)+std::to_string(0x0));
+            if (TargetposOffset<0) {
+			     throw std::runtime_error("Failed to find 0x607a offset address");
+			}
+
+			ActualPos= findNumberByKey(em.InputPdoInfoAndOffset,std::to_string(motor_id)+std::to_string(0x6064)+std::to_string(0x0));
+            if (ActualPos<0) {
+			     throw std::runtime_error("Failed to find 0x6064 offset address");
+			}
+
+			StatusWord= findNumberByKey(em.InputPdoInfoAndOffset,std::to_string(motor_id)+std::to_string(0x6041)+std::to_string(0x0));
+            if (StatusWord<0) {
+			     throw std::runtime_error("Failed to find 0x6041 offset address");
+			}
 
         }
-
+		
+            int findNumberByKey(const std::map<std::string, int>& map, const std::string& key)
+			 {
+				auto it = map.find(key);
+				if (it != map.end()) {
+					return it->second;
+				} else {
+					return -1; // 返回一个默认值，表示未找到
+				}
+            }
 		 int mode(std::uint8_t md) override
           {
              	
-			   EC_WRITE_S8(em.domain1_pd + 9,0x8);
+			   EC_WRITE_S8(em.DomainWrite+em.OutputOffset[ModeOffset],md);
                return 1;
           }
         int setTargetPos (double position) override
         {
               
 			  int32_t position_=(int32_t)(1048575*position);
-              EC_WRITE_S32(em.domain1_pd +10,position_);
+              EC_WRITE_S32(em.DomainWrite+em.OutputOffset[TargetposOffset],position_);
               return 1;  
         }
         double actualPos(void) override
         {
-              std::int32_t pos= EC_READ_S32(em.domain1_pd + 2);
-			  double pos_=(double)pos/1048575;
-			  return pos_;
+             std::int32_t pos= EC_READ_S32(em.DomainRead+em.InputOffset[ActualPos]);
+			 double pos_=(double)pos/1048575;
+			 return pos_;
         }
         double actualVel(void) override
         {
@@ -49,22 +90,22 @@ class EthercatMotor:Motor
               return 0;
         }
        
-           std::uint16_t controlWord() override
-         {
+        // std::uint16_t controlWord() override
+        //  {
                 
-               return EC_READ_U16(em.domain1_pd + 7);
-         }
+        //       //return EC_READ_U16(em.DomainWrite+em.OutputOffset[0]);
+        //  }
 
          void setControlWord(std::uint16_t control_word) override
          {
-                EC_WRITE_U16(em.domain1_pd + 7, control_word ); 
+                EC_WRITE_U16(em.DomainWrite+em.OutputOffset[ControlOffset], control_word ); 
 
          }
 
           std::uint16_t statusWord() override
          {
               
-              return EC_READ_U16(em.domain1_pd + 0);
+              return EC_READ_U16(em.DomainRead+em.InputOffset[StatusWord]);
 
          }
 
@@ -155,7 +196,7 @@ class EthercatMotor:Motor
 			return -1;
 		}
           }
-           int enable() override
+     int enable() override
           {
               // if (imp_->slave_->isVirtual()) imp_->status_word_ = 0x27;
 
@@ -261,8 +302,8 @@ class EthercatMotor:Motor
          auto init()->int override
         {
                  
-            em.EthercatInit();
-            return 1;
+            ///em.EthercatInit();
+          //  return 1;
         }
         auto send(void)->void override
         {

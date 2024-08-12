@@ -14,23 +14,40 @@
 #include <iostream>
 class Show:public zrcs_system::Basenode
 {    
+        int MotorId;
+        public:
+        Show(const std::string& node_name="Show")
+        {
+         
 
-         zrcs_system::centre& cenobj=zrcs_system::centre::getInstance();
-       bool init() override
-       {                 
-            return true;
-       }
-  
-      void  excute_rt(void) override
-      {      
-            for (int i =0;i<6;i++) {
-           
-            std::cout<<"motorid"<<"  "<<i<<"    "<<cenobj.ec_control->motors[i]->actualPos()<<std::endl;
-            }
-            
-                         
-            rtnode_status=SUCCESS;                                               
+    
+        }
+         void init() override
+       {   
+           port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
+        
+          if (!CmdParam->empty()) 
+          {
+              std::string str=CmdParam->front();
+              port_input.parse_check(str);
+              CmdParam->pop();
+          }   
+                    
+              MotorId=port_input.get<int>("motor");
+              node_status=RUNNING;                 
+          }
+
+
+        void  excute_rt(void) override
+        {            
+                rt_printf("position---  %lf\n",Control->motors[MotorId]->actualPos());
+                node_status=SUCCESS;                        
+        }
+      void exit(void) override
+      {
+           std::cout<<"Show 执行成功"<<std::endl;
       }
+
 
 
 

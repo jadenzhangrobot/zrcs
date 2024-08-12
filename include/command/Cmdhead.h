@@ -9,7 +9,7 @@
 
 // #include "JogJ.h"
 // #include "Stop.h"
-//  #include "Show.h"
+  #include "Show.h"
   // #include "MoveJ.h"
   // #include "MoveL.h"
   // #include "MoveC.h"

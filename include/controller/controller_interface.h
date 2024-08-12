@@ -24,7 +24,7 @@ namespace controller
     {
         public:
             
-            auto virtual controlWord()->std::uint16_t = 0;
+           // auto virtual controlWord()->std::uint16_t = 0;
             // auto virtual modeOfOperation()const->std::uint8_t = 0;
             // auto virtual targetPos(double j_val)->void;
             // auto virtual targetVel()const->double = 0;

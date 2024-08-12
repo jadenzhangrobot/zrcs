@@ -22,7 +22,6 @@
 //#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
-//#include "zmq.h"
 #include "controller/rtos/preempt_rt.h"
 #include "controller/rtos/xenomai.h"
 #include "controller/motor/rawsocketbus.h"
@@ -31,10 +30,10 @@
 
 namespace zrcs_system {
 
-class centre {
+class Centre {
 private:
   //节点指针
-  Basenode *Bnode = nullptr;
+  
   //解析指令的线程
   std::thread cmd_thread;
   //终端字符串接受线程
@@ -66,21 +65,21 @@ public:
   //指令参数队列
   std::queue<std::string> *cmdParam;
   //指令队列
-  std::queue<std::string> cmd_queue;
+ static inline std::queue<std::string> cmd_queue;
   std::mutex CmdQueueMutex;
   std::mutex ZmqQueueMute;
   // controller对象指针
   controller::Controller *ec_control;
- 
+  Basenode *Bnode = nullptr;
  // actionlib::SimpleActionServer<zrcsbt::zrcs_clientAction> Server;
  
-  centre():rtnodeptr_vector(&rtpmr), exit_rtnodeptr_vector(&exit_rtpmr),
+  Centre():rtnodeptr_vector(&rtpmr), exit_rtnodeptr_vector(&exit_rtpmr),
           ec_control(new controller::Controller() ),cmdParam(new std::queue<std::string>())        
   {
   }
-  centre(const centre &) = delete;
-  centre &operator=(const centre &) = delete;
-  ~centre(void) {
+  Centre(const Centre &) = delete;
+  Centre &operator=(const Centre &) = delete;
+  ~Centre(void) {
     delete  ec_control;
     delete  cmdParam;
     terminal_flag = false;
@@ -97,10 +96,10 @@ public:
   }
 
   //单例模式 返回一个
-  static centre &getInstance(void) {
-    static centre c_t;
-    return c_t;
-  }
+  // static centre &getInstance(void) {
+  //   static centre c_t;
+  //   return c_t;
+  // }
  template<int JointNum,class motor,class transceive,class osal>
   void registerController() {
     for(int i=0;i<JointNum;i++)
@@ -237,7 +236,7 @@ public:
       }
     });
 
-    ec_control->transceiver->init();
+   //ec_control->transceiver->init();
 
     //创建一个实时任务
     ec_control->rtos_->rtos_task_create();

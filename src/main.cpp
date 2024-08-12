@@ -10,14 +10,14 @@
 #include "system/centre.h"
 #include <unistd.h>
 #include "system/OpcuaServer.h"
+#include "system/zrcs.h"
 
 int main(int argc, char **argv) {
 
-  zrcs_system::centre &ct = zrcs_system::centre::getInstance();
-  ct.registerController<1, controller::EthercatMotor,controller::EthercatTransceive, controller::xenomai>();
-  ct.init();
-  OpcuaServer OS;
-  OS.OpcuaRun();
+   zrcs_system::Zrcs zs;
+   zs.ct->registerController<1, controller::EthercatMotor,controller::EthercatTransceive, controller::xenomai>();
+   zs.init();
+   zs.run();
   while(1)
   {
     sleep(1);
