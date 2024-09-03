@@ -142,8 +142,7 @@ public:
             DomainOutputReg[Count].subindex=ecslave->Slaves[i].EcSms[SM2].pdos[j].entries[k].subindex;            
             DomainOutputReg[Count].offset=&OutputOffset[Count];
             DomainOutputReg[Count].bit_position=nullptr;
-            std::string str=std::to_string(i)+std::to_string(ecslave->Slaves[i].EcSms[SM2].pdos[j].entries[k].index)+std::to_string(ecslave->Slaves[i].EcSms[SM2].pdos[j].entries[k].subindex);
-            
+            std::string str=std::to_string(i)+std::to_string(ecslave->Slaves[i].EcSms[SM2].pdos[j].entries[k].index)+std::to_string(ecslave->Slaves[i].EcSms[SM2].pdos[j].entries[k].subindex);           
             OutputPdoInfoAndOffset.insert(std::pair<std::string,int>(str, Count));         
             Count++;
           }
@@ -162,10 +161,10 @@ public:
             DomainInputReg[Count].subindex=ecslave->Slaves[i].EcSms[SM3].pdos[j].entries[k].subindex;            
             DomainInputReg[Count].offset=&InputOffset[Count];
             DomainInputReg[Count].bit_position=nullptr;
-            std::string str=   std::to_string(i)+std::to_string(ecslave->Slaves[i].EcSms[SM3].pdos[j].entries[k].index)+std::to_string(ecslave->Slaves[i].EcSms[SM3].pdos[j].entries[k].subindex);
+            std::string str=std::to_string(i)+std::to_string(ecslave->Slaves[i].EcSms[SM3].pdos[j].entries[k].index)+std::to_string(ecslave->Slaves[i].EcSms[SM3].pdos[j].entries[k].subindex);
             
             InputPdoInfoAndOffset.insert(std::pair<std::string,int>(str, Count));
-            Count++;          
+            Count++;         
           }
          }        
     

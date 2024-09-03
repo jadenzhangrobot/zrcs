@@ -21,7 +21,7 @@ class Enable:zrcs_system::Basenode
 
     
         }
-         void init() override
+      void init() override
        {   
            port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
         

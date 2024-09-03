@@ -36,7 +36,7 @@ public:
               port_input.parse_check(str);
               CmdParam->pop();
           }   
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < Control->motors.size(); i++) {
       current_position[i] = Control->motors[i]->actualPos();
     }
     amplitude = port_input.get<double>("amplitude");
@@ -50,7 +50,7 @@ public:
 
     double target_position[6];
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < Control->motors.size(); i++) {
       target_position[i] = current_position[i] + amplitude * sin(frequency * t);
 
       Control->motors[i]->setTargetPos(target_position[i]);

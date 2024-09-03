@@ -9,7 +9,9 @@
 #define CENTRE_H_
 #include "basenode.h"
 #include "classfactory.h"
+#include "command/IO.h"
 #include "controller/controller_interface.h"
+#include "controller/motor/ethercat/EthercatIo.h"
 #include "controller/rtos/linux.h"
 #include <algorithm>
 //#include <boost/bind/placeholders.hpp>
@@ -26,6 +28,7 @@
 #include "controller/rtos/xenomai.h"
 #include "controller/motor/rawsocketbus.h"
 #include "controller/motor/ethercat/EthercatMotor.h"
+#include "controller/motor/ethercat/EthercatIo.h"
 #include "timer.h"
 
 namespace zrcs_system {
@@ -100,13 +103,16 @@ public:
   //   static centre c_t;
   //   return c_t;
   // }
- template<int JointNum,class motor,class transceive,class osal>
+ template<int JointNum,class motor,class transceive,class osal,class Io>
   void registerController() {
     for(int i=0;i<JointNum;i++)
     {
         std::unique_ptr<controller::Motor> cm((controller::Motor*)(new motor(i)));
         ec_control->motors.push_back(std::move(cm));
     }
+
+    // std::unique_ptr<controller::Io> IO((controller::Io*)(new Io()));
+    // ec_control->Ios.push_back(std::move(IO));
      //发送接受函数，为了兼容总线协议
      ec_control->transceiver.reset((controller::Transceive*)(new transceive()));
       //使用linux操作系统

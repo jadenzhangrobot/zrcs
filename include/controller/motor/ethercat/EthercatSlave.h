@@ -36,11 +36,11 @@ public:
 
       XMLElement *root = doc.FirstChildElement("Ethercat");
       if (root) {
-        Slave slave_;
+       
         // 遍历子元素,获取所有从站信息
         for (XMLElement *slaveelem = root->FirstChildElement("slave");
              slaveelem; slaveelem = slaveelem->NextSiblingElement("slave")) {
-
+           Slave slave_;
           // 获取从站的id号
           const XMLAttribute *idAttr = slaveelem->FindAttribute("ID");
           if (idAttr) {
@@ -174,11 +174,12 @@ public:
             }            
             slave_.EcSms.push_back(Ecsm_);
           }
-        }
         ec_sync_info_t  esit;
         esit.index=0xff;
         slave_.EcSms.push_back(esit);
         Slaves.push_back(slave_);
+        }
+       
       }
     } else {
       std::cerr << "Error: root element not found!" << std::endl;

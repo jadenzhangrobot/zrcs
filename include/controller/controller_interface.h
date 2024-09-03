@@ -111,14 +111,16 @@ namespace controller
                     
     };
     class Io
-    {  
-
+    {  public:
+       virtual int write(uint16_t value)
+       {
+             return 1;
+       }
 
        virtual ~Io(){};
     };
     class Sensor
     {
-
 
       virtual ~Sensor(){};
     };
@@ -161,7 +163,7 @@ namespace controller
         std::shared_ptr<Transceive> transceiver;
         std::shared_ptr<Rtos> rtos_;
         std::vector<std::unique_ptr<Motor>> motors;
-       
+        std::vector<std::unique_ptr<Io>> Ios;
     };
     // typedef std::unique_ptr<Controller> control;
 }

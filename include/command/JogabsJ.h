@@ -62,7 +62,7 @@ class JogabsJ:public zrcs_system::Basenode
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
-                        Control->motors[motor_id]->setTargetPos(p[motor_id]);                                                                                        
+                        Control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
                         output.pass_to_input(input);                              
                        }
                      else if(otg.update(input, output)==Result::Finished)
