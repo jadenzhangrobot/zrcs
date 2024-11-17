@@ -4,3 +4,4 @@ zrcs (zhang real time control system)
 ethercat_rtdm
 
 cmake -Drealtime=YES -Ddebug=YES -Dethercat=YES ..
+cmake -Drealtime=YES -Ddebug=NO -Dethercat=YES ..

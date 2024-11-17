@@ -1,6 +1,6 @@
 #ifndef PREEMPT_RT_H
 #define PREEMPT_RT_H
-#include "controller/controller_interface.h"
+#include "controller/Controller_Interface.h"
 #include <bits/types/struct_timespec.h>
 #include <cstddef>
 #include <cstdint>
@@ -17,7 +17,7 @@
 #include <sys/mman.h>
 #include <string.h>
 
-namespace controller {
+namespace HWAL {
  
 class Preempt_rt:Rtos
 {

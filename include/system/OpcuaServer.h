@@ -7,7 +7,7 @@
 #include <open62541/client_config_default.h>
 #include <open62541/plugin/log_stdout.h>
 #include <string>
-namespace zrcs_system {
+namespace zrcsSystem {
   typedef UA_StatusCode (*UA_MethodCallback)(UA_Server*, const UA_NodeId*, void*, const UA_NodeId*, void*, const UA_NodeId*, void*, size_t, const UA_Variant*, size_t, UA_Variant*);
 class OpcuaServer
 {

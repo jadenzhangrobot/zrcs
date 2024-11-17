@@ -10,67 +10,82 @@
 #include <iostream>
 #include <map>
 #include <string>
-#define REGISTER(className)                      \
-    className *objectCreator##className()        \
-    {                                            \
-        std::unique_ptr<className> ptr_className(new className());\
-        return ptr_className.release();                    \
-    }                                            \
-    RegisterAction g_creatorRegister##className( \
-        #className, (PTRCreateObject)objectCreator##className)
+#include <memory_resource>
+#include <any>
+#include "basenodeInterface.h"
 
-typedef void *(*PTRCreateObject)(void);
+typedef zrcsSystem::Basenode* (*CreateNode)(void);
+namespace zrcsSystem {
+        class classfactory
+        {
+        private:
+            std::map<std::string, std::any> m_classMap;
+            classfactory(){};
+            classfactory(const classfactory&)=delete;
+            classfactory(const classfactory&&)=delete;
+            classfactory& operator=(const classfactory&)=delete;
+        public:
+            std::any getClassByName(std::string classname)
+            {
+                std::map<std::string,std::any>::const_iterator iter;
+                iter = m_classMap.find(classname);
+                if (iter == m_classMap.end())
+                    return NULL;
+                else
+                    return iter->second;
+            }
+            void registClass(std::string name, std::any method)
+            {
+                m_classMap.insert(std::pair<std::string, std::any>(name, method));
+            }
+            static classfactory &getInstance()
+            {
+                static classfactory cla_fac;
+                return cla_fac;
+            }
+
+            bool cmdExist(const std::string& classname)
+            {           
+              auto iter = m_classMap.find(classname);
+                if (iter != m_classMap.end())
+                {
+                    return true;
+                } 
+                else
+                {
+                    return false;
+                }
+            }
+        };
+        class RegisterClass
+        { 
+            public:            
+                RegisterClass(std::string className, std::any ptr)
+                {                    
+                    zrcsSystem::classfactory::getInstance().registClass(className,ptr);                             
+                }
+        };
+}
+
+
+ #define REGISTERCMD(className)                     \
+    zrcsSystem::Basenode* objectCreator##className() \
+    {                                                 \
+        zrcsSystem::Basenode* ptr= static_cast<zrcsSystem::Basenode*>(new className());\
+        return std::unique_ptr<zrcsSystem::Basenode>(ptr).release();\
+    } \
+     zrcsSystem::RegisterClass RegisterClass##className(#className,objectCreator##className())
 
 
 
-class classfactory
-{
-private:
-    std::map<std::string, PTRCreateObject> m_classMap;
-    classfactory(){};
+#define REGISTERNODE(className)                     \
+    zrcsSystem::Basenode* objectCreator##className()\
+    {                                                 \
+        zrcsSystem::Basenode* ptr= static_cast<zrcsSystem::Basenode*>(new className());\
+        return std::unique_ptr<zrcsSystem::Basenode>(ptr).release();\
+    } \
+    zrcsSystem::RegisterClass RegisterClass##className(#className,(CreateNode)objectCreator##className)
 
-public:
-    void *getclassbyname(std::string classname)
-    {
-        std::map<std::string, PTRCreateObject>::const_iterator iter;
-        iter = m_classMap.find(classname);
-        if (iter == m_classMap.end())
-            return NULL;
-        else
-            return iter->second();
-    }
-    void registClass(std::string name, PTRCreateObject method)
-    {
-        m_classMap.insert(std::pair<std::string, PTRCreateObject>(name, method));
-    }
-    static classfactory &getInstance()
-    {
-        static classfactory cla_fac;
-        return cla_fac;
-    }
 
-     bool cmd_exist(std::string classname)
-     {           
-      auto iter = m_classMap.find(classname);
-        if (iter != m_classMap.end())
-          {
-              return true;
-          } 
-        else
-         {
-             return false;
-         }
-     }
 
-};
-
-//注册动作类
-class RegisterAction
-{
-public:
-    RegisterAction(std::string className, PTRCreateObject ptrCreateFn)
-    {
-        classfactory::getInstance().registClass(className, ptrCreateFn);
-    }
-};
 #endif

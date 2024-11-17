@@ -9,11 +9,11 @@
 
 #ifndef linux_H
 #define linux_H
-#include "controller/controller_interface.h"
+#include "controller/ControllerInterface.h"
 #include <cstdint>
 #include <pthread.h>
 #include <thread>
-namespace controller {
+namespace HWAL {
 
 class Nativelinux:Rtos
 {

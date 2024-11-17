@@ -7,7 +7,7 @@
  */
 #ifndef MOVESINE_H
 #define MOVESINE_H
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include "system/classfactory.h"
 #include <cmath>
@@ -16,44 +16,49 @@
 #include <memory>
 #include <ostream>
 #include <ruckig/ruckig.hpp>
-class MoveSine : public zrcs_system::Basenode {
+class MoveSine : public zrcsSystem::Basenode {
 public:
   
-  double current_position[6];
+  double currentPosition[6];
   double amplitude;
   double frequency;
-
-  void init() override {
-
-    port_input.add<double>("amplitude", 'a', "servo position", false, 1,
+  MoveSine()
+  {
+        port_input.add<double>("amplitude", 'a', "servo position", false, 1,
                            cmdline::range(-20000.000, 20000.000));
-    port_input.add<double>("frequency", 'f', "servo velocity", false, 1,
+        port_input.add<double>("frequency", 'f', "servo velocity", false, 1,
                            cmdline::range(-101.0000, 101.0000));
 
-   if (!CmdParam->empty()) 
+      if (!cmdParam.empty()) 
           {
-              std::string str=CmdParam->front();
+              std::string str=cmdParam.front();
               port_input.parse_check(str);
-              CmdParam->pop();
+              cmdParam.pop();
           }   
-    for (int i = 0; i < Control->motors.size(); i++) {
-      current_position[i] = Control->motors[i]->actualPos();
+       node_status = INIT;
+
+  }
+  void init() override {
+
+   
+    for (int i = 0; i < control->motors.size(); i++) {
+      currentPosition[i] = control->motors[i]->actualPos();
     }
     amplitude = port_input.get<double>("amplitude");
     frequency = port_input.get<double>("frequency");
     node_status = RUNNING;
   }
 
-  void excute_rt(void) override {
+  void excuteRt(void) override {
 
     static double t = 0;
 
-    double target_position[6];
+    double targetPosition[6];
 
-    for (int i = 0; i < Control->motors.size(); i++) {
-      target_position[i] = current_position[i] + amplitude * sin(frequency * t);
+    for (int i = 0; i < control->motors.size(); i++) {
+      targetPosition[i] = currentPosition[i] + amplitude * sin(frequency * t);
 
-      Control->motors[i]->setTargetPos(target_position[i]);
+      control->motors[i]->setTargetPos(targetPosition[i]);
     }
     t = t + 0.01;
    
@@ -62,8 +67,9 @@ public:
       node_status = SUCCESS;
     }
   }
+  void exit()override{}
 };
 
-REGISTER(MoveSine);
+REGISTERCMD(MoveSine);
 
 #endif

@@ -1,3 +1,0 @@
-/home/hg/work/zrcs/build/CMakeFiles/rebuild_cache.dir
-/home/hg/work/zrcs/build/CMakeFiles/edit_cache.dir
-/home/hg/work/zrcs/build/CMakeFiles/motion_control.dir

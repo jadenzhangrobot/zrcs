@@ -1,0 +1,99 @@
+# Project related configuration options
+PROJECT_NAME           = "${PROJECT_NAME}"
+PROJECT_NUMBER         = "${PROJECT_VERSION}"
+PROJECT_BRIEF          = "${PROJECT_DESCRIPTION}"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = "${doxygen_output_dir}"
+OUTPUT_LANGUAGE        = English
+BRIEF_MEMBER_DESC      = NO
+JAVADOC_AUTOBRIEF      = YES
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+USE_MDFILE_AS_MAINPAGE = "${PROJECT_SOURCE_DIR}/README.md"
+ALIASES                = completiontoken{1}="@parblock ^^ @include{doc} alias_completiontoken.dox ^^ @code ^^ \1 ^^ @endcode ^^ @endparblock"
+ALIASES               += wrapper{1}="@copybrief \1 ^^ @see \1"
+
+# Build-related options
+EXTRACT_ALL            = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+SHOW_USED_FILES        = NO
+SORT_MEMBER_DOCS       = NO
+LAYOUT_FILE            = "${CMAKE_CURRENT_SOURCE_DIR}/DoxygenLayout.xml"
+QUIET                  = YES
+WARN_IF_INCOMPLETE_DOC = NO
+
+# Input files
+INPUT                  = "${PROJECT_SOURCE_DIR}/include/" \
+                         "${PROJECT_SOURCE_DIR}/README.md" \
+                         "${CMAKE_CURRENT_SOURCE_DIR}/examples.dox" \
+                         "${CMAKE_CURRENT_SOURCE_DIR}/overview.dox" \
+                         "${CMAKE_CURRENT_SOURCE_DIR}/async_model.md" \
+                         "${CMAKE_CURRENT_SOURCE_DIR}/error_handling.md"
+FILE_PATTERNS          = *.h *.hpp *.cpp
+RECURSIVE              = YES
+EXAMPLE_PATH           = "${PROJECT_SOURCE_DIR}/examples" \
+                         "${CMAKE_CURRENT_SOURCE_DIR}/fragments"
+EXAMPLE_PATTERNS       = *.h *.hpp *.cpp
+EXAMPLE_RECURSIVE      = YES
+
+# Source browsing
+SOURCE_BROWSER         = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = NO
+REFERENCES_LINK_SOURCE = YES
+STRIP_CODE_COMMENTS    = NO
+
+# Output
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_HTML          = YES
+GENERATE_XML           = NO
+
+HTML_HEADER            = "${CMAKE_CURRENT_SOURCE_DIR}/header.html"
+HTML_EXTRA_STYLESHEET  = "${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome.css"
+HTML_EXTRA_FILES       = "${CMAKE_CURRENT_SOURCE_DIR}/googleeace6f5ccc88b340.html"
+HTML_DYNAMIC_MENUS     = YES
+HTML_DYNAMIC_SECTIONS  = NO
+HTML_OUTPUT            = "${doxygen_html_dir}"
+HTML_COLORSTYLE        = LIGHT
+
+SITEMAP_URL            = "https://open62541pp.github.io/open62541pp/"
+ENUM_VALUES_PER_LINE   = 0
+GENERATE_TREEVIEW      = NO
+TREEVIEW_WIDTH         = 300
+EXT_LINKS_IN_WINDOW    = YES
+
+# Preprocessor
+MACRO_EXPANSION        = YES
+PREDEFINED             = UA_ENABLE_DA \
+                         UA_ENABLE_DISCOVERY \
+                         UA_ENABLE_ENCRYPTION \
+                         UA_ENABLE_HISTORIZING \
+                         UA_ENABLE_METHODCALLS \
+                         UA_ENABLE_NODEMANAGEMENT \
+                         UA_ENABLE_PUBSUB \
+                         UA_ENABLE_QUERY \
+                         UA_ENABLE_SUBSCRIPTIONS \
+                         UA_ENABLE_SUBSCRIPTIONS_EVENTS \
+                         UA_ENABLE_TYPEDESCRIPTION \
+                         UAPP_CREATE_CERTIFICATE
+
+# Dot diagrams
+HAVE_DOT               = YES
+DOT_FONTNAME           = Helvetica
+DOT_FONTSIZE           = 10
+DOT_IMAGE_FORMAT       = svg
+DOT_TRANSPARENT        = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+DIRECTORY_GRAPH        = NO
+
+# External references
+# open62541 html documentation in "open62541" subdirectory
+TAGFILES               = "${doxygen_open62541_tagfile}=open62541"

@@ -9,8 +9,8 @@
 #ifndef XENOMAI_H
 #define XENOMAI_H
 
-#include "controller/controller_interface.h"
-#include "controller/motor/ethercat/EthercatMaster.h"
+#include "controller/ControllerInterface.h"
+#include "controller/ethercat/EthercatMaster.h"
 #include <alchemy/timer.h> 
 #include <alchemy/task.h> 
 #include <cstddef>
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
-namespace controller 
+namespace HWAL 
 {
  class xenomai:Rtos
 {
@@ -37,11 +37,12 @@ namespace controller
       int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
         while (true) 
         {
+            rt_task_wait_period(NULL);
             if (p->strategy_!=nullptr)
             {
                p->strategy_();
             }
-         rt_task_wait_period(NULL);
+        
         }       
     }
     void rtos_task_create(void)override
@@ -53,11 +54,11 @@ namespace controller
           printf("rt_task_create : %s\n", strerror(errno));  
 
         }
-        //    int cpu_id =2;                // 需要绑定的cpu
-        //     cpu_set_t mask;                // cpu核的位掩码
-        //     CPU_ZERO(&mask);               // 置空
-        //     CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
-        // int a= rt_task_set_affinity(&task_desc,&mask); 
+            int cpu_id =7;                // 需要绑定的cpu
+            cpu_set_t mask;                // cpu核的位掩码
+            CPU_ZERO(&mask);               // 置空
+            CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
+        int a= rt_task_set_affinity(&task_desc,&mask); 
         err=rt_task_start(&task_desc,real_fun,(void*)this); 
 
         if(err<0) 

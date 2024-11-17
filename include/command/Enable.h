@@ -7,61 +7,58 @@
  */
 #ifndef ENABLE_H_
 #define ENABLE_H_
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
+#include "system/classfactory.h"
 #include <iostream>
-class Enable:zrcs_system::Basenode
+class Enable:public zrcsSystem::Basenode
 {
    private:
       int motor_id;
+      
    public:
-        Enable(const std::string& node_name="Enable")
+        Enable()
         {
-         
-
-    
+           port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
         }
-      void init() override
-       {   
-           port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
-        
-          if (!CmdParam->empty()) 
+      void config()override
+      {
+          
+          if (!cmdParam.empty()) 
           {
-              std::string str=CmdParam->front();
+              std::string str=cmdParam.front();
               port_input.parse_check(str);
-              CmdParam->pop();
-          }   
-                    
-              motor_id=port_input.get<int>("motor");
-              node_status=RUNNING;                 
-          }
-
-
-        void  excute_rt(void) override
-        {            
-                static int SleepCount=0;
-             
-			          if (SleepCount>50)
-			          {
-                  if(Control->motors[motor_id]->enable()==5)
+              cmdParam.pop();            
+          } 
+           motor_id=port_input.get<int>("motor");      
+      }
+         void init() override
+         {                 
+               node_status=RUNNING;                 
+         }
+        void  excuteRt(void) override
+        {    
+          static int SleepCount=0;            
+		    if (SleepCount>50)
+		    {
+                  if(control->motors[motor_id]->enable()==5)
                   {                      
-                     node_status=SUCCESS;
-                   } 
-                  else if (Control->motors[motor_id]->enable()<0) {
+                        node_status=SUCCESS;
+                  } 
+                  else if (control->motors[motor_id]->enable()<0) 
+                  {
                         node_status=FAILURE;
                   } 
                   SleepCount=0;
-                }            
+          }            
                 SleepCount++;                                 
         }
       void exit(void) override
       {
-           std::cout<<"Enable 执行成功"<<std::endl;
+             rt_printf("Enable 执行成功\n");
+             node_status=EXIT;
       }
-
-
-
+     
 };
- REGISTER(Enable);
- 
+REGISTERCMD(Enable);
 #endif

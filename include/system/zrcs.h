@@ -3,7 +3,7 @@
 #include "centre.h"
 #include "OpcuaServer.h"
 #include "system/OpcuaServer.h"
-namespace zrcs_system {
+namespace zrcsSystem {
     class Zrcs {
     public:
     Centre *ct;
@@ -13,12 +13,9 @@ namespace zrcs_system {
          std::unique_ptr<OpcuaServer> OS(new OpcuaServer(ct));
        
          OPS=  OS.release();
+           ct->init();
+           OPS->OpcuaInit();
         
-    }
-    void init (void)
-    {
-        ct->init();
-        OPS->OpcuaInit();
     }
     void run(void)
     {
@@ -30,5 +27,5 @@ namespace zrcs_system {
         
         }
     };
-} // namespace zrcs_system
+} 
 #endif

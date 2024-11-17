@@ -9,7 +9,7 @@
 
 #ifndef SHOW_H
 #define SHOW_H
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include <iostream>
 class Show:public zrcs_system::Basenode

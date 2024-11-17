@@ -9,7 +9,7 @@
 
 #ifndef DISABLE_H_
 #define DISABLE_H_
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include <iostream>
 class Disable:zrcs_system::Basenode
@@ -17,7 +17,7 @@ class Disable:zrcs_system::Basenode
    private:
       int motor_id;
    public:
-        Disable(const std::string& node_name="Disable")
+        Disable()
         {
          
     
@@ -26,11 +26,11 @@ class Disable:zrcs_system::Basenode
        {   
            port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
         
-          if (!CmdParam->empty()) 
+          if (!cmdParam->empty()) 
           {
-              std::string str=CmdParam->front();
+              std::string str=cmdParam->front();
               port_input.parse_check(str);
-              CmdParam->pop();
+              cmdParam->pop();
           }   
                     
               motor_id=port_input.get<int>("motor");
@@ -38,10 +38,10 @@ class Disable:zrcs_system::Basenode
           }
 
 
-        void  excute_rt(void) override
+        void  excuteRt(void) override
         {            
            
-                  if(Control->motors[motor_id]->disable()==0)
+                  if(control->motors[motor_id]->disable()==0)
                   {
                       
                      node_status=SUCCESS;
@@ -51,14 +51,14 @@ class Disable:zrcs_system::Basenode
                    }                     
                                                   
         }
-           void exit(void) override
+      void exit(void) override
       {
-           std::cout<<"Disable 执行成功"<<std::endl;
+           //std::cout<<"Disable 执行成功"<<std::endl;
       }
 
 
 
 };
 
- REGISTER(Disable);
+ REGISTERCMD(Disable);
 #endif

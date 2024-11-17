@@ -7,36 +7,38 @@
  */
 #ifndef CENTRE_H_
 #define CENTRE_H_
-#include "basenode.h"
+#include "basenodeInterface.h"
 #include "classfactory.h"
-#include "command/IO.h"
-#include "controller/controller_interface.h"
-#include "controller/motor/ethercat/EthercatIo.h"
+#include "controller/Controller.h"
+#include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
+#include "nodeCommunication.h"
+#include "timer.h"
 #include <algorithm>
-//#include <boost/bind/placeholders.hpp>
+#include <any>
+#include <cstdint>
+#include <cstdlib>
 #include <endian.h>
 #include <functional>
 #include <iostream>
-#include <memory_resource>
+#include <iterator>
+#include <memory>
 #include <mutex>
 #include <queue>
-//#include <spdlog/spdlog.h>
 #include <thread>
 #include <vector>
-#include "controller/rtos/preempt_rt.h"
-#include "controller/rtos/xenomai.h"
-#include "controller/motor/rawsocketbus.h"
-#include "controller/motor/ethercat/EthercatMotor.h"
-#include "controller/motor/ethercat/EthercatIo.h"
-#include "timer.h"
 
-namespace zrcs_system {
-
+namespace zrcsSystem {
 class Centre {
 private:
   //节点指针
-  
+  enum TaskScheduling
+  {
+    STOP,
+    RUN,
+    ERROR,
+  };
+  TaskScheduling  taskScheduling=RUN;
   //解析指令的线程
   std::thread cmd_thread;
   //终端字符串接受线程
@@ -48,11 +50,13 @@ private:
   std::thread zmq_thread;
 
   //将要指令对象指针容器
-  std::pmr::monotonic_buffer_resource rtpmr;
-  std::pmr::vector<Basenode *> rtnodeptr_vector;
+  std::pmr::monotonic_buffer_resource rtCmdPmr;
+  std::pmr::monotonic_buffer_resource rtNodePmr;
+  std::pmr::vector<Basenode*> rtCmd;
+  std::pmr::vector<Basenode*> rtNode;
   //执行完成后的指令对象的指针容器
-  std::pmr::monotonic_buffer_resource exit_rtpmr;
-  std::pmr::vector<Basenode *> exit_rtnodeptr_vector;
+  //std::pmr::monotonic_buffer_resource exit_rtpmr;
+ // std::pmr::vector<Basenode *> exit_rtnodeptr_vector;
 
   bool terminal_flag = true;
   bool cmd_thread_flag = true;
@@ -65,26 +69,23 @@ private:
   
   
 public:
-  //指令参数队列
-  std::queue<std::string> *cmdParam;
   //指令队列
  static inline std::queue<std::string> cmd_queue;
+
   std::mutex CmdQueueMutex;
   std::mutex ZmqQueueMute;
   // controller对象指针
-  controller::Controller *ec_control;
+  HWAL::Controller *ec_control;
   Basenode *Bnode = nullptr;
- // actionlib::SimpleActionServer<zrcsbt::zrcs_clientAction> Server;
  
-  Centre():rtnodeptr_vector(&rtpmr), exit_rtnodeptr_vector(&exit_rtpmr),
-          ec_control(new controller::Controller() ),cmdParam(new std::queue<std::string>())        
+  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr),
+          ec_control(new HWAL::Controller())      
   {
   }
   Centre(const Centre &) = delete;
   Centre &operator=(const Centre &) = delete;
   ~Centre(void) {
     delete  ec_control;
-    delete  cmdParam;
     terminal_flag = false;
     cmd_thread_flag = false;
     pubstatus_flag = false;
@@ -97,66 +98,91 @@ public:
     exit_cmd.join();
     zmq_thread.join();
   }
-
-  //单例模式 返回一个
-  // static centre &getInstance(void) {
-  //   static centre c_t;
-  //   return c_t;
-  // }
- template<int JointNum,class motor,class transceive,class osal,class Io>
-  void registerController() {
-    for(int i=0;i<JointNum;i++)
-    {
-        std::unique_ptr<controller::Motor> cm((controller::Motor*)(new motor(i)));
-        ec_control->motors.push_back(std::move(cm));
-    }
-
-    // std::unique_ptr<controller::Io> IO((controller::Io*)(new Io()));
-    // ec_control->Ios.push_back(std::move(IO));
-     //发送接受函数，为了兼容总线协议
-     ec_control->transceiver.reset((controller::Transceive*)(new transceive()));
-      //使用linux操作系统
-     ec_control->rtos_.reset((controller::Rtos*)(new osal()));
+  template<class T>
+  std::unique_ptr<NodeCommunicaion<T>> createPipeline()
+  {
+        std::unique_ptr<NodeCommunicaion<T>> nodePipilne(new NodeCommunicaion<T>);
+        return nodePipilne;
   }
-
-  void registerObject(std::string cmd) {
+  void registerObject(std::string cmd)
+   {
     //对象名
     std::string class_name;
     // 指令参数字符串
     std::string cmd_param;
 
-    if (cmd.npos != cmd.find_first_of(" --")) {
+    if (cmd.npos != cmd.find_first_of(" --")) 
+    {
       class_name = cmd.substr(0, cmd.find_first_of(" --"));
 
-      cmd_param = cmd.substr(cmd.find_first_of(" --"));
-
-      cmdParam->push(cmd_param);
-    } else {
+      cmd_param = cmd.substr(cmd.find_first_of(" --")); 
+    } 
+    else
+    {
       class_name = cmd;
     }
-    if (!classfactory::getInstance().cmd_exist(class_name)) {
+    if(!classfactory::getInstance().cmdExist(class_name))
+    {
       std::cout<<"cmd不存在"<<std::endl;
-    } else {
-      Basenode *bn =
-          (Basenode *)classfactory::getInstance().getclassbyname(class_name);
-          //
-           bn->registered(ec_control,cmdParam);
-          //
-           
-      //把节点状态切换到init状态
-      if (bn->getTaskState() == Basenode::IDLE) {
-        bn->init();
-      }
-      if (bn->getTaskState() == Basenode::FAILURE) {
-       // spdlog::error(class_name + "init error");
-      } else {
-        rtnodeptr_vector.push_back(bn);
-      }
     }
+    else 
+     { 
+        if(classfactory::getInstance().getClassByName(class_name).type()==typeid(Basenode*))
+        {
+                  Basenode *bn =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(class_name));                   
+                  //把节点状态切换到init状态                
+                  if (bn->GetTaskState()==Basenode::IDLE) 
+                  {
+                      bn->registered(ec_control); 
+                      bn->SetTaskState(Basenode::INIT);
+                  }
+                  if (!cmd_param.empty()) 
+                  {
+                    bn->PushCmdArgs(cmd_param);
+                  }                  
+                  bn->config();
+                  rtCmd.push_back(bn);
+        }
+        if (classfactory::getInstance().getClassByName(class_name).type()==typeid(CreateNode)) 
+        { 
+               CreateNode cn =std::any_cast<CreateNode>(classfactory::getInstance().getClassByName(class_name)); 
+               Basenode* bn= (*cn)();
+               if (bn->GetTaskState()==Basenode::IDLE) 
+                  {
+                      bn->registered(ec_control); 
+                      bn->SetTaskState(Basenode::INIT);
+                  }
+                  if (!cmd_param.empty()) 
+                  {
+                    bn->PushCmdArgs(cmd_param);
+                  }                  
+                  bn->config();
+                  rtNode.push_back(bn);
+        
+        }
+                          
+            
+     }
   }
   void init() {
     // 通过zmq获取命令字符串
-    zmq_thread=std::thread([this](){
+    zmq_thread=std::thread([this](){              
+                          std::string cmd="Setmode";
+                          CmdQueueMutex.lock();
+                          cmd_queue.push(cmd);
+                          CmdQueueMutex.unlock();
+                          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                          std::string cmd1="Enable";
+                          CmdQueueMutex.lock();
+                          cmd_queue.push(cmd1);
+                          CmdQueueMutex.unlock();
+                          // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                          // std::string cmd2="JogabsJ --motor=0 --position=0";
+                      
+                          // CmdQueueMutex.lock();
+                          // cmd_queue.push(cmd2);
+                          // CmdQueueMutex.unlock();
+                          // std::this_thread::sleep_for(std::chrono::milliseconds(4000));
                while (zmq_flag) 
                {
                   //frame_test frame;          
@@ -182,10 +208,28 @@ public:
               //           }
                         
               //     }
+                          static int time=200;
+                        //   if (cmd_queue.size()>200) 
+                        //   {
+                        //      time=100000000;
+                        //   }
+                        //   else 
+                        //   {
+                        //       time=300;
+                        //   }
+                        // //   //std::cout<<"**********   "<<cmd_queue.size()<<std::endl;
+                        //   std::this_thread::sleep_for(std::chrono::milliseconds(time));
+                        //   std::string cmd3="Motion --motor=0 --Tposition=20 --Cposition=0";
+                        //   CmdQueueMutex.lock();
+                        //   cmd_queue.push(cmd3);
+                        //   CmdQueueMutex.unlock();
+                        //  std::this_thread::sleep_for(std::chrono::milliseconds(time));
 
-                  
-                  std::this_thread::sleep_for(std::chrono::milliseconds(100));   
-               
+                        //   std::string cmd4="Motion --motor=0 --Tposition=0 --Cposition=20";
+                      
+                        //   CmdQueueMutex.lock();
+                        //   cmd_queue.push(cmd4);
+                        //   CmdQueueMutex.unlock();                                
                }
 
             });
@@ -206,65 +250,96 @@ public:
 
     //从指令队列里面获取指令字符串
     cmd_thread = std::thread([this]() {
-      while (cmd_thread_flag) {
-        if (!cmd_queue.empty()) {
+      while (cmd_thread_flag)
+      {
+        if (!cmd_queue.empty()) 
+        {
           std::string cmd_param = cmd_queue.front();
-          if (cmd_param == "Stop") {
-            if (Bnode != nullptr) {
-              Bnode->stop();
-            }
-          } else if (cmd_param == "Start") {
-            if (Bnode != nullptr) {
-              Bnode->start();
-            }
-          } else if (cmd_param == "Recover") {
-            if (Bnode != nullptr) {
-              Bnode->recover();
-            }
-          } else {
+          if (cmd_param == "Stop")
+          {         
+                taskScheduling=STOP;
+          } else if (cmd_param == "Start") 
+          {          
+             taskScheduling=RUN;
+          } else if (cmd_param == "Recover")
+          {
+                taskScheduling=RUN;
+          } else
+          {
             this->registerObject(cmd_param);
           }
           cmd_queue.pop();
         }
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     });
-    //把指令任务销毁掉
-    exit_cmd = std::thread([this]() {
-      while (exitcmd_flag) {
-        if (!exit_rtnodeptr_vector.empty()) {
-          exit_rtnodeptr_vector.front()->exit();
-          std::this_thread::sleep_for( std::chrono::milliseconds(1000));        
-          delete exit_rtnodeptr_vector.front();
-
-          exit_rtnodeptr_vector.erase(exit_rtnodeptr_vector.begin());
-        }
-      }
-    });
-
-   //ec_control->transceiver->init();
 
     //创建一个实时任务
     ec_control->rtos_->rtos_task_create();
     //把实时节点里面的实时函数放到实时线程中运行
-    ec_control->rtos_->real_task([&]() {
-    ec_control->transceiver->receive();
-      if (!rtnodeptr_vector.empty()) {
-        Bnode = rtnodeptr_vector.front();
-        if (Bnode != nullptr) {
-          if (Bnode->getTaskState() == Basenode::RUNNING) {
-            Bnode->excute_rt();
-          } else if (Bnode->getTaskState() == Basenode::SUCCESS) {
-            rtnodeptr_vector.erase(rtnodeptr_vector.begin());
-            exit_rtnodeptr_vector.push_back(Bnode);
-            //检查实时节点的状态，如何状态为running执行节点下的实时函数
-          } else if (Bnode->getTaskState() == Basenode::FAILURE) {
-            rtnodeptr_vector.erase(rtnodeptr_vector.begin());
-            exit_rtnodeptr_vector.push_back(Bnode);
-          }
+    ec_control->rtos_->real_task([&]() {   
+      ec_control->receiveData();
+    
+     
+      switch (taskScheduling) 
+      {
+        case RUN:
+        if (!rtNode.empty())
+        {
+           for (int i=0; i<rtNode.size(); i++)
+           {
+                  rtNode[i]->excuteRt();
+                  if (rtNode[i]->GetTaskState()==Basenode::FAILURE) 
+                  {
+                      taskScheduling=ERROR;
+                  }
+           }
         }
+        if (!rtCmd.empty()) 
+        {
+          Bnode = rtCmd.front();
+          if (Bnode != nullptr) 
+          {
+                if ((Bnode->GetTaskState() == Basenode::INIT)||Bnode->GetTaskState() == Basenode::EXIT)
+                {
+                      Bnode->init();
+                }
+                else if(Bnode->GetTaskState() == Basenode::RUNNING) 
+                  {   
+                      Bnode->excuteRt();
+                        
+                  } 
+                else if (Bnode->GetTaskState() == Basenode::SUCCESS) 
+                  {
+                    
+                    Bnode->exit();
+                    rtCmd.erase(rtCmd.begin()); 
+                          
+                  } 
+                else if (Bnode->GetTaskState() == Basenode::FAILURE) 
+                  {
+                    rtCmd.erase(rtCmd.begin());
+                    taskScheduling=ERROR;
+                  }
+                else 
+                  {
+                      exit(1);
+                  }
+           }
+          else {             
+               rtCmd.erase(rtCmd.begin());
+           }
+        }
+       break;
+       case STOP:
+       break;
+       case ERROR:
+       break;
+       default:
+       break;
+          
       }
-      ec_control->transceiver->send();
+        ec_control->SendData(); 
     });
   }
 };

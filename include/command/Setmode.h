@@ -8,50 +8,51 @@
  */
 #ifndef MODE_H_
 #define MODE_H_
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include <iostream>
-class Setmode:zrcs_system::Basenode
+class Setmode:public zrcsSystem::Basenode
 {
    private:
       int motor_num;
       int motor_id;
       int motor_mode;
    public:
-        Setmode(const std::string& node_name="Setmode")
-        {         
-        } 
-         void init() override
-       {    
-            port_input.add<int>("mode", 'o', "motor mode", false, 8, cmdline::range(0, 10));        
-            if (!CmdParam->empty()) 
+        Setmode()
+        {
+             port_input.add<int>("mode", 'o', "motor mode", false, 8, cmdline::range(0, 100));                    
+        }
+        void config() override
+        {   
+                   
+            if (!cmdParam.empty()) 
             {
-                 std::string str=CmdParam->front();
+                  std::string str=cmdParam.front();
                   port_input.parse_check(str);
-                  CmdParam->pop();
+                  cmdParam.pop();
             } 
-            motor_mode=port_input.get<int>("mode");
-            motor_num=Control->motors.size();
+             motor_mode=port_input.get<int>("mode"); 
+             motor_num=control->motors.size();
+        }
+        void init() override
+       {                
             node_status=RUNNING;
        }
-        void  excute_rt(void) override
-        {            
-          
+        void  excuteRt(void) override
+        {                     
                 for(int i=0;i<motor_num;i++)
                 {
-                    if(Control->motors[i]->mode(motor_mode)<0)
-                    {
-                        node_status=FAILURE;
-                    }
+                    control->motors[i]->setModeOfOperation(motor_mode);                  
                 }
                 node_status=SUCCESS;
-          }  
+        }  
          void exit()override
          {
-              std::cout<<"设置模式成功"<<std::endl;
+             rt_printf("设置模式成功\n");
+             node_status=EXIT;
          }                
             
     
 };
-REGISTER(Setmode);
+REGISTERCMD(Setmode);
 #endif

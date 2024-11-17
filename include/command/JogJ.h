@@ -8,7 +8,7 @@
 #ifndef JOGJ_H
 #define JOGJ_H
 
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include "system/centre.h"
 #include <iostream>

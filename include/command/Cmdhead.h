@@ -5,15 +5,15 @@
 // #include "Movehome.h" 
  #include "Enable.h"
  #include "Setmode.h" 
- #include "Disable.h"
+ //#include "Disable.h"
 
 // #include "JogJ.h"
 // #include "Stop.h"
-  #include "Show.h"
+ // #include "Show.h"
   // #include "MoveJ.h"
   // #include "MoveL.h"
-  // #include "MoveC.h"
+   #include "Motion.h"
    #include "MoveSine.h"
-   #include  "IO.h"
-
+   #include "Flyingshot.h"
+   //#include  "IO.h"
 #endif

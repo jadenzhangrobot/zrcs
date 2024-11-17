@@ -2,10 +2,11 @@ cmake -Drealtime=yes -Dethercat=yes ..
 
 
 先执行设置模式在执行使能，不能伺服不能使能
-Setmode
-Enable
 
-JogabsJ --motor=0 --position=0
+Enable
+Enable --motor=0
+
+JogabsJ --motor=0 --position=1000 --velocity=314 --acceleration=200  --jerk=1000
 JogabsJ --motor=1 --position=-0.854074
 JogabsJ --motor=2 --position=1.357378
 JogabsJ --motor=3 --position=-2.089311
@@ -73,5 +74,11 @@ MoveC --x0=0.224 --y0=0.224 --z0=0.2 --x1=0.5 --y1=0.1 --z1=0.2
 MoveC --x0=0 --y0=1 --z0=0 --x1=1 --y1=0 --z1=0
 
 
-JogabsJ --motor=1 --position=-1.5708
+JogabsJ --motor=3 --position=1
 MoveSine --amplitude=1 --frequency=0.1
+
+
+
+
+
+JogabsJ --motor=3 --position=0
