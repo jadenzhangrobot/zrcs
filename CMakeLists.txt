@@ -6,24 +6,15 @@ set(CMAKE_CXX_STANDARD 17)
 
 # 强制要求编译器支持 C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 # 设置 G++ 编译器路径
 #set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # 添加调试编译选项
-set(VARNAME realtime)
-set(VARNAME debug)
-set(VARNAME ethercat)
-
-message("debug ${debug}")
-      #选择debug模式
-      if(${debug})     
-          set(CMAKE_BUILD_TYPE Debug)
-          set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-      endif()
+option(realtime "Build example programs" ON)
+option(ethercat "Build example programs" ON)
       #编译链接xenomai的库
-      if( ${realtime})
+      if(realtime)
       message("realtime ${realtime}")
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -40,27 +31,20 @@ message("debug ${debug}")
       endif()
 link_directories(/usr/local/lib)
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
 # 添加tinyxml头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
-# 添加ruckig头文件
-include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include)
 # 添加open62541头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/include)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/amd64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/amd64)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/lib/arm64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/arm64)
 else()
     message("芯片的架构不符合要求")
 endif()
-
-
-
-
 
 include_directories( 
   /usr/local/include
@@ -73,7 +57,7 @@ link_directories(/opt/etherlab/lib/)
 #set(ruckig_LIBRARIES /usr/local/liblibruckig.so)
 aux_source_directory(./src SOURCE_FILES)
 add_executable(motion_control ${SOURCE_FILES})
- if(${ethercat} )
+ if(ethercat)
  target_link_libraries(motion_control
  pthread
  ruckig
