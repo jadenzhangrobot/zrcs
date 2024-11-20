@@ -12,10 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # 添加调试编译选项
 option(realtime "Build example programs" ON)
+message("realtime ${realtime}")
 option(ethercat "Build example programs" ON)
+message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
-      message("realtime ${realtime}")
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
