@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 namespace HWAL {
-	#define pi 3.1415926
+	
 class EthercatMotor:Motor
 {
      private:
@@ -52,19 +52,16 @@ class EthercatMotor:Motor
           {             	
 			   EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][ModeOffset],md);
           }
-        double setTargetPos (double position) override
+        void setEncoderTargetPos (double position) override
         {	  
-			
-			  target_pos_=position;
-              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][TargetposOffset],static_cast<int32_t>((target_pos_+pos_offset)*pos_factor/(2*pi)));
-              return 0;  
+              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][TargetposOffset],static_cast<int32_t>(position));
         }
-        double actualPos(void) override
+        double encoderActualPos(void) override
         {   			 
              int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[motorId][ActualPos]);
 
-			 double pos_=static_cast<double>(pos);			
-			return (pos_-pos_offset)/pos_factor*2*pi;
+			 return static_cast<double>(pos);			
+			
         }
         double actualVel(void) override
         {

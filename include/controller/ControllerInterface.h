@@ -13,6 +13,7 @@
 #include "ParameterRead.h"
 namespace HWAL
 {
+    #define pi 3.1415926
     class Motor
     {
          public:
@@ -68,27 +69,24 @@ namespace HWAL
               {
                 return 0;
               }
-              auto virtual setTargetPos(double pos)->double
+              auto  setTargetPos(double pos)->void
               {     
-                //  if (pos<motorConfig->motoParas[motorId].NegativeLimit*motorConfig->motoParas[motorId].Encoder) 
-                //  {
-                //    // return -1;
-                //  }
-                //  else if(pos>motorConfig->motoParas[motorId].PositiveLimit*motorConfig->motoParas[motorId].Encoder) 
-                //  {
-                //    // return -2;
-                //  }
-                 
-                //  return  pos=pos*motorConfig->motoParas[motorId].Encoder;            
+                      target_pos_=pos;
+                      setEncoderTargetPos((target_pos_+pos_offset)*pos_factor/(2*pi));
+                          
               };
-              virtual double actualPos()
+              auto actualPos()
               {
-                return 0;
-              };
+                  double pos=encoderActualPos();
+                  return  (pos-pos_offset)/pos_factor*2*pi;
+              }
+              
+              virtual void setEncoderTargetPos (double position)=0;
+              virtual double encoderActualPos(void)=0;
       
              virtual double actualVel()
             {
-              return 0;
+               return 0;
             }
             
 
