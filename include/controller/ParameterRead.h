@@ -10,7 +10,7 @@ namespace HWAL
      inline  std::string GetProjectPath(void)
     {
             std::string currentExePath = std::filesystem::current_path().string();
-            std::string target = "zrcs";
+            std::string target = "zrcs-dev";
             std::string projectPath ;
         // 查找目标字符串 "zrcs" 在 fullPath 中的位置
             size_t found = currentExePath.find(target);
@@ -40,7 +40,7 @@ namespace HWAL
             std::vector<MotoPara>motoParas;          
             MotorConfig()
             {
-                std::string motorConfigPath=GetProjectPath()+"zrcs/config/motor.xml";
+                std::string motorConfigPath=GetProjectPath()+"zrcs-dev/config/motor.xml";
                 if (doc.LoadFile(motorConfigPath.c_str())==tinyxml2::XML_SUCCESS) 
                 {
 

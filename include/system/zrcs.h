@@ -1,27 +1,27 @@
 #ifndef ZRCS
 #define ZRCS
 #include "centre.h"
-#include "OpcuaServer.h"
-#include "system/OpcuaServer.h"
+#include "server/opcuaServer/OpcuaServer.h"
 namespace zrcsSystem {
     class Zrcs {
     public:
     Centre *ct;
-    OpcuaServer* OPS;
+    zrcsServer::OpcuaServer* ops;
     public:
-    Zrcs() : ct(new Centre) {
-         std::unique_ptr<OpcuaServer> OS(new OpcuaServer(ct));
+    Zrcs() : ct(new Centre),ops(new zrcsServer::OpcuaServer()) 
+    {
+   
        
-         OPS=  OS.release();
            ct->init();
-           OPS->OpcuaInit();
+           ops->OpcuaInit();
         
     }
     void run(void)
     {
-         OPS->OpcuaRun();
+         ops->OpcuaRun();
     }
 
+    
     ~Zrcs() { 
         delete ct; 
         

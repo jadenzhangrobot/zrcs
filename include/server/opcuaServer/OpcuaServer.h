@@ -7,16 +7,15 @@
 #include <open62541/client_config_default.h>
 #include <open62541/plugin/log_stdout.h>
 #include <string>
-namespace zrcsSystem {
+namespace zrcsServer {
   typedef UA_StatusCode (*UA_MethodCallback)(UA_Server*, const UA_NodeId*, void*, const UA_NodeId*, void*, const UA_NodeId*, void*, size_t, const UA_Variant*, size_t, UA_Variant*);
 class OpcuaServer
 {
     UA_Server *server=nullptr;
     UA_Boolean running ;
-    Centre* Ct;
    // static UA_NodeId ZrcsCmdNodeId ;
     public:
-    OpcuaServer(Centre* t):Ct(t)
+    OpcuaServer()
     {
         running=true;
     }

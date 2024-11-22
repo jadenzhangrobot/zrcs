@@ -41,7 +41,7 @@ public:
 
   SlaveConfig()
   {
-        std::string ethercatConfigPath=GetProjectPath()+"zrcs/config/ethercat.xml";
+        std::string ethercatConfigPath=GetProjectPath()+"zrcs-dev/config/ethercat.xml";
         
         if (doc.LoadFile(ethercatConfigPath.c_str())==tinyxml2::XML_SUCCESS) 
         {

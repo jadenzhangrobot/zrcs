@@ -13,7 +13,6 @@
 #include "controller/rtos/xenomai.h"
 #include "system/centre.h"
 #include <unistd.h>
-#include "system/OpcuaServer.h"
 #include "system/zrcs.h"
 
 int main(int argc, char **argv) 
