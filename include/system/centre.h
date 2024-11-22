@@ -75,17 +75,17 @@ public:
   std::mutex CmdQueueMutex;
   std::mutex ZmqQueueMute;
   // controller对象指针
-  HWAL::Controller *ec_control;
+  HWAL::Controller *control;
   Basenode *Bnode = nullptr;
  
   Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr),
-          ec_control(new HWAL::Controller())      
+          control(new HWAL::Controller())      
   {
   }
   Centre(const Centre &) = delete;
   Centre &operator=(const Centre &) = delete;
   ~Centre(void) {
-    delete  ec_control;
+    delete  control;
     terminal_flag = false;
     cmd_thread_flag = false;
     pubstatus_flag = false;
@@ -133,7 +133,7 @@ public:
                   //把节点状态切换到init状态                
                   if (bn->GetTaskState()==Basenode::IDLE) 
                   {
-                      bn->registered(ec_control); 
+                      bn->registered(control); 
                       bn->SetTaskState(Basenode::INIT);
                   }
                   if (!cmd_param.empty()) 
@@ -149,7 +149,7 @@ public:
                Basenode* bn= (*cn)();
                if (bn->GetTaskState()==Basenode::IDLE) 
                   {
-                      bn->registered(ec_control); 
+                      bn->registered(control); 
                       bn->SetTaskState(Basenode::INIT);
                   }
                   if (!cmd_param.empty()) 
@@ -167,15 +167,15 @@ public:
   void init() {
     // 通过zmq获取命令字符串
     zmq_thread=std::thread([this](){              
-                          std::string cmd="Setmode";
-                          CmdQueueMutex.lock();
-                          cmd_queue.push(cmd);
-                          CmdQueueMutex.unlock();
-                          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                          std::string cmd1="Enable";
-                          CmdQueueMutex.lock();
-                          cmd_queue.push(cmd1);
-                          CmdQueueMutex.unlock();
+                          // std::string cmd="Setmode";
+                          // CmdQueueMutex.lock();
+                          // cmd_queue.push(cmd);
+                          // CmdQueueMutex.unlock();
+                          // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                          // std::string cmd1="Enable";
+                          // CmdQueueMutex.lock();
+                          // cmd_queue.push(cmd1);
+                          // CmdQueueMutex.unlock();
                           // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                           // std::string cmd2="JogabsJ --motor=0 --position=0";
                       
@@ -275,15 +275,21 @@ public:
     });
 
     //创建一个实时任务
-    ec_control->rtos_->rtos_task_create();
+    control->rtos_->rtos_task_create();
     //把实时节点里面的实时函数放到实时线程中运行
-    ec_control->rtos_->real_task([&]() {   
-      ec_control->receiveData();
-    
-     
+    control->rtos_->real_task([&]() {   
+    control->receiveData();
+      // for (int i=0; control->motors.size(); i++)
+      //   {
+      //        if(control->motors[i]->getError()!=HWAL::Run)
+      //        {
+      //            taskScheduling=ERROR;
+      //        }
+      //   }
       switch (taskScheduling) 
       {
         case RUN:
+       
         if (!rtNode.empty())
         {
            for (int i=0; i<rtNode.size(); i++)
@@ -339,7 +345,7 @@ public:
        break;
           
       }
-        ec_control->SendData(); 
+       control->SendData(); 
     });
   }
 };

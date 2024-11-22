@@ -11,7 +11,21 @@ class TraPlan:public zrcsSystem::Basenode
              InputParameter<6> input;
              OutputParameter<6> output;      
       }
-
+       void config() override
+       {
+            if (!cmdParam.empty()) 
+              {
+                  std::string str=cmdParam.front();
+                  port_input.parse_check(str);
+                  cmdParam.pop();
+              }  
+              position=port_input.get<double>("position"); 
+              velocity=port_input.get<double>("velocity");
+              acceleration= port_input.get<double>("acceleration");
+              jerk=port_input.get<double>("jerk");
+              motor_id=port_input.get<int>("motor");     
+       }
+  
        void init() override
        {                        
               input.current_position[0]=m.Cposition;       

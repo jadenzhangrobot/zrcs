@@ -1,11 +1,11 @@
 
 #ifndef IO_H
 #define IO_H
-#include "system/basenode.h"
+#include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include <cstdint>
 #include <iostream>
-class Io:zrcs_system::Basenode
+class Io:zrcsSystem::Basenode
 {
    private:
       uint16_t value;

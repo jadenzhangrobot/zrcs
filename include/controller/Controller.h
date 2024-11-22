@@ -33,7 +33,7 @@ namespace HWAL {
                 else if (it->slaveType==SlaveConfig::DIO)
                 {
                       std::unique_ptr<HWAL::Io> io((HWAL::Io*)(new EthercatIo(it->SlaveId,ethercatMaster)));
-                       Ios.push_back(std::move(io));
+                      Ios.push_back(std::move(io));
                 }
                 else
                 {
@@ -52,7 +52,7 @@ namespace HWAL {
          {
                 ethercatMaster->receive();
 
-         }
+         } 
         ~Controller()
         {
                delete ethercatMaster;

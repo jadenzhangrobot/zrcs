@@ -7,9 +7,10 @@ set(CMAKE_CXX_STANDARD 17)
 # 强制要求编译器支持 C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # 设置 G++ 编译器路径
 #set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
 option(realtime "Build example programs" ON)
 message("realtime ${realtime}")
@@ -30,13 +31,21 @@ message("ethercat ${ethercat}")
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${xeno_ldflags}")
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
       endif()
-link_directories(/usr/local/lib)
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
-# 添加tinyxml头文件
+include_directories( 
+   /usr/local/include
+   /usr/include
+   /opt/etherlab/include
+   ${DEVEL_INCLUDE_DIRS}/include
+ )     
+
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
 # 添加open62541头文件
 include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/include)
+
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
+# 添加tinyxml头文件
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
    link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/amd64)
@@ -47,12 +56,7 @@ else()
     message("芯片的架构不符合要求")
 endif()
 
-include_directories( 
-  /usr/local/include
-  /usr/include
-  /opt/etherlab/include
-  include
-)
+link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
 
 #set(ruckig_LIBRARIES /usr/local/liblibruckig.so)
