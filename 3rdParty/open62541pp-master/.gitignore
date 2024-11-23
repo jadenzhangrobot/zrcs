@@ -1,7 +1,0 @@
-/.cache
-/.idea/
-/.vscode/
-/build*/
-/install/
-/cmake-build*/
-/CMakeUserPresets.json

@@ -18,10 +18,13 @@ option(ethercat "Build example programs" ON)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
+      # set(xeno_disable_implicit )
+      # execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_disable_implicit})
+
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-      set(xeno_ldflags_params "--alchemy"  "--ldflags")
+      set(xeno_ldflags_params "--alchemy"  "--ldflags" "--no-auto-init")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_ldflags_params} OUTPUT_VARIABLE xeno_ldflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
       set(xeno_g++_params "--cc")
@@ -38,23 +41,14 @@ include_directories(
    /opt/etherlab/include
    ${DEVEL_INCLUDE_DIRS}/include
  )     
-
-include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/include)
-# 添加open62541头文件
-include_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/include)
-
+# 添加tinyxml2库
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
+# 添加ruckig库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
-# 添加tinyxml头文件
-
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/amd64)
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/amd64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2/lib/arm64)
-   link_directories(${DEVEL_INCLUDE_DIRS}/3rdParty/opcua/lib/arm64)
-else()
-    message("芯片的架构不符合要求")
-endif()
+# 添加zmq库
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq)
+# include(${DEVEL_INCLUDE_DIRS}/cmake/libzmq.cmake)
+# ExternalAutotools(libzmq "${CMAKE_BINARY_DIR}/build_autotools" "${CMAKE_BINARY_DIR}/3rdParty")
 
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
@@ -68,14 +62,14 @@ add_executable(motion_control ${SOURCE_FILES})
  ruckig
  ethercat_rtdm
  tinyxml2
- open62541
+ zmq
 )
 else()
 target_link_libraries(motion_control
 pthread
 ruckig
 tinyxml2
-open62541
+zmq
 )
 endif()
  

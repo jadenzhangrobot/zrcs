@@ -13,7 +13,7 @@
 #include <iostream>
 namespace HWAL {
 #define pi 3.14159265358979323846
- using MotorError=enum
+enum MotorError
  { 
          Run=0,
          maxPositionExceeded,

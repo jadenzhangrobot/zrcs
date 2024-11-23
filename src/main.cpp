@@ -10,9 +10,7 @@
  */
 #include "command/Cmdhead.h"
 #include "controller/ControllerInterface.h"
-#include "controller/rtos/xenomai.h"
 #include "system/centre.h"
-#include <unistd.h>
 #include "system/zrcs.h"
 
 int main(int argc, char **argv) 
