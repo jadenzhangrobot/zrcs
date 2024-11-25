@@ -12,7 +12,6 @@
 #include "controller/ControllerInterface.h"
 #include "system/centre.h"
 #include "system/zrcs.h"
-
 int main(int argc, char **argv) 
 {
    try {
@@ -22,7 +21,7 @@ int main(int argc, char **argv)
       {
         sleep(1);
       }
-  return 0;
+   return 0;
     } catch (const std::runtime_error& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl; // 也可以使用 std::cerr 输
     }

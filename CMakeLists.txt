@@ -40,6 +40,7 @@ include_directories(
    /usr/include
    /opt/etherlab/include
    ${DEVEL_INCLUDE_DIRS}/include
+   ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
  )     
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
@@ -52,12 +53,13 @@ add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq)
 
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
+link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/libzmq/lib)
 
-#set(ruckig_LIBRARIES /usr/local/liblibruckig.so)
 aux_source_directory(./src SOURCE_FILES)
 add_executable(motion_control ${SOURCE_FILES})
  if(ethercat)
  target_link_libraries(motion_control
+ PRIVATE 
  pthread
  ruckig
  ethercat_rtdm
@@ -66,6 +68,7 @@ add_executable(motion_control ${SOURCE_FILES})
 )
 else()
 target_link_libraries(motion_control
+PRIVATE 
 pthread
 ruckig
 tinyxml2
