@@ -65,14 +65,13 @@ class JogabsJ:public zrcsSystem::Basenode
     }
            
       void  excuteRt(void) override
-      {      
-                          
+      {                               
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
                         control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
                         output.pass_to_input(input);
-                         rt_printf("---  %lf\n",(p[0]));                             
+                         //rt_printf("---  %lf\n",(p[0]));                             
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {

@@ -3,14 +3,16 @@
 #include "centre.h"
 #include "server/cppzmq/zmq.hpp"
 #include "server/cppzmq/zmq_addon.hpp"
+#include <iostream>
 #include <thread>
 #include <string>
 #include <future>
+
+#include "statusData.pb.h"
+
 namespace zrcsSystem {
     class Zrcs {
     private:
-        bool flag=true;
-        bool terminal_flag = true;
           //终端字符串接受线程
         std::thread terminal;
     public:
@@ -49,18 +51,22 @@ namespace zrcsSystem {
                 auto statuspub=new zmq::socket_t(*ctx_,zmq::socket_type::pub);
                      statuspub->bind("tcp://*:8888");
                 while (true)
-                {
-                    // zmq::message_t request;
-                    // zmq::recv_result_t result = statuspub->recv(request);
-                    // if (result.has_value()) {
-                    //       std::string cmd=request.to_string();
-                    //       std::cout<<cmd<<std::endl;
-                    //       ct_->cmdQueue->writeCmd(cmd);
-                    // }
-                    // else {
-                    //    std::cout<<"zmq receive cmd error"<<std::endl;
-                    // }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                {    
+                     YourMessage youMessage;
+                     youMessage.set_name("zhangyongjing");
+                     youMessage.set_id(100);
+                     std::string serialized_data;
+                     youMessage.SerializeToString(&serialized_data);
+                 
+                     zmq::message_t zmqMessage(serialized_data.size());
+                     memcpy(zmqMessage.data(), serialized_data.data(), serialized_data.size());
+
+                    //  std::string cmd= "Enable";
+                    //  zmq::message_t zmqMessage(cmd.size());
+                    //  memcpy(zmqMessage.data(), cmd.data(), cmd.size());
+
+                     statuspub->send(zmqMessage, zmq::send_flags::none);
+                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }     
           }
              static void pubDataThread (zmq::context_t *ctx_ ,Centre *ct_)
@@ -91,7 +97,7 @@ namespace zrcsSystem {
                 auto pubData = std::async(std::launch::async, pubDataThread, ctx,ct);
                 terminal = std::thread([this]() 
                 {
-                    while (terminal_flag) 
+                    while (true) 
                     {
                         //指令字符串
                         std::string cmd;
@@ -103,16 +109,9 @@ namespace zrcsSystem {
     }
 
     
-    ~Zrcs() { 
-            flag=false;
-            terminal_flag=false;
-            if (serverTh.joinable()) 
-            {
-               serverTh.join();
-            }
-            if (terminal.joinable()) {
+    ~Zrcs() {
+               serverTh.join();        
                terminal.join();
-            }
             delete ct; 
         }
     };

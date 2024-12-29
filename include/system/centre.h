@@ -7,12 +7,6 @@
  */
 #ifndef CENTRE_H_
 #define CENTRE_H_
-#include "basenodeInterface.h"
-#include "classfactory.h"
-#include "controller/Controller.h"
-#include "controller/ControllerInterface.h"
-#include "controller/rtos/linux.h"
-#include "nodeCommunication.h"
 #include "timer.h"
 #include <algorithm>
 #include <any>
@@ -27,6 +21,14 @@
 #include <queue>
 #include <thread>
 #include <vector>
+#include "basenodeInterface.h"
+#include "classfactory.h"
+#include "controller/Controller.h"
+#include "controller/ControllerInterface.h"
+#include "controller/rtos/linux.h"
+#include "nodeCommunication.h"
+#include "nodeCommunication.h"
+#include "dataType.h"
 namespace zrcsSystem {
 class CmdQueue
 {
@@ -74,18 +76,16 @@ private:
   std::pmr::monotonic_buffer_resource rtNodePmr;
   std::pmr::vector<Basenode*> rtCmd;
   std::pmr::vector<Basenode*> rtNode;
-public:
-  //指令队列
- //static inline std::queue<std::string> cmd_queue;
-
-
-  std::mutex ZmqQueueMute;
-  // controller对象指针
   HWAL::Controller *control;
   Basenode *Bnode = nullptr;
+  bool rtFlag=true;
+  NodeCommunicaion<Motor> motorFeedback; 
+public:
+  //指令队列
   CmdQueue* cmdQueue;
+  
    
-  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new HWAL::Controller()),cmdQueue(new CmdQueue())     
+  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new HWAL::Controller()),cmdQueue(new CmdQueue()),motorFeedback(16000000)     
   {
   }
   Centre(const Centre &) = delete;
@@ -93,11 +93,7 @@ public:
   ~Centre(void) {
     delete  control;
     delete cmdQueue;
-    if (cmdThread.joinable())
-     {
-          cmdThread.join();
-     }
- 
+    cmdThread.join();
   }
     template<class T>
     std::unique_ptr<NodeCommunicaion<T>> createPipeline()
@@ -124,7 +120,7 @@ public:
     }
     if(!classfactory::getInstance().cmdExist(class_name))
     {
-      std::cout<<"cmd不存在"<<std::endl;
+       std::cout<<"cmd不存在"<<std::endl;
     }
     else 
      { 
@@ -195,15 +191,9 @@ public:
     //创建一个实时任务
     control->rtos_->rtos_task_create();
     //把实时节点里面的实时函数放到实时线程中运行
-    control->rtos_->real_task([&]() {   
+    control->rtos_->real_task([this]() {   
     control->receiveData();
-      // for (int i=0; control->motors.size(); i++)
-      //   {
-      //        if(control->motors[i]->getError()!=HWAL::Run)
-      //        {
-      //            taskScheduling=ERROR;
-      //        }
-      //   }
+      
       switch (taskScheduling) 
       {
         case RUN:
@@ -263,6 +253,7 @@ public:
        break;
           
       }
+        
        control->SendData(); 
     });
   }

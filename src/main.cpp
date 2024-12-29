@@ -12,12 +12,14 @@
 #include "controller/ControllerInterface.h"
 #include "system/centre.h"
 #include "system/zrcs.h"
+#include <mutex>
+//#include "statusData.pb.h"
 int main(int argc, char **argv) 
 {
    try {
       zrcsSystem::Zrcs zs;
       zs.run();
-      while(1)
+      while(true)
       {
         sleep(1);
       }
@@ -25,4 +27,5 @@ int main(int argc, char **argv)
     } catch (const std::runtime_error& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl; // 也可以使用 std::cerr 输
     }
+
 }

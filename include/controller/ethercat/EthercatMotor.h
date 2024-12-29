@@ -57,11 +57,10 @@ class EthercatMotor:Motor
               EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][TargetposOffset],static_cast<int32_t>(position));
         }
         double encoderActualPos(void) override
-        {   			 
+        {   			 			 
              int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[motorId][ActualPos]);
-
-			 return static_cast<double>(pos);			
-			
+			 int32_t pos_=1048575+pos;
+			 return static_cast<double>(pos);						
         }
         double actualVel(void) override
         {

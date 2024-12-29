@@ -74,7 +74,7 @@ MoveC --x0=0.224 --y0=0.224 --z0=0.2 --x1=0.5 --y1=0.1 --z1=0.2
 MoveC --x0=0 --y0=1 --z0=0 --x1=1 --y1=0 --z1=0
 
 
-JogabsJ --motor=3 --position=1
+JogabsJ --motor=0 --position=0
 MoveSine --amplitude=1 --frequency=0.1
 
 

@@ -14,7 +14,7 @@ namespace zrcsSystem {
          std::pmr::monotonic_buffer_resource* resource;
          std::pmr::vector<T>* vec;
          public:
-         NodeCommunicaion(std::string ,int direction, int size)
+         NodeCommunicaion(int size)
          {
                        resource = new std::pmr::monotonic_buffer_resource(size);
                        vec = new std::pmr::vector<T>(resource);
@@ -32,17 +32,15 @@ namespace zrcsSystem {
                  value=result;
                  vec->erase(vec->begin());
               }
-              result -1;
+              return  -1;
           }
-          void wirte(T value)
+          void write(T value)
           {
                  vec->push_back(value);
           }
 
          ~NodeCommunicaion()
-         {    
-            delete vec; 
-            delete resource;              
+         {            
          }
          
 

@@ -29,15 +29,22 @@ public:
         port_input.add<double>("frequency", 'f', "servo velocity", false, 1,
                            cmdline::range(-101.0000, 101.0000));
 
-      if (!cmdParam.empty()) 
+     
+
+  }
+
+
+     void config() override
+       {
+          if (!cmdParam.empty()) 
           {
               std::string str=cmdParam.front();
               port_input.parse_check(str);
               cmdParam.pop();
           }   
-       node_status = INIT;
+       
+       }
 
-  }
   void init() override {
 
    

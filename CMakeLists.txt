@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.1.2)
+cmake_minimum_required(VERSION 3.22.1)
 project(zrcs)
+# 添加生成文件的自定义命令到构建过程中
+add_custom_target(generate_file_target DEPENDS generated_file.txt)
+
 #add_compile_definitions(Ros)
 # 设置 C++ 标准为 C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -12,15 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
-option(realtime "Build example programs" ON)
+option(realtime "Build realtime programs" ON)
 message("realtime ${realtime}")
-option(ethercat "Build example programs" ON)
+option(ethercat "Build ethercat programs" ON)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
-      # set(xeno_disable_implicit )
-      # execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_disable_implicit})
-
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -41,7 +41,11 @@ include_directories(
    /opt/etherlab/include
    ${DEVEL_INCLUDE_DIRS}/include
    ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
- )     
+   ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
+   ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
+   ${DEVEL_INCLUDE_DIRS}/build/message
+ )
+ include(${DEVEL_INCLUDE_DIRS}/cmake/protobuf.cmake) 
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
 # 添加ruckig库
@@ -55,8 +59,9 @@ link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
 link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/libzmq/lib)
 
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
 aux_source_directory(./src SOURCE_FILES)
-add_executable(motion_control ${SOURCE_FILES})
+add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
  if(ethercat)
  target_link_libraries(motion_control
  PRIVATE 
@@ -65,6 +70,7 @@ add_executable(motion_control ${SOURCE_FILES})
  ethercat_rtdm
  tinyxml2
  zmq
+ protobuf::libprotobuf
 )
 else()
 target_link_libraries(motion_control
@@ -73,6 +79,7 @@ pthread
 ruckig
 tinyxml2
 zmq
+protobuf::libprotobuf
 )
 endif()
  

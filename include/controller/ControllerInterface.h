@@ -12,7 +12,7 @@
 #include <functional>
 #include <iostream>
 namespace HWAL {
-#define pi 3.14159265358979323846
+const double pi = 3.14159265358979323846; 
 enum MotorError
  { 
          Run=0,
@@ -41,6 +41,7 @@ private:
   double offset_toq_ = 0;  
   MotorConfig *motorConfig;
   MotorError motorError=Run;
+  double targetPosition=0;
 public:
   int motorId;
  
@@ -51,20 +52,25 @@ public:
     min_pos = motorConfig->motoParas[motorId].negativeLimit;
     pos_offset = motorConfig->motoParas[motorId].PositionOffset;
   }
+  auto getTargetPos()->double
+  {
+      return targetPosition;
+  }
   auto setTargetPos(double pos) -> void 
   {
-    if (pos>max_pos)
-    {
-       motorError=maxPositionExceeded;
-    }
-    if (pos<min_pos)
-    {
-        motorError=minPositionExceeded;
-    }
-    else
-    {
-       setEncoderTargetPos((pos + pos_offset) * pos_factor / (2 * pi));
-    }
+      if (pos>max_pos)
+      {
+        motorError=maxPositionExceeded;
+      }
+      if (pos<min_pos)
+      {
+          motorError=minPositionExceeded;
+      }
+      else
+      {
+        targetPosition=pos;
+        setEncoderTargetPos((targetPosition + pos_offset) * pos_factor / (2 * pi));
+      }
     
   };
   auto actualPos()->double 
