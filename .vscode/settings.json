@@ -1,5 +1,8 @@
 {
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/build"
-    ]
+    ],
+    "files.associations": {
+        "mutex": "cpp"
+    }
 }

@@ -2,6 +2,7 @@
 #define CONTROLLER
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include "ControllerInterface.h"
 #include "controller/rtos/xenomai.h"
 #include "ethercat/EthercatMaster.h"
@@ -40,18 +41,35 @@ namespace HWAL {
                      throw std::runtime_error("没有的从站类型");
                 }
             }
-               rtos_.reset((HWAL::Rtos*)(new xenomai()));
+                rtos_.reset((HWAL::Rtos*)(new xenomai()));
+                if (!ethercatMaster->OutputOffset.empty()) {
+                   outputData.resize( ethercatMaster->OutputOffset.back().back());
+                   inputData.resize( ethercatMaster->InputOffset.back().back());                   
+                } else {
+                    // 处理空向量的情况（如抛出异常或返回错误）
+                }
 
         }
             
          void SendData()
          {
+                 std::memcpy(outputData.data(), static_cast<const uint8_t*>(ethercatMaster->DomainRead), outputData.size());
                  ethercatMaster->send();
          }
          void receiveData()
          {
                 ethercatMaster->receive();
+                std::memcpy(inputData.data(),  static_cast<const uint8_t*>(ethercatMaster->DomainRead), inputData.size());
+    
 
+         }
+         void readIo()
+         {
+              
+         }
+         void writeIo()
+         {
+            
          } 
         ~Controller()
         {
@@ -59,6 +77,8 @@ namespace HWAL {
                delete motorConfig;
           
         }
+        std::vector<uint8_t> outputData;
+        std::vector<uint8_t> inputData;
         std::shared_ptr<Rtos> rtos_;
         std::vector<std::unique_ptr<Motor>> motors;
         std::vector<std::unique_ptr<Io>> Ios;

@@ -25,33 +25,31 @@ class EthercatMotor:Motor
 				ControlOffset=findNumberOutputKey("ControlWord");
 				TargetposOffset=findNumberOutputKey("TargetPosition");
 				ActualPos=findNumberInputKey("ActualPosition");
-				StatusWord=findNumberInputKey("StatusWord");
-			
+				StatusWord=findNumberInputKey("StatusWord");			
         }
 		
-            int findNumberOutputKey(std::string key)
-			{
-				auto it = ethercatMaster->OutputPdoInfoAndOffset[motorId].find(key);
-				if (it !=  ethercatMaster->OutputPdoInfoAndOffset[motorId].end()) {
-					return it->second;
-				} else {
-					throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
-				}
-            }
-			 int findNumberInputKey(std::string key)
-			{
-				auto it = ethercatMaster->InputPdoInfoAndOffset[motorId].find(key);
-				if (it != ethercatMaster->InputPdoInfoAndOffset[motorId].end()) 
-				{
-					return it->second;
-				} else {
-					throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
-				}
-            }
-		  void setModeOfOperation(std::uint8_t md) override
-          {             	
-			   EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][ModeOffset],md);
-          }
+		int findNumberOutputKey(std::string key)
+		{
+			auto it = ethercatMaster->OutputPdoInfoAndOffset[motorId].find(key);
+			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[motorId].end()) {
+				return it->second;
+			} else {
+				throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
+			}
+		}
+			int findNumberInputKey(std::string key)
+		{
+			auto it = ethercatMaster->InputPdoInfoAndOffset[motorId].find(key);
+			if (it != ethercatMaster->InputPdoInfoAndOffset[motorId].end()){
+				return it->second;
+			} else {
+				throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
+			}
+		}
+		void setModeOfOperation(std::uint8_t md) override
+		{             	
+			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][ModeOffset],md);
+		}
         void setEncoderTargetPos (double position) override
         {	  
               EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][TargetposOffset],static_cast<int32_t>(position));

@@ -39,18 +39,18 @@ class Flyingshot:public zrcsSystem::Basenode
         void  excuteRt(void) override
         {    
             
-                int result=control->Ios[0]->Read("IoOutput2", 16, 8);
-                if (result==1)
-                {
-                    //rt_printf("11111\n");
-                }
-                else if(result==0)
-                {
-                      node_status=FAILURE;                    
-                }
-                else {
+                //int result=control->Ios[0]->Read("IoOutput2", 16, 8);
+               //  if (result==1)
+               //  {
+               //      //rt_printf("11111\n");
+               //  }
+               //  else if(result==0)
+               //  {
+               //        node_status=FAILURE;                    
+               //  }
+               //  else {
                      
-                }                      
+               //  }                      
         }
       void exit(void) override
       {

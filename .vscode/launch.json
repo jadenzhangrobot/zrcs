@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb)hgcnc", //配置名称，显示在配置下拉菜单中
+            "name": "zrcs", //配置名称，显示在配置下拉菜单中
             "type": "cppdbg", //配置类型
             "request": "launch", //请求配置类型，可以是启动或者是附加
             "program": "${workspaceFolder}/build/motion_control", //程序可执行文件的完整路径，${workspaceFolder}表示远程连接的初始路径

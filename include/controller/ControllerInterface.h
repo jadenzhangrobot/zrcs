@@ -64,7 +64,7 @@ public:
       }
       if (pos<min_pos)
       {
-          motorError=minPositionExceeded;
+        motorError=minPositionExceeded;
       }
       else
       {
@@ -117,7 +117,7 @@ public:
   // auto virtual velDiff()const->double = 0;
   // auto virtual setVelDiff(double vel)->void = 0;
 
-  auto virtual clearError() -> int { return 0; }
+  auto virtual clearError() -> int { return 0;}
   auto virtual disable() -> int { return 0; }
   auto virtual enable() -> int { return 0; }
   auto virtual home() -> int { return 0; }
@@ -128,11 +128,20 @@ public:
 };
 class Io {
 public:
-  virtual int Write(std::string reg, int type, int bitPos, bool value) {
-    return 1;
-  }
-  virtual int Read(std::string reg, int type, int bitPos) { return 1; }
+  /// 急停相关接口
+  virtual bool isEmergencyStop() { return false;}  // 读取急停状态
+  virtual void setEmergencyStop(bool value) {}      // 设置急停状态
 
+  // 限位相关接口 
+ // virtual bool isPositiveLimit(int motorId) { return false; }  // 读取正向限位状态
+ // virtual bool isNegativeLimit(int motorId) { return false; }  // 读取负向限位状态
+
+  virtual bool ioRead32(int index, int bitPos) = 0;                  // 32位IO读取
+  virtual bool ioRead16(int index, int bitPos) = 0;                  // 16位IO读取
+  virtual bool ioRead8(int index, int bitPos) = 0;                   // 8位IO读取
+  virtual void ioWrite32(int index, int bitPos, bool value) = 0;            // 32位IO写
+  virtual void ioWrite16(int index, int bitPos, bool value) = 0;            // 16位IO写
+  virtual void ioWrite8(int index, int bitPos, bool value) = 0;              // 8位IO写
   virtual ~Io(){};
 };
 class Sensor {

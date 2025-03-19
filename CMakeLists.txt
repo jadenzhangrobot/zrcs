@@ -1,5 +1,18 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(zrcs)
+
+# Add this near the top of your CMakeLists.txt, after project()
+find_package(Python3 REQUIRED)
+
+# Add custom command to execute Python scripts
+add_custom_target(run_python_scripts ALL
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tool/config.py
+    # Add more scripts as needed:
+    # COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tool/your_script2.py
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Executing Python scripts from tool folder"
+)
+
 # 添加生成文件的自定义命令到构建过程中
 add_custom_target(generate_file_target DEPENDS generated_file.txt)
 
@@ -62,6 +75,10 @@ link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/libzmq/lib)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
 aux_source_directory(./src SOURCE_FILES)
 add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
+
+# Make your main target depend on the Python scripts
+add_dependencies(motion_control run_python_scripts)
+
  if(ethercat)
  target_link_libraries(motion_control
  PRIVATE 
@@ -82,4 +99,4 @@ zmq
 protobuf::libprotobuf
 )
 endif()
- 
+

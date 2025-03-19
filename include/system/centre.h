@@ -39,7 +39,7 @@ class CmdQueue
      {}
       void writeCmd(std::string cmd)
       {   
-         std::lock_guard<std::mutex> lock(cmdMutex);
+           std::lock_guard<std::mutex> lock(cmdMutex);
            cmdQueue.push(cmd);
       }
       int cmdRead(std::string& cmd)
@@ -168,11 +168,11 @@ public:
       while (true)
       {
          std::string cmd;
-        if (cmdQueue->cmdRead(cmd)==0) 
-        { 
+         if (cmdQueue->cmdRead(cmd)==0) 
+         { 
             if (cmd == "Stop")
             {         
-                  taskScheduling=STOP;
+              taskScheduling=STOP;
             } else if (cmd == "Start") 
             {          
               taskScheduling=RUN;
@@ -197,7 +197,6 @@ public:
       switch (taskScheduling) 
       {
         case RUN:
-       
         if (!rtNode.empty())
         {
            for (int i=0; i<rtNode.size(); i++)
@@ -250,10 +249,8 @@ public:
        case ERROR:
        break;
        default:
-       break;
-          
-      }
-        
+       break;         
+      }       
        control->SendData(); 
     });
   }

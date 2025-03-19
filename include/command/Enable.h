@@ -50,7 +50,7 @@ class Enable:public zrcsSystem::Basenode
                         node_status=FAILURE;
                   } 
                   SleepCount=0;
-          }            
+                }            
                 SleepCount++;                                 
         }
       void exit(void) override

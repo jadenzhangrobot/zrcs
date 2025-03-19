@@ -12,8 +12,7 @@
 #include "controller/ControllerInterface.h"
 #include "system/centre.h"
 #include "system/zrcs.h"
-#include <mutex>
-//#include "statusData.pb.h"
+
 int main(int argc, char **argv) 
 {
    try {

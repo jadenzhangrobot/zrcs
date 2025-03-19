@@ -60,8 +60,6 @@ public:
      InputOffset.resize(slaveConfig->Slaves.size());
      InputPdoInfoAndOffset.resize(slaveConfig->Slaves.size());
      OutputPdoInfoAndOffset.resize(slaveConfig->Slaves.size());
-
-   
     for (int i=0; i<slaveConfig->Slaves.size();i++)
      {
          int OutputPdoCount=0;
@@ -74,13 +72,13 @@ public:
             }
           }
          
-         for ( int j=0;j<slaveConfig->Slaves[i].EcSms[SMIN].n_pdos;j++) 
-         {
-            for(int k=0;k<slaveConfig->Slaves[i].EcSms[SMIN].pdos[j].n_entries;k++)
-            {
-              InputPdoCount++;
-            }
-         }
+          for ( int j=0;j<slaveConfig->Slaves[i].EcSms[SMIN].n_pdos;j++) 
+          {
+              for(int k=0;k<slaveConfig->Slaves[i].EcSms[SMIN].pdos[j].n_entries;k++)
+              {
+                InputPdoCount++;
+              }
+          }
           AllOutputPdoCount=AllOutputPdoCount+OutputPdoCount;
           AllInputPdoCount=AllInputPdoCount+InputPdoCount;
           OutputOffset[i].resize(OutputPdoCount);    
@@ -189,7 +187,7 @@ public:
     }
 
     if ((DomainWrite = ecrt_domain_data(DomainOutput)) == nullptr)
-     {
+    {
          throw std::runtime_error("获取domain的写入地址失败");
     }
     if ((DomainRead = ecrt_domain_data(DomainInput)) == nullptr) {
