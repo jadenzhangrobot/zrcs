@@ -12,6 +12,7 @@
 #include <any>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <endian.h>
 #include <functional>
 #include <iostream>
@@ -29,7 +30,7 @@
 #include "nodeCommunication.h"
 #include "nodeCommunication.h"
 #include "dataType.h"
-namespace zrcsSystem {
+namespace ZrcsSystem {
 class CmdQueue
 {
      std::queue<std::string> cmdQueue;
@@ -76,7 +77,7 @@ private:
   std::pmr::monotonic_buffer_resource rtNodePmr;
   std::pmr::vector<Basenode*> rtCmd;
   std::pmr::vector<Basenode*> rtNode;
-  HWAL::Controller *control;
+  ZrcsHardware::Controller *control;
   Basenode *Bnode = nullptr;
   bool rtFlag=true;
   NodeCommunicaion<Motor> motorFeedback; 
@@ -85,7 +86,7 @@ public:
   CmdQueue* cmdQueue;
   
    
-  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new HWAL::Controller()),cmdQueue(new CmdQueue()),motorFeedback(16000000)     
+  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue()),motorFeedback(16000000)     
   {
   }
   Centre(const Centre &) = delete;
@@ -167,6 +168,8 @@ public:
     {
       while (true)
       {
+         std::uint16_t aaa;
+         std::memcpy(&aaa,control->inputData.data()+0,2);
          std::string cmd;
          if (cmdQueue->cmdRead(cmd)==0) 
          { 

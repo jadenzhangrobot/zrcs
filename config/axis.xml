@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<AxisConfig>
+  <!-- 轴配置 -->
+  <Axis ID="0" Type="Linear" slave="0">
+  <!-- 机械参数 -->  
+      <Pitch unit="mm">5.0</Pitch>     <!-- 螺距：每转动一圈的移动距离 -->
+      <Direction>Positive</Direction>   <!-- 旋转方向：正向或负向 -->
+      <Ratio>1</Ratio>                 <!-- 传动比：电机与丝杆的传动比例 -->
+      <Backlash unit="mm">0.01</Backlash>  <!-- 反向间隙补偿值 -->
+      <!-- 运动参数 -->
+      <MaxVelocity unit="mm/s">1000</MaxVelocity>
+      <MaxAcceleration unit="mm/s²">5000</MaxAcceleration>
+      <!-- 编码器配置 -->
+      <Encoder Type="Incremental">1048575</Encoder>     
+     <!-- 位置限制 -->
+      <Negative unit="mm">-10000</Negative>
+      <Positive unit="mm">100000</Positive>
+      <NegativeSensor>Input1</NegativeSensor>
+      <PositiveSensor>Input2</PositiveSensor>
+    <!-- 归位参数 -->
+      <Method>LimitSwitch</Method>     <!-- 归零方式 -->
+      <Velocity unit="mm/s">100</Velocity>
+      <Acceleration unit="mm/s²">500</Acceleration>
+      <Offset unit="mm">0</Offset>     <!-- 零点偏移 -->
+  </Axis>
+</AxisConfig>

@@ -9,7 +9,7 @@
 #include "ethercat/EthercatMotor.h"
 #include "ControllerInterface.h"
 #include "ethercat/EthercatIo.h"
-namespace HWAL {
+namespace ZrcsHardware {
    
  class Controller
     {  
@@ -24,7 +24,7 @@ namespace HWAL {
             { 
                 if (it->slaveType==SlaveConfig::MOTOR)
                 {                   
-                     std::unique_ptr<HWAL::Motor> motor((HWAL::Motor*)(new EthercatMotor(it->SlaveId,ethercatMaster,motorConfig)));
+                     std::unique_ptr<ZrcsHardware::Motor> motor((ZrcsHardware::Motor*)(new EthercatMotor(it->SlaveId,ethercatMaster,motorConfig)));
                      motors.push_back(std::move(motor));
                 }
                 else if (it->slaveType==SlaveConfig::AIO)
@@ -33,7 +33,7 @@ namespace HWAL {
                 }
                 else if (it->slaveType==SlaveConfig::DIO)
                 {
-                      std::unique_ptr<HWAL::Io> io((HWAL::Io*)(new EthercatIo(it->SlaveId,ethercatMaster)));
+                      std::unique_ptr<ZrcsHardware::Io> io((ZrcsHardware::Io*)(new EthercatIo(it->SlaveId,ethercatMaster)));
                       Ios.push_back(std::move(io));
                 }
                 else
@@ -41,7 +41,7 @@ namespace HWAL {
                      throw std::runtime_error("没有的从站类型");
                 }
             }
-                rtos_.reset((HWAL::Rtos*)(new xenomai()));
+                rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
                 if (!ethercatMaster->OutputOffset.empty()) {
                    outputData.resize( ethercatMaster->OutputOffset.back().back());
                    inputData.resize( ethercatMaster->InputOffset.back().back());                   
@@ -53,13 +53,13 @@ namespace HWAL {
             
          void SendData()
          {
-                 std::memcpy(outputData.data(), static_cast<const uint8_t*>(ethercatMaster->DomainRead), outputData.size());
+                 std::memcpy(outputData.data(), ethercatMaster->DomainWrite, outputData.size());
                  ethercatMaster->send();
          }
          void receiveData()
          {
                 ethercatMaster->receive();
-                std::memcpy(inputData.data(),  static_cast<const uint8_t*>(ethercatMaster->DomainRead), inputData.size());
+                std::memcpy(inputData.data(),ethercatMaster->DomainRead, inputData.size());
     
 
          }

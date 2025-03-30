@@ -22,7 +22,7 @@ class Disable:zrcs_system::Basenode
          
     
         }
-         void init() override
+        void init() override
        {   
            port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
         
@@ -31,8 +31,7 @@ class Disable:zrcs_system::Basenode
               std::string str=cmdParam->front();
               port_input.parse_check(str);
               cmdParam->pop();
-          }   
-                    
+          }                       
               motor_id=port_input.get<int>("motor");
               node_status=RUNNING;                 
           }
@@ -42,10 +41,9 @@ class Disable:zrcs_system::Basenode
         {            
            
                   if(control->motors[motor_id]->disable()==0)
-                  {
-                      
+                  {                     
                      node_status=SUCCESS;
-                   } 
+                  } 
                   else {
                       node_status=FAILURE;
                    }                     
@@ -55,9 +53,6 @@ class Disable:zrcs_system::Basenode
       {
            //std::cout<<"Disable 执行成功"<<std::endl;
       }
-
-
-
 };
 
  REGISTERCMD(Disable);

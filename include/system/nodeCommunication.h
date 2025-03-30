@@ -6,7 +6,7 @@
 #include <vector>
   #define OUTPUT 1
   #define INPUT -1
-namespace zrcsSystem {
+namespace ZrcsSystem {
   
     template<class T>
     class NodeCommunicaion

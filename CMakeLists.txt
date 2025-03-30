@@ -28,12 +28,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
-option(realtime "Build realtime programs" ON)
+option(realtime "Build realtime programs" OFF)
 message("realtime ${realtime}")
-option(ethercat "Build ethercat programs" ON)
+option(ethercat "Build ethercat programs" OFF)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
+      add_definitions(-DREALTIME)
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -56,15 +57,22 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
    ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
    ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
+   ${DEVEL_INCLUDE_DIRS}/3rdParty/cpp-httplib
+   ${DEVEL_INCLUDE_DIRS}/3rdParty/json
    ${DEVEL_INCLUDE_DIRS}/build/message
  )
- include(${DEVEL_INCLUDE_DIRS}/cmake/protobuf.cmake) 
+include(${DEVEL_INCLUDE_DIRS}/cmake/protobuf.cmake) 
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
 # 添加ruckig库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
 # 添加zmq库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq)
+# 添加cpp-httplib库
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/cpp-httplib)
+# 添加json库
+add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/json)
+
 # include(${DEVEL_INCLUDE_DIRS}/cmake/libzmq.cmake)
 # ExternalAutotools(libzmq "${CMAKE_BINARY_DIR}/build_autotools" "${CMAKE_BINARY_DIR}/3rdParty")
 

@@ -5,7 +5,7 @@
 #include "system/centre.h"
 #include <cstdint>
 #include <iostream>
-class Io:zrcsSystem::Basenode
+class Io:ZrcsSystem::Basenode
 {
    private:
       uint16_t value;

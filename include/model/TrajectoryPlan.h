@@ -3,7 +3,7 @@
 #include <ruckig/ruckig.hpp>
 #include "system/basenodeInterface.h"
 using namespace ruckig;
-class TraPlan:public zrcsSystem::Basenode
+class TraPlan:public ZrcsSystem::Basenode
 {
       TraPlan()
       {

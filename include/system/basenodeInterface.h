@@ -20,11 +20,12 @@ class Basenode {
 public:
   uint64_t node_count = 0;
   std::string node_name;
-  enum NodeStatus {
+  enum NodeStatus
+  {
     INIT,    //表示实时组件初始化状态
     IDLE,    //表示实时线程处于闲暇状态,没有加载任何主件
     RUNNING, //表示实时线程正执行任务
-    EXIT,    //指令执行成功，进如推出状态
+    EXIT,
     SUCCESS, //表示执行成功状态，这个状态和IDLE状态的区别在于可以接受指令
     FAILURE, //表示执行错误
   };

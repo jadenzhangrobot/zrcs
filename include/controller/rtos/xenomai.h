@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
-namespace HWAL 
+namespace ZrcsHardware 
 {
  class xenomai:Rtos
 {

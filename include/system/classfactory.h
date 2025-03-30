@@ -14,8 +14,8 @@
 #include <any>
 #include "basenodeInterface.h"
 
-typedef zrcsSystem::Basenode* (*CreateNode)(void);
-namespace zrcsSystem {
+typedef ZrcsSystem::Basenode* (*CreateNode)(void);
+namespace ZrcsSystem {
         class classfactory
         {
         private:
@@ -62,29 +62,29 @@ namespace zrcsSystem {
             public:            
                 RegisterClass(std::string className, std::any ptr)
                 {                    
-                    zrcsSystem::classfactory::getInstance().registClass(className,ptr);                             
+                    ZrcsSystem::classfactory::getInstance().registClass(className,ptr);                             
                 }
         };
 }
 
 
  #define REGISTERCMD(className)                     \
-    zrcsSystem::Basenode* objectCreator##className() \
+ ZrcsSystem::Basenode* objectCreator##className() \
     {                                                 \
-        zrcsSystem::Basenode* ptr= static_cast<zrcsSystem::Basenode*>(new className());\
-        return std::unique_ptr<zrcsSystem::Basenode>(ptr).release();\
+        ZrcsSystem::Basenode* ptr= static_cast<ZrcsSystem::Basenode*>(new className());\
+        return std::unique_ptr<ZrcsSystem::Basenode>(ptr).release();\
     } \
-     zrcsSystem::RegisterClass RegisterClass##className(#className,objectCreator##className())
+    ZrcsSystem::RegisterClass RegisterClass##className(#className,objectCreator##className())
 
 
 
 #define REGISTERNODE(className)                     \
-    zrcsSystem::Basenode* objectCreator##className()\
+ZrcsSystem::Basenode* objectCreator##className()\
     {                                                 \
-        zrcsSystem::Basenode* ptr= static_cast<zrcsSystem::Basenode*>(new className());\
-        return std::unique_ptr<zrcsSystem::Basenode>(ptr).release();\
+        ZrcsSystem::Basenode* ptr= static_cast<ZrcsSystem::Basenode*>(new className());\
+        return std::unique_ptr<ZrcsSystem::Basenode>(ptr).release();\
     } \
-    zrcsSystem::RegisterClass RegisterClass##className(#className,(CreateNode)objectCreator##className)
+    ZrcsSystem::RegisterClass RegisterClass##className(#className,(CreateNode)objectCreator##className)
 
 
 

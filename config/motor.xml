@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<MotorConfig>
-    <motor ID="0" Encoder="1048575" NegativeLimit="-10000" PositiveLimit="100000" PositionOffset="0"/>
-    <!-- <motor ID="1" Encoder="131071" NegativeLimit="-10000" PositiveLimit="100000" PositionOffset="0"/>
-    <motor ID="2" Encoder="131071" NegativeLimit="-10000" PositiveLimit="100000" PositionOffset="0"/>
-    <motor ID="3" Encoder="131071" NegativeLimit="-10000" PositiveLimit="100000" PositionOffset="0"/>
-    <motor ID="4" Encoder="1048575" NegativeLimit="-10000" PositiveLimit="100000" PositionOffset="0"/> -->
-</MotorConfig>

@@ -11,7 +11,7 @@
 #include "system/centre.h"
 #include "system/classfactory.h"
 #include <iostream>
-class Enable:public zrcsSystem::Basenode
+class Enable:public ZrcsSystem::Basenode
 {
    private:
       int motor_id;

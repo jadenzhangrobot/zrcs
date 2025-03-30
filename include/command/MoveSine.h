@@ -16,7 +16,7 @@
 #include <memory>
 #include <ostream>
 #include <ruckig/ruckig.hpp>
-class MoveSine : public zrcsSystem::Basenode {
+class MoveSine : public ZrcsSystem::Basenode {
 public:
   
   double currentPosition[6];

@@ -15,7 +15,7 @@
 #include "system/classfactory.h"
 #include <random>
 using namespace ruckig;
-class Test:public zrcsSystem::Basenode
+class Test:public ZrcsSystem::Basenode
   {
 
              public:

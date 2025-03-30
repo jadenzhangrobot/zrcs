@@ -6,7 +6,7 @@
 #include "controller/ParameterRead.h"
 #include <cstdint>
 #include <string>
-namespace HWAL {
+namespace ZrcsHardware {
 	
 class EthercatMotor:Motor
 {
@@ -37,7 +37,7 @@ class EthercatMotor:Motor
 				throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
 			}
 		}
-			int findNumberInputKey(std::string key)
+		int findNumberInputKey(std::string key)
 		{
 			auto it = ethercatMaster->InputPdoInfoAndOffset[motorId].find(key);
 			if (it != ethercatMaster->InputPdoInfoAndOffset[motorId].end()){
@@ -178,7 +178,7 @@ class EthercatMotor:Motor
 			return -1;
 		}
           }
-        int enable() override
+         int  switchOn() override
           {
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
@@ -226,27 +226,27 @@ class EthercatMotor:Motor
 			return 3;
 		}
 		// check status D, now transition 4
-		else if ((status_word & 0x6F) == 0x23) {
-			// transition 4 //		   
-					setControlWord(std::uint16_t(0x0F));
-					// check mode to set correct pos, vel or cur //
-					switch (0x08) 
-					{
-					case 0x08: setTargetPos(actualPos()); break;
+		// else if ((status_word & 0x6F) == 0x23) {
+		// 	// transition 4 //		   
+		// 			setControlWord(std::uint16_t(0x0F));
+		// 			// check mode to set correct pos, vel or cur //
+		// 			switch (0x08) 
+		// 			{
+		// 			case 0x08: setTargetPos(actualPos()); break;
 				
-					default: setTargetPos(actualPos());
-					}
-			return 4;
-		}
-		// check status E, now keep status
-		else if ((status_word & 0x6F) == 0x27)
-		{
-			// check if need wait //
-			// if (--imp_->waiting_count_left > 0) return 5;
-			// // now return normal
-			// else return 5;
-            return 5;
-		}
+		// 			default: setTargetPos(actualPos());
+		// 			}
+		// 	return 4;
+		// }
+		// // check status E, now keep status
+		// else if ((status_word & 0x6F) == 0x27)
+		// {
+		// 	// check if need wait //
+		// 	// if (--imp_->waiting_count_left > 0) return 5;
+		// 	// // now return normal
+		// 	// else return 5;
+        //     return 5;
+		// }
 		// check status F, now transition 12
 		else if ((status_word & 0x6F) == 0x07) 
 		{

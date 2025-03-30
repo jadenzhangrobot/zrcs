@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include "system/classfactory.h"
 using namespace ruckig;
-class JogabsJ:public zrcsSystem::Basenode
+class JogabsJ:public ZrcsSystem::Basenode
   {
 
              public:

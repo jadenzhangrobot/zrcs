@@ -17,7 +17,7 @@
 #include <sys/mman.h>
 #include <string.h>
 
-namespace HWAL {
+namespace ZrcsHardware {
  
 class Preempt_rt:Rtos
 {

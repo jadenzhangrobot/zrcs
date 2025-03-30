@@ -5,16 +5,16 @@
             <syncManager idx="1" dir="2" watchDog="0"/>
             <syncManager idx="2" dir="1" watchDog="1" >
                 <pdo idx="1600">
-                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition_s0"/>
-                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode_s0"/>
-                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord_s0"/>                                
+                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition"/>
+                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode"/>
+                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>                                
                 </pdo>
             </syncManager>
             <syncManager idx="3" dir="2" watchDog="0">
                 <pdo idx="1a00">
-                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord_s0"/>
-                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition_s0"/>
-                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode_s0"/>               
+                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode"/>               
                 </pdo>
             </syncManager>
     </slave>
@@ -23,16 +23,16 @@
             <syncManager idx="1" dir="2" watchDog="0"/>
             <syncManager idx="2" dir="1" watchDog="1" >
                 <pdo idx="1600">
-                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition_s1"/>
-                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode_s1"/>
-                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord_s1"/>                                
+                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition"/>
+                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode"/>
+                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>                                
                 </pdo>
             </syncManager>
             <syncManager idx="3" dir="2" watchDog="0">
                 <pdo idx="1a00">
-                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord_s1"/>
-                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition_s1"/>
-                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode_s1"/>               
+                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode"/>               
                 </pdo>
             </syncManager>
     </slave>
@@ -41,16 +41,16 @@
             <syncManager idx="1" dir="2" watchDog="0"/>
             <syncManager idx="2" dir="1" watchDog="1" >
                 <pdo idx="1600">
-                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition_s2"/>
-                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode_s2"/>
-                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord_s2"/>                                
+                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition"/>
+                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode"/>
+                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>                                
                 </pdo>
             </syncManager>
             <syncManager idx="3" dir="2" watchDog="0">
                 <pdo idx="1a00">
-                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord_s2"/>
-                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition_s2"/>
-                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode_s2"/>               
+                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode"/>               
                 </pdo>
             </syncManager>
     </slave>
@@ -59,16 +59,16 @@
             <syncManager idx="1" dir="2" watchDog="0"/>
             <syncManager idx="2" dir="1" watchDog="1" >
                 <pdo idx="1600">
-                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition_s3"/>
-                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode_s3"/>
-                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord_s3"/>                                
+                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition"/>
+                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode"/>
+                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>                                
                 </pdo>
             </syncManager>
             <syncManager idx="3" dir="2" watchDog="0">
                 <pdo idx="1a00">
-                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord_s3"/>
-                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition_s3"/>
-                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode_s3"/>               
+                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode"/>               
                 </pdo>
             </syncManager>
     </slave>
@@ -77,16 +77,16 @@
             <syncManager idx="1" dir="2" watchDog="0"/>
             <syncManager idx="2" dir="1" watchDog="1" >
                 <pdo idx="1600">
-                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition_s4"/>
-                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode_s4"/>
-                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord_s4"/>                                
+                    <pdoEntry idx="607A" subIdx="00" bitLen="32" name="TargetPosition"/>
+                    <pdoEntry idx="6060" subIdx="00" bitLen="8"  name="controlMode"/>
+                    <pdoEntry idx="6040" subIdx="00" bitLen="16" name="ControlWord"/>                                
                 </pdo>
             </syncManager>
             <syncManager idx="3" dir="2" watchDog="0">
                 <pdo idx="1a00">
-                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord_s4"/>
-                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition_s4"/>
-                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode_s4"/>               
+                    <pdoEntry idx="6041" subIdx="00" bitLen="16" name="StatusWord"/>
+                    <pdoEntry idx="6064" subIdx="00" bitLen="32" name="ActualPosition"/>
+                    <pdoEntry idx="6061" subIdx="00" bitLen="8"  name="dispMode"/>               
                 </pdo>
             </syncManager>
     </slave>

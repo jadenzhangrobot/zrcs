@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <pthread.h>
 #include <thread>
-namespace HWAL {
+namespace ZrcsHardware {
 
 class Nativelinux:Rtos
 {

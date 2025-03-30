@@ -8,10 +8,9 @@
  */
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
-#include "ParameterRead.h"
 #include <functional>
 #include <iostream>
-namespace HWAL {
+namespace ZrcsHardware {
 const double pi = 3.14159265358979323846; 
 enum MotorError
  { 
@@ -21,7 +20,7 @@ enum MotorError
          maxPosFollowingError,
          statusWorderror
  };
-class Motor {
+class Axis {
 private:
   double max_pos = 1.0;
   double min_pos = -1.0;
@@ -38,14 +37,15 @@ private:
   double target_vel_ = 0;
   double target_toq_ = 0;
   double offset_vel_ = 0;
-  double offset_toq_ = 0;  
+  double offset_toq_ = 0;
+  
   MotorConfig *motorConfig;
   MotorError motorError=Run;
   double targetPosition=0;
 public:
   int motorId;
  
-  Motor(int mId, MotorConfig *motorConfig_): motorId(mId), motorConfig(motorConfig_) 
+  Axis(int mId, MotorConfig *motorConfig_): motorId(mId), motorConfig(motorConfig_) 
   {
     pos_factor = motorConfig->motoParas[motorId].encoderBits;
     max_pos = motorConfig->motoParas[motorId].positiveLimit;
@@ -148,6 +148,20 @@ class Sensor {
 
   virtual ~Sensor(){};
 };
+
+// class Controller {
+// public:
+//   virtual ~Controller() {};
+//   virtual int init() = 0;
+//   virtual int start() = 0;
+//   virtual int stop() = 0;
+//   virtual int close() = 0;
+//   virtual int reset() = 0;
+//   virtual int pause() = 0;
+//   virtual int resume() = 0;
+//   virtual bool isConnected() = 0;
+//   virtual bool isRunning() = 0;
+// };
 class Rtos {
 public:
   virtual ~Rtos(){};
@@ -163,5 +177,5 @@ public:
     return time;
   }
 };
-} // namespace HWAL
+} 
 #endif

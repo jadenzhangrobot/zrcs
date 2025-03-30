@@ -15,7 +15,7 @@
     } while(0)
 #define GET_BIT(num, pos) ((num >> pos) & 1)
 
-namespace HWAL {
+namespace ZrcsHardware {
     class EthercatIo: public Io
     {         
          private:

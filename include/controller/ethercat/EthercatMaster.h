@@ -10,7 +10,7 @@
 #include <vector>
 #include "EthercatParameterRead.h"
 #include "controller/ControllerInterface.h"
-namespace HWAL {
+namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器
 #define  SMIN 3 //ethercat第三个同步管理器
 class EthercatMaster {

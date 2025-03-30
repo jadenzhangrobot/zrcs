@@ -58,14 +58,14 @@ def generate_header(entries, header_file):
                 if index_sm2 == 0:
                     f.write(f'\n   //outputs\n')
                 c_type = get_c_type(entry['bitLen'])
-                macro_name = f"{entry['name']}"
+                macro_name = f"{entry['name']}_{current_slave}"
                 f.write(f'    #define {macro_name} {current_slave} {index_sm2} {c_type}\n')
                 index_sm2 += 1
             if entry['sm_idx'] == '3': 
                 if index_sm3 == 0:
                     f.write(f'\n   //inputs\n')
                 c_type = get_c_type(entry['bitLen'])
-                macro_name = f"{entry['name']}"
+                macro_name = f"{entry['name']}_{current_slave}"
                 f.write(f'    #define {macro_name} {current_slave} {index_sm3} {c_type}\n')
                 index_sm3 += 1
             
