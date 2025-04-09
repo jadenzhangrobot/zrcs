@@ -1,14 +1,16 @@
 
 #ifndef ETHERCATMOTOR_H
 #define ETHERCATMOTOR_H
-#include "EthercatMaster.h"
+#ifdef REALTIME
+	#include "EthercatMaster.h"
+#endif
 #include "controller/ControllerInterface.h"
-#include "controller/ParameterRead.h"
+
 #include <cstdint>
 #include <string>
 namespace ZrcsHardware {
 	
-class EthercatMotor:Motor
+class EthercatMotor:Axis
 {
      private:
 		int ModeOffset;
@@ -16,10 +18,11 @@ class EthercatMotor:Motor
 		int ControlOffset;
 		int ActualPos;
 		int StatusWord;
+		int motorId;
      public:
 	    EthercatMaster* ethercatMaster;
   
-        EthercatMotor(int id,EthercatMaster* ethercatMaster_,MotorConfig* motorConfig_):Motor(id,motorConfig_),ethercatMaster( ethercatMaster_)
+        EthercatMotor(int id,EthercatMaster* ethercatMaster_):motorId(id),ethercatMaster( ethercatMaster_)
         {
 		        ModeOffset=findNumberOutputKey("controlMode");
 				ControlOffset=findNumberOutputKey("ControlWord");
@@ -57,7 +60,6 @@ class EthercatMotor:Motor
         double encoderActualPos(void) override
         {   			 			 
              int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[motorId][ActualPos]);
-			 int32_t pos_=1048575+pos;
 			 return static_cast<double>(pos);						
         }
         double actualVel(void) override
@@ -121,59 +123,59 @@ class EthercatMotor:Motor
 
 		auto status_word = statusWord();
          
-		// check status A, now transition 1 automatically
+	
 		if ((status_word & 0x4F) == 0x00) {
-			// this just set the initial control word...
+			
 		
 			setControlWord(std::uint16_t(0x00));
 			return 1;
 		}
-		// check status B, now keep and return
+		
 		else if ((status_word & 0x4F) == 0x40) {
 			// transition 2 //
 			
 			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
-		// check status C, now transition 7
+		
 		else if ((status_word & 0x6F) == 0x21) {
 			// transition 3 //
 		
 			setControlWord(std::uint16_t(0x00));
 			return 0;
 		}
-		// check status D, now transition 10
+		
 		else if ((status_word & 0x6F) == 0x23) {
 			
 			setControlWord(std::uint16_t(0x06));//change to 0x06 for cooldrive
 			return 3;
 		}
-		// check status E, now transition 9
+		
 		else if ((status_word & 0x6F) == 0x27) {
-			// transition 5 //
+			
 			
 			setControlWord(std::uint16_t(0x07));//change to 0x07 for cooldrive
 			return 4;
 		}
-		// check status F, now transition 12
+		
 		else if ((status_word & 0x6F) == 0x07) {
 			
 			setControlWord(std::uint16_t(0x00));
 			return 5;
 		}
-		// check status G, now transition 14
+		
 		else if ((status_word & 0x4F) == 0x0F) {
 		
 			setControlWord(std::uint16_t(0x00));
 			return 6;
 		}
-		// check status H, now transition 15
+		
 		else if ((status_word & 0x4F) == 0x08) {
-			// transition 4 //
+			
 			setControlWord(std::uint16_t(0x80));
 			return 7;
 		}
-		// unknown status
+		
 		else {
 			return -1;
 		}
@@ -206,70 +208,45 @@ class EthercatMotor:Motor
        
 		auto status_word = statusWord();
 	
-		// check status A
+	
 		if ((status_word & 0x4F) == 0x00) {
 			return 1;
 		}
-		// check status B, now transition 2
+		
 		else if ((status_word & 0x4F) == 0x40) 
 		{
-			// transition 2 //			
+				
 			setControlWord(std::uint16_t(0x06));
 			return 2;
 		}
-		// check status C, now transition 3
+		
 		else if ((status_word & 0x6F) == 0x21)
 		 {
-			// transition 3 //
-			
+		
 			setControlWord(std::uint16_t(0x07));
 			return 3;
 		}
-		// check status D, now transition 4
-		// else if ((status_word & 0x6F) == 0x23) {
-		// 	// transition 4 //		   
-		// 			setControlWord(std::uint16_t(0x0F));
-		// 			// check mode to set correct pos, vel or cur //
-		// 			switch (0x08) 
-		// 			{
-		// 			case 0x08: setTargetPos(actualPos()); break;
-				
-		// 			default: setTargetPos(actualPos());
-		// 			}
-		// 	return 4;
-		// }
-		// // check status E, now keep status
-		// else if ((status_word & 0x6F) == 0x27)
-		// {
-		// 	// check if need wait //
-		// 	// if (--imp_->waiting_count_left > 0) return 5;
-		// 	// // now return normal
-		// 	// else return 5;
-        //     return 5;
-		// }
-		// check status F, now transition 12
+		
 		else if ((status_word & 0x6F) == 0x07) 
 		{
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			
 			setControlWord(std::uint16_t(0x00));
 			return 6;
 		}
-		// check status G, now transition 14
+		
 		else if ((status_word & 0x4F) == 0x0F)
 		{
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x00));
+			
 			setControlWord(std::uint16_t(0x00));
 			return 7;
 		}
-		// check status H, now transition 15
+		
 		else if ((status_word & 0x4F) == 0x08) 
 		{
-			// transition 4 //
-			//imp_->slave_->writePdo(0x6040, 0x00, std::uint16_t(0x80));
+			
 			setControlWord(std::uint16_t(0x80));
 			return 8;
 		}
-		// unknown status
 		else
 		{
 			return -1;

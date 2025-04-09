@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <stdio.h>
 #include <unistd.h>
-#include <iostream>
 namespace ZrcsHardware 
 {
  class xenomai:Rtos

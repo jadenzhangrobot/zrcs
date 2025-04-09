@@ -9,79 +9,81 @@
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
 #include <functional>
-#include <iostream>
+#include "axisParameter.h"
+
 namespace ZrcsHardware {
 const double pi = 3.14159265358979323846; 
-enum MotorError
- { 
-         Run=0,
-         maxPositionExceeded,
-         minPositionExceeded,
-         maxPosFollowingError,
-         statusWorderror
- };
+typedef enum{
+    DISABLED,
+    STANDSTILL,
+    HOMING,
+    DISCRETE_MOTION,
+    CONTINUOUS_MOTION,
+    STOPPING,
+    ERROR_STOP
+}axisStatus;
+typedef enum 
+{
+  GOOD                           = 0, //成功
+  ERROR_AXISPOWEROFF                   = 1, //轴未使能
+  ERROR_AXISPOWERON                    = 2, //轴已功能
+  ERROR_AXISNOTEXIST                   = 3, //轴ID号不存在
+  ERROR_POSILLEGAL                     = 4, //位置不合法
+  ERROR_ACCILLEGAL                     = 5, //加/减速度不合法
+  ERROR_VELILLEGAL                     = 6, //速度不合法
+  ERROR_AXISHARDWARE                   = 7, //硬件错误
+  ERROR_CMDPPOSOVERLIMIT               = 8, //指令位置超出正向限制
+  ERROR_CMDNPOSOVERLIMIT               = 9, //指令位置超出负向限制
+  ERROR_FORBIDDENPPOSMOVE              = 10, //禁止正向移动
+  ERROR_FORBIDDENNPOSMOVE              = 11, //禁止负向移动
+  ERROR_POSLAGOVERLIMIT                = 12, //轴跟随误差超限
+  ERROR_CMDVELOVERLIMIT                = 13, //轴指令速度超出限制
+  ERROR_CMDACCOVERLIMIT                = 14, //轴指令加速度超出限制
+  ERROR_POSINFINITY                    = 15, //轴设定位置不合法
+}AxErrorCode;
 class Axis {
 private:
-  double max_pos = 1.0;
-  double min_pos = -1.0;
-  double max_vel = 1.0;
-  double min_vel = -1.0;
-  double max_acc = 1.0;
-  double min_acc = -1.0;
-  double max_pos_following_error = 1.0;
-  double max_vel_following_error = 1.0;
-  double pos_factor = 1.0;
-  double pos_offset = 0.0;
-  double home_pos = 0.0;
-  double vel_factor = 1.0;
-  double target_vel_ = 0;
-  double target_toq_ = 0;
-  double offset_vel_ = 0;
-  double offset_toq_ = 0;
-  
-  MotorConfig *motorConfig;
-  MotorError motorError=Run;
+ 
+  AxErrorCode axisError=GOOD;
   double targetPosition=0;
 public:
-  int motorId;
+  int axId;
  
-  Axis(int mId, MotorConfig *motorConfig_): motorId(mId), motorConfig(motorConfig_) 
+  Axis(int mId): axId(mId)
   {
-    pos_factor = motorConfig->motoParas[motorId].encoderBits;
-    max_pos = motorConfig->motoParas[motorId].positiveLimit;
-    min_pos = motorConfig->motoParas[motorId].negativeLimit;
-    pos_offset = motorConfig->motoParas[motorId].PositionOffset;
+
   }
   auto getTargetPos()->double
   {
       return targetPosition;
   }
+
   auto setTargetPos(double pos) -> void 
   {
-      if (pos>max_pos)
+      if (pos>ParaConfig->axisParas[axId].max_pos)
       {
-        motorError=maxPositionExceeded;
+        axisError=ERROR_CMDPPOSOVERLIMIT;
       }
-      if (pos<min_pos)
+      else if (pos<ParaConfig->axisParas[axId].min_pos)
       {
-        motorError=minPositionExceeded;
-      }
+        axisError=ERROR_CMDNPOSOVERLIMIT;
+      } 
       else
       {
         targetPosition=pos;
-        setEncoderTargetPos((targetPosition + pos_offset) * pos_factor / (2 * pi));
+        setEncoderTargetPos((targetPosition + ParaConfig->axisParas[axId].pos_offset) * ParaConfig->axisParas[axId].pos_factor / (2 * pi));
       }
     
   };
+  //单位是弧度
   auto actualPos()->double 
   {
      double pos = encoderActualPos();
-     return (pos - pos_offset) / pos_factor * 2 * pi;
+     return (pos - ParaConfig->axisParas[axId].pos_offset) / ParaConfig->axisParas[axId].pos_factor * 2 * pi;
   }
-   auto getError()->MotorError
+   auto errorCode()->AxErrorCode
    {
-         //statusWord();
-         return motorError;
+         return axisError;
    }
 
   // auto virtual controlWord()->std::uint16_t = 0;
@@ -103,7 +105,6 @@ public:
 
   auto virtual statusWord() -> std::uint16_t = 0;
   // auto virtual modeOfDisplay()const->std::uint8_t = 0;
-  auto virtual errorCode() -> uint32_t { return 0; }
   
 
   virtual void setEncoderTargetPos(double position) = 0;
@@ -124,17 +125,13 @@ public:
   auto virtual setModeOfOperation(std::uint8_t md) -> void {}
   auto virtual init() -> int { return 0; }
 
-  virtual ~Motor(){};
+  virtual ~Axis(){};
 };
 class Io {
 public:
   /// 急停相关接口
   virtual bool isEmergencyStop() { return false;}  // 读取急停状态
   virtual void setEmergencyStop(bool value) {}      // 设置急停状态
-
-  // 限位相关接口 
- // virtual bool isPositiveLimit(int motorId) { return false; }  // 读取正向限位状态
- // virtual bool isNegativeLimit(int motorId) { return false; }  // 读取负向限位状态
 
   virtual bool ioRead32(int index, int bitPos) = 0;                  // 32位IO读取
   virtual bool ioRead16(int index, int bitPos) = 0;                  // 16位IO读取

@@ -32,7 +32,7 @@ public:
   NodeStatus node_status = IDLE;
   cmdline::parser port_input;
   std::queue<std::string> cmdParam;
-  HWAL::Controller* control;
+  ZrcsHardware::Controller* control;
 
   
   Basenode()
@@ -54,7 +54,7 @@ public:
 
   virtual void exit(void)=0;
  
-  void registered( HWAL::Controller* ct)
+  void registered( ZrcsHardware::Controller* ct)
   {
         control=ct;
   }

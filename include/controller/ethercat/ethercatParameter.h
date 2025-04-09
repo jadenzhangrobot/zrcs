@@ -11,7 +11,7 @@
 #include <map>
 #include <filesystem>
 #include "tinyxml2.h"
-namespace ZrcsSystem
+namespace ZrcsHardware
 {
 using namespace tinyxml2;
 class SlaveConfig {

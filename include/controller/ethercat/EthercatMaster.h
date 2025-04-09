@@ -4,11 +4,9 @@
 #include <alchemy/timer.h>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-#include "EthercatParameterRead.h"
 #include "controller/ControllerInterface.h"
 namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器

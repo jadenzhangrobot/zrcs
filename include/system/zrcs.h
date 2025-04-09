@@ -27,9 +27,7 @@ namespace zrcsSystem {
         void run(void)
         {
                 ct->init();
-              //  auto cmd = std::async(std::launch::async, cmdThread, ctx,ct);
-              //  auto pubstatus = std::async(std::launch::async, pubstatusThread, ctx,ct);
-              //  auto pubData = std::async(std::launch::async, pubDataThread, ctx,ct);
+            
                 terminal = std::thread([this]() 
                 {
                     while (true) 
@@ -47,7 +45,7 @@ namespace zrcsSystem {
     ~Zrcs() {
                serverTh.join();        
                terminal.join();
-            delete ct; 
+               delete ct; 
         }
     };
 } 

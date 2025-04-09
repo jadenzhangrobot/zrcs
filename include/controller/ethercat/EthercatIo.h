@@ -1,9 +1,12 @@
 #ifndef ETHERCATIO_H
 #define ETHERCATIO_H
 #include "controller/ControllerInterface.h"
-#include "EthercatMaster.h"
+#ifdef REALTIME
+    #include "EthercatMaster.h"
+    #include <ecrt.h>
+#endif
 #include <cstdint>
-#include <ecrt.h>
+
 #include <type_traits>
 #define SET_BIT(num, bitPos, value) \
     do { \
@@ -19,7 +22,9 @@ namespace ZrcsHardware {
     class EthercatIo: public Io
     {         
          private:
+         #ifdef REALTIME
          EthercatMaster* ethercatMaster;
+         #endif
          int SlaveId;
         public:
          EthercatIo(int id,EthercatMaster* ethercatMaster_):SlaveId(id),ethercatMaster( ethercatMaster_)

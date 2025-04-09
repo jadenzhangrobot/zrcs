@@ -3,8 +3,8 @@
 //#include "Ureffort.h"
 #include "JogabsJ.h"
 // #include "Movehome.h" 
- #include "Enable.h"
- #include "Setmode.h" 
+// #include "Enable.h"
+ //#include "Setmode.h" 
  //#include "Disable.h"
 
 // #include "JogJ.h"
@@ -12,11 +12,11 @@
  // #include "Show.h"
   // #include "MoveJ.h"
   // #include "MoveL.h"
-   #include "Motion.h"
-   #include "MoveSine.h"
-   #include "Flyingshot.h"
+ //  #include "Motion.h"
+ //  #include "MoveSine.h"
+ //  #include "Flyingshot.h"
    //#include  "IO.h"
   // #include "model/
-   #include "tesh.h"
-   #include "pid.h"
+  // #include "tesh.h"
+  // #include "pid.h"
 #endif

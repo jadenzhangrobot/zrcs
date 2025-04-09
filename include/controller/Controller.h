@@ -1,66 +1,57 @@
 #ifndef CONTROLLER
 #define CONTROLLER
-#include <cstdint>
 #include <memory>
 #include <vector>
+#include "axisParameter.h"
 #include "ControllerInterface.h"
+#ifdef REALTIME
 #include "controller/rtos/xenomai.h"
 #include "ethercat/EthercatMaster.h"
 #include "ethercat/EthercatMotor.h"
-#include "ControllerInterface.h"
 #include "ethercat/EthercatIo.h"
+#endif
 namespace ZrcsHardware {
    
  class Controller
     {  
         private:
-        EthercatMaster* ethercatMaster;
-        MotorConfig* motorConfig;
-
+        #ifdef REALTIME
+          EthercatMaster* ethercatMaster;
+        #endif
+         ParaConfig *axConfig;
         public:
-        Controller():ethercatMaster(new EthercatMaster()),motorConfig(new MotorConfig())
-        {          
-            for(auto it=ethercatMaster->slaveConfig->Slaves.begin();it!=ethercatMaster->slaveConfig->Slaves.end();++it)
-            { 
-                if (it->slaveType==SlaveConfig::MOTOR)
-                {                   
-                     std::unique_ptr<ZrcsHardware::Motor> motor((ZrcsHardware::Motor*)(new EthercatMotor(it->SlaveId,ethercatMaster,motorConfig)));
-                     motors.push_back(std::move(motor));
-                }
-                else if (it->slaveType==SlaveConfig::AIO)
-                {
-                
-                }
-                else if (it->slaveType==SlaveConfig::DIO)
-                {
-                      std::unique_ptr<ZrcsHardware::Io> io((ZrcsHardware::Io*)(new EthercatIo(it->SlaveId,ethercatMaster)));
-                      Ios.push_back(std::move(io));
-                }
-                else
-                {
-                     throw std::runtime_error("没有的从站类型");
-                }
+        Controller()
+        {  
+            #ifdef REALTIME
+            for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
+            {                
+                    std::unique_ptr<ZrcsHardware::Axis> axis((ZrcsHardware::Axis*)(new EthercatMotor(it->slaveid,ethercatMaster)));
+                    axiss.push_back(std::move(axis));             
             }
-                rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
+            rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
                 if (!ethercatMaster->OutputOffset.empty()) {
                    outputData.resize( ethercatMaster->OutputOffset.back().back());
                    inputData.resize( ethercatMaster->InputOffset.back().back());                   
                 } else {
                     // 处理空向量的情况（如抛出异常或返回错误）
                 }
+            #endif         
 
         }
             
          void SendData()
          {
-                 std::memcpy(outputData.data(), ethercatMaster->DomainWrite, outputData.size());
-                 ethercatMaster->send();
+               #ifdef REALTIME
+                    std::memcpy(outputData.data(), ethercatMaster->DomainWrite, outputData.size());
+                    ethercatMaster->send();
+                #endif
          }
          void receiveData()
-         {
-                ethercatMaster->receive();
-                std::memcpy(inputData.data(),ethercatMaster->DomainRead, inputData.size());
-    
+         { 
+               #ifdef REALTIME
+                    ethercatMaster->receive();
+                    std::memcpy(inputData.data(),ethercatMaster->DomainRead, inputData.size());
+               #endif
 
          }
          void readIo()
@@ -73,14 +64,13 @@ namespace ZrcsHardware {
          } 
         ~Controller()
         {
-               delete ethercatMaster;
-               delete motorConfig;
-          
+             //  delete ethercatMaster;
+              
         }
         std::vector<uint8_t> outputData;
         std::vector<uint8_t> inputData;
         std::shared_ptr<Rtos> rtos_;
-        std::vector<std::unique_ptr<Motor>> motors;
+        std::vector<std::unique_ptr<Axis>> axiss;
         std::vector<std::unique_ptr<Io>> Ios;
     };
 }

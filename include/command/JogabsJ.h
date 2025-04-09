@@ -14,14 +14,14 @@
 #include <unistd.h>
 #include "system/classfactory.h"
 using namespace ruckig;
-class JogabsJ:public ZrcsSystem::Basenode
+class JogabsJ:public zrcsSystem::Basenode
   {
 
              public:
              Ruckig<1> otg {0.001}; 
              InputParameter<1> input;
              OutputParameter<1> output;            
-             int motor_id;
+             int axisId=1;
              double velocity;
              double acceleration;
              double position;
@@ -47,12 +47,12 @@ class JogabsJ:public ZrcsSystem::Basenode
               velocity=port_input.get<double>("velocity");
               acceleration= port_input.get<double>("acceleration");
               jerk=port_input.get<double>("jerk");
-              motor_id=port_input.get<int>("motor");     
+              axisId=port_input.get<int>("motor");     
        }
 
        void init() override
        {          
-              input.current_position[0]=control->motors[motor_id]->actualPos();       
+              input.current_position[0]=control->axis[axisId]->actualPos();       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
               input.target_position[0]=position;
@@ -69,7 +69,7 @@ class JogabsJ:public ZrcsSystem::Basenode
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
-                        control->motors[motor_id]->setTargetPos(p[0]);                                                                                        
+                        control->axiss[axisId]->setTargetPos(p[0]);                                                                                        
                         output.pass_to_input(input);
                          //rt_printf("---  %lf\n",(p[0]));                             
                        }
@@ -85,7 +85,7 @@ class JogabsJ:public ZrcsSystem::Basenode
       }
       void exit(void) override
       {
-             rt_printf("JogAbsj 执行成功\n");
+             //rt_printf("JogAbsj 执行成功\n");
              node_status=EXIT;
       }
      

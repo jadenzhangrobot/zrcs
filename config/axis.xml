@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <AxisConfig>
   <!-- 轴配置 -->
-  <Axis ID="0" Type="Linear" slave="0">
+  <Axis ID="0" name="x轴" Type="Linear" slave="0">
   <!-- 机械参数 -->  
       <Pitch unit="mm">5.0</Pitch>     <!-- 螺距：每转动一圈的移动距离 -->
       <Direction>Positive</Direction>   <!-- 旋转方向：正向或负向 -->

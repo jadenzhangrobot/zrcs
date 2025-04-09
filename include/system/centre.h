@@ -7,7 +7,6 @@
  */
 #ifndef CENTRE_H_
 #define CENTRE_H_
-#include "timer.h"
 #include <algorithm>
 #include <any>
 #include <cstdint>
@@ -30,7 +29,7 @@
 #include "nodeCommunication.h"
 #include "nodeCommunication.h"
 #include "dataType.h"
-namespace ZrcsSystem {
+namespace zrcsSystem {
 class CmdQueue
 {
      std::queue<std::string> cmdQueue;
@@ -80,13 +79,13 @@ private:
   ZrcsHardware::Controller *control;
   Basenode *Bnode = nullptr;
   bool rtFlag=true;
-  NodeCommunicaion<Motor> motorFeedback; 
+ // NodeCommunicaion<Motor> motorFeedback; 
 public:
   //指令队列
   CmdQueue* cmdQueue;
   
    
-  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue()),motorFeedback(16000000)     
+  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())     
   {
   }
   Centre(const Centre &) = delete;
@@ -96,12 +95,12 @@ public:
     delete cmdQueue;
     cmdThread.join();
   }
-    template<class T>
-    std::unique_ptr<NodeCommunicaion<T>> createPipeline()
-    {
-          std::unique_ptr<NodeCommunicaion<T>> nodePipilne(new NodeCommunicaion<T>);
-          return nodePipilne;
-    }
+    // template<class T>
+    // std::unique_ptr<NodeCommunicaion<T>> createPipeline()
+    // {
+    //       std::unique_ptr<NodeCommunicaion<T>> nodePipilne(new NodeCommunicaion<T>);
+    //       return nodePipilne;
+    // }
   void registerObject(std::string cmd)
    {
     //对象名
