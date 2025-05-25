@@ -8,122 +8,325 @@
  */
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include "axisParameter.h"
+#include "global.h"
 
 namespace ZrcsHardware {
-const double pi = 3.14159265358979323846; 
-typedef enum{
-    DISABLED,
-    STANDSTILL,
-    HOMING,
-    DISCRETE_MOTION,
-    CONTINUOUS_MOTION,
-    STOPPING,
-    ERROR_STOP
-}axisStatus;
-typedef enum 
+class Servo
 {
-  GOOD                           = 0, //成功
-  ERROR_AXISPOWEROFF                   = 1, //轴未使能
-  ERROR_AXISPOWERON                    = 2, //轴已功能
-  ERROR_AXISNOTEXIST                   = 3, //轴ID号不存在
-  ERROR_POSILLEGAL                     = 4, //位置不合法
-  ERROR_ACCILLEGAL                     = 5, //加/减速度不合法
-  ERROR_VELILLEGAL                     = 6, //速度不合法
-  ERROR_AXISHARDWARE                   = 7, //硬件错误
-  ERROR_CMDPPOSOVERLIMIT               = 8, //指令位置超出正向限制
-  ERROR_CMDNPOSOVERLIMIT               = 9, //指令位置超出负向限制
-  ERROR_FORBIDDENPPOSMOVE              = 10, //禁止正向移动
-  ERROR_FORBIDDENNPOSMOVE              = 11, //禁止负向移动
-  ERROR_POSLAGOVERLIMIT                = 12, //轴跟随误差超限
-  ERROR_CMDVELOVERLIMIT                = 13, //轴指令速度超出限制
-  ERROR_CMDACCOVERLIMIT                = 14, //轴指令加速度超出限制
-  ERROR_POSINFINITY                    = 15, //轴设定位置不合法
-}AxErrorCode;
+public:
+  Servo(AxisConfig *config, uint32_t id, uint32_t salveId, const std::string& name);
+  virtual~Servo();
+
+  virtual MC_SERVO_CODE setPower(bool powerStatus, bool& isDone)=0;
+  virtual MC_SERVO_CODE setPos(int32_t pos)=0;
+  virtual MC_SERVO_CODE setVel(int32_t vel)=0;
+  virtual MC_SERVO_CODE setTorque(double torque);
+
+  virtual int32_t pos(void)=0;
+  virtual int32_t vel(void)=0;
+  virtual int32_t acc(void);
+  virtual double torque(void);
+
+  virtual bool readVal(int index, double& value);
+  virtual bool writeVal(int index, double value);
+
+  virtual MC_SERVO_CODE resetError(bool& isDone)=0;
+
+  virtual void runCycle(double freq)=0;
+  virtual void emergStop(void)=0;
+};
+
 class Axis {
 private:
- 
-  AxErrorCode axisError=GOOD;
-  double targetPosition=0;
+
+  AxisConfig *config;
+  std::unique_ptr<Servo> servo_;
+
+  uint32_t axisId_;
+  uint32_t salveId_;
+  std::string axisName_;
+  double axisPos_;
+  double axisVel_;
+  double axisAcc_;
+  double axisJerk_;
+  double axisPosCmd_;
+  double axisVelCmd_;
+  double axisTorCmd_;
+  double overflowCount_;
+  MC_AXIS_STATES axisState_;
+  MC_ERROR_CODE axisError_;
+
+  bool powerOn_;
+  bool powerStatus_;
+  bool reset_;
+  bool enablePositive_;
+  bool enableNegative_;
 public:
-  int axId;
- 
-  Axis(int mId): axId(mId)
-  {
 
-  }
-  auto getTargetPos()->double
+  Axis(uint32_t axisId,uint32_t salveId,AxisConfig *config, const std::string& name, Servo* servo,
+       double pos, double vel, double acc, double jerk, double posCmd, double velCmd, double torCmd,
+       bool powerOn, bool powerStatus, bool reset, bool enablePositive, bool enableNegative)
+    : axisId_(axisId), salveId_(salveId), config(config), axisName_(name), servo_(servo),
+      axisPos_(pos), axisVel_(vel), axisAcc_(acc), axisJerk_(jerk),
+      axisPosCmd_(posCmd), axisVelCmd_(velCmd), axisTorCmd_(torCmd),
+      powerOn_(powerOn), powerStatus_(powerStatus), reset_(reset),
+      enablePositive_(enablePositive), enableNegative_(enableNegative)
   {
-      return targetPosition;
+       
   }
 
-  auto setTargetPos(double pos) -> void 
+  MC_ERROR_CODE setAxisId(uint32_t id)
   {
-      if (pos>ParaConfig->axisParas[axId].max_pos)
-      {
-        axisError=ERROR_CMDPPOSOVERLIMIT;
-      }
-      else if (pos<ParaConfig->axisParas[axId].min_pos)
-      {
-        axisError=ERROR_CMDNPOSOVERLIMIT;
-      } 
-      else
-      {
-        targetPosition=pos;
-        setEncoderTargetPos((targetPosition + ParaConfig->axisParas[axId].pos_offset) * ParaConfig->axisParas[axId].pos_factor / (2 * pi));
-      }
+      axisId_=id;
+      return MC_ERRORCODE_GOOD;
+  }
+
+  MC_ERROR_CODE setAxisName(std::string name)
+  {
+      axisName_=name;
+      return MC_ERRORCODE_GOOD;
+  }
+
+  virtual bool statusHealthy();
+
+  virtual void powerProcess();
+
+  virtual bool cmdsProcessing(double frequency);
+
+  virtual void syncMotionKernelResultsToAxis(double duration);
+
+  virtual void updateMotionCmdsToServo();
+  virtual void updateMotionCmdsToServo(double duration);
+
+  double toUserUnit(double x)
+  {
     
-  };
-  //单位是弧度
+    return x / config_->encoder_count_per_unit_;
+  }
+
+  int32_t toEncoderUnit(double x)
+  {
+    return (int32_t)fixOverFlow(x * config_->encoder_count_per_unit_);
+  }
+
+  double fixOverFlow(double x)
+  {
+    x += overflowCount_ * __INT32_MAX__ * 2.0;
+    if (x >= __INT32_MAX__)
+    {
+      x -= __INT32_MAX__ * 2.0;
+      overflowCount_ -= 1.0;
+    }
+    else if (x <= - __INT32_MAX__)
+    {
+      x += __INT32_MAX__ * 2.0;
+      overflowCount_ += 1.0;
+    }
+    return x;
+  }
+  /** 对给到轴的位置，速度进行检查
+   */
+  bool cmdsProcessing(double frequency)
+  {
+    // Check motion direction and limits
+    double vel_cmd = (axisPosCmd_ - axisPos_) * frequency;
+    double acc_cmd = (axisVelCmd_ - axisVel_) * frequency;
+
+    if(vel_cmd > 0 && !enablePositive_)
+    {
+      axisError_ = mcErrorCode_Invalid_Direction_Positive;
+      return false;
+    } else if(vel_cmd < 0 && !enableNegative_)
+    {
+      axisError_ = mcErrorCode_Invalid_Direction_Negative;
+      return false;
+    }
+
+    if (config_->sw_vel_limit_ && fabs(vel_cmd) > config_->vel_limit_)
+    {
+      axisError_ = mcErrorCode_Velocity_Over_Limit;
+      return false;
+    }
+
+    if (config_->sw_acc_limit_ && fabs(acc_cmd) > config_->acc_limit_)
+    {
+      axisError_ = mcErrorCode_Acceleration_Over_Limit;
+      return false;
+    }
+
+    if(config_->sw_range_limit_ && axis_pos_cmd_ > config_->pos_positive_limit_ && vel_cmd > 0)
+    {
+      axisError_ = mcErrorCode_Position_Over_Positive_Limit;
+      return false;
+    }
+
+    if(config_->sw_range_limit_ && axis_pos_cmd_ < config_->pos_negative_limit_ && vel_cmd < 0)
+    {
+      axisError_ = mcErrorCode_Position_Over_Negative_Limit;
+      return false;
+    }
+
+    // Process home position offset
+
+    return true;
+  }
+/**
+ * @brief 把轴的数据更新给具体的伺服电机
+ * 
+ */
+  void updateMotionCmdsToServo()
+  {
+    if (config_->mode_ == mcServoControlModePosition)
+      servo_->setPos(toEncoderUnit(axis_pos_cmd_));
+    if (config_->mode_ == mcServoControlModeVelocity)
+      servo_->setVel(toEncoderUnit(axis_vel_cmd_));
+  }
+  /**
+   * @brief 将伺服电机的数据更新给轴，更新轴的位置和速度
+   * 
+   */
+  void Axis::statusSync()
+  {
+    // Update servo state to axis
+    axis_pos_ = toUserUnit(servo_->pos() - overflow_count_ * __INT32_MAX__ * 2.0);
+    axis_vel_ = toUserUnit(servo_->vel());
+
+  }
+
   auto actualPos()->double 
   {
-     double pos = encoderActualPos();
-     return (pos - ParaConfig->axisParas[axId].pos_offset) / ParaConfig->axisParas[axId].pos_factor * 2 * pi;
+    return axisPos_;
   }
-   auto errorCode()->AxErrorCode
-   {
-         return axisError;
-   }
+  auto actualVel()->double
+  {
+    return axisVel_;
+  }
+  auto actualAcc()->double
+  {
+    return axisAcc_;
+  }
+  auto actualposCmd()->double
+  {
+    return axisPosCmd_;
+  }
+  auto actualVelCmd()->double
+  {
+    return axisVelCmd_;
+  }
+  MC_AXIS_STATES getAxisState(void)
+  {
+    return axisState_;
+  }
+  MC_ERROR_CODE setAxisState(MC_AXIS_STATES setState)
+  {
+    switch (axisState_)
+    {
+    case mcStandstill:
+    case mcHoming:
+    case mcDiscreteMotion:
+    case mcContinuousMotion:
+      switch (setState)
+      {
+      case mcDisabled:
+      case mcErrorStop:
+        {
+          axisState_ = setState;
+          return MC_ERRORCODE_GOOD;
+        }
+        break;
+      default:
+        break;
+      }
+      break;
+    case mcStopping:
+      switch (setState)
+      {
+        case mcStopping:
+        case mcDisabled:
+        case mcErrorStop:
+        case mcStandstill:
+          {
+            axisState_ = setState;
+            return MC_ERRORCODE_GOOD;
+          }
+          break;
+        default:
+          return MC_ERRORCODE_INVALIDSTATESTIPPING;
+          break;
+      }
+      break;
+    case mcErrorStop:
+      switch (setState)
+      {
+        case mcErrorStop:
+        case mcDisabled:
+        case mcStandstill:
+          {
+            axisState_ = setState;
+            return MC_ERRORCODE_GOOD;
+          }
+          break;
+        default:
+          return MC_ERRORCODE_INVALIDSATATESTOP;
+          break;
+      }
+      break;
+    case mcDisabled:
+      switch (setState)
+      {
+        case mcDisabled:
+        case mcErrorStop:
+        case mcStandstill:
+          {
+            axisState_ = setState;
+            return MC_ERRORCODE_GOOD;
+          }
+          break;
+        default:
+          return MC_ERRORCODE_INVALIDSTATEDISABLE;
+          break;
+      }
+      break;    
+    default:
+      break;
+    }
+    return MC_ERRORCODE_GOOD;
+  }
+  void setPower(bool power_on, bool enable_positive, bool enable_negative)
+  {
+    power_on_ = power_on;
+    enable_positive_ = enable_positive;
+    enable_negative_ = enable_negative;
+  }
 
-  // auto virtual controlWord()->std::uint16_t = 0;
-  // auto virtual modeOfOperation()const->std::uint8_t = 0;
-  // auto virtual targetPos(double j_val)->void;
-  // auto virtual targetVel()const->double = 0;
-  // auto virtual targetToq()const->double = 0;
-  // auto virtual offsetVel()const->double = 0;
-  // auto virtual offsetCur()const->double = 0;
+  void resetError(bool reset)
+  {
+    reset_ = reset;
+  }
 
-  auto virtual setControlWord(std::uint16_t control_word) -> void = 0;
-  // auto virtual setModeOfOperation(std::uint8_t mode)->void = 0;
+  bool powerOn()
+  {
+    return power_status_;
+  }
 
-  // auto virtual setTargetVel(double vel)->void = 0;
-  auto virtual setTargetToq(double toq) -> int { return 0; };
-  // auto virtual setOffsetVel(double vel)->void = 0;
-  // auto virtual setOffsetToq(double toq)->void = 0;
-  // auto virtual setErrorCode(std::int32_t code)->void = 0;
+  bool powerTriggered()
+  {
+    return power_on_;
+  }
 
-  auto virtual statusWord() -> std::uint16_t = 0;
-  // auto virtual modeOfDisplay()const->std::uint8_t = 0;
-  
+  MC_ERROR_CODE getAxisError()
+  {
+    return axis_error_;
+  }
 
-  virtual void setEncoderTargetPos(double position) = 0;
-  virtual double encoderActualPos(void) = 0;
-
-  virtual double actualVel() { return 0; }
-
-  auto virtual actualToq() -> double { return 0; }
-  // auto virtual actualCur()const->double = 0;
-  // auto virtual actualAddlPos()const->double = 0;
-  // auto virtual velDiff()const->double = 0;
-  // auto virtual setVelDiff(double vel)->void = 0;
-
-  auto virtual clearError() -> int { return 0;}
-  auto virtual disable() -> int { return 0; }
-  auto virtual enable() -> int { return 0; }
-  auto virtual home() -> int { return 0; }
-  auto virtual setModeOfOperation(std::uint8_t md) -> void {}
-  auto virtual init() -> int { return 0; }
+  MC_ERROR_CODE servoErrorToAxisError(MC_SERVO_CODE error_id)
+  {
+    return static_cast<MC_ERROR_CODE>(0x60 + error_id);
+  }
 
   virtual ~Axis(){};
 };

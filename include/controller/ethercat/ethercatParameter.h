@@ -4,18 +4,13 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <string>
-#include <utility>
 #include <vector>
 #include <map>
-#include <filesystem>
-#include "tinyxml2.h"
+#include "common/xmlParsing.h"
 namespace ZrcsHardware
 {
-using namespace tinyxml2;
 class SlaveConfig {
-tinyxml2::XMLDocument doc;
 public:
  std::vector<ec_pdo_entry_info_t>* entries;  
  std::vector<ec_pdo_info_t>* pdos;
@@ -41,191 +36,83 @@ public:
   };
   std::vector<Slave> Slaves;
 
-  SlaveConfig(const std::string& projectPath)
+  SlaveConfig()
   {
-        std::string ethercatConfigPath=projectPath+"config/ethercat.xml";
         
-        if (doc.LoadFile(ethercatConfigPath.c_str())==tinyxml2::XML_SUCCESS) 
-        {
+          XmlParsing xmlParsing("ethercat.xml");
 
-           XMLElement *root = doc.FirstChildElement("Ethercat");
-           if (root) {       
-        // 遍历子元素,获取所有从站信息
-          for (XMLElement *slaveelem = root->FirstChildElement("slave");
-             slaveelem; slaveelem = slaveelem->NextSiblingElement("slave"))
-           {
-           Slave slave_;
-          // 获取从站的id号
-          const XMLAttribute *idAttr = slaveelem->FindAttribute("ID");
-          if (idAttr) {
-            const char *Value = idAttr->Value();
-            int id = std::stoi(Value);
-            slave_.SlaveId = id;
-          }
-          // 获取从站的vid
-          const XMLAttribute *VidAttr = slaveelem->FindAttribute("VID");
-          if (VidAttr) {
-            const char *Value = VidAttr->Value();           
-            slave_.VID = std::stoll(Value, nullptr, 16);
-          }
-          // 获取从站的pid
-          const XMLAttribute *pidAttr = slaveelem->FindAttribute("PID");
-          if (pidAttr) {
-            const char *Value = pidAttr->Value();
-
-            slave_.PID = std::stoll(Value, nullptr, 16);
-          }
-          // 获取是不是配置pdo的变量值
-          const XMLAttribute *configpdo =
-              slaveelem->FindAttribute("configPdos");
-          if (configpdo) {
-            const char *pidValue = idAttr->Value();
-            if (strcmp(pidValue, "ture")) {
-              slave_.ConfigPdo = true;
-            } else if (strcmp(pidValue, "false")) {
-              slave_.ConfigPdo = false;
-            } else {
-              std::cout << "configPdos config error" << std::endl;
-            }
-          }
-          // 获取从站的名字
-          const XMLAttribute *typeAttr = slaveelem->FindAttribute("type");
-          if (typeAttr) {
-            const char *Value = typeAttr->Value();           
-             if (strcmp(Value, "motor")==0) {
-                slave_.slaveType = SlaveType::MOTOR;
-            } else if (strcmp(Value, "aio")==0){
-             slave_.slaveType = SlaveType::AIO;
-            } else if ((strcmp(Value, "dio")==0))
+          for (auto child : xmlParsing.getRootNode()->children)
+          {
+             Slave slave;
+             slave.SlaveId= std::stoi(child.second->attribute["ID"] );
+             slave.VID= std::stoll(child.second->attribute["VID"], nullptr, 16);
+             slave.PID= std::stoll(child.second->attribute["PID"], nullptr, 16);
+             slave.ConfigPdo=child.second->attribute["configPdos"]=="true"?true:false;
+            if (child.second->attribute["type"]=="motor")
             {
-               slave_.slaveType= SlaveType::DIO;
+                slave.slaveType=SlaveType::MOTOR;
             }
-             else
+            else if(child.second->attribute["type"]=="aio")
+            { 
+                slave.slaveType=SlaveType::AIO;               
+            }
+            else if (child.second->attribute["type"]=="dio")
             {
-              std::cout << "Add the correct slave type" << std::endl;
+                slave.slaveType=SlaveType::DIO;
             }
-          }
-          // 获取dc的配置参数
-          const XMLAttribute *assignActivateAttr =
-              slaveelem->FindAttribute("assignActivate");
-          if (assignActivateAttr) {
-            const char *Value = assignActivateAttr->Value();
-            slave_.AssignActivate = std::stoi(Value, nullptr, 16);
-          }
-          // 获取从站的周期
-          const XMLAttribute *cycle0Attr =
-              slaveelem->FindAttribute("sync0Cycle");
-          if (cycle0Attr) {
-            const char *Value = cycle0Attr->Value();
-
-            slave_.Sync0Cycle = std::stoi(Value);
-          }
-          // 获取dc的偏移值
-          const XMLAttribute *cycle0ShiftAttr =
-              slaveelem->FindAttribute("sync0Shift");
-          if (cycle0ShiftAttr) {
-            const char *Value = cycle0ShiftAttr->Value();
-            slave_.Sync0Shift = std::stoi(Value);
-          }
-
-          for (XMLElement *syncManager =
-               slaveelem->FirstChildElement("syncManager");
-               syncManager;
-               syncManager = syncManager->NextSiblingElement("syncManager")) {
-            ec_sync_info_t Ecsm_;
-            const XMLAttribute *Smidx = syncManager->FindAttribute("idx");
-            if (Smidx) {
-              const char *SmIdvalue = Smidx->Value();
-              Ecsm_.index = std::stoi(SmIdvalue);
+            else
+            {
+                throw std::runtime_error("Add the correct slave type");
             }
-             const XMLAttribute *Smdir = syncManager->FindAttribute("dir");
-            if (Smdir) {
-              const char *Smdirvalue = Smdir->Value();
-
-              Ecsm_.dir =static_cast<ec_direction_t>(std::stoi(Smdirvalue));
-            }
-              const XMLAttribute *Smdwatchdog = syncManager->FindAttribute("watchDog");
-            if (Smdwatchdog) {
-              const char *Smwatchdogvalue = Smdwatchdog->Value();
-
-              Ecsm_.watchdog_mode =static_cast<ec_watchdog_mode_t>(std::stoi(Smwatchdogvalue));
-            }
-            pdos=new std::vector<ec_pdo_info_t>;
-            for (XMLElement *pdo = syncManager->FirstChildElement("pdo"); pdo;
-                 pdo = pdo->NextSiblingElement("pdo")) {
-              
-              ec_pdo_info_t pdo_;
-              const XMLAttribute *Pdoindex = pdo->FindAttribute("idx");
-              if (Pdoindex) {
-                const char *Value = Pdoindex->Value();
-                pdo_.index= std::stoi(Value, nullptr, 16);
-              }
-              entries  =new std::vector<ec_pdo_entry_info_t>;
-              for (XMLElement *pdoEntry = pdo->FirstChildElement("pdoEntry");
-                   pdoEntry;
-                   pdoEntry = pdoEntry->NextSiblingElement("pdoEntry")) {
-                ec_pdo_entry_info_t ec_pdo_entry_info_t_;
-                const XMLAttribute *idxAttr = pdoEntry->FindAttribute("idx");
-                if (idxAttr)
+            slave.AssignActivate=std::stoi(child.second->attribute["assignActivate"], nullptr, 16);
+            slave.Sync0Cycle=std::stoi(child.second->attribute["sync0Cycle"]);
+            slave.Sync0Shift=std::stoi(child.second->attribute["sync0Shift"]);
+            for (auto syncManager : child.second->children)
+            {
+                ec_sync_info_t ecsm;
+                ecsm.index=std::stoi(syncManager.second->attribute["idx"]);
+                ecsm.dir=static_cast<ec_direction_t>(std::stoi(syncManager.second->attribute["dir"]));
+                ecsm.watchdog_mode=static_cast<ec_watchdog_mode_t>(std::stoi(syncManager.second->attribute["watchDog"]));
+                pdos=new std::vector<ec_pdo_info_t>;
+                for (auto pdo : syncManager.second->children)
                 {
-                  const char *Value = idxAttr->Value();
-                  ec_pdo_entry_info_t_.index = std::stoi(Value, nullptr, 16);
+                    ec_pdo_info_t pdo_;
+                    pdo_.index=std::stoi(pdo.second->attribute["idx"], nullptr, 16);
+                    
+                    entries =new std::vector<ec_pdo_entry_info_t>;
+                    for (auto pdoEntry : pdo.second->children)
+                    {
+                        ec_pdo_entry_info_t pdoEntry_;
+                        pdoEntry_.index=std::stoi(pdoEntry.second->attribute["idx"], nullptr, 16);
+                        pdoEntry_.subindex=std::stoi(pdoEntry.second->attribute["subIdx"], nullptr, 16);
+                        pdoEntry_.bit_length=std::stoi(pdoEntry.second->attribute["bitLen"]);
+                        slave.IndexAndRegister.insert(std::make_pair(std::to_string(pdoEntry_.index)+std::to_string(pdoEntry_.subindex),pdoEntry.second->attribute["name"]));
+                        entries->push_back(pdoEntry_);
+                    }
+                    pdo_.n_entries=entries->size();
+                    pdo_.entries = entries->data();                
+                    pdos->push_back(pdo_);
                 }
-                const XMLAttribute *subidxAttr =pdoEntry->FindAttribute("subIdx");
-                if (subidxAttr)
-                {
-                  const char *Value = subidxAttr->Value();
-                  ec_pdo_entry_info_t_.subindex = std::stoi(Value, nullptr, 16);
+                ecsm.n_pdos=pdos->size();
+                if (pdos->size()==0) {
+                    ecsm.pdos=nullptr;
                 }
-                const XMLAttribute *bitlenAttr =
-                    pdoEntry->FindAttribute("bitLen");
-                if (bitlenAttr)
-                 {
-                  const char *Value = bitlenAttr->Value();
-                  ec_pdo_entry_info_t_.bit_length = std::stoi(Value);
-                 }
-
-                 const XMLAttribute *registerAttr =
-                    pdoEntry->FindAttribute("name");
-                if (registerAttr)
-                 {
-                  const char *Value = registerAttr->Value();
-                  std::string objectDictionary=std::to_string(ec_pdo_entry_info_t_.index)+std::to_string(ec_pdo_entry_info_t_.subindex);
-                  slave_.IndexAndRegister.insert(std::pair<std::string, std::string>(objectDictionary,Value));
-                 }
-                
-                entries->push_back(ec_pdo_entry_info_t_);
-              
-              }
-              pdo_.n_entries=entries->size();
-              pdo_.entries=entries->data();
-              pdos->push_back(pdo_);
-            }
-            Ecsm_.n_pdos=pdos->size();
-            if (pdos->size()==0) {
-                Ecsm_.pdos=nullptr;
-            }
-            else {
-                Ecsm_.pdos=pdos->data();
-            }            
-            slave_.EcSms.push_back(Ecsm_);
+                else {
+                    ecsm.pdos=pdos->data();
+                }
+                slave.EcSms.push_back(ecsm);
+            }             
+              ec_sync_info_t esit;
+              esit.index=0xff;
+              slave.EcSms.push_back(esit);
+              Slaves.push_back(slave);
           }
-        ec_sync_info_t  esit;
-        esit.index=0xff;
-        slave_.EcSms.push_back(esit);
-        Slaves.push_back(slave_);
-        }
-       
-      }
-    } else{   
-          throw std::runtime_error("Error: root element not found!");
-    }
-
   }
   ~SlaveConfig()
-  {     
-        delete entries;
-        delete pdos;
+  {
+    
+      delete entries;
+      delete pdos;
   }
 };
 } // namespace controller

@@ -33,8 +33,6 @@ public:
   cmdline::parser port_input;
   std::queue<std::string> cmdParam;
   ZrcsHardware::Controller* control;
-
-  
   Basenode()
   {};
   virtual ~Basenode() = default;

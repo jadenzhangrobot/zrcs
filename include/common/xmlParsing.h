@@ -13,19 +13,21 @@
  #include "tinyxml2.h"
  #include <string>
  #include <sys/stat.h>
- #include "node.h"
+ #include "xmlNode.h"
  #include <filesystem>
  using namespace tinyxml2;
  class XmlParsing
  {
-     
      private:
          tinyxml2::XMLDocument* doc;
+         std::string xmlpath ;
+         std::string xmlFileName;
          public:
          Tree<std::string>* tree;
      public:
          XmlParsing(std::string xmlName):doc(new tinyxml2::XMLDocument())
          {
+            xmlFileName=xmlName.substr(0,xmlName.find(".xml"));
             std::string currentExePath = std::filesystem::current_path().string();
             std::string target = "build";
             std::string projectPath ;
@@ -39,7 +41,7 @@
             else {
                 throw std::runtime_error("没有找到工程名 zrcs");
             }
-             std::string xmlpath = projectPath + "config/" + xmlName;
+             xmlpath = projectPath + "config/" + xmlName;
              int status = doc->LoadFile(xmlpath.c_str());
              if(status==XML_ERROR_FILE_NOT_FOUND)
              {
@@ -58,7 +60,7 @@
                  throw str;
              }
              
-         XMLElement* root=doc->RootElement();
+          XMLElement* root=doc->RootElement();
             if (root == nullptr) 
             {
                 throw std::runtime_error("Error: root element not found!");
@@ -84,7 +86,7 @@
          for (XMLElement* child = element->FirstChildElement(); child; child = child->NextSiblingElement())
          { 
              TreeNode<std::string>* childNode = new TreeNode<std::string>(child->Name());
-             treeNode->addChild(childNode);
+             treeNode->addChild(childNode->data,childNode);
              parseXMLElement(child, childNode);
          }
      }
@@ -96,14 +98,24 @@
                 element->SetAttribute(pair.first.c_str(), pair.second.c_str());
             }
             // 遍历树节点的子节点并保存到XML元素
-            for (TreeNode<std::string>* child : treeNode->children) 
+            for (const auto& pair : treeNode->children) 
             {
-                XMLElement* childElement = element->GetDocument()->NewElement(child->data.c_str());
+                XMLElement* childElement = element->GetDocument()->NewElement(pair.second->data.c_str());
                 element->InsertEndChild(childElement);
-                saveParaToXml(childElement, child);
+                saveParaToXml(childElement, pair.second);
             }
 
      }
+     /**
+      * @brief 获取树的根节点
+      * 
+      * @return TreeNode<std::string>* 
+      */
+ TreeNode<std::string>* getRootNode()
+ {
+     return tree->root;
+ }
+
  /**
   * @brief 根据节点的名字获取节点上一级的指针，节点的名字要是独一无二的
   * 
@@ -125,10 +137,10 @@
  
      for (int i = 0; i < root->children.size(); i++) 
      {
-         TreeNode<std::string>* found = getnodeUniquePtr(nodeName, root->children[i]);
-         if (found != nullptr) {
-             return found; // 如果在子节点中找到匹配节点，直接返回
-         }
+        // TreeNode<std::string>* found = getnodeUniquePtr(nodeName, root->children[i]);
+        // if (found != nullptr) {
+          //   return found; // 如果在子节点中找到匹配节点，直接返回
+       //  }
      }
  
      return nullptr; // 找不到匹配节点时返回空指针
@@ -139,7 +151,7 @@
  {
      for (int i = 0; i < root->children.size(); i++)
      {
-         getNodePtr(vecTreeNode,nodeName, root->children[i]);
+        // getNodePtr(vecTreeNode,nodeName, root->children[i]);
             
      }
      if (root!=nullptr)
@@ -171,20 +183,48 @@
      // 在子节点中递归查找属性
      for (int i = 0; i < node->children.size(); i++)
      {
-         std::string childResult = getProperties(name, node->children[i]);
-         if (!childResult.empty()) // 如果子节点找到了属性值，则返回该值
-         {
-             return childResult;
-         }
+       //  std::string childResult = getProperties(name, node->children[i]);
+        //  if (!childResult.empty()) // 如果子节点找到了属性值，则返回该值
+        //  {
+        //      return childResult;
+        //  }
      }
  
      return ""; // 未找到匹配属性，返回空字符串
  }
- 
+ /**
+  * @brief 重现保存xml文件
+  * 
+  */
+    void SaveXmlElement()
+    {
+            doc->Clear();
+            XMLDeclaration* decl = doc->NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\"");
+             if (decl) { // 总是好的做法检查 New... 函数的返回值
+            doc->InsertFirstChild(decl);
+            } else {
+                std::cerr << "Failed to create XML Declaration." << std::endl;
+                // 处理错误，可能退出或记录
+            }
+            tinyxml2::XMLElement* rootElement = doc->NewElement(xmlFileName.c_str());
+             doc->InsertEndChild(rootElement);
+            saveParaToXml(doc->RootElement(), tree->root);
+    }
     virtual ~XmlParsing()
-     {
+     {         
+            SaveXmlElement();          
+            
+            XMLError saveResult = doc->SaveFile(xmlpath.c_str());
 
-             saveParaToXml(doc->RootElement(), tree->root);
+            if (saveResult == XML_SUCCESS) 
+            {
+               
+            } else {               
+                // 或者使用 doc.ErrorStr() 获取更详细的错误（如果可用）
+                if (doc->Error()) {
+                   // std::cerr << "Detailed error: " << doc.ErrorStr() << std::endl;
+                }
+            }
              delete doc;
              delete tree;
              doc=nullptr;

@@ -32,7 +32,7 @@ class Setmode:public zrcsSystem::Basenode
                   cmdParam.pop();
             } 
              motor_mode=port_input.get<int>("mode"); 
-             motor_num=control->motors.size();
+             motor_num=control->axiss.size();
         }
         void init() override
        {                
@@ -42,13 +42,13 @@ class Setmode:public zrcsSystem::Basenode
         {                     
                 for(int i=0;i<motor_num;i++)
                 {
-                    control->motors[i]->setModeOfOperation(motor_mode);                  
+                    control->axiss[i]->setModeOfOperation(motor_mode);                  
                 }
                 node_status=SUCCESS;
         }  
          void exit()override
          {
-             rt_printf("设置模式成功\n");
+             //rt_printf("设置模式成功\n");
              node_status=EXIT;
          }                
             

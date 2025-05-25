@@ -52,7 +52,7 @@ class JogabsJ:public zrcsSystem::Basenode
 
        void init() override
        {          
-              input.current_position[0]=control->axis[axisId]->actualPos();       
+              input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
               input.target_position[0]=position;
@@ -86,6 +86,7 @@ class JogabsJ:public zrcsSystem::Basenode
       void exit(void) override
       {
              //rt_printf("JogAbsj 执行成功\n");
+             std::cout<<"JogAbsj 执行成功\n";
              node_status=EXIT;
       }
      

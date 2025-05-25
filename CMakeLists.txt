@@ -31,6 +31,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(realtime "Build realtime programs" OFF)
 message("realtime ${realtime}")
 option(ethercat "Build ethercat programs" OFF)
+option(test "Build test programs" ON)
+#添加单元测试程序
+if(test)
+  add_subdirectory(test)
+endif(TEST)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
@@ -104,6 +109,7 @@ pthread
 ruckig
 tinyxml2
 zmq
+fakeethercat
 protobuf::libprotobuf
 )
 endif()

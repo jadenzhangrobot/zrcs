@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <vector>
 #include <map>
 
@@ -8,16 +9,21 @@ class TreeNode {
 public:
     T data;
     std::map<std::string,std::string> attribute;
-    std::vector<TreeNode*> children;
+    std::map<std::string,TreeNode*> children;
 
     TreeNode(T value) : data(value) 
     {
 
     }
     // 添加子节点
-     void addChild(TreeNode* child)
+     void addChild(std::string childName,TreeNode* child)
      {
-        children.push_back(child);
+        auto result = children.insert({childName, child});
+        if (!result.second) 
+        { 
+            throw std::runtime_error("Child with name " + childName + " already exists.");
+        }
+        
      }
 };
 

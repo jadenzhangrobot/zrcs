@@ -1,16 +1,14 @@
 
 #ifndef ETHERCATMOTOR_H
 #define ETHERCATMOTOR_H
-#ifdef REALTIME
-	#include "EthercatMaster.h"
-#endif
+#include "EthercatMaster.h"
 #include "controller/ControllerInterface.h"
 
 #include <cstdint>
 #include <string>
 namespace ZrcsHardware {
 	
-class EthercatMotor:Axis
+class EthercatMotor:Servo
 {
      private:
 		int ModeOffset;
@@ -18,12 +16,12 @@ class EthercatMotor:Axis
 		int ControlOffset;
 		int ActualPos;
 		int StatusWord;
-		int motorId;
      public:
 	    EthercatMaster* ethercatMaster;
   
-        EthercatMotor(int id,EthercatMaster* ethercatMaster_):motorId(id),ethercatMaster( ethercatMaster_)
+        EthercatMotor(int id,EthercatMaster* ethercatMaster_,ParaConfig *Config):ethercatMaster(ethercatMaster_),ZrcsHardware::Axis(id,Config)
         {
+			   
 		        ModeOffset=findNumberOutputKey("controlMode");
 				ControlOffset=findNumberOutputKey("ControlWord");
 				TargetposOffset=findNumberOutputKey("TargetPosition");
@@ -33,33 +31,33 @@ class EthercatMotor:Axis
 		
 		int findNumberOutputKey(std::string key)
 		{
-			auto it = ethercatMaster->OutputPdoInfoAndOffset[motorId].find(key);
-			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[motorId].end()) {
+			auto it = ethercatMaster->OutputPdoInfoAndOffset[salveId].find(key);
+			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[salveId].end()) {
 				return it->second;
 			} else {
-				throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
+				throw std::runtime_error("Failed to find "+std::to_string(salveId)+key);
 			}
 		}
 		int findNumberInputKey(std::string key)
 		{
-			auto it = ethercatMaster->InputPdoInfoAndOffset[motorId].find(key);
-			if (it != ethercatMaster->InputPdoInfoAndOffset[motorId].end()){
+			auto it = ethercatMaster->InputPdoInfoAndOffset[salveId].find(key);
+			if (it != ethercatMaster->InputPdoInfoAndOffset[salveId].end()){
 				return it->second;
 			} else {
-				throw std::runtime_error("Failed to find "+std::to_string(motorId)+key);
+				throw std::runtime_error("Failed to find "+std::to_string(salveId)+key);
 			}
 		}
 		void setModeOfOperation(std::uint8_t md) override
 		{             	
-			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][ModeOffset],md);
+			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[salveId][ModeOffset],md);
 		}
         void setEncoderTargetPos (double position) override
         {	  
-              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][TargetposOffset],static_cast<int32_t>(position));
+              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[salveId][TargetposOffset],static_cast<int32_t>(99));
         }
         double encoderActualPos(void) override
         {   			 			 
-             int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[motorId][ActualPos]);
+             int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[salveId][ActualPos]);
 			 return static_cast<double>(pos);						
         }
         double actualVel(void) override
@@ -84,14 +82,14 @@ class EthercatMotor:Axis
 
          void setControlWord(std::uint16_t control_word) override
          {
-                EC_WRITE_U16(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[motorId][ControlOffset], control_word ); 
+                EC_WRITE_U16(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[salveId][ControlOffset], control_word ); 
 
          }
 
           std::uint16_t statusWord() override
          {
               
-              return EC_READ_U16(ethercatMaster->DomainRead+ethercatMaster->InputOffset[motorId][StatusWord]);
+              return EC_READ_U16(ethercatMaster->DomainRead+ethercatMaster->InputOffset[salveId][StatusWord]);
 
          }
 
@@ -180,7 +178,7 @@ class EthercatMotor:Axis
 			return -1;
 		}
           }
-         int  switchOn() override
+         int  enable() override
           {
 		// control word
 		// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown

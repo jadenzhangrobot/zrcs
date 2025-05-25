@@ -1,13 +1,17 @@
 #ifndef ETHERCATMASTER
 #define ETHERCATMASTER
+#include <time.h>
 #include "ecrt.h"
+#include "ethercatParameter.h"
+#ifdef REALTIME
 #include <alchemy/timer.h>
+#endif
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
-#include "controller/ControllerInterface.h"
+//#include "controller/ControllerInterface.h"
 namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器
 #define  SMIN 3 //ethercat第三个同步管理器
@@ -112,10 +116,12 @@ public:
       } 
       if (i == 0) 
       {
-         if(ecrt_master_select_reference_clock(master, sc)<0)
-         {
-             throw std::runtime_error("选择参考时钟失败");
-         }
+        #ifdef REALTIME
+          if(ecrt_master_select_reference_clock(master, sc)<0)
+          {
+              throw std::runtime_error("选择参考时钟失败");
+          }
+         #endif
       }
         ecrt_slave_config_dc(sc, slaveConfig->Slaves[i].AssignActivate,slaveConfig->Slaves[i].Sync0Cycle, slaveConfig->Slaves[i].Sync0Shift, 0, 0);
     
@@ -197,7 +203,14 @@ public:
   {
     ecrt_domain_queue(DomainOutput);
     ecrt_domain_queue(DomainInput);
-    ecrt_master_application_time(master, rt_timer_read());
+    #ifdef REALTIME
+     ecrt_master_application_time(master, rt_timer_read());
+    #else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uint64_t ns = (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+    ecrt_master_application_time(master, ns);
+    #endif
     ecrt_master_sync_reference_clock(master);
     ecrt_master_sync_slave_clocks(master);
     ecrt_master_send(master);

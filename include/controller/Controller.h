@@ -6,52 +6,56 @@
 #include "ControllerInterface.h"
 #ifdef REALTIME
 #include "controller/rtos/xenomai.h"
+#endif
 #include "ethercat/EthercatMaster.h"
 #include "ethercat/EthercatMotor.h"
-#include "ethercat/EthercatIo.h"
-#endif
+#include "controller/rtos/linux.h"
+#
 namespace ZrcsHardware {
    
  class Controller
     {  
-        private:
-        #ifdef REALTIME
-          EthercatMaster* ethercatMaster;
-        #endif
+        private:     
+         EthercatMaster* ethercatMaster;    
          ParaConfig *axConfig;
         public:
-        Controller()
-        {  
-            #ifdef REALTIME
+        Controller():axConfig(new ParaConfig("axis.xml")),ethercatMaster(new EthercatMaster())
+        {
+           
             for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
             {                
-                    std::unique_ptr<ZrcsHardware::Axis> axis((ZrcsHardware::Axis*)(new EthercatMotor(it->slaveid,ethercatMaster)));
+                    std::unique_ptr<ZrcsHardware::Axis> axis((ZrcsHardware::Axis*)(new EthercatMotor(it->id,ethercatMaster,axConfig)));
                     axiss.push_back(std::move(axis));             
             }
-            rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
+            #ifdef REALTIME
+              rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
+            #else
+             rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
+             #endif
+
                 if (!ethercatMaster->OutputOffset.empty()) {
                    outputData.resize( ethercatMaster->OutputOffset.back().back());
                    inputData.resize( ethercatMaster->InputOffset.back().back());                   
                 } else {
                     // 处理空向量的情况（如抛出异常或返回错误）
                 }
-            #endif         
+                     
 
         }
             
          void SendData()
          {
-               #ifdef REALTIME
+              
                     std::memcpy(outputData.data(), ethercatMaster->DomainWrite, outputData.size());
                     ethercatMaster->send();
-                #endif
+                
          }
          void receiveData()
          { 
-               #ifdef REALTIME
+              
                     ethercatMaster->receive();
                     std::memcpy(inputData.data(),ethercatMaster->DomainRead, inputData.size());
-               #endif
+               
 
          }
          void readIo()
@@ -64,7 +68,8 @@ namespace ZrcsHardware {
          } 
         ~Controller()
         {
-             //  delete ethercatMaster;
+               delete ethercatMaster;
+               delete axConfig;
               
         }
         std::vector<uint8_t> outputData;
