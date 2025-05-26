@@ -3,9 +3,9 @@
 #include <time.h>
 #include "ecrt.h"
 #include "ethercatParameter.h"
-#ifdef REALTIME
+
 #include <alchemy/timer.h>
-#endif
+
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -203,14 +203,14 @@ public:
   {
     ecrt_domain_queue(DomainOutput);
     ecrt_domain_queue(DomainInput);
-    #ifdef REALTIME
+    //#ifdef REALTIME
      ecrt_master_application_time(master, rt_timer_read());
-    #else
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    uint64_t ns = (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
-    ecrt_master_application_time(master, ns);
-    #endif
+    //#else
+    // struct timespec ts;
+    // clock_gettime(CLOCK_MONOTONIC, &ts);
+    // uint64_t ns = (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+    // ecrt_master_application_time(master, ns);
+    //#endif
     ecrt_master_sync_reference_clock(master);
     ecrt_master_sync_slave_clocks(master);
     ecrt_master_send(master);

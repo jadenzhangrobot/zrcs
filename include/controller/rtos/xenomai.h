@@ -19,11 +19,14 @@
 #include <unistd.h>
 namespace ZrcsHardware 
 {
- class xenomai:Rtos
+ class xenomai:public Rtos
 {
    public:
     RT_TASK task_desc;
     std::function<void()> strategy_{ nullptr };
+    xenomai()
+    {
+    }
     ~xenomai(){
 
      rtos_task_join();

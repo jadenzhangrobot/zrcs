@@ -1,75 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ethercat>
-    <slave-1 ID="0" PID="0x000c010d" VID="0x00100000" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
+    <slave-1 ID="0" PID="0x00050002" VID="0x00002a3f" assignActivate="00" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
         <syncManager-1 dir="1" idx="0" watchDog="0"/>
         <syncManager-2 dir="2" idx="1" watchDog="0"/>
         <syncManager-3 dir="1" idx="2" watchDog="1">
-            <pdo idx="1600">
-                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
-                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
-                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
-            </pdo>
+            <pdo1 idx="1600">
+                <pdoEntry-1 bitLen="16" idx="7000" name="TargetPosition1" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7000" name="TargetPosition2" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7000" name="TargetPosition3" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7000" name="TargetPosition4" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition5" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition6" subIdx="00"/>
+            </pdo1>
+            <pdo2 idx="1601">
+                <pdoEntry-1 bitLen="16" idx="7010" name="TargetPosition7" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7010" name="TargetPosition8" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7010" name="TargetPosition9" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7010" name="TargetPosition10" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition11" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition12" subIdx="00"/>
+            </pdo2>
+            <pdo3 idx="1602">
+                <pdoEntry-1 bitLen="16" idx="7020" name="TargetPosition13" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7020" name="TargetPosition14" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7020" name="TargetPosition15" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7020" name="TargetPosition16" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition17" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition18" subIdx="00"/>
+            </pdo3>
+            <pdo4 idx="1603">
+                <pdoEntry-1 bitLen="16" idx="7030" name="TargetPosition19" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7030" name="TargetPosition20" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7030" name="TargetPosition21" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7030" name="TargetPosition22" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition23" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition24" subIdx="00"/>
+            </pdo4>
+            <pdo5 idx="1604">
+                <pdoEntry-1 bitLen="16" idx="7040" name="TargetPosition25" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7040" name="TargetPosition26" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7040" name="TargetPosition27" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7040" name="TargetPosition28" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition29" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition30" subIdx="00"/>
+            </pdo5>
+            <pdo6 idx="1605">
+                <pdoEntry-1 bitLen="16" idx="7050" name="TargetPosition31" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7050" name="TargetPosition32" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7050" name="TargetPosition33" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7050" name="TargetPosition34" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition35" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition36" subIdx="00"/>
+            </pdo6>
+            <pdo7 idx="1606">
+                <pdoEntry-1 bitLen="16" idx="7060" name="TargetPosition37" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7060" name="TargetPosition38" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7060" name="TargetPosition39" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7060" name="TargetPosition40" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition41" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition42" subIdx="00"/>
+            </pdo7>
+            <pdo8 idx="1607">
+                <pdoEntry-1 bitLen="16" idx="7070" name="TargetPosition43" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="7070" name="TargetPosition44" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="7070" name="TargetPosition45" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="7070" name="TargetPosition46" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition47" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition48" subIdx="00"/>
+            </pdo8>
         </syncManager-3>
         <syncManager-4 dir="2" idx="3" watchDog="0">
-            <pdo idx="1a00">
-                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
-                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
-                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
-            </pdo>
+            <pdo1 idx="1a00">
+                <pdoEntry-1 bitLen="16" idx="6000" name="TargetPosition1" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6000" name="TargetPosition2" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6000" name="TargetPosition3" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6000" name="TargetPosition4" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition5" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition6" subIdx="00"/>
+            </pdo1>
+            <pdo2 idx="1a01">
+                <pdoEntry-1 bitLen="16" idx="6010" name="TargetPosition7" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6010" name="TargetPosition8" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6010" name="TargetPosition9" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6010" name="TargetPosition10" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition11" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition12" subIdx="04"/>
+            </pdo2>
+            <pdo3 idx="1a02">
+                <pdoEntry-1 bitLen="16" idx="6020" name="TargetPosition13" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6020" name="TargetPosition14" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6020" name="TargetPosition15" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6020" name="TargetPosition16" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition17" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition18" subIdx="00"/>
+            </pdo3>
+            <pdo4 idx="1a03">
+                <pdoEntry-1 bitLen="16" idx="6030" name="TargetPosition19" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6030" name="TargetPosition20" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6030" name="TargetPosition21" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6030" name="TargetPosition22" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition23" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition24" subIdx="00"/>
+            </pdo4>
+            <pdo5 idx="1a04">
+                <pdoEntry-1 bitLen="16" idx="6040" name="TargetPosition25" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6040" name="TargetPosition26" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6040" name="TargetPosition27" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6040" name="TargetPosition28" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition29" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition30" subIdx="00"/>
+            </pdo5>
+            <pdo6 idx="1a05">
+                <pdoEntry-1 bitLen="16" idx="6050" name="TargetPosition31" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6050" name="TargetPosition32" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6050" name="TargetPosition33" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6050" name="TargetPosition34" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition35" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition36" subIdx="00"/>
+            </pdo6>
+            <pdo7 idx="1a06">
+                <pdoEntry-1 bitLen="16" idx="6060" name="TargetPosition37" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6060" name="TargetPosition38" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6060" name="TargetPosition39" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6060" name="TargetPosition40" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition41" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition42" subIdx="00"/>
+            </pdo7>
+            <pdo8 idx="1a07">
+                <pdoEntry-1 bitLen="16" idx="6070" name="TargetPosition43" subIdx="01"/>
+                <pdoEntry-2 bitLen="16" idx="6070" name="TargetPosition44" subIdx="02"/>
+                <pdoEntry-3 bitLen="16" idx="6070" name="TargetPosition45" subIdx="03"/>
+                <pdoEntry-4 bitLen="240" idx="6070" name="TargetPosition46" subIdx="04"/>
+                <pdoEntry-5 bitLen="240" idx="0000" name="TargetPosition47" subIdx="00"/>
+                <pdoEntry-6 bitLen="32" idx="0000" name="TargetPosition48" subIdx="00"/>
+            </pdo8>
         </syncManager-4>
     </slave-1>
-    <slave-2 ID="1" PID="0x10305071" VID="0x00000556" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
-        <syncManager-1 dir="1" idx="0" watchDog="0"/>
-        <syncManager-2 dir="2" idx="1" watchDog="0"/>
-        <syncManager-3 dir="1" idx="2" watchDog="1">
-            <pdo idx="1600">
-                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
-                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
-                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
-            </pdo>
-        </syncManager-3>
-        <syncManager-4 dir="2" idx="3" watchDog="0">
-            <pdo idx="1a00">
-                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
-                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
-                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
-            </pdo>
-        </syncManager-4>
-    </slave-2>
-    <slave-3 ID="2" PID="0x10305071" VID="0x00000556" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
-        <syncManager-1 dir="1" idx="0" watchDog="0"/>
-        <syncManager-2 dir="2" idx="1" watchDog="0"/>
-        <syncManager-3 dir="1" idx="2" watchDog="1">
-            <pdo idx="1600">
-                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
-                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
-                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
-            </pdo>
-        </syncManager-3>
-        <syncManager-4 dir="2" idx="3" watchDog="0">
-            <pdo idx="1a00">
-                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
-                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
-                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
-            </pdo>
-        </syncManager-4>
-    </slave-3>
-    <slave-4 ID="3" PID="0x10305071" VID="0x00000556" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
-        <syncManager-1 dir="1" idx="0" watchDog="0"/>
-        <syncManager-2 dir="2" idx="1" watchDog="0"/>
-        <syncManager-3 dir="1" idx="2" watchDog="1">
-            <pdo idx="1600">
-                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
-                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
-                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
-            </pdo>
-        </syncManager-3>
-        <syncManager-4 dir="2" idx="3" watchDog="0">
-            <pdo idx="1a00">
-                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
-                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
-                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
-            </pdo>
-        </syncManager-4>
-    </slave-4>
 </ethercat>

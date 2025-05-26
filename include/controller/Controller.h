@@ -17,7 +17,7 @@ namespace ZrcsHardware {
     {  
         private:     
          EthercatMaster* ethercatMaster;    
-         ParaConfig *axConfig;
+        // ParaConfig *axConfig;
         public:
         Controller():axConfig(new ParaConfig("axis.xml")),ethercatMaster(new EthercatMaster())
         {

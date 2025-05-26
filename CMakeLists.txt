@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 # 设置 G++ 编译器路径
-#set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
 option(realtime "Build realtime programs" OFF)
@@ -99,7 +99,7 @@ add_dependencies(motion_control run_python_scripts)
  ruckig
  ethercat_rtdm
  tinyxml2
- zmq
+ #zmq
  protobuf::libprotobuf
 )
 else()
@@ -109,7 +109,7 @@ pthread
 ruckig
 tinyxml2
 zmq
-fakeethercat
+#fakeethercat
 protobuf::libprotobuf
 )
 endif()
