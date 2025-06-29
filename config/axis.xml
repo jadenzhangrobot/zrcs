@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<AxisConfig>
-<Axis-1 ID="0" name="x轴" slaveId="0" >
-     <machine Direction="1" Ratio="1" Backlash="0.01" />
-     <motion  max_vel="1000" min_vel="-1000" max_acc="5000" min_acc="-5000" max_pos="100000" min_pos="-10000"/>
-     <encoder pos_factor="1048575" pos_offset="0.0" home_pos="0.0" vel_factor="1.0"/>
-<Axis-1/>
-</AxisConfig>

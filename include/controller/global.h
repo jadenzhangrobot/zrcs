@@ -1,6 +1,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 #include <cstdint>
+#include <string>
 typedef enum{
   Servo_No_Error                = 0,
   Servo_Fieldbus_Init_Error     = 1,
@@ -49,6 +50,8 @@ typedef enum
     MC_ERRORCODE_SOFTWAREEMGS                   = 0x1EE, //用户急停
     MC_ERRORCODE_SYSTEMEMGS                     = 0x1EF, //系统急停
     MC_ERRORCODE_COMMUNICATION                  = 0x1F0, //硬件通信异常
+    MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE     = 0x1F1, //正向移动不合法
+    MC_ERRORCODE_INVALID_DIRTCTION_NEGATIVE     = 0x1F2, //负向移动不合法  
 
     /** 配置错误**/
     MC_ERRORCODE_CFGAXISIDILLEGAL               = 0x201,
@@ -186,17 +189,26 @@ typedef enum {
   mcStop = 6
 } MC_MOTION_MODE;
 
-typedef struct {
-    MC_SERVO_CONTROL_MODE mode_ ;
-    uint64_t encoder_count_per_unit_;
-    uint64_t node_buffer_size_;
-    bool sw_vel_limit_ ;
-    double vel_limit_;
-    bool sw_acc_limit_ ;
-    double acc_limit_ ;
-    bool sw_range_limit_;
-    double pos_positive_limit_;
-    double pos_negative_limit_ ;
-    double frequency_ ;
-  }AxisPara;
+
+/**
+ * @brief Represents the CiA 402 modes of operation (Object 6060h).
+ * 
+ * The underlying type is int8_t because the standard defines this object
+ * as a SINT (Signed 8-bit integer).
+ */
+enum class Cia402Mode : uint8_t {
+    NO_MODE_ASSIGNED = 0,
+    PROFILE_POSITION = 1,
+    // Value 2 is reserved
+    PROFILE_VELOCITY = 3,
+    PROFILE_TORQUE = 4,
+    // Value 5 is reserved
+    HOMING = 6,
+    INTERPOLATED_POSITION = 7,
+    CYCLIC_SYNCHRONOUS_POSITION = 8, // CSP
+    CYCLIC_SYNCHRONOUS_VELOCITY = 9, // CSV
+    CYCLIC_SYNCHRONOUS_TORQUE = 10,  // CST
+    // Other values can be manufacturer-specific
+};
+
 #endif

@@ -109,7 +109,7 @@ pthread
 ruckig
 tinyxml2
 zmq
-#fakeethercat
+fakeethercat
 protobuf::libprotobuf
 )
 endif()

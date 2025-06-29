@@ -66,21 +66,21 @@ class JogabsJ:public zrcsSystem::Basenode
            
       void  excuteRt(void) override
       {                               
-                     if(otg.update(input, output) == Result::Working)            
-                      {                        
-                        auto& p = output.new_position;
-                        control->axiss[axisId]->setTargetPos(p[0]);                                                                                        
-                        output.pass_to_input(input);
-                         //rt_printf("---  %lf\n",(p[0]));                             
-                       }
-                     else if(otg.update(input, output)==Result::Finished)
-                      {
-                        node_status=SUCCESS;
-                      }
-                     else
-                      {                         
-                        node_status=FAILURE;                        
-                      }
+                    //  if(otg.update(input, output) == Result::Working)            
+                    //   {                        
+                    //     auto& p = output.new_position;
+                    //     control->axiss[axisId]->setTargetPos(p[0]);                                                                                        
+                    //     output.pass_to_input(input);
+                    //      //rt_printf("---  %lf\n",(p[0]));                             
+                    //    }
+                    //  else if(otg.update(input, output)==Result::Finished)
+                    //   {
+                    //     node_status=SUCCESS;
+                    //   }
+                    //  else
+                    //   {                         
+                    //     node_status=FAILURE;                        
+                    //   }
         
       }
       void exit(void) override

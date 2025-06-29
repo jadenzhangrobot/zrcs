@@ -1,6 +1,8 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
+
         {
             "name": "zrcs", //配置名称，显示在配置下拉菜单中
             "type": "cppdbg", //配置类型

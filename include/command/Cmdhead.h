@@ -4,7 +4,7 @@
 #include "JogabsJ.h"
 // #include "Movehome.h" 
 // #include "Enable.h"
- #include "Setmode.h" 
+ //#include "Setmode.h" 
  //#include "Disable.h"
 
 // #include "JogJ.h"

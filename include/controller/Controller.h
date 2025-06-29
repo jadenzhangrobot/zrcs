@@ -2,9 +2,9 @@
 #define CONTROLLER
 #include <memory>
 #include <vector>
-#include "axisParameter.h"
+#include "axisConfig.h"
 #include "ControllerInterface.h"
-#ifdef REALTIME
+#ifdef REALTIME 
 #include "controller/rtos/xenomai.h"
 #endif
 #include "ethercat/EthercatMaster.h"
@@ -17,15 +17,14 @@ namespace ZrcsHardware {
     {  
         private:     
          EthercatMaster* ethercatMaster;    
-        // ParaConfig *axConfig;
+         AxisConfig *axConfig;
         public:
-        Controller():axConfig(new ParaConfig("axis.xml")),ethercatMaster(new EthercatMaster())
+        Controller():axConfig(new AxisConfig("axisConfig.xml"))
         {
            
             for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
             {                
-                    std::unique_ptr<ZrcsHardware::Axis> axis((ZrcsHardware::Axis*)(new EthercatMotor(it->id,ethercatMaster,axConfig)));
-                    axiss.push_back(std::move(axis));             
+                   axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMaster));             
             }
             #ifdef REALTIME
               rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
@@ -68,15 +67,25 @@ namespace ZrcsHardware {
          } 
         ~Controller()
         {
-               delete ethercatMaster;
-               delete axConfig;
+           for (auto ptr : axiss) 
+           {
+            delete ptr; // 对每个指针调用 delete
+           }
+           axiss.clear(); // 清空vector，虽然不是必须，但算是一个好习惯
+
+        // 遍历并删除 Ios 中的所有对象
+         for (auto ptr : Ios)
+         {
+            delete ptr; // 对每个指针调用 delete
+         }
+         Ios.clear();
               
         }
         std::vector<uint8_t> outputData;
         std::vector<uint8_t> inputData;
         std::shared_ptr<Rtos> rtos_;
-        std::vector<std::unique_ptr<Axis>> axiss;
-        std::vector<std::unique_ptr<Io>> Ios;
+        std::vector<Axis*> axiss;
+        std::vector<Io*> Ios;
     };
 }
 #endif

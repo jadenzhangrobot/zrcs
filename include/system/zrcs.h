@@ -31,7 +31,7 @@ namespace zrcsSystem {
                 terminal = std::thread([this]() 
                 {
                     while (true) 
-                    {
+                    {   
                         //指令字符串
                         std::string cmd;
                         std::getline(std::cin, cmd);

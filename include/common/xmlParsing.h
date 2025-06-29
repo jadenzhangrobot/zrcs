@@ -43,7 +43,13 @@
             }
              xmlpath = projectPath + "config/" + xmlName;
              int status = doc->LoadFile(xmlpath.c_str());
-             if(status==XML_ERROR_FILE_NOT_FOUND)
+             if(status==XML_SUCCESS)
+             {
+                 //加载xml文件失败
+                  std::cout<<"加载xml文件成功"<<std::endl;
+             
+             }
+             else if(status==XML_ERROR_FILE_NOT_FOUND)
              {
                  //无法找到文件
                  std::string str="can't find \n";
@@ -58,6 +64,9 @@
                  //根元素name为空
                  std::string str="The name of rootelement is empty\n";
                  throw str;
+             }
+             else {
+                throw std::runtime_error("读取xml文件失败");
              }
              
           XMLElement* root=doc->RootElement();

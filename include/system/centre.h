@@ -29,6 +29,7 @@
 #include "nodeCommunication.h"
 #include "nodeCommunication.h"
 #include "dataType.h"
+#include "rt/rt_process.hpp"
 namespace zrcsSystem {
 class CmdQueue
 {
@@ -87,6 +88,7 @@ public:
    
   Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())     
   {
+     
   }
   Centre(const Centre &) = delete;
   Centre &operator=(const Centre &) = delete;
@@ -167,8 +169,8 @@ public:
     {
       while (true)
       {
-         std::uint16_t aaa;
-         std::memcpy(&aaa,control->inputData.data()+0,2);
+      //   std::uint16_t aaa;
+      //   std::memcpy(&aaa,control->inputData.data()+0,2);
          std::string cmd;
          if (cmdQueue->cmdRead(cmd)==0) 
          { 
@@ -194,7 +196,7 @@ public:
     control->rtos_->rtos_task_create();
     //把实时节点里面的实时函数放到实时线程中运行
     control->rtos_->real_task([this]() {   
-    control->receiveData();
+    //control->receiveData();
       
       switch (taskScheduling) 
       {
@@ -253,7 +255,7 @@ public:
        default:
        break;         
       }       
-       control->SendData(); 
+     //  control->SendData(); 
     });
   }
 };
