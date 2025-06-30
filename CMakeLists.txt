@@ -65,25 +65,19 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
    ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
    ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
-   ${DEVEL_INCLUDE_DIRS}/3rdParty/cpp-httplib
-   ${DEVEL_INCLUDE_DIRS}/3rdParty/json
-   ${DEVEL_INCLUDE_DIRS}/build/message
  )
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
+# 强制 ruckig 生成静态库
+set(BUILD_SHARED_LIBS OFF)
 # 添加ruckig库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
-# 添加zmq库
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq)
 # 添加json库
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/json)
 
-# include(${DEVEL_INCLUDE_DIRS}/cmake/libzmq.cmake)
-# ExternalAutotools(libzmq "${CMAKE_BINARY_DIR}/build_autotools" "${CMAKE_BINARY_DIR}/3rdParty")
-
+find_package(Threads REQUIRED)
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
-link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/libzmq/lib)
+link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
 aux_source_directory(./src SOURCE_FILES)
@@ -95,20 +89,19 @@ add_dependencies(motion_control run_python_scripts)
  if(ethercat)
  target_link_libraries(motion_control
  PRIVATE 
- pthread
+ Threads::Threads
  ruckig
  ethercat_rtdm
  tinyxml2
- #zmq
+
 )
 else()
 target_link_libraries(motion_control
 PRIVATE 
-pthread
+Threads::Threads
 ruckig
 tinyxml2
-zmq
-fakeethercat
+#fakeethercat
 )
 endif()
 

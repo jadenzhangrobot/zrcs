@@ -20,7 +20,11 @@ int main(int argc, char **argv)
       zs.run();
       while(true)
       {
-        sleep(1);
+#ifdef _WIN32
+        Sleep(1000); // Windows sleep takes milliseconds
+#else
+        sleep(1); // POSIX sleep takes seconds
+#endif
       }
        return 0;
     } catch (const std::runtime_error& e) {

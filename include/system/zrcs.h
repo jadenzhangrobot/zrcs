@@ -1,14 +1,12 @@
 #ifndef ZRCS
 #define ZRCS
 #include "centre.h"
-#include "server/cppzmq/zmq.hpp"
-#include "server/cppzmq/zmq_addon.hpp"
 #include <exception>
 #include <iostream>
 #include <thread>
 #include <string>
 #include <future>
-#include "statusData.pb.h"
+//#include "statusData.pb.h"
 
 namespace zrcsSystem {
     class Zrcs {

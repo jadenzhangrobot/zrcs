@@ -28,7 +28,7 @@
 #include "nodeCommunication.h"
 #include "nodeCommunication.h"
 #include "dataType.h"
-#include "rt/rt_process.hpp"
+//#include "rt/rt_process.hpp"
 namespace zrcsSystem {
 class CmdQueue
 {
@@ -57,21 +57,21 @@ class CmdQueue
 };
 class Centre {
 private:
-  //节点指针
+  //node pointer
   enum TaskScheduling
   {
-    STOP,
-    RUN,
-    ERROR,
+    STOP = 0,
+    RUN = 1,
+    SchedulingError = 2
   };
   TaskScheduling  taskScheduling=RUN;
-  //解析指令的线程
+  //command parsing thread
   std::thread cmdThread;
 
-  //指令销毁线程
+  //command destruction thread
   std::thread exit_cmd;
 
-  //将要指令对象指针容器
+  //command object pointer container
   std::pmr::monotonic_buffer_resource rtCmdPmr;
   std::pmr::monotonic_buffer_resource rtNodePmr;
   std::pmr::vector<Basenode*> rtCmd;
@@ -81,7 +81,7 @@ private:
   bool rtFlag=true;
  // NodeCommunicaion<Motor> motorFeedback; 
 public:
-  //指令队列
+  //command queue
   CmdQueue* cmdQueue;
   
    
@@ -104,9 +104,9 @@ public:
     // }
   void registerObject(std::string cmd)
    {
-    //对象名
+    //object name
     std::string class_name;
-    // 指令参数字符串
+    // command parameter string
     std::string cmd_param;
 
     if (cmd.npos != cmd.find_first_of(" --")) 
@@ -121,14 +121,14 @@ public:
     }
     if(!classfactory::getInstance().cmdExist(class_name))
     {
-       std::cout<<"cmd不存在"<<std::endl;
+       std::cout<<"cmd not exist"<<std::endl;
     }
     else 
      { 
         if(classfactory::getInstance().getClassByName(class_name).type()==typeid(Basenode*))
         {
                   Basenode *bn =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(class_name));                   
-                  //把节点状态切换到init状态                
+                  //switch node state to init state                
                   if (bn->GetTaskState()==Basenode::IDLE) 
                   {
                       bn->registered(control); 
@@ -163,7 +163,7 @@ public:
      }
   }
   void init() {
-    //从指令队列里面获取指令字符串
+    //get command string from command queue
     cmdThread = std::thread([this]() 
     {
       while (true)
@@ -191,9 +191,9 @@ public:
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     });
 
-    //创建一个实时任务
+    //create a real-time task
     control->rtos_->rtos_task_create();
-    //把实时节点里面的实时函数放到实时线程中运行
+    //put real-time function from real-time node into real-time thread
     control->rtos_->real_task([this]() {   
     //control->receiveData();
       
@@ -207,7 +207,7 @@ public:
                   rtNode[i]->excuteRt();
                   if (rtNode[i]->GetTaskState()==Basenode::FAILURE) 
                   {
-                      taskScheduling=ERROR;
+                      taskScheduling = TaskScheduling::SchedulingError;
                   }
            }
         }
@@ -235,7 +235,7 @@ public:
                 else if (Bnode->GetTaskState() == Basenode::FAILURE) 
                   {
                     rtCmd.erase(rtCmd.begin());
-                    taskScheduling=ERROR;
+                    taskScheduling = TaskScheduling::SchedulingError;
                   }
                 else 
                   {
@@ -249,7 +249,7 @@ public:
        break;
        case STOP:
        break;
-       case ERROR:
+       case SchedulingError:
        break;
        default:
        break;         
