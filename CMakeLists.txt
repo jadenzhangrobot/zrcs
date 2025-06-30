@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(zrcs)
-
 # Add this near the top of your CMakeLists.txt, after project()
 find_package(Python3 REQUIRED)
 
@@ -31,11 +30,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(realtime "Build realtime programs" OFF)
 message("realtime ${realtime}")
 option(ethercat "Build ethercat programs" OFF)
-option(test "Build test programs" ON)
+option(test "Build test programs" OFF)
+if(ethercat)
+   add_definitions(-Dethercat)
+endif(ethercat)
+
 #添加单元测试程序
 if(test)
   add_subdirectory(test)
-endif(TEST)
+endif(test)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
@@ -66,15 +69,12 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/json
    ${DEVEL_INCLUDE_DIRS}/build/message
  )
-include(${DEVEL_INCLUDE_DIRS}/cmake/protobuf.cmake) 
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
 # 添加ruckig库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
 # 添加zmq库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq)
-# 添加cpp-httplib库
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/cpp-httplib)
 # 添加json库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/json)
 
@@ -100,7 +100,6 @@ add_dependencies(motion_control run_python_scripts)
  ethercat_rtdm
  tinyxml2
  #zmq
- protobuf::libprotobuf
 )
 else()
 target_link_libraries(motion_control
@@ -110,7 +109,6 @@ ruckig
 tinyxml2
 zmq
 fakeethercat
-protobuf::libprotobuf
 )
 endif()
 

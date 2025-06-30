@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <endian.h>
 #include <functional>
 #include <iostream>
 #include <iterator>

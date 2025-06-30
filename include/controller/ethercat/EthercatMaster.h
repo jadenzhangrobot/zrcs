@@ -1,7 +1,9 @@
 #ifndef ETHERCATMASTER
 #define ETHERCATMASTER
 #include <time.h>
+#ifdef ethercat
 #include "ecrt.h"
+#endif
 #include "ethercatParameter.h"
 #ifdef REALTIME 
 #include <alchemy/timer.h>

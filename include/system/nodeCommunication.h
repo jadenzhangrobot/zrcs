@@ -2,7 +2,6 @@
 #define NODECOMMUNICATION_H
 #include <cstdint>
 #include <memory_resource>
-#include <unistd.h>
 #include <vector>
   #define OUTPUT 1
   #define INPUT -1

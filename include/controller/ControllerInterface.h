@@ -9,10 +9,10 @@
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
 #include <cstdint>
+#include <climits>
 #include <functional>
 #include <memory>
 #include "axisConfig.h"
-#include "controller/ethercat/EthercatMaster.h"
 #include "global.h"
 
 namespace ZrcsHardware {
@@ -46,7 +46,7 @@ class Axis {
 private:
 
   AxisPara *config_;
-  EthercatMaster* ethercatMaster_;
+  //EthercatMaster* ethercatMaster_;
   std::unique_ptr<Servo> servo_;
 
   uint32_t axisId_;
@@ -70,7 +70,7 @@ private:
   bool enableNegative_;
 public:
 
-  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config ,EthercatMaster* ethercatMaster): axisId_(axisId),slaveId_(salveId),config_(config),ethercatMaster_(ethercatMaster)
+  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): axisId_(axisId),slaveId_(salveId),config_(config)
   {
      
   }
@@ -110,15 +110,15 @@ public:
 
   double fixOverFlow(double x)
   {
-    x += overflowCount_ * __INT32_MAX__ * 2.0;
-    if (x >= __INT32_MAX__)
+    x += overflowCount_ * INT32_MAX * 2.0;
+    if (x >= INT32_MAX)
     {
-      x -= __INT32_MAX__ * 2.0;
+      x -= INT32_MAX * 2.0;
       overflowCount_ -= 1.0;
     }
-    else if (x <= - __INT32_MAX__)
+    else if (x <= - INT32_MAX)
     {
-      x += __INT32_MAX__ * 2.0;
+      x += INT32_MAX * 2.0;
       overflowCount_ += 1.0;
     }
     return x;
@@ -187,7 +187,7 @@ public:
   void statusSync()
   {
     // Update servo state to axis
-    axisPos_ = toUserUnit(servo_->pos() - overflowCount_ * __INT32_MAX__ * 2.0);
+    axisPos_ = toUserUnit(servo_->pos() - overflowCount_ * INT32_MAX * 2.0);
     axisVel_ = toUserUnit(servo_->vel());
 
   }

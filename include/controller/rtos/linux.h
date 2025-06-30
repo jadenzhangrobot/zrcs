@@ -11,8 +11,9 @@
 #define linux_H
 #include "controller/ControllerInterface.h"
 #include <cstdint>
-#include <pthread.h>
 #include <thread>
+#include <chrono>
+#include <functional>
 namespace ZrcsHardware {
 
 class Nativelinux:Rtos

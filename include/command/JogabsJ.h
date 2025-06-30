@@ -11,7 +11,6 @@
 #include "system/basenodeInterface.h"
 #include <ruckig/ruckig.hpp>
 #include <string>
-#include <unistd.h>
 #include "system/classfactory.h"
 using namespace ruckig;
 class JogabsJ:public zrcsSystem::Basenode

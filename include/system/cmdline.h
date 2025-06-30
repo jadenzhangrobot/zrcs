@@ -16,9 +16,18 @@
 #include <typeinfo>
 #include <cstring>
 #include <algorithm>
+#include <climits>
+#ifdef _MSC_VER
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#include <DbgHelp.h>
+#else
 #include <cxxabi.h>
-#include <cstdlib>
-
+#include <memory>   // for std::unique_ptr
+#include <cstdlib>  // for std::free
+#endif
 namespace cmdline{
 
 namespace detail{
@@ -84,11 +93,21 @@ Target lexical_cast(const Source &arg)
 
 static inline std::string demangle(const std::string &name)
 {
+#ifdef _MSC_VER
+  // MSVC doesn't support abi::__cxa_demangle, return the mangled name as-is
+  return name;
+#else
   int status=0;
   char *p=abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-  std::string ret(p);
-  free(p);
-  return ret;
+  if (status == 0 && p != nullptr) {
+    std::string ret(p);
+    free(p);
+    return ret;
+  } else {
+    // If demangling fails, return the original name
+    return name;
+  }
+#endif
 }
 
 template <class T>
@@ -116,8 +135,8 @@ inline std::string readable_typename<std::string>()
 class cmdline_error : public std::exception {
 public:
   cmdline_error(const std::string &msg): msg(msg){}
-  ~cmdline_error() throw() {}
-  const char *what() const throw() { return msg.c_str(); }
+  ~cmdline_error() noexcept {}
+  const char *what() const noexcept override { return msg.c_str(); }
 private:
   std::string msg;
 };
