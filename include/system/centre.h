@@ -7,17 +7,8 @@
  */
 #ifndef CENTRE_H_
 #define CENTRE_H_
-#include <algorithm>
 #include <any>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <iostream>
-#include <iterator>
-#include <memory>
 #include <mutex>
-#include <queue>
 #include <thread>
 #include <vector>
 #include "basenodeInterface.h"
@@ -26,18 +17,24 @@
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
 #include "nodeCommunication.h"
+
+
+
 #include "nodeCommunication.h"
 #include "dataType.h"
-//#include "rt/rt_process.hpp"
+#include "rt/rt_process.h"
+#include "rt/rt_process.h"
 namespace zrcsSystem {
-class CmdQueue
-{
-     std::queue<std::string> cmdQueue;
+class CmdQueue{
+   
      std::mutex cmdMutex;
+     std::queue<std::string> cmdQueue;
      public:
      CmdQueue()
-     {}
-      void writeCmd(std::string cmd)
+     {
+
+     }
+      void writeCmd(std::string& cmd)
       {   
            std::lock_guard<std::mutex> lock(cmdMutex);
            cmdQueue.push(cmd);
@@ -75,33 +72,28 @@ private:
   std::pmr::monotonic_buffer_resource rtCmdPmr;
   std::pmr::monotonic_buffer_resource rtNodePmr;
   std::pmr::vector<Basenode*> rtCmd;
-  std::pmr::vector<Basenode*> rtNode;
+  std::pmr::vector<Basenode*> rtNode; 
   ZrcsHardware::Controller *control;
+
+
   Basenode *Bnode = nullptr;
   bool rtFlag=true;
  // NodeCommunicaion<Motor> motorFeedback; 
 public:
   //command queue
   CmdQueue* cmdQueue;
-  
-   
-  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())     
+  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())
   {
      
   }
   Centre(const Centre &) = delete;
   Centre &operator=(const Centre &) = delete;
   ~Centre(void) {
+   
     delete  control;
     delete cmdQueue;
     cmdThread.join();
   }
-    // template<class T>
-    // std::unique_ptr<NodeCommunicaion<T>> createPipeline()
-    // {
-    //       std::unique_ptr<NodeCommunicaion<T>> nodePipilne(new NodeCommunicaion<T>);
-    //       return nodePipilne;
-    // }
   void registerObject(std::string cmd)
    {
     //object name
@@ -155,42 +147,12 @@ public:
                     bn->PushCmdArgs(cmd_param);
                   }                  
                   bn->config();
-                  rtNode.push_back(bn);
-        
-        }
-                          
-            
+                  rtNode.push_back(bn);        
+        }           
      }
   }
-  void init() {
-    //get command string from command queue
-    cmdThread = std::thread([this]() 
-    {
-      while (true)
-      {
-      //   std::uint16_t aaa;
-      //   std::memcpy(&aaa,control->inputData.data()+0,2);
-         std::string cmd;
-         if (cmdQueue->cmdRead(cmd)==0) 
-         { 
-            if (cmd == "Stop")
-            {         
-              taskScheduling=STOP;
-            } else if (cmd == "Start") 
-            {          
-              taskScheduling=RUN;
-            } else if (cmd == "Recover")
-            {
-                  taskScheduling=RUN;
-            } else
-            {
-              this->registerObject(cmd);
-            }         
-        }
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    });
-
+  void run()
+  {
     //create a real-time task
     control->rtos_->rtos_task_create();
     //put real-time function from real-time node into real-time thread
@@ -199,7 +161,7 @@ public:
       
       switch (taskScheduling) 
       {
-        case RUN:
+
         if (!rtNode.empty())
         {
            for (int i=0; i<rtNode.size(); i++)
@@ -211,6 +173,7 @@ public:
                   }
            }
         }
+        case RUN:
         if (!rtCmd.empty()) 
         {
           Bnode = rtCmd.front();

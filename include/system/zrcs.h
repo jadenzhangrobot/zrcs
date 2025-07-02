@@ -6,7 +6,7 @@
 #include <thread>
 #include <string>
 #include <future>
-//#include "statusData.pb.h"
+#include "rt/rt_process.h"
 
 namespace zrcsSystem {
     class Zrcs {
@@ -14,36 +14,45 @@ namespace zrcsSystem {
     std::thread terminal;
     public:
         Centre *ct;
-        std::thread serverTh;
+        RTProcess *rtProcess;
     
     public:
-        Zrcs() : ct(new Centre)
+        Zrcs() : ct(new Centre),rtProcess(new RTProcess("rtMotion"))
         {   
+            rtProcess->initialize();
                          
         }
         
         void run(void)
         {
-                ct->init();
+               
             
                 terminal = std::thread([this]() 
                 {
                     while (true) 
                     {   
+                        Command cmd;
+                        if(!rtProcess->shared_block_->command_queue.pop(cmd))
+                        {
+                            std::string cmd_(cmd.cmd);
+                            ct->cmdQueue->writeCmd(cmd_);
+                        }
+
                         //指令字符串
-                        std::string cmd;
-                        std::getline(std::cin, cmd);
-                        ct->cmdQueue->writeCmd(cmd);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        // std::string cmd;
+                        // std::getline(std::cin, cmd);
+                        // ct->cmdQueue->writeCmd(cmd);
+                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     }
                 });
     }
 
     
     ~Zrcs() {
-               serverTh.join();        
-               terminal.join();
-               delete ct; 
+                     
+               terminal.join();               
+               delete ct;
+               delete rtProcess;
         }
     };
 } 

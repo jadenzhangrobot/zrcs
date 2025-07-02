@@ -1,0 +1,47 @@
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include "nrt_process.hpp"
+
+
+using namespace std::chrono_literals;
+
+int main() {
+    std::cout << "Starting IPC Demo with C++ Classes" << std::endl;
+    
+    // 创建NRT进程对象
+    NRTProcess nrt_process("rtMotion");
+    
+    // 初始化NRT进程（创建共享内存）
+    if (!nrt_process.initialize()) {
+        std::cerr << "Failed to initialize NRT process" << std::endl;
+        return 1;
+    }
+    
+    // 创建RT进程对象
+while (true) {
+      std::string cmd;
+      std::getline(std::cin, cmd);
+      zrcsSystem::Command cmd_;
+      strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
+      cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
+
+      nrt_process.shared_block_->command_queue.push(cmd_);
+
+    std::this_thread::sleep_for(100ms);
+}
+    
+    // 等待一下确保共享内存创建完成
+    std::this_thread::sleep_for(100ms);
+    
+    // 初始化RT进程（连接到共享内存）
+  
+    
+    // 在主线程中运行NRT进程
+  
+    
+  
+    
+    std::cout << "IPC Demo completed successfully" << std::endl;
+    return 0;
+}

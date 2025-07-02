@@ -1,20 +1,15 @@
 #pragma once
-
 #include <iostream>
-#include <thread>
-#include <chrono>
-#include <cmath>
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include "shared_data.hpp"
+#include "shared_data.h"
 
 namespace ipc = boost::interprocess;
-using namespace std::chrono_literals;
-
+namespace zrcsSystem {
 class RTProcess {
 private:
     const char* shm_name_;
     ipc::managed_shared_memory* shm_;
-    SharedBlock* shared_block_;
+    
     bool initialized_;
     bool running_;
     
@@ -24,6 +19,7 @@ private:
     uint64_t status_updates_;
 
 public:
+    SharedBlock* shared_block_;
     RTProcess(const char* shm_name) 
     : shm_name_(shm_name), shm_(nullptr), shared_block_(nullptr)
 
@@ -33,7 +29,6 @@ public:
 
     ~RTProcess()
     {
-        stop();
         delete shm_;
     }
     
@@ -53,12 +48,9 @@ public:
             return false;
         }
     }
-    void stop()
-    {
-         running_ = false;
-    }
-    
+ 
     // 禁用拷贝构造和赋值
     RTProcess(const RTProcess&) = delete;
     RTProcess& operator=(const RTProcess&) = delete;
 };
+}

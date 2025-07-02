@@ -30,7 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(realtime "Build realtime programs" OFF)
 message("realtime ${realtime}")
 option(ethercat "Build ethercat programs" OFF)
-option(test "Build test programs" OFF)
+option(test "Build test programs" ON)
 if(ethercat)
    add_definitions(-Dethercat)
 endif(ethercat)
@@ -38,6 +38,7 @@ endif(ethercat)
 #添加单元测试程序
 if(test)
   add_subdirectory(test)
+  add_subdirectory(test/nrt)
 endif(test)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
@@ -57,6 +58,7 @@ message("ethercat ${ethercat}")
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
       endif()
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+#include_directories("")
 include_directories( 
    /usr/local/include
    /usr/include
@@ -65,15 +67,15 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
    ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
    ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
+   ${Boost_INCLUDE_DIRS}
  )
+ find_package(Boost REQUIRED COMPONENTS system)
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
 # 强制 ruckig 生成静态库
 set(BUILD_SHARED_LIBS OFF)
 # 添加ruckig库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
-# 添加json库
-
 find_package(Threads REQUIRED)
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
@@ -93,7 +95,6 @@ add_dependencies(motion_control run_python_scripts)
  ruckig
  ethercat_rtdm
  tinyxml2
-
 )
 else()
 target_link_libraries(motion_control

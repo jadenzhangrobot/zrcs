@@ -12,19 +12,16 @@
 #include "controller/ControllerInterface.h"
 #include "system/centre.h"
 #include "system/zrcs.h"
+#include <unistd.h>
 
 int main(int argc, char **argv) 
 {
     try {
-    zrcsSystem::Zrcs zs;
+      zrcsSystem::Zrcs zs;
       zs.run();
       while(true)
       {
-#ifdef _WIN32
-        Sleep(1000); // Windows sleep takes milliseconds
-#else
-        sleep(1); // POSIX sleep takes seconds
-#endif
+        sleep(1);
       }
        return 0;
     } catch (const std::runtime_error& e) {
