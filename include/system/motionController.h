@@ -22,7 +22,6 @@
 #include "dataType.h"
 #include "common/Shared memory/rt_process.h"
 
-
 namespace zrcsSystem {
 /**
  * @brief 命令队列类，用于线程安全的命令传递
@@ -69,7 +68,7 @@ class CmdQueue{
 /**
  * @brief 系统中心控制类，负责整个系统的任务调度和节点管理
  */
-class Centre {
+class MotionController {
 private:
   // 节点指针
   /**
@@ -100,6 +99,7 @@ private:
 
   Basenode *Bnode = nullptr;           // 基础节点指针
   bool rtFlag=true;                    // 实时标志
+  bool nrtFlag=true;
  // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信 
 public:
   // 命令队列
@@ -109,20 +109,20 @@ public:
    * @brief 构造函数
    * @param rtProcess_ 实时进程指针
    */
-  Centre(RTProcess *rtProcess_):rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())
+  MotionController(RTProcess *rtProcess_):rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())
   {
      rtProcess=rtProcess_;
   }
   
   // 禁用拷贝构造函数
-  Centre(const Centre &) = delete;
+  MotionController(const MotionController &) = delete;
   // 禁用赋值操作符
-  Centre &operator=(const Centre &) = delete;
+  MotionController &operator=(const MotionController &) = delete;
   
   /**
    * @brief 析构函数，清理资源
    */
-  ~Centre(void) {
+  ~MotionController(void) {
    
     delete  control;
     delete cmdQueue;
@@ -132,62 +132,26 @@ public:
    * @brief 注册对象到系统中
    * @param cmd 命令字符串，包含类名和参数
    */
-  void registerObject(std::string cmd)
+  int registerObject(std::string cmd, std::string& cmdName ,std::string& cmdParam)
    {
-    // 对象名称
-    std::string class_name;
-    // 命令参数字符串
-    std::string cmd_param;
+  
+  
 
     if (cmd.npos != cmd.find_first_of(" --")) 
     {
-      class_name = cmd.substr(0, cmd.find_first_of(" --"));
+      cmdName = cmd.substr(0, cmd.find_first_of(" --"));
 
-      cmd_param = cmd.substr(cmd.find_first_of(" --")); 
+      cmdParam = cmd.substr(cmd.find_first_of(" --")); 
     } 
     else
     {
-      class_name = cmd;
+      cmdName = cmd;
     }
-    if(!classfactory::getInstance().cmdExist(class_name))
+    if(!classfactory::getInstance().cmdExist(cmdName))
     {
-       std::cout<<"命令不存在"<<std::endl;
+       return -1;
     }
-    else 
-     { 
-        if(classfactory::getInstance().getClassByName(class_name).type()==typeid(Basenode*))
-        {
-                  Basenode *bn =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(class_name));                   
-                  // 将节点状态切换到初始化状态                
-                  if (bn->GetTaskState()==Basenode::IDLE) 
-                  {
-                      bn->registered(control); 
-                      bn->SetTaskState(Basenode::INIT);
-                  }
-                  if (!cmd_param.empty()) 
-                  {
-                    bn->PushCmdArgs(cmd_param);
-                  }                  
-                  bn->config();
-                  rtCmd.push_back(bn);
-        }
-        if (classfactory::getInstance().getClassByName(class_name).type()==typeid(CreateNode)) 
-        { 
-               CreateNode cn =std::any_cast<CreateNode>(classfactory::getInstance().getClassByName(class_name)); 
-               Basenode* bn= (*cn)();
-               if (bn->GetTaskState()==Basenode::IDLE) 
-                  {
-                      bn->registered(control); 
-                      bn->SetTaskState(Basenode::INIT);
-                  }
-                  if (!cmd_param.empty()) 
-                  {
-                    bn->PushCmdArgs(cmd_param);
-                  }                  
-                  bn->config();
-                  rtNode.push_back(bn);        
-        }           
-     }
+     return 0;
   }
   /**
    * @brief 运行系统主循环
@@ -203,7 +167,7 @@ public:
      controlRegister= rtProcess->shared_block_->registers.sysControl.load();
       switch (taskScheduling) 
       {
-
+        case RUN:
         if (!rtNode.empty())
         {
            for (int i=0; i<rtNode.size(); i++)
@@ -215,42 +179,26 @@ public:
                   }
            }
         }
-        case RUN:
-        if (!rtCmd.empty()) 
-        {
-          Bnode = rtCmd.front();
+      
           if (Bnode != nullptr) 
           {
-                if ((Bnode->GetTaskState() == Basenode::INIT)||Bnode->GetTaskState() == Basenode::EXIT)
+                switch (Bnode->GetTaskState())
                 {
-                      Bnode->init();
-                }
-                else if(Bnode->GetTaskState() == Basenode::RUNNING) 
-                  {   
-                      Bnode->excuteRt();
-                        
-                  } 
-                else if (Bnode->GetTaskState() == Basenode::SUCCESS) 
-                  {
-                    
-                    Bnode->exit();
-                    rtCmd.erase(rtCmd.begin()); 
-                          
-                  } 
-                else if (Bnode->GetTaskState() == Basenode::FAILURE) 
-                  {
+                  case Basenode::RTINIT:
+                    Bnode->rtinit();
+                    break;                   
+                  case Basenode::EXCUTERt:
+                    Bnode->excuteRt();
+                    break;                   
+                  case Basenode::RTEXIT:
+                    Bnode->rtExit();
                     rtCmd.erase(rtCmd.begin());
-                    taskScheduling = TaskScheduling::SchedulingError;
-                  }
-                else 
-                  {
-                      exit(1);
-                  }
+                    break;
+                  default:
+                    exit(1);
+                    break;
+                }
            }
-          else {             
-               rtCmd.erase(rtCmd.begin());
-           }
-        }
        break;
        case STOP:
        break;
@@ -270,22 +218,59 @@ public:
    */
   void cmdParsing()
   {
-    cmdThread = std::thread([this]() {
-      std::string cmd;
+      cmdThread = std::thread([this]() {
       while (rtFlag) 
       {
-        if (cmdQueue->cmdRead(cmd) == 0) 
-        {
-          registerObject(cmd);
-        }
+              Command cmd_;
+              if(rtProcess->shared_block_->command_queue.pop(cmd_))
+              {
+                  std::string cmd(cmd_.cmd);   
+                  std::string cmdParam;
+                  std::string cmdName;
+                  if(registerObject(cmd,cmdName,cmdParam)==0)
+                  {
+                        if(classfactory::getInstance().getClassByName(cmdName).type()==typeid(Basenode*))
+                        {
+                              Basenode* Bnode =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(cmdName));
+                              if (Bnode!=nullptr) 
+                              {
+                                    switch (Bnode->GetTaskState())
+                                    {
+                                          case Basenode::START:
+                                    
+                                      if (!cmd_param.empty()) 
+                                      {
+                                        Bnode->PushCmdArgs(cmd_param);
+                                      }                  
+                                    
+                                            Bnode->nrtInit();  
+                                          break;
+                                          case Basenode::IDLE:
+                                          
+                                          case Basenode::FAILURE:
+
+                                          break;
+                                          default:
+                                          break;
+                                    }
+                              
+                              }                
+                        }
+                        if (classfactory::getInstance().getClassByName(cmdName).type()==typeid(CreateNode*)) 
+                        { 
+                              CreateNode* cn =std::any_cast<CreateNode*>(classfactory::getInstance().getClassByName(cmdName));         
+                        }          
+                  }
+                  else
+                  {
+                  
+                  }
+              
+          }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }
+    }
     });
   }
-  
-
-  
- 
 };
 } 
 #endif

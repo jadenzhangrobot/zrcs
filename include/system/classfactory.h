@@ -1,16 +1,8 @@
-/**
- * @copyrightCopyright(c)2024Glroadcorporation
- * @filename:classfactory.h
- * @brief:
- * zhangyongjing@oetsky.com
- * @createdate:2024-01-05
- */
+
 #ifndef CLALLFACTORY_H_
 #define CLALLFACTORY_H_
-#include <iostream>
 #include <map>
 #include <string>
-#include <memory_resource>
 #include <any>
 #include "basenodeInterface.h"
 

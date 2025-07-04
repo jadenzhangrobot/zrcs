@@ -1,6 +1,6 @@
 #ifndef ZRCS
 #define ZRCS
-#include "centre.h"
+#include "motionController.h"
 #include <exception>
 #include <iostream>
 #include <thread>
@@ -14,13 +14,13 @@ namespace zrcsSystem {
     private:
     std::thread terminal;
     public:
-        Centre *ct=nullptr;
+        MotionController *mc=nullptr;
         RTProcess *rtProcess=nullptr;
     
     public:
         Zrcs() :rtProcess(new RTProcess("rtMotion"))
         {   
-            ct=new Centre(rtProcess);
+            mc=new MotionController(rtProcess);
             rtProcess->initialize();
                          
         }
@@ -31,30 +31,30 @@ namespace zrcsSystem {
             
                 terminal = std::thread([this]() 
                 {
-                    while (true) 
-                    {   
-                        Command cmd;
-                        if(rtProcess->shared_block_->command_queue.pop(cmd))
-                        {
-                            std::string cmd_(cmd.cmd);
-                            ct->cmdQueue->writeCmd(cmd_);
-                        }
+                //     while (true) 
+                //     {   
+                //         Command cmd;
+                //         if(rtProcess->shared_block_->command_queue.pop(cmd))
+                //         {
+                //             std::string cmd_(cmd.cmd);
+                //             mc->cmdQueue->writeCmd(cmd_);
+                //         }
 
-                        //指令字符串
-                        // std::string cmd;
-                        // std::getline(std::cin, cmd);
-                        // ct->cmdQueue->writeCmd(cmd);
-                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    }
-                });
-                ct->run();
+                //         //指令字符串
+                //         // std::string cmd;
+                //         // std::getline(std::cin, cmd);
+                //         // ct->cmdQueue->writeCmd(cmd);
+                //          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                //     }
+                // });
+                mc->run();
     }
 
     
     ~Zrcs() {
                      
                terminal.join();               
-               delete ct;
+               delete mc;
                delete rtProcess;
         }
     };

@@ -22,115 +22,46 @@ public:
   std::string node_name;
   enum NodeStatus
   {
-    INIT,    //表示实时组件初始化状态
+    START,
     IDLE,    //表示实时线程处于闲暇状态,没有加载任何主件
-    RUNNING, //表示实时线程正执行任务
-    EXIT,
-    SUCCESS, //表示执行成功状态，这个状态和IDLE状态的区别在于可以接受指令
+    NRTINIT,
+    RTINIT,    //表示实时组件初始化状态
+    EXCUTERt, //表示实时线程正执行任务
+    RTEXIT,    //表示实时线程再执行退出参数保存
+    NRTEXIT,   // 
     FAILURE, //表示执行错误
   };
-  NodeStatus node_status = IDLE;
+  NodeStatus node_status = START;
   cmdline::parser port_input;
   std::queue<std::string> cmdParam;
   ZrcsHardware::Controller* control;
   Basenode()
   {};
   virtual ~Basenode() = default;
+  virtual void nrtInit(void)=0;
 
-  virtual void init(void) = 0;
+  virtual void rtinit(void) = 0;
 
   virtual void excuteRt(void) = 0;
-  virtual void excuteNrt(void) {};
-  void PushCmdArgs(std::string cmdargs)
-  {
-        cmdParam.push(cmdargs);
-  };
-  virtual void config(void)
-  {
 
-  }
+  virtual void rtExit(void)=0;
+  virtual void nrtExit(void)=0;
+  virtual void failure(void)=0;
+  virtual NodeStatus GetTaskState() { return node_status;}
 
-  virtual void exit(void)=0;
- 
   void registered( ZrcsHardware::Controller* ct)
   {
         control=ct;
   }
-
-  virtual NodeStatus GetTaskState() { return node_status; }
+ void PushCmdArgs(std::string cmdargs)
+  {
+        cmdParam.push(cmdargs);
+  };
+ 
   void  SetTaskState(NodeStatus ns)
   {
         node_status=ns;
   }
-
-  // //由idle状态切换到init状态，对实时节点进行初始化
-  // virtual bool config() {
-  //   if (node_status == SUCCESS) {
-  //     node_status = INIT;
-  //   } else {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-  // //状态由init状态切换到running
-  // virtual bool run() {
-  //   if (node_status == INIT) {
-  //     node_status = RUNNING;
-  //   } else {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
-  //将指令从失败的状态恢复到接受指令的success状态
-  virtual bool recover() {
-    if (node_status == FAILURE) {
-      node_status = SUCCESS;
-    } else {
-      return false;
-    }
-    return true;
-  }
-  //主要是用于紧急停止
-  virtual bool stop() {
-    if ((node_status == RUNNING) || (node_status == SUCCESS)) {
-      node_status = IDLE;
-    } else {
-      return false;
-    }
-    return true;
-  }
-  //紧急停止后的状态恢复
-  virtual bool start() {
-    if (node_status == IDLE) {
-      node_status = SUCCESS;
-    } else {
-      return false;
-    }
-    return true;
-  }
-  // virtual bool fail()
-  // {
-  //   if
-  //   ((node_status==INIT)||(node_status==RUNNING)||(node_status==RTCOMPLETE))
-  //   {
-  //     node_status = FAILURE;
-  //   } else {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-  // virtual bool quit()
-  // {
-  //    if (node_status==RUNNING)
-  //    {
-  //      node_status=RTCOMPLETE;
-  //    }
-  //    else {
-  //       return false;
-  //    }
-  //   return  true;
-  // }
 };
 } // namespace zrcs_system
 #endif

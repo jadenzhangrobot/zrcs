@@ -10,7 +10,7 @@
  */
 #include "command/Cmdhead.h"
 #include "controller/ControllerInterface.h"
-#include "system/centre.h"
+#include "system/motionController.h"
 #include "system/zrcs.h"
 #include <unistd.h>
 

@@ -67,7 +67,6 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
    ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
    ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
-   ${Boost_INCLUDE_DIRS}
  )
  find_package(Boost REQUIRED COMPONENTS system)
 # 添加tinyxml2库
