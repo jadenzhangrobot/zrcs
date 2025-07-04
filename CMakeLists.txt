@@ -38,8 +38,8 @@ endif(ethercat)
 #添加单元测试程序
 if(test)
   add_subdirectory(test)
-  add_subdirectory(test/nrt)
 endif(test)
+ add_subdirectory(nrt)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
@@ -95,6 +95,7 @@ add_dependencies(motion_control run_python_scripts)
  ruckig
  ethercat_rtdm
  tinyxml2
+ atomic
 )
 else()
 target_link_libraries(motion_control
@@ -102,6 +103,7 @@ PRIVATE
 Threads::Threads
 ruckig
 tinyxml2
+atomic
 #fakeethercat
 )
 endif()

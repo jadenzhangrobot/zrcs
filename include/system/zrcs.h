@@ -6,19 +6,21 @@
 #include <thread>
 #include <string>
 #include <future>
-#include "rt/rt_process.h"
+#include "common/Shared memory/rt_process.h"
+
 
 namespace zrcsSystem {
     class Zrcs {
     private:
     std::thread terminal;
     public:
-        Centre *ct;
-        RTProcess *rtProcess;
+        Centre *ct=nullptr;
+        RTProcess *rtProcess=nullptr;
     
     public:
-        Zrcs() : ct(new Centre),rtProcess(new RTProcess("rtMotion"))
+        Zrcs() :rtProcess(new RTProcess("rtMotion"))
         {   
+            ct=new Centre(rtProcess);
             rtProcess->initialize();
                          
         }
@@ -32,7 +34,7 @@ namespace zrcsSystem {
                     while (true) 
                     {   
                         Command cmd;
-                        if(!rtProcess->shared_block_->command_queue.pop(cmd))
+                        if(rtProcess->shared_block_->command_queue.pop(cmd))
                         {
                             std::string cmd_(cmd.cmd);
                             ct->cmdQueue->writeCmd(cmd_);
@@ -45,6 +47,7 @@ namespace zrcsSystem {
                          std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     }
                 });
+                ct->run();
     }
 
     

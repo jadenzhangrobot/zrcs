@@ -1,13 +1,14 @@
 /**
- * @copyrightCopyright(c)2024Glroadcorporation
- * @filename:centre.h
- * @brief:
- * zhangyongjing@oetsky.com
- * @createdate:2024-01-04
+ * @copyright 版权所有(c)2024 Glroad公司
+ * @filename: centre.h
+ * @brief: 系统中心控制类，负责任务调度和节点管理
+ * @author: zhangyongjing@oetsky.com
+ * @createdate: 2024-01-04
  */
 #ifndef CENTRE_H_
 #define CENTRE_H_
 #include <any>
+#include <array>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -17,28 +18,41 @@
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
 #include "nodeCommunication.h"
-
-
-
 #include "nodeCommunication.h"
 #include "dataType.h"
-#include "rt/rt_process.h"
-#include "rt/rt_process.h"
+#include "common/Shared memory/rt_process.h"
+
+
 namespace zrcsSystem {
+/**
+ * @brief 命令队列类，用于线程安全的命令传递
+ */
 class CmdQueue{
    
-     std::mutex cmdMutex;
-     std::queue<std::string> cmdQueue;
+     std::mutex cmdMutex;  // 命令队列互斥锁
+     std::queue<std::string> cmdQueue;  // 命令队列
      public:
+     /**
+      * @brief 构造函数
+      */
      CmdQueue()
      {
 
      }
+     /**
+      * @brief 写入命令到队列
+      * @param cmd 要写入的命令字符串
+      */
       void writeCmd(std::string& cmd)
       {   
            std::lock_guard<std::mutex> lock(cmdMutex);
            cmdQueue.push(cmd);
       }
+      /**
+       * @brief 从队列读取命令
+       * @param cmd 输出参数，读取到的命令
+       * @return 0表示成功，-1表示队列为空
+       */
       int cmdRead(std::string& cmd)
       { 
             if (!cmdQueue.empty())
@@ -52,53 +66,77 @@ class CmdQueue{
       }
 
 };
+/**
+ * @brief 系统中心控制类，负责整个系统的任务调度和节点管理
+ */
 class Centre {
 private:
-  //node pointer
+  // 节点指针
+  /**
+   * @brief 任务调度状态枚举
+   */
   enum TaskScheduling
   {
-    STOP = 0,
-    RUN = 1,
-    SchedulingError = 2
+    STOP = 0,           // 停止
+    RUN = 1,            // 运行
+    SchedulingError = 2 // 调度错误
   };
-  TaskScheduling  taskScheduling=RUN;
-  //command parsing thread
+  TaskScheduling  taskScheduling=RUN;  // 任务调度状态
+  // 命令解析线程
   std::thread cmdThread;
 
-  //command destruction thread
+  // 命令销毁线程
   std::thread exit_cmd;
 
-  //command object pointer container
-  std::pmr::monotonic_buffer_resource rtCmdPmr;
-  std::pmr::monotonic_buffer_resource rtNodePmr;
-  std::pmr::vector<Basenode*> rtCmd;
-  std::pmr::vector<Basenode*> rtNode; 
-  ZrcsHardware::Controller *control;
+  // 命令对象指针容器
+  std::pmr::monotonic_buffer_resource rtCmdPmr;  // 实时命令内存资源
+  std::pmr::monotonic_buffer_resource rtNodePmr; // 实时节点内存资源
+  std::pmr::vector<Basenode*> rtCmd;   // 实时命令容器
+  std::pmr::vector<Basenode*> rtNode;  // 实时节点容器
+  ZrcsHardware::Controller *control;   // 硬件控制器指针
+  std::array<bool, 100> controlRegister={}; // 控制寄存器
+  std::array<bool, 100> statusRegister={};  // 状态寄存器
+  RTProcess *rtProcess;                // 实时进程指针
 
-
-  Basenode *Bnode = nullptr;
-  bool rtFlag=true;
- // NodeCommunicaion<Motor> motorFeedback; 
+  Basenode *Bnode = nullptr;           // 基础节点指针
+  bool rtFlag=true;                    // 实时标志
+ // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信 
 public:
-  //command queue
+  // 命令队列
   CmdQueue* cmdQueue;
-  Centre():rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())
+  
+  /**
+   * @brief 构造函数
+   * @param rtProcess_ 实时进程指针
+   */
+  Centre(RTProcess *rtProcess_):rtCmd(&rtCmdPmr), rtNode(&rtNodePmr), control(new ZrcsHardware::Controller()),cmdQueue(new CmdQueue())
   {
-     
+     rtProcess=rtProcess_;
   }
+  
+  // 禁用拷贝构造函数
   Centre(const Centre &) = delete;
+  // 禁用赋值操作符
   Centre &operator=(const Centre &) = delete;
+  
+  /**
+   * @brief 析构函数，清理资源
+   */
   ~Centre(void) {
    
     delete  control;
     delete cmdQueue;
     cmdThread.join();
   }
+  /**
+   * @brief 注册对象到系统中
+   * @param cmd 命令字符串，包含类名和参数
+   */
   void registerObject(std::string cmd)
    {
-    //object name
+    // 对象名称
     std::string class_name;
-    // command parameter string
+    // 命令参数字符串
     std::string cmd_param;
 
     if (cmd.npos != cmd.find_first_of(" --")) 
@@ -113,14 +151,14 @@ public:
     }
     if(!classfactory::getInstance().cmdExist(class_name))
     {
-       std::cout<<"cmd not exist"<<std::endl;
+       std::cout<<"命令不存在"<<std::endl;
     }
     else 
      { 
         if(classfactory::getInstance().getClassByName(class_name).type()==typeid(Basenode*))
         {
                   Basenode *bn =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(class_name));                   
-                  //switch node state to init state                
+                  // 将节点状态切换到初始化状态                
                   if (bn->GetTaskState()==Basenode::IDLE) 
                   {
                       bn->registered(control); 
@@ -151,14 +189,18 @@ public:
         }           
      }
   }
+  /**
+   * @brief 运行系统主循环
+   * 创建实时任务并启动任务调度器
+   */
   void run()
   {
-    //create a real-time task
+    cmdParsing();
     control->rtos_->rtos_task_create();
-    //put real-time function from real-time node into real-time thread
+    // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() {   
-    //control->receiveData();
-      
+    // control->receiveData();
+     controlRegister= rtProcess->shared_block_->registers.sysControl.load();
       switch (taskScheduling) 
       {
 
@@ -216,10 +258,34 @@ public:
        break;
        default:
        break;         
-      }       
-     //  control->SendData(); 
+      }  
+     rtProcess->shared_block_->registers.sysStatus.store(statusRegister);  
+     // control->SendData(); 
     });
   }
+  
+  /**
+   * @brief 命令解析函数
+   * 启动命令解析线程，持续从命令队列中读取并处理命令
+   */
+  void cmdParsing()
+  {
+    cmdThread = std::thread([this]() {
+      std::string cmd;
+      while (rtFlag) 
+      {
+        if (cmdQueue->cmdRead(cmd) == 0) 
+        {
+          registerObject(cmd);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    });
+  }
+  
+
+  
+ 
 };
 } 
 #endif
