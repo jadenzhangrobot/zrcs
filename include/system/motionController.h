@@ -21,6 +21,9 @@
 #include "nodeCommunication.h"
 #include "dataType.h"
 #include "common/Shared memory/rt_process.h"
+#include "command/Cmdhead.h"
+
+
 
 namespace zrcsSystem {
 /**
@@ -95,9 +98,8 @@ private:
   ZrcsHardware::Controller *control;   // 硬件控制器指针
   std::array<bool, 100> controlRegister={}; // 控制寄存器
   std::array<bool, 100> statusRegister={};  // 状态寄存器
-  RTProcess *rtProcess;                // 实时进程指针
-
-  Basenode *Bnode = nullptr;           // 基础节点指针
+  RTProcess *rtProcess=nullptr;                // 实时进程指针
+  Basenode* cmdNode=nullptr;
   bool rtFlag=true;                    // 实时标志
   bool nrtFlag=true;
  // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信 
@@ -132,11 +134,8 @@ public:
    * @brief 注册对象到系统中
    * @param cmd 命令字符串，包含类名和参数
    */
-  int registerObject(std::string cmd, std::string& cmdName ,std::string& cmdParam)
+  bool registerObject(std::string cmd, std::string& cmdName ,std::string& cmdParam)
    {
-  
-  
-
     if (cmd.npos != cmd.find_first_of(" --")) 
     {
       cmdName = cmd.substr(0, cmd.find_first_of(" --"));
@@ -149,9 +148,9 @@ public:
     }
     if(!classfactory::getInstance().cmdExist(cmdName))
     {
-       return -1;
+       return false;
     }
-     return 0;
+     return true;
   }
   /**
    * @brief 运行系统主循环
@@ -179,26 +178,30 @@ public:
                   }
            }
         }
-      
-          if (Bnode != nullptr) 
+        if(!rtCmd.empty())
+        {
+          
+          if (cmdNode != nullptr) 
           {
-                switch (Bnode->GetTaskState())
+                switch (cmdNode->GetTaskState())
                 {
                   case Basenode::RTINIT:
-                    Bnode->rtinit();
+                    cmdNode->rtInit();
                     break;                   
-                  case Basenode::EXCUTERt:
-                    Bnode->excuteRt();
+                  case Basenode::EXCUTERT:
+                    cmdNode->excuteRt();
                     break;                   
                   case Basenode::RTEXIT:
-                    Bnode->rtExit();
-                    rtCmd.erase(rtCmd.begin());
+                    cmdNode->rtExit();
+                    cmdNode->SetTaskState(Basenode::NRTEXIT);
                     break;
-                  default:
-                    exit(1);
+                  case Basenode::FAILURE:                    
+                    break;
+                  default:                    
                     break;
                 }
            }
+        }
        break;
        case STOP:
        break;
@@ -224,48 +227,60 @@ public:
               Command cmd_;
               if(rtProcess->shared_block_->command_queue.pop(cmd_))
               {
-                  std::string cmd(cmd_.cmd);   
-                  std::string cmdParam;
-                  std::string cmdName;
-                  if(registerObject(cmd,cmdName,cmdParam)==0)
+                  std::string cmd(cmd_.cmd); 
+                  std::string cmdParam={};
+                  std::string cmdName={};
+                  if(registerObject(cmd,cmdName,cmdParam)==true)
                   {
                         if(classfactory::getInstance().getClassByName(cmdName).type()==typeid(Basenode*))
-                        {
-                              Basenode* Bnode =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(cmdName));
-                              if (Bnode!=nullptr) 
+                        {    
+                              cmdNode =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(cmdName));
+                              if (cmdNode!=nullptr) 
                               {
-                                    switch (Bnode->GetTaskState())
+                                 bool running=true;
+                                 while (running) 
+                                 {
+                                    switch (cmdNode->GetTaskState())
                                     {
-                                          case Basenode::START:
-                                    
-                                      if (!cmd_param.empty()) 
-                                      {
-                                        Bnode->PushCmdArgs(cmd_param);
-                                      }                  
-                                    
-                                            Bnode->nrtInit();  
-                                          break;
-                                          case Basenode::IDLE:
-                                          
-                                          case Basenode::FAILURE:
-
-                                          break;
-                                          default:
-                                          break;
-                                    }
-                              
+                                      case Basenode::START:
+                                          if (cmdParam.empty()) 
+                                          {
+                                            cmdNode->PushCmdArgs(cmdParam);                                           
+                                          }             
+                                      case Basenode::NRTINIT:
+                                           cmdNode->nrtInit();
+                                           cmdNode->SetTaskState(Basenode::RTINIT);                                      
+                                           break;
+                                      case Basenode::RTINIT:
+                                      case Basenode::EXCUTERT:
+                                      case Basenode::RTEXIT:
+                                           std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                                           break;
+                                      case Basenode::NRTEXIT:
+                                          running=false;
+                                          cmdNode=nullptr;
+                                         break;                                          
+                                      default:
+                                           std::cout<<"指令状态错误"<<std::endl;
+                                           break;
+                                    }          
+                                 }
+                                                                                 
                               }                
                         }
                         if (classfactory::getInstance().getClassByName(cmdName).type()==typeid(CreateNode*)) 
                         { 
-                              CreateNode* cn =std::any_cast<CreateNode*>(classfactory::getInstance().getClassByName(cmdName));         
+                              CreateNode* cn =std::any_cast<CreateNode*>(classfactory::getInstance().getClassByName(cmdName));
+                              if (cn!=nullptr) 
+                              {
+                                  
+                              }         
                         }          
                   }
                   else
                   {
-                  
-                  }
-              
+                       std::cout<<"指令不存在"<<std::endl;
+                  }              
           }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }

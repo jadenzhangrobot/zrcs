@@ -1,43 +1,12 @@
 {
     "version": "0.2.0",
     "configurations": [
-            {
-                "name": "zrcs", //配置名称，显示在配置下拉菜单中
-                "type": "cppdbg", //配置类型
-                "request": "launch", //请求配置类型，可以是启动或者是附加
-                "program": "${workspaceFolder}/build/motion_control", //程序可执行文件的完整路径，${workspaceFolder}表示远程连接的初始路径
-                //"args": ["../test.yuv", "../test.h264"], //传递给程序的命令行参数
-                //"stopAtEntry": true,//可选参数，如果为true,调试程序应该在入口（main）处停止
-                "cwd": "${workspaceFolder}", //目标的工作目录
-                "environment": [],//表示要预设的环境变量
-                "externalConsole": false,//如果为true，则为调试对象启动控制台
-                "MIMode": "gdb",//要连接到的控制台启动程序
-                "miDebuggerPath": "gdb",   // 需要自行添加，gdb的路径 
-                "setupCommands": [
-                    // {
-                    //     "description": "Test",
-                    //     "text": "python import sys;sys.path.insert(0, '/usr/share/gcc/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
-                    //     "ignoreFailures": false
-                    // },
-                    {
-                        "description": "为 gdb 启用整齐打印",
-                        "text": "-enable-pretty-printing",
-                        "ignoreFailures": true
-                    },
-                    {
-                        "description": "Import custom GDB Python visualization script",
-                        "text": "python import sys; sys.path.insert(0, '${workspaceFolder}/tool'); import debugvis",
-                        "ignoreFailures": false
-                    }
-                ]
-        
-                
-            },
+           
             {
                 "name": "zrcs-nrt", //配置名称，显示在配置下拉菜单中
                 "type": "cppdbg", //配置类型
                 "request": "attach", //请求配置类型，可以是启动或者是附加
-                "program": "${workspaceFolder}/build/bin/ipc_project", //程序可执行文件的完整路径，${workspaceFolder}表示远程连接的初始路径
+                "program": "${workspaceFolder}/build/bin/ipc_project.exe", //程序可执行文件的完整路径，${workspaceFolder}表示远程连接的初始路径
                 //"args": ["../test.yuv", "../test.h264"], //传递给程序的命令行参数
                 //"stopAtEntry": true,//可选参数，如果为true,调试程序应该在入口（main）处停止
                 "cwd": "${workspaceFolder}", //目标的工作目录

@@ -90,9 +90,11 @@ public:
    bool statusHealthy();
 
    void powerProcess();
-
-
-
+   void setAxisPositionCmd(double axisPosCmd)
+   {
+         axisPosCmd_=axisPosCmd;
+      
+   }
    void syncMotionKernelResultsToAxis(double duration);
 
 

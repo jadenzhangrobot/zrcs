@@ -34,7 +34,7 @@ class JogabsJ:public zrcsSystem::Basenode
               port_input.add<double>("jerk", 'j', "servo jerk", false, 10, cmdline::range(-1000.0, 1000.0));
             }    
 ;
-       void config() override
+       void nrtInit() override
        {
            if (!cmdParam.empty()) 
               {
@@ -49,9 +49,9 @@ class JogabsJ:public zrcsSystem::Basenode
               axisId=port_input.get<int>("motor");     
        }
 
-       void init() override
+       void rtInit() override
        {          
-              input.current_position[0]=control->axiss[axisId]->actualPos();       
+              input.current_position[0]=0;       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
               input.target_position[0]=position;
@@ -60,33 +60,37 @@ class JogabsJ:public zrcsSystem::Basenode
               input.max_velocity[0] =velocity;
               input.max_acceleration[0] =acceleration;
               input.max_jerk[0] =jerk;
-              node_status=RUNNING;                          
+              nodeStatus=EXCUTERT;                          
     }
            
       void  excuteRt(void) override
       {                               
-                    //  if(otg.update(input, output) == Result::Working)            
-                    //   {                        
-                    //     auto& p = output.new_position;
-                    //     control->axiss[axisId]->setTargetPos(p[0]);                                                                                        
-                    //     output.pass_to_input(input);
-                    //      //rt_printf("---  %lf\n",(p[0]));                             
-                    //    }
-                    //  else if(otg.update(input, output)==Result::Finished)
-                    //   {
-                    //     node_status=SUCCESS;
-                    //   }
-                    //  else
-                    //   {                         
-                    //     node_status=FAILURE;                        
-                    //   }
+                     if(otg.update(input, output) == Result::Working)            
+                      {                        
+                        auto& p = output.new_position;
+                        control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
+                        output.pass_to_input(input);
+                         //rt_printf("---  %lf\n",(p[0]));                             
+                       }
+                     else if(otg.update(input, output)==Result::Finished)
+                      {
+                        nodeStatus=RTEXIT;
+                      }
+                     else
+                      {                         
+                        nodeStatus=FAILURE;                        
+                      }
         
       }
-      void exit(void) override
+      void rtExit(void) override
       {
              //rt_printf("JogAbsj 执行成功\n");
              std::cout<<"JogAbsj 执行成功\n";
-             node_status=EXIT;
+            
+      }
+      void nrtExit()override
+      {
+
       }
      
   };

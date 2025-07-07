@@ -28,15 +28,15 @@ while (true) {
      std::array<bool, 100> control_flags={};
      control_flags[5] = true;
      nrt_process.shared_block_->registers.sysControl.store(control_flags);
-    //   std::string cmd;
-    //   std::getline(std::cin, cmd);
-    //   zrcsSystem::Command cmd_;
-    //   strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
-    //   cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
+      std::string cmd;
+      std::getline(std::cin, cmd);
+      Command cmd_;
+      strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
+      cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
 
-    //   nrt_process.shared_block_->command_queue.push(cmd_);
+      nrt_process.shared_block_->command_queue.push(cmd_);
 
-    std::this_thread::sleep_for(100ms);
+    std::this_thread::sleep_for(10ms);
 }
     
     // 等待一下确保共享内存创建完成

@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2024
  * 
  */
-#include "command/Cmdhead.h"
+
 #include "controller/ControllerInterface.h"
 #include "system/motionController.h"
 #include "system/zrcs.h"
@@ -16,15 +16,18 @@
 
 int main(int argc, char **argv) 
 {
-    try {
+    try 
+    {
       zrcsSystem::Zrcs zs;
       zs.run();
       while(true)
       {
-        sleep(1);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
       }
-       return 0;
-    } catch (const std::runtime_error& e) {
+    } 
+    catch (const std::runtime_error& e) 
+    {
         std::cerr << "Exception caught: " << e.what() << std::endl; 
     }
+    return 0;
 }
