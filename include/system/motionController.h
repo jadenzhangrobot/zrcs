@@ -177,10 +177,7 @@ public:
                       taskScheduling = TaskScheduling::SchedulingError;
                   }
            }
-        }
-        if(!rtCmd.empty())
-        {
-          
+        }    
           if (cmdNode != nullptr) 
           {
                 switch (cmdNode->GetTaskState())
@@ -201,7 +198,7 @@ public:
                     break;
                 }
            }
-        }
+        
        break;
        case STOP:
        break;
@@ -243,7 +240,7 @@ public:
                                     switch (cmdNode->GetTaskState())
                                     {
                                       case Basenode::START:
-                                          if (cmdParam.empty()) 
+                                          if (!cmdParam.empty()) 
                                           {
                                             cmdNode->PushCmdArgs(cmdParam);                                           
                                           }             
@@ -257,6 +254,8 @@ public:
                                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
                                            break;
                                       case Basenode::NRTEXIT:
+                                          cmdNode->nrtExit();
+                                          cmdNode->SetTaskState(Basenode::START);
                                           running=false;
                                           cmdNode=nullptr;
                                          break;                                          
