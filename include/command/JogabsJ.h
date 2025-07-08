@@ -11,9 +11,10 @@
 #include "system/basenodeInterface.h"
 #include <ruckig/ruckig.hpp>
 #include <string>
-#include "system/classfactory.h"
+#include "system/nodeFactory.h"
+
 using namespace ruckig;
-class JogabsJ:public zrcsSystem::Basenode
+class JogabsJ:public zrcsSystem::OneShotNode
   {
 
              public:
@@ -34,23 +35,17 @@ class JogabsJ:public zrcsSystem::Basenode
               port_input.add<double>("jerk", 'j', "servo jerk", false, 10, cmdline::range(-1000.0, 1000.0));
             }    
 ;
-       void nrtInit() override
+       void init() override
        {
-           if (!cmdParam.empty()) 
-              {
-                  std::string str=cmdParam.front();
-                  port_input.parse_check(str);
-                  cmdParam.pop();
-              }  
+          
+                 
+              port_input.parse_check(cmdParam);           
               position=port_input.get<double>("position"); 
               velocity=port_input.get<double>("velocity");
               acceleration= port_input.get<double>("acceleration");
               jerk=port_input.get<double>("jerk");
-              axisId=port_input.get<int>("motor");     
-       }
+              axisId=port_input.get<int>("motor");
 
-       void rtInit() override
-       {          
               input.current_position[0]=0;       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
@@ -60,37 +55,34 @@ class JogabsJ:public zrcsSystem::Basenode
               input.max_velocity[0] =velocity;
               input.max_acceleration[0] =acceleration;
               input.max_jerk[0] =jerk;
-              nodeStatus=EXCUTERT;                          
-    }
+       }
+
+  
            
-      void  excuteRt(void) override
+      void  run(void) override
       {                               
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
-                        control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
+                       // control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
                         output.pass_to_input(input);
-                         //rt_printf("---  %lf\n",(p[0]));                             
+                        std::cout<<"position   "<<p[0]<<std::endl;                           
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {
-                        nodeStatus=RTEXIT;
+                        SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
                       }
                      else
                       {                         
-                        nodeStatus=FAILURE;                        
+                        SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
                       }
         
       }
-      void rtExit(void) override
+      void exit(void) override
       {
              //rt_printf("JogAbsj 执行成功\n");
              std::cout<<"JogAbsj 执行成功\n";
             
-      }
-      void nrtExit()override
-      {
-
       }
      
   };

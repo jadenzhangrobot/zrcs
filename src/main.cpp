@@ -10,7 +10,7 @@
  */
 
 #include "controller/ControllerInterface.h"
-#include "system/motionController.h"
+#include "system/nodeManager.h"
 #include "system/zrcs.h"
 #include <unistd.h>
 

@@ -1,68 +1,199 @@
 /**
- * @copyrightCopyright(c)2024Glroadcorporation
- * @filename:basenode.h
- * @brief:
- * zhangyongjing@oetsky.com
- * @createdate:2024-01-08
+ * @copyright Copyright(c) 2024 Glroad Corporation
+ * @filename: basenodeInterface.h
+ * @brief: Base node interface definitions for ZRCS system
+ * @author: zhangyongjing@oetsky.com
+ * @createdate: 2024-01-08
  */
-#ifndef BASEFUN_H_
-#define BASEFUN_H_
+#ifndef BASENODE_INTERFACE_H_
+#define BASENODE_INTERFACE_H_
 #include "cmdline.h"
-#include <cstdint>
-#include <string>
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
-#include <queue>
+#include <atomic>
+#include <cstdint>
 #include <memory_resource>
-#include <atomic> 
+#include <queue>
+#include <string> 
 namespace zrcsSystem {
 
 class Basenode {
 public:
-  uint64_t node_count = 0;
-  std::string node_name;
-  enum  NodeStatus
-  {
-    START,
-    IDLE,    //表示实时线程处于闲暇状态,没有加载任何主件
-    NRTINIT,
-    RTINIT,    //表示实时组件初始化状态
-    EXCUTERT, //表示实时线程正执行任务
-    RTEXIT,    //表示实时线程再执行退出参数保存
-    NRTEXIT,   // 
-    FAILURE, //表示执行错误
-  };
-  std::atomic<NodeStatus> nodeStatus{NodeStatus::START};
-  cmdline::parser port_input;
-  std::queue<std::string> cmdParam;
-  ZrcsHardware::Controller* control;
-  Basenode()
-  {};
-  virtual ~Basenode() = default;
-  virtual void nrtInit(void)=0;
-
-  virtual void rtInit(void) = 0;
-
-  virtual void excuteRt(void) = 0;
-
-  virtual void rtExit(void)=0;
-  virtual void nrtExit(void)=0;
-   void failure(void);
-  virtual NodeStatus GetTaskState() const noexcept { return nodeStatus.load(std::memory_order_acquire); }
-
-  void registered( ZrcsHardware::Controller* ct)
-  {
-        control=ct;
-  }
- void PushCmdArgs(std::string cmdargs)
-  {
-        cmdParam.push(cmdargs);
-  };
+    uint64_t nodeCount = 0;
+    std::string nodeName;
+    
  
-  void SetTaskState(NodeStatus ns) noexcept
-  {
-    nodeStatus.store(ns, std::memory_order_release);
-  }
+    cmdline::parser port_input;
+    //命令参数
+    std::string cmdParam={};
+    ZrcsHardware::Controller* control;
+    
+    Basenode() : control(nullptr) {}
+    virtual ~Basenode() = default;
+    
+    // 纯虚函数：执行节点逻辑
+    virtual void execute() = 0;
+    
+    // 处理失败状态
+    void failure();
+    
+    // 获取任务状态（线程安全）
+    // virtual BaseNodeStatus GetTaskState() const noexcept {
+    //     return nodeStatus.load(std::memory_order_acquire);
+    // }
+    
+    // 注册控制器
+    void registered(ZrcsHardware::Controller* ct) {
+        control = ct;
+    }
+    //获取节点名字
+    std::string getNodeNAME(void)
+    {
+        return nodeName;
+    }
+    std::uint64_t getNodeCount()
+    {
+      return nodeCount;
+    }
+    // 推送命令参数
+    void pushCmdArgs(const std::string& cmdargs) {
+        if (cmdParam.empty()) 
+        {
+           cmdParam=cmdargs;
+        }
+    }
+    //移除节点参数
+    void popCmdArgs()
+    {
+      if (!cmdParam.empty()) 
+      {
+          cmdParam.clear();
+      }
+    }
+    
+    // 设置任务状态（线程安全）
+    // void SetTaskState(BaseNodeStatus ns) {
+    //     nodeStatus.store(ns, std::memory_order_release);
+    // }
 };
-} // namespace zrcs_system
+enum class OneShotNodeStatus {
+    START,       // 节点已创建
+    INIT,      // 非实时初始化中
+    EXECUTING,     // 核心逻辑执行中
+    EXIT,      // 非实时退出中
+    COMPLETED,     // 执行成功完成
+    FAILED         // 执行失败
+};
+
+// 一次性节点：执行一次后退出
+class OneShotNode : public Basenode {
+public:
+    std::atomic<OneShotNodeStatus> oneShotStatus{OneShotNodeStatus::START};
+    
+    virtual ~OneShotNode() = default;
+    
+    // 非实时初始化
+    virtual void init() = 0;
+    virtual void run()=0;
+       // 非实时退出
+    virtual void exit() = 0;
+    void execute()override
+    {
+          switch (oneShotStatus.load())
+                {               
+                  case OneShotNodeStatus::EXECUTING:
+                       run();
+                       break;                   
+                  default:                    
+                       break;
+                }
+          nodeCount++;
+    }
+  void executeNrt()
+  {
+           switch (oneShotStatus.load())
+                {              
+                  case OneShotNodeStatus::INIT:
+                        init();
+                         oneShotStatus.store(OneShotNodeStatus::EXECUTING,std::memory_order_release);             
+                        break;                
+                  case OneShotNodeStatus::EXIT:
+                        exit();
+                        oneShotStatus.store(OneShotNodeStatus::COMPLETED,std::memory_order_release);                
+                        break;                  
+                  case  OneShotNodeStatus::FAILED:                    
+                    break;                
+                  default:                                     
+                    break;
+                }
+  } 
+    // 获取一次性节点特定状态
+    OneShotNodeStatus GetOneShotStatus() const noexcept {
+        return oneShotStatus.load(std::memory_order_acquire);
+    }
+    
+    // 设置一次性节点状态
+    void SetOneShotStatus(OneShotNodeStatus status) {
+        oneShotStatus.store(status, std::memory_order_release);
+    }
+};
+
+
+enum class PersistentNodeStatus {
+    CREATED,
+    RTINIT,       // 实时初始化中
+    EXECUTING,       // 持续运行中
+    RTEXIT,      // 正在停止中 
+    FAILED         // 运行失败
+};
+
+// 持久性节点：持续运行的节点
+class PersistentNode : public Basenode {
+public:
+    std::atomic<PersistentNodeStatus> persistentStatus{PersistentNodeStatus::CREATED};
+    
+    PersistentNode() = default;
+    virtual ~PersistentNode() = default;
+    
+    // 实时初始化
+    virtual void init() = 0;
+    
+    virtual void run()=0;
+    // 实时退出
+    virtual void exit() = 0;
+
+     void execute()override
+    {
+          switch (persistentStatus.load())
+                {          
+                  case PersistentNodeStatus::CREATED:
+                       break;
+                  case PersistentNodeStatus::RTINIT:
+                       init();
+                       persistentStatus.store(PersistentNodeStatus::EXECUTING, std::memory_order_release);                   
+                       break;
+                  case PersistentNodeStatus::EXECUTING:
+                       run();
+                       break;
+                  case PersistentNodeStatus::RTEXIT:
+                       break;                   
+                  default:                    
+                       break;
+                }
+           nodeCount++;
+    }
+    // 获取持久性节点特定状态
+    PersistentNodeStatus GetPersistentStatus() const noexcept {
+        return persistentStatus.load(std::memory_order_acquire);
+    }
+    
+    // 设置持久性节点状态
+    void SetPersistentStatus(PersistentNodeStatus status) {
+         persistentStatus.store(status, std::memory_order_release);
+    }
+};
+
+
+
+} // namespace zrcsSystem
 #endif

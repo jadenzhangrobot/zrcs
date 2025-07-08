@@ -13,13 +13,12 @@
 #include <thread>
 #include <vector>
 #include "basenodeInterface.h"
-#include "classfactory.h"
+#include "nodefactory.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
 #include "nodeCommunication.h"
 #include "nodeCommunication.h"
-#include "dataType.h"
 #include "common/Shared memory/rt_process.h"
 #include "command/Cmdhead.h"
 
@@ -86,6 +85,7 @@ private:
   TaskScheduling  taskScheduling=RUN;  // 任务调度状态
   // 命令解析线程
   std::thread cmdThread;
+  std::thread nrtThread;
 
   // 命令销毁线程
   std::thread exit_cmd;
@@ -99,7 +99,7 @@ private:
   std::array<bool, 100> controlRegister={}; // 控制寄存器
   std::array<bool, 100> statusRegister={};  // 状态寄存器
   RTProcess *rtProcess=nullptr;                // 实时进程指针
-  Basenode* cmdNode=nullptr;
+  OneShotNode* oneShotNode=nullptr;
   bool rtFlag=true;                    // 实时标志
   bool nrtFlag=true;
  // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信 
@@ -129,6 +129,7 @@ public:
     delete  control;
     delete cmdQueue;
     cmdThread.join();
+    nrtThread.join();
   }
   /**
    * @brief 注册对象到系统中
@@ -158,7 +159,17 @@ public:
    */
   void run()
   {
-    cmdParsing();
+     cmdParsing();
+     nrtThread = std::thread([this]()
+      {
+        while (true) 
+        {
+          if (oneShotNode!=nullptr) {
+             oneShotNode->executeNrt();
+          }         
+           std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    });
     control->rtos_->rtos_task_create();
     // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() {   
@@ -166,46 +177,28 @@ public:
      controlRegister= rtProcess->shared_block_->registers.sysControl.load();
       switch (taskScheduling) 
       {
-        case RUN:
-        if (!rtNode.empty())
-        {
-           for (int i=0; i<rtNode.size(); i++)
-           {
-                  rtNode[i]->excuteRt();
-                  if (rtNode[i]->GetTaskState()==Basenode::FAILURE) 
-                  {
-                      taskScheduling = TaskScheduling::SchedulingError;
-                  }
-           }
-        }    
-          if (cmdNode != nullptr) 
-          {
-                switch (cmdNode->GetTaskState())
-                {
-                  case Basenode::RTINIT:
-                    cmdNode->rtInit();
-                    break;                   
-                  case Basenode::EXCUTERT:
-                    cmdNode->excuteRt();
-                    break;                   
-                  case Basenode::RTEXIT:
-                    cmdNode->rtExit();
-                    cmdNode->SetTaskState(Basenode::NRTEXIT);
-                    break;
-                  case Basenode::FAILURE:                    
-                    break;
-                  default:                    
-                    break;
-                }
-           }
-        
-       break;
-       case STOP:
-       break;
-       case SchedulingError:
-       break;
-       default:
-       break;         
+        case RUN:            
+             if (oneShotNode != nullptr)
+            {
+                 // 检查节点状态并执行相应操作
+                 if (oneShotNode->GetOneShotStatus() == OneShotNodeStatus::COMPLETED) 
+                 {
+                     oneShotNode->popCmdArgs();
+                     oneShotNode->SetOneShotStatus(OneShotNodeStatus::START);
+                     // 节点已完成或失败，清理资源
+                     oneShotNode = nullptr;
+                 } else {
+                     // 节点仍在运行，继续执行
+                     oneShotNode->execute();
+                 }
+             }   
+        break;
+        case STOP:
+        break;
+        case SchedulingError:
+        break;
+        default:
+        break;         
       }  
      rtProcess->shared_block_->registers.sysStatus.store(statusRegister);  
      // control->SendData(); 
@@ -229,53 +222,31 @@ public:
                   std::string cmdName={};
                   if(registerObject(cmd,cmdName,cmdParam)==true)
                   {
-                        if(classfactory::getInstance().getClassByName(cmdName).type()==typeid(Basenode*))
+                        if(classfactory::getInstance().getClassByName(cmdName).type()==typeid(OneShotNode*))
                         {    
-                              cmdNode =std::any_cast<Basenode*>(classfactory::getInstance().getClassByName(cmdName));
-                              if (cmdNode!=nullptr) 
-                              {
-                                 bool running=true;
-                                 while (running) 
-                                 {
-                                    switch (cmdNode->GetTaskState())
+                              oneShotNode =std::any_cast<OneShotNode*>(classfactory::getInstance().getClassByName(cmdName));
+                                if (oneShotNode!=nullptr) 
+                                {
+                                    if (oneShotNode->GetOneShotStatus() == OneShotNodeStatus::START) 
                                     {
-                                      case Basenode::START:
-                                          if (!cmdParam.empty()) 
-                                          {
-                                            cmdNode->PushCmdArgs(cmdParam);                                           
-                                          }             
-                                      case Basenode::NRTINIT:
-                                           cmdNode->nrtInit();
-                                           cmdNode->SetTaskState(Basenode::RTINIT);                                      
-                                           break;
-                                      case Basenode::RTINIT:
-                                      case Basenode::EXCUTERT:
-                                      case Basenode::RTEXIT:
-                                           std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                                           break;
-                                      case Basenode::NRTEXIT:
-                                          cmdNode->nrtExit();
-                                          cmdNode->SetTaskState(Basenode::START);
-                                          running=false;
-                                          cmdNode=nullptr;
-                                         break;                                          
-                                      default:
-                                           std::cout<<"指令状态错误"<<std::endl;
-                                           break;
-                                    }          
-                                 }
-                                                                                 
-                              }                
+                                            oneShotNode->pushCmdArgs(cmdParam);
+                                            oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);                                                                                                      
+                                    }
+                                    else
+                                    {
+                                          std::cout<<oneShotNode->getNodeNAME()<<"状态错误"<<std::endl;
+                                    }                
+                                }
+                              if (classfactory::getInstance().getClassByName(cmdName).type()==typeid(PersistentNode*)) 
+                              { 
+                                    PersistentNode* cn =std::any_cast<PersistentNode*>(classfactory::getInstance().getClassByName(cmdName));
+                                    if (cn!=nullptr) 
+                                    {
+                                        
+                                    }         
+                              }          
                         }
-                        if (classfactory::getInstance().getClassByName(cmdName).type()==typeid(CreateNode*)) 
-                        { 
-                              CreateNode* cn =std::any_cast<CreateNode*>(classfactory::getInstance().getClassByName(cmdName));
-                              if (cn!=nullptr) 
-                              {
-                                  
-                              }         
-                        }          
-                  }
+                 }
                   else
                   {
                        std::cout<<"指令不存在"<<std::endl;
