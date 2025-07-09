@@ -1,83 +1,102 @@
 
-#ifndef CLALLFACTORY_H_
-#define CLALLFACTORY_H_
-#include <map>
+#ifndef NODE_FACTORY_H_
+#define NODE_FACTORY_H_
+
+#include <functional>
+#include <memory>
 #include <string>
-#include <any>
+#include <unordered_map>
 #include "basenodeInterface.h"
 
-typedef zrcsSystem::Basenode* (*CreateNode)(void);
 namespace zrcsSystem {
-        class classfactory
-        {
-        private:
-            std::map<std::string, std::any> m_classMap;
-            classfactory(){};
-            classfactory(const classfactory&)=delete;
-            classfactory(const classfactory&&)=delete;
-            classfactory& operator=(const classfactory&)=delete;
-        public:
-            std::any getClassByName(std::string classname)
-            {
-                std::map<std::string,std::any>::const_iterator iter;
-                iter = m_classMap.find(classname);
-                if (iter == m_classMap.end())
-                    return NULL;
-                else
-                    return iter->second;
-            }
-            void registClass(std::string name, std::any method)
-            {
-                m_classMap.insert(std::pair<std::string, std::any>(name, method));
-            }
-            static classfactory &getInstance()
-            {
-                static classfactory cla_fac;
-                return cla_fac;
-            }
 
-            bool cmdExist(const std::string& classname)
-            {           
-              auto iter = m_classMap.find(classname);
-                if (iter != m_classMap.end())
-                {
-                    return true;
-                } 
-                else
-                {
-                    return false;
-                }
-            }
-        };
-        class RegisterClass
-        { 
-            public:            
-                RegisterClass(std::string className, std::any ptr)
-                {                    
-                    zrcsSystem::classfactory::getInstance().registClass(className,ptr);                             
-                }
-        };
-}
+// 前向声明
+class Basenode;
+class OneShotNode;
+class PersistentNode;
 
+/**
+ * @brief 节点工厂，使用静态反射实现
+ * @tparam BaseType 节点的基类类型
+ */
+template <typename BaseType>
+class NodeFactory {
+public:
+    using Creator = std::function<std::unique_ptr<BaseType>()>;
 
- #define REGISTERCMD(className)                     \
- zrcsSystem::OneShotNode* objectCreator##className() \
-    {                                                 \
-        zrcsSystem::OneShotNode* ptr= static_cast<zrcsSystem::OneShotNode*>(new className());\
-        return std::unique_ptr<zrcsSystem::OneShotNode>(ptr).release();\
-    } \
-    zrcsSystem::RegisterClass RegisterClass##className(#className,objectCreator##className())
+    /**
+     * @brief 获取工厂单例
+     */
+    static NodeFactory& getInstance() {
+        static NodeFactory instance;
+        return instance;
+    }
 
+    /**
+     * @brief 注册节点类型
+     * @param name 节点类型名
+     * @param creator 创建者函数
+     */
+    void regist(const std::string& name, Creator creator) {
+        registry_[name] = creator;
+    }
 
+    /**
+     * @brief 创建节点实例
+     * @param name 节点类型名
+     * @return 节点实例的 unique_ptr，如果类型未注册则返回 nullptr
+     */
+    std::unique_ptr<BaseType> create(const std::string& name) {
+        auto it = registry_.find(name);
+        if (it != registry_.end()) {
+            return it->second();
+        }
+        return nullptr;
+    }
 
-#define REGISTERNODE(className)                     \
-zrcsSystem::PersistentNode* objectCreator##className()\
-    {                                                 \
-        zrcsSystem::PersistentNode* ptr= static_cast<zrcsSystem::PersistentNode*>(new className());\
-        return std::unique_ptr<zrcsSystem::PersistentNode>(ptr).release();\
-    } \
-    zrcsSystem::RegisterClass RegisterClass##className(#className,(CreateNode)objectCreator##className)
+    /**
+     * @brief 检查节点类型是否存在
+     * @param name 节点类型名
+     * @return 如果存在则为 true，否则为 false
+     */
+    bool exist(const std::string& name) const {
+        return registry_.find(name) != registry_.end();
+    }
 
+private:
+    NodeFactory() = default;
+    ~NodeFactory() = default;
+    NodeFactory(const NodeFactory&) = delete;
+    NodeFactory& operator=(const NodeFactory&) = delete;
 
+    std::unordered_map<std::string, Creator> registry_;
+};
 
-#endif
+/**
+ * @brief 用于自动注册的辅助类
+ * @tparam T 节点类型
+ * @tparam BaseType 节点的基类类型
+ */
+template <typename T, typename BaseType>
+class RegisterNode {
+public:
+    RegisterNode(const std::string& name) {
+        NodeFactory<BaseType>::getInstance().regist(name, []() {
+            return std::make_unique<T>();
+        });
+    }
+};
+
+} // namespace zrcsSystem
+
+#define REGISTER_NODE_IMPL(className, baseType, counter) \
+    static zrcsSystem::RegisterNode<className, zrcsSystem::baseType> \
+    register_##className##_##counter(#className);
+
+#define REGISTER_NODE(className, baseType) \
+    REGISTER_NODE_IMPL(className, baseType, __COUNTER__)
+
+#define REGISTERCMD(className) REGISTER_NODE(className, OneShotNode)
+#define REGISTERNODE(className) REGISTER_NODE(className, PersistentNode)
+
+#endif // NODE_FACTORY_H_

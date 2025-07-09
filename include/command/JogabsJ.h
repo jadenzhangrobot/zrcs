@@ -36,10 +36,11 @@ class JogabsJ:public zrcsSystem::OneShotNode
             }    
 ;
        void init() override
-       {
-          
-                 
-              port_input.parse_check(cmdParam);           
+       {     
+             if(!cmdParam.empty())
+             {
+                   port_input.parse_check(cmdParam);
+             }            
               position=port_input.get<double>("position"); 
               velocity=port_input.get<double>("velocity");
               acceleration= port_input.get<double>("acceleration");
