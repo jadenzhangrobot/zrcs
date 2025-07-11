@@ -121,20 +121,19 @@ public:
    * @brief 注册对象到系统中
    * @param cmd 命令字符串，包含类名和参数
    */
-  bool registerObject(std::string cmd, std::string &cmdName,
-                      std::string &cmdParam) {
-    if (cmd.npos != cmd.find_first_of(" --")) {
+  void registerObject(std::string cmd, std::string &cmdName,std::string &cmdParam) 
+  {
+    if (cmd.npos != cmd.find_first_of(" --")) 
+    {
       cmdName = cmd.substr(0, cmd.find_first_of(" --"));
 
       cmdParam = cmd.substr(cmd.find_first_of(" --"));
-    } else {
+    } 
+    else
+    {
       cmdName = cmd;
     }
-    if (!NodeFactory<OneShotNode>::getInstance().exist(cmdName) &&
-        !NodeFactory<PersistentNode>::getInstance().exist(cmdName)) {
-      return false;
-    }
-    return true;
+   
   }
   /**
    * @brief 运行系统主循环
@@ -220,41 +219,42 @@ public:
             std::string cmd(cmd_.cmd);
             std::string cmdParam = {};
             std::string cmdName = {};
-            if (registerObject(cmd, cmdName, cmdParam) == true) 
+            registerObject(cmd, cmdName, cmdParam);
+            if (NodeFactory<OneShotNode>::getInstance().exist(cmdName)) 
             {
-                if (NodeFactory<OneShotNode>::getInstance().exist(cmdName)) 
+                auto node =NodeFactory<OneShotNode>::getInstance().create(cmdName);
+                if (node) 
                 {
-                    auto node =NodeFactory<OneShotNode>::getInstance().create(cmdName);
-                    if (node) 
+                    oneShotNode = node.release(); // 转移所有权
+                    if (oneShotNode->GetOneShotStatus() ==OneShotNodeStatus::START)
                     {
-                        oneShotNode = node.release(); // 转移所有权
-                        if (oneShotNode->GetOneShotStatus() ==OneShotNodeStatus::START)
-                        {
-                          oneShotNode->pushCmdArgs(cmdParam);
-                          oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);
-                        } 
-                        else 
-                        {
-                          std::cout << oneShotNode->getNodeNAME() << "状态错误"<< std::endl;
-                          delete oneShotNode; // 如果状态错误，则清理
-                          oneShotNode = nullptr;
-                        }
-                    }
-                } 
-                else if (NodeFactory<PersistentNode>::getInstance().exist(cmdName)) 
-                {
-                    auto node =NodeFactory<PersistentNode>::getInstance().create(cmdName);
-                    if (node) {
-                      // 处理持久节点
-                      rtNode.push_back(node.release());
+                      oneShotNode->pushCmdArgs(cmdParam);
+                      oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);
+                    } 
+                    else 
+                    {
+                      std::cout << oneShotNode->getNodeNAME() << "状态错误"<< std::endl;
+                      delete oneShotNode; // 如果状态错误，则清理
+                      oneShotNode = nullptr;
                     }
                 }
-                else {
+            } 
+            else if (NodeFactory<PersistentNode>::getInstance().exist(cmdName)) 
+            {
+                auto node =NodeFactory<PersistentNode>::getInstance().create(cmdName);
+                if (node) {
+                  // 处理持久节点
+                  rtNode.push_back(node.release());
+                }
+            }
+            else 
+            {
                 std::cout << "指令不存在" << std::endl;
-              }
-          } 
+            }
+          
          
       }
+      
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
     });

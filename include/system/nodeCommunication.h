@@ -160,6 +160,7 @@ private:
  */
 template<typename T>
 void connect(OutputPort<T>& output, InputPort<T>& input, size_t capacity) {
+    
     auto channel = std::make_shared<NodeChannel<T>>(capacity);
     output.channel_ = channel;
     input.channel_ = channel;
