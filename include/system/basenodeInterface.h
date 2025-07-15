@@ -43,7 +43,8 @@ public:
     // }
     
     // 注册控制器
-    void registered(ZrcsHardware::Controller* ct) {
+    void registered(ZrcsHardware::Controller* ct) 
+    {
         control = ct;
     }
     //获取节点名字
@@ -164,19 +165,22 @@ public:
 
      void execute()override
     {
-          switch (persistentStatus.load())
+          switch (GetPersistentStatus())
                 {          
                   case PersistentNodeStatus::CREATED:
+                       SetPersistentStatus(PersistentNodeStatus::RTINIT);
                        break;
                   case PersistentNodeStatus::RTINIT:
                        init();
-                       persistentStatus.store(PersistentNodeStatus::EXECUTING, std::memory_order_release);                   
+                       SetPersistentStatus(PersistentNodeStatus::EXECUTING);                   
                        break;
                   case PersistentNodeStatus::EXECUTING:
                        run();
                        break;
                   case PersistentNodeStatus::RTEXIT:
-                       break;                   
+                       break;
+                  case PersistentNodeStatus::FAILED:
+                       break;
                   default:                    
                        break;
                 }

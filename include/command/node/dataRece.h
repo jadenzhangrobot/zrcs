@@ -5,36 +5,36 @@
  * @LastEditTime: 2023-06-10 15:12:05
  * @Description: 电机使能指令
  */
-#ifndef DATAPUB
-#define DATAPUB
+#ifndef DATARCE
+#define DATARCE
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
-class DataPub:public zrcsSystem::PersistentNode
+class DataRece:public zrcsSystem::PersistentNode
 {
    private:
       int motor_id;
       
    public:
-        DataPub()
+        DataRece()
         {
           
         }
      
          void init() override
          {                 
-               std::cout<<"DataPub init"<<std::endl;
+               std::cout<<"DataRece init"<<std::endl;
          }
         void  run(void) override
         {    
-              std::cout<<"DataPub run"<<std::endl;            
+              std::cout<<"DataRECE run"<<std::endl;            
         }
-         void exit(void) override
-         {
-               //rt_printf("Flyingshot 执行成功\n");
-               // node_status=EXIT;
-         }
+      void exit(void) override
+      {
+             //rt_printf("Flyingshot 执行成功\n");
+            // node_status=EXIT;
+      }
      
 };
-REGISTERNODE(DataPub);
+REGISTERNODE(DataRece);
 #endif

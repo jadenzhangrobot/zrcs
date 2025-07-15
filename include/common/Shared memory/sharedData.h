@@ -10,6 +10,9 @@
 // ===================================================================
 // 1. 定义要在进程间传递的数据结构
 // ===================================================================
+#define  OUTPUTIOSIZE 32
+#define  INPUTIOSIZE  32
+
 constexpr size_t COMMAND_BUFFER_SIZE = 16;
 constexpr size_t STATUS_BUFFER_SIZE = 16;
 // 命令的类型
@@ -84,8 +87,14 @@ struct Status {
 };
 
 struct systemRegister {
-    std::atomic<std::array<bool, 100>> sysControl=std::array<bool, 100>{}; // 系统控制寄存器
-    std::atomic<std::array<bool, 100>> sysStatus=std::array<bool, 100>{}; // 系统状态寄存器  
+    // 使用数组存储所有布尔寄存器，通过索引访问
+    std::array<std::atomic<bool>, OUTPUTIOSIZE> outputIo{}; // 支持32个布尔寄存器
+    
+    // 保留原有的状态寄存器数组
+    std::array<std::atomic<bool>, INPUTIOSIZE> inputIo{}; // 系统状态寄存器
+    // std::atomic<std::array<uint64_t, 100>> R;
+    // std::atomic<std::array<uint64_t, 100>> C;
+    // std::atomic<std::array<uint64_t, 100>> C;
 };
 struct SharedBlock {
     // NRT -> RT 的命令通道

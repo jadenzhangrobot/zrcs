@@ -10,7 +10,7 @@
 #include "basenodeInterface.h"
 #include "cmdline.h"
 #include "command/Cmdhead.h"
-#include "common/Shared memory/rt_process.h"
+#include "common/Shared memory/rtProcess.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
@@ -26,7 +26,6 @@ namespace zrcsSystem {
  * @brief 命令队列类，用于线程安全的命令传递
  */
 class CmdQueue {
-
   std::mutex cmdMutex;              // 命令队列互斥锁
   std::queue<std::string> cmdQueue; // 命令队列
 public:
@@ -80,11 +79,11 @@ private:
   std::thread exit_cmd;
 
   // 命令对象指针容器
-  std::pmr::monotonic_buffer_resource rtNodePmr; // 实时节点内存资源
-  std::pmr::vector<PersistentNode*> rtNode;           // 实时节点容器
+  std::pmr::monotonic_buffer_resource persistentNodePmr; // 实时节点内存资源
+  std::pmr::vector<PersistentNode*> persistentNode;           // 实时节点容器
   ZrcsHardware::Controller *control;             // 硬件控制器指针
-  std::array<bool, 100> controlRegister = {};    // 控制寄存器
-  std::array<bool, 100> statusRegister = {};     // 状态寄存器
+  //std::array<bool, 100> controlRegister = {};    // 控制寄存器
+  //std::array<bool, 100> statusRegister = {};     // 状态寄存器
   RTProcess *rtProcess = nullptr;                // 实时进程指针
   OneShotNode *oneShotNode = nullptr;
   bool rtFlag = true; // 实时标志
@@ -98,7 +97,7 @@ public:
    * @brief 构造函数
    * @param rtProcess_ 实时进程指针
    */
-  MotionController(RTProcess *rtProcess_) : rtNode(&rtNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
+  MotionController(RTProcess *rtProcess_) : persistentNode(&persistentNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
     rtProcess = rtProcess_;
   }
 
@@ -110,13 +109,16 @@ public:
   /**
    * @brief 析构函数，清理资源
    */
-  ~MotionController(void) {
+  ~MotionController(void) 
+  {
 
     delete control;
     delete cmdQueue;
     cmdThread.join();
     nrtThread.join();
   }
+  
+
   /**
    * @brief 注册对象到系统中
    * @param cmd 命令字符串，包含类名和参数
@@ -153,42 +155,31 @@ public:
     // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() {
       // control->receiveData();
-      controlRegister = rtProcess->shared_block_->registers.sysControl.load();
+     // controlRegister = rtProcess->shared_block_->registers.sysControl.load();
       switch (taskScheduling) 
       {
             case RUN:
               if (oneShotNode != nullptr)
                {
                   // 检查节点状态并执行相应操作
-                  if (oneShotNode->GetOneShotStatus() == OneShotNodeStatus::COMPLETED) {
+                  if (oneShotNode->GetOneShotStatus() == OneShotNodeStatus::COMPLETED) 
+                  {
                     oneShotNode->popCmdArgs();
                     oneShotNode->SetOneShotStatus(OneShotNodeStatus::START);
                     // 节点已完成或失败，清理资源
                     oneShotNode = nullptr;
-                  } else {
+                  } 
+                  else 
+                  {
                     // 节点仍在运行，继续执行
                     oneShotNode->execute();
                   }
               }
-              if (!rtNode.empty()) 
+              if (!persistentNode.empty()) 
               {   
-                  for (auto &node : rtNode)
+                  for (auto &node : persistentNode)
                   {
-                    switch (node->GetPersistentStatus())
-                    {
-                  
-                    case PersistentNodeStatus::RTINIT:
-                          node->init();
-                          break;
-                    case PersistentNodeStatus::EXECUTING:
-                          node->run();
-                          break;
-                    case PersistentNodeStatus::RTEXIT:
-                          node->exit();
-                          break;                   
-                    default:
-                          break;
-                    }
+                    node->execute();
                   }
               }
               break;
@@ -199,10 +190,12 @@ public:
             default:
               break;
             }
-      rtProcess->shared_block_->registers.sysStatus.store(statusRegister);
+     // rtProcess->shared_block_->registers.sysStatus.store(statusRegister);
       // control->SendData();
     });
   }
+  
+
 
   /**
    * @brief 命令解析函数
@@ -242,9 +235,10 @@ public:
             else if (NodeFactory<PersistentNode>::getInstance().exist(cmdName)) 
             {
                 auto node =NodeFactory<PersistentNode>::getInstance().create(cmdName);
-                if (node) {
+                if (node) 
+                {
                   // 处理持久节点
-                  rtNode.push_back(node.release());
+                  persistentNode.push_back(node.release());
                 }
             }
             else 

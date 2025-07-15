@@ -1,6 +1,7 @@
 #ifndef CMDHEAD_H
 #define CMDHEAD_H
-//#include "Ureffort.h"
+#include "node/dataPub.h"
+#include "node/dataRece.h"
 #include "JogabsJ.h"
 // #include "Movehome.h" 
 // #include "Enable.h"

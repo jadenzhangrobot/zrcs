@@ -11,7 +11,6 @@ int main()
     {
         ecat.receive();
         ecat.send();
-
     });
 
     while (true) {

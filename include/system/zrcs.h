@@ -1,12 +1,8 @@
 #ifndef ZRCS
 #define ZRCS
 #include "nodeManager.h"
-#include <exception>
-#include <iostream>
 #include <thread>
-#include <string>
-#include <future>
-#include "common/Shared memory/rt_process.h"
+#include "common/Shared memory/rtProcess.h"
 
 
 namespace zrcsSystem {

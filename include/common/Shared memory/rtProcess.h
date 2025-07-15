@@ -1,7 +1,8 @@
-#pragma once
+#ifndef RT_PROCESS_H_
+#define RT_PROCESS_H_
 #include <iostream>
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include "shared_data.h"
+#include "sharedData.h"
 
 namespace ipc = boost::interprocess;
 
@@ -53,3 +54,4 @@ public:
     RTProcess(const RTProcess&) = delete;
     RTProcess& operator=(const RTProcess&) = delete;
 };
+#endif
