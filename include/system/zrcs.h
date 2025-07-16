@@ -10,13 +10,13 @@ namespace zrcsSystem {
     private:
     std::thread terminal;
     public:
-        MotionController *mc=nullptr;
+        NodeManger *mc=nullptr;
         RTProcess *rtProcess=nullptr;
     
     public:
         Zrcs() :rtProcess(new RTProcess("rtMotion"))
         {   
-            mc=new MotionController(rtProcess);
+            mc=new NodeManger(rtProcess);
             rtProcess->initialize();
                          
         }

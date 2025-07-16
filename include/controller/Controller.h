@@ -27,7 +27,7 @@ namespace ZrcsHardware {
            
             for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
             {                
-                 //  axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMaster));             
+                   //axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMaster));             
             }
             #ifdef REALTIME
               rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));

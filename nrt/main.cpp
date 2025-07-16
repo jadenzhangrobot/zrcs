@@ -25,10 +25,11 @@ int main() {
 
     
     // 创建RT进程对象
-while (true) {
+while (true)
+{
       std::array<bool, 100> control_flags={};
       control_flags[5] = true;
-      nrt_process.shared_block_->registers.sysControl.store(control_flags);
+    //  nrt_process.shared_block_->registers.sysControl.store(control_flags);
       std::string cmd;
       std::getline(std::cin, cmd);
       Command cmd_;
@@ -39,8 +40,7 @@ while (true) {
 }
     
     // 初始化RT进程（连接到共享内存）
-  
-    
+
     // 在主线程中运行NRT进程
     
     std::cout << "IPC Demo completed successfully" << std::endl;

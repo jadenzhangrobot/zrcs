@@ -59,7 +59,7 @@ public:
 /**
  * @brief 系统中心控制类，负责整个系统的任务调度和节点管理
  */
-class MotionController {
+class NodeManger{
 private:
   // 节点指针
   /**
@@ -97,19 +97,19 @@ public:
    * @brief 构造函数
    * @param rtProcess_ 实时进程指针
    */
-  MotionController(RTProcess *rtProcess_) : persistentNode(&persistentNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
+  NodeManger(RTProcess *rtProcess_) : persistentNode(&persistentNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
     rtProcess = rtProcess_;
   }
 
   // 禁用拷贝构造函数
-  MotionController(const MotionController &) = delete;
+  NodeManger(const NodeManger &) = delete;
   // 禁用赋值操作符
-  MotionController &operator=(const MotionController &) = delete;
+  NodeManger &operator=(const NodeManger &) = delete;
 
   /**
    * @brief 析构函数，清理资源
    */
-  ~MotionController(void) 
+  ~NodeManger(void) 
   {
 
     delete control;
