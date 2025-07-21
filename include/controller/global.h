@@ -3,12 +3,12 @@
 #include <cstdint>
 #include <string>
 typedef enum{
-  Servo_No_Error                = 0,
-  Servo_Fieldbus_Init_Error     = 1,
-  Servo_Power_Error             = 2,
-  Servo_Powering_On_Error       = 3,
-  Servo_Error_When_Powered_On   = 4,
-  Servo_Powering_Off_Error      = 5
+  SERVONOERROR                = 0,
+  SERVOFIELDBUSINITERROR      = 1,
+  SERVOPOWERERROR             = 2,
+  SERVOPOWERINGONERROR        = 3,
+  SERVOERRORWHENPOWEREDON     = 4,
+  SERVOPOWERINGOFFERROR       = 5
 }MC_SERVO_CODE;
 typedef enum 
 {

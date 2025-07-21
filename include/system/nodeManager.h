@@ -221,6 +221,7 @@ public:
                     oneShotNode = node.release(); // 转移所有权
                     if (oneShotNode->GetOneShotStatus() ==OneShotNodeStatus::START)
                     {
+                      oneShotNode->registered(control);
                       oneShotNode->pushCmdArgs(cmdParam);
                       oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);
                     } 

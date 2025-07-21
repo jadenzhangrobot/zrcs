@@ -32,7 +32,16 @@ class Setmode:public zrcsSystem::Basenode
                   cmdParam.pop();
             } 
              motor_mode=port_input.get<int>("mode"); 
-             motor_num=control->axiss.size();
+             // 添加空指针检查
+             if(control)
+             {
+                 motor_num=control->axiss.size();
+             }
+             else
+             {
+                 motor_num=0;
+                 std::cout << "Warning: control is null, setting motor_num to 0" << std::endl;
+             }
         }
         void init() override
        {                
@@ -40,9 +49,28 @@ class Setmode:public zrcsSystem::Basenode
        }
         void  excuteRt(void) override
         {                     
-                for(int i=0;i<motor_num;i++)
+                // 添加安全检查
+                if(control && !control->axiss.empty())
                 {
-                    control->axiss[i]->setModeOfOperation(motor_mode);                  
+                    for(int i=0;i<motor_num;i++)
+                    {
+                        if(i >= 0 && i < static_cast<int>(control->axiss.size()) && control->axiss[i] != nullptr)
+                        {
+                            control->axiss[i]->setModeOfOperation(motor_mode);
+                        }
+                        else
+                        {
+                            std::cout << "Error: Invalid axis index " << i << " or null pointer" << std::endl;
+                            node_status=FAILED;
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    std::cout << "Error: control is null or axiss is empty" << std::endl;
+                    node_status=FAILED;
+                    return;
                 }
                 node_status=SUCCESS;
         }  

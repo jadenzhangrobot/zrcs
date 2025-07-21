@@ -65,9 +65,13 @@ class JogabsJ:public zrcsSystem::OneShotNode
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
-                       // control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
-                        output.pass_to_input(input);
-                        std::cout<<"position   "<<p[0]<<std::endl;                           
+                        if (control!=nullptr&&control->axiss.size()>axisId) 
+                        {
+                          control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
+                          output.pass_to_input(input);
+                          std::cout<<"position   "<<p[0]<<std::endl;                           
+                        }
+                                                
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {

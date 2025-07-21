@@ -22,8 +22,8 @@ class EthercatMotor:Servo
 	 bool powerStatus=false;
      public:
 	    EthercatMaster* ethercatMaster;
-        int slaveLd;
-        EthercatMotor(int id):slaveLd(id),ethercatMaster(new EthercatMaster())
+        int slaveId;
+        EthercatMotor(int id):slaveId(id),ethercatMaster(new EthercatMaster())
         {			   
 		        ModeOffset=findNumberOutputKey("controlMode");
 				ControlOffset=findNumberOutputKey("ControlWord");
@@ -38,36 +38,36 @@ class EthercatMotor:Servo
 		
 		int findNumberOutputKey(std::string key)
 		{
-			auto it = ethercatMaster->OutputPdoInfoAndOffset[slaveLd].find(key);
-			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[slaveLd].end()) {
+			auto it = ethercatMaster->OutputPdoInfoAndOffset[slaveId].find(key);
+			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[slaveId].end()) {
 				return it->second;
 			} else {
-				throw std::runtime_error("Failed to find "+std::to_string(slaveLd)+key);
+				throw std::runtime_error("Failed to find "+std::to_string(slaveId)+key);
 			}
 			
 		}
 		int findNumberInputKey(std::string key)
 		{
-			auto it = ethercatMaster->InputPdoInfoAndOffset[slaveLd].find(key);
-			if (it != ethercatMaster->InputPdoInfoAndOffset[slaveLd].end()){
+			auto it = ethercatMaster->InputPdoInfoAndOffset[slaveId].find(key);
+			if (it != ethercatMaster->InputPdoInfoAndOffset[slaveId].end()){
 				return it->second;
 			} else {
-				throw std::runtime_error("Failed to find "+std::to_string(slaveLd)+key);
+				throw std::runtime_error("Failed to find "+std::to_string(slaveId)+key);
 			}
 		}
 		MC_SERVO_CODE setMode(Cia402Mode mode) override
 		{             	
-			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveLd][ModeOffset],mode);
+			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ModeOffset],mode);
 			return Servo_No_Error;
 		}
         MC_SERVO_CODE setPos(double position) override
         {	  
-              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveLd][TargetposOffset],static_cast<int32_t>(99));
+              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],static_cast<int32_t>(99));
 			  return Servo_No_Error;
         }
         double pos(void) override
         {   			 			 
-             int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveLd][ActualPos]);
+             int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
 			 return static_cast<double>(pos);						
         }
 		
@@ -93,13 +93,13 @@ class EthercatMotor:Servo
 
          void setControlWord(std::uint16_t control_word)
          {
-                EC_WRITE_U16(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveLd][ControlOffset], control_word ); 
+                EC_WRITE_U16(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ControlOffset], control_word ); 
          }
 
           std::uint16_t statusWord()
          {
               
-              return EC_READ_U16(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveLd][StatusWord]);
+              return EC_READ_U16(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][StatusWord]);
 
          }
 

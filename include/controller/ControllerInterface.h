@@ -19,21 +19,23 @@ namespace ZrcsHardware {
 class Servo
 {
 public:
-  virtual~Servo();
+  Servo()
+  {}
+  virtual~Servo() = default;
 
   virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
   virtual MC_SERVO_CODE setPos(double pos)=0;
   virtual MC_SERVO_CODE setVel(double vel)=0;
-  virtual MC_SERVO_CODE setTorque(double torque);
-  virtual MC_SERVO_CODE setMode(Cia402Mode mode);
+ virtual MC_SERVO_CODE setTorque(double torque) { return SERVONOERROR; }
+ virtual MC_SERVO_CODE setMode(Cia402Mode mode) { return SERVONOERROR; }
 
   virtual double pos(void)=0;
   virtual double vel(void)=0;
-  virtual double acc(void);
-  virtual double torque(void);
+  virtual double acc(void) { return 0.0; }
+  virtual double torque(void) { return 0.0; }
 
-  virtual bool readVal(int index, double& value);
-  virtual bool writeVal(int index, double value);
+  virtual bool readVal(int index, double& value) { return false; }
+  virtual bool writeVal(int index, double value) { return false; }
   
 
   virtual MC_SERVO_CODE resetError(bool& isDone)=0;
@@ -46,7 +48,6 @@ class Axis {
 private:
 
   AxisPara *config_;
-  //EthercatMaster* ethercatMaster_;
   std::unique_ptr<Servo> servo_;
 
   uint32_t axisId_;
@@ -70,7 +71,7 @@ private:
   bool enableNegative_;
 public:
 
-  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): axisId_(axisId),slaveId_(salveId),config_(config)
+  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config,std::unique_ptr<Servo> servo): axisId_(axisId),slaveId_(salveId),config_(config),servo_(std::move(servo))
   {
      
   }
