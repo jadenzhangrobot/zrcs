@@ -9,8 +9,10 @@
 #define JOGABSJ_H
 
 #include "system/basenodeInterface.h"
+#include <array>
 #include <ruckig/ruckig.hpp>
 #include <string>
+#include <vector>
 #include "system/nodeFactory.h"
 
 using namespace ruckig;
@@ -26,6 +28,9 @@ class JogabsJ:public zrcsSystem::OneShotNode
              double acceleration;
              double position;
              double jerk;
+             std::pmr::vector<double> po;
+             std::pmr::vector<double> ve;
+             std::pmr::vector<double> aa;
             JogabsJ()
             {
               port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 1000));
@@ -65,16 +70,23 @@ class JogabsJ:public zrcsSystem::OneShotNode
                      if(otg.update(input, output) == Result::Working)            
                       {                        
                         auto& p = output.new_position;
+                        auto& v=output.new_velocity;
+                        auto& a=output.new_acceleration;
                         if (control!=nullptr&&control->axiss.size()>axisId) 
                         {
                           control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
                           output.pass_to_input(input);
-                          std::cout<<"position   "<<p[0]<<std::endl;                           
+                          po.push_back(p[0]);
+                          ve.push_back(v[0]);
+                          aa.push_back(a[0]);                        
                         }
                                                 
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {
+                        po.clear();
+                        ve.clear();
+                        aa.clear();
                         SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
                       }
                      else
