@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <axisConfig>
-     <axis-1 ID="0" name="x轴" slaveId="0" >
+     <axis-1 ID="0" name="x轴" slaveId="0" mode="position">
           <machine Direction="1" Ratio="1" Backlash="0.01" />
           <motion  max_vel="1000" min_vel="-1000" max_acc="5000" min_acc="-5000" max_pos="100000" min_pos="-10000"/>
           <encoder pos_factor="1048575" pos_offset="0.0" home_pos="0.0" vel_factor="1.0"/>
      </axis-1>
-     <axis-2 ID="1" name="y轴" slaveId="1" >
+     <axis-2 ID="1" name="y轴" slaveId="1" mode="position">
           <machine Direction="1" Ratio="1" Backlash="0.01" />
           <motion  max_vel="1000" min_vel="-1000" max_acc="5000" min_acc="-5000" max_pos="100000" min_pos="-10000"/>
           <encoder pos_factor="1048575" pos_offset="0.0" home_pos="0.0" vel_factor="1.0"/>

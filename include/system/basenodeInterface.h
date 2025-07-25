@@ -12,9 +12,8 @@
 #include "controller/ControllerInterface.h"
 #include <atomic>
 #include <cstdint>
-#include <memory_resource>
-#include <queue>
-#include <string> 
+#include <string>
+#include "common/rtLog.h" 
 namespace zrcsSystem {
 
 class Basenode {
@@ -116,13 +115,15 @@ public:
                 {              
                   case OneShotNodeStatus::INIT:
                         init();
-                         oneShotStatus.store(OneShotNodeStatus::EXECUTING,std::memory_order_release);             
+                        oneShotStatus.store(OneShotNodeStatus::EXECUTING,std::memory_order_release);             
                         break;                
                   case OneShotNodeStatus::EXIT:
                         exit();
+                        INFO_PRINT("%s 执行成功\n",nodeName.c_str());
                         oneShotStatus.store(OneShotNodeStatus::COMPLETED,std::memory_order_release);                
                         break;                  
-                  case  OneShotNodeStatus::FAILED:                    
+                  case  OneShotNodeStatus::FAILED: 
+                        INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
                     break;                
                   default:                                     
                     break;

@@ -14,7 +14,7 @@ namespace ZrcsHardware
         double torque_;        // 当前扭矩
         bool powerStatus_;     // 电源状态
         Cia402Mode mode_;      // 控制模式
-        
+        std::pmr::vector<int32_t> p;
     public:
         virtualServo(int slaveId) : position_(0.0), velocity_(0.0), acceleration_(0.0), 
 
@@ -28,17 +28,18 @@ namespace ZrcsHardware
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setPos(double pos) override {
+        virtual MC_SERVO_CODE setPos(int32_t pos) override {
             position_ = pos;
+            p.push_back(pos);
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setVel(double vel) override {
+        virtual MC_SERVO_CODE setVel(int32_t vel) override {
             velocity_ = vel;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setTorque(double torque) override {
+        virtual MC_SERVO_CODE setTorque(int32_t torque) override {
             torque_ = torque;
             return MC_SERVO_CODE::SERVONOERROR;
         }
@@ -48,19 +49,19 @@ namespace ZrcsHardware
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual double pos(void) override {
+        virtual int32_t pos(void) override {
             return position_;
         }
         
-        virtual double vel(void) override {
+        virtual int32_t vel(void) override {
             return velocity_;
         }
         
-        virtual double acc(void) override {
+        virtual int32_t acc(void) override {
             return acceleration_;
         }
         
-        virtual double torque(void) override {
+        virtual int32_t torque(void) override {
             return torque_;
         }
         

@@ -20,6 +20,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <queue>
 
 namespace zrcsSystem {
 /**
@@ -154,7 +155,7 @@ public:
     control->rtos_->rtos_task_create();
     // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() {
-      // control->receiveData();
+     control->receiveData();
      // controlRegister = rtProcess->shared_block_->registers.sysControl.load();
       switch (taskScheduling) 
       {
@@ -191,7 +192,7 @@ public:
               break;
             }
      // rtProcess->shared_block_->registers.sysStatus.store(statusRegister);
-      // control->SendData();
+     control->SendData();
     });
   }
   

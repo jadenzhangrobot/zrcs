@@ -97,8 +97,6 @@ class JogabsJ:public zrcsSystem::OneShotNode
       }
       void exit(void) override
       {
-             //rt_printf("JogAbsj 执行成功\n");
-             std::cout<<"JogAbsj 执行成功\n";
             
       }
      

@@ -46,19 +46,18 @@ namespace ZrcsHardware {
         }
             
          void SendData()
-         {
-              
-                  //  std::memcpy(outputData.data(), ethercatMaster->DomainWrite, outputData.size());
-                   // ethercatMaster->send();
-                
+         {             
+                  for(auto it=axiss.begin();it!=axiss.end();++it)
+                  {
+                    (*it)->updateMotionCmdsToServo();
+                  }       
          }
          void receiveData()
          { 
-              
-                   // ethercatMaster->receive();
-                   // std::memcpy(inputData.data(),ethercatMaster->DomainRead, inputData.size());
-               
-
+                 for(auto it=axiss.begin();it!=axiss.end();++it)
+                 {
+                    (*it)->statusSync();
+                 }
          }
          void readIo()
          {

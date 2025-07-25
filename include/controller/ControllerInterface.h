@@ -24,15 +24,15 @@ public:
   virtual~Servo() = default;
 
   virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
-  virtual MC_SERVO_CODE setPos(double pos)=0;
-  virtual MC_SERVO_CODE setVel(double vel)=0;
- virtual MC_SERVO_CODE setTorque(double torque) { return SERVONOERROR; }
- virtual MC_SERVO_CODE setMode(Cia402Mode mode) { return SERVONOERROR; }
+  virtual MC_SERVO_CODE setPos(int32_t pos)=0;
+  virtual MC_SERVO_CODE setVel(int32_t vel)=0;
+  virtual MC_SERVO_CODE setTorque(int32_t torque) { return SERVONOERROR; }
+  virtual MC_SERVO_CODE setMode(Cia402Mode mode) { return SERVONOERROR; }
 
-  virtual double pos(void)=0;
-  virtual double vel(void)=0;
-  virtual double acc(void) { return 0.0; }
-  virtual double torque(void) { return 0.0; }
+  virtual int32_t pos(void)=0;
+  virtual int32_t vel(void)=0;
+  virtual int32_t acc(void) { return 0.0; }
+  virtual int32_t torque(void) { return 0.0; }
 
   virtual bool readVal(int index, double& value) { return false; }
   virtual bool writeVal(int index, double value) { return false; }
@@ -50,19 +50,19 @@ private:
   AxisPara *config_;
   std::unique_ptr<Servo> servo_;
 
-  uint32_t axisId_;
-  uint32_t slaveId_;
-  std::string axisName_;
-  double axisPos_;
-  double axisVel_;
-  double axisAcc_;
-  double axisJerk_;
-  double axisPosCmd_;
-  double axisVelCmd_;
-  double axisTorCmd_;
-  double overflowCount_;
-  MC_AXIS_STATES axisState_;
-  MC_ERROR_CODE axisError_;
+  uint32_t axisId_=0;
+  uint32_t slaveId_=0;
+  std::string axisName_="";
+  double axisPos_=0;
+  double axisVel_=0;
+  double axisAcc_=0;
+  double axisJerk_=0;
+  double axisPosCmd_=0;
+  double axisVelCmd_=0;
+  double axisTorCmd_=0;
+  double overflowCount_=0;
+  MC_AXIS_STATES axisState_=MC_AXIS_STATES::mcStandstill;
+  MC_ERROR_CODE axisError_=MC_ERRORCODE_GOOD;
 
   bool powerOn_;
   bool powerStatus_;
@@ -88,18 +88,11 @@ public:
       return MC_ERRORCODE_GOOD;
   }
 
-   bool statusHealthy();
-
-   void powerProcess();
    void setAxisPositionCmd(double axisPosCmd)
    {
-         axisPosCmd_=axisPosCmd;
-      
+         axisPosCmd_=axisPosCmd;  
    }
-   void syncMotionKernelResultsToAxis(double duration);
 
-
-   void updateMotionCmdsToServo(double duration);
 
   double toUserUnit(double x)
   {
@@ -144,29 +137,29 @@ public:
       return false;
     }
 
-    if (config_->sw_vel_limit_ && std::abs(vel_cmd) > config_->vel_limit_)
+    if (config_->max_vel_ <vel_cmd&&vel_cmd>config_->min_vel_)
     {
       axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
       return false;
     }
 
-    if (config_->sw_acc_limit_ && std::abs(acc_cmd) > config_->acc_limit_)
-    {
-      axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
-      return false;
-    }
+    // if (config_->sw_acc_limit_ && std::abs(acc_cmd) > config_->acc_limit_)
+    // {
+    //   axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
+    //   return false;
+    // }
 
-    if(config_->sw_range_limit_ && axisPosCmd_ > config_->pos_positive_limit_ && vel_cmd > 0)
-    {
-      axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
-      return false;
-    }
+    // if(config_->sw_range_limit_ && axisPosCmd_ > config_->pos_positive_limit_ && vel_cmd > 0)
+    // {
+    //   axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
+    //   return false;
+    // }
 
-    if(config_->sw_range_limit_ && axisPosCmd_ < config_->pos_negative_limit_ && vel_cmd < 0)
-    {
-      axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
-      return false;
-    }
+    // if(config_->sw_range_limit_ && axisPosCmd_ < config_->pos_negative_limit_ && vel_cmd < 0)
+    // {
+    //   axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
+    //   return false;
+    // }
 
     // Process home position offset
 

@@ -7,7 +7,6 @@
  */
 #ifndef MOVEL_H
 #define MOVEL_H
-#include "behaviortree_cpp_v3/action_node.h"
 #include "behaviortree_cpp_v3/basic_types.h"
 #include "model/urFIKinematin.h"
 #include "system/basenode.h"
@@ -15,8 +14,7 @@
 #include "system/classfactory.h"
 #include <boost/concept/detail/has_constraints.hpp>
 #include <cmath>
-#include <iostream>
-#include <ostream>
+
 #include <ruckig/ruckig.hpp>
 using namespace ruckig;
 class MoveL : public zrcs_system::Basenode {
