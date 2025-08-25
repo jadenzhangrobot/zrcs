@@ -335,7 +335,8 @@ public:
   virtual void ioWrite8(int index, int bitPos, bool value) = 0;              // 8位IO写
   virtual ~Io(){};
 };
-class Sensor {
+class Sensor 
+{
 
   virtual ~Sensor(){};
 };

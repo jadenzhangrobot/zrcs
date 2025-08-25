@@ -1,7 +1,10 @@
 #ifndef VIRTUALSERVO_H
 #define VIRTUALSERVO_H
 #include "controller/ControllerInterface.h"
-
+extern "C" {
+    #include "extApi.h"
+    #include "simLib/simConst.h"
+}
 
 namespace ZrcsHardware 
 {
@@ -16,58 +19,70 @@ namespace ZrcsHardware
         Cia402Mode mode_;      // 控制模式
         std::pmr::vector<int32_t> p;
     public:
-        virtualServo(int slaveId) : position_(0.0), velocity_(0.0), acceleration_(0.0), 
-
-                        torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION) {}
+        virtualServo(int slaveId) : position_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
+            {
+                
+            }
         
         virtual ~virtualServo() {}
         
         // 必须实现的纯虚函数
-        virtual MC_SERVO_CODE setPower(bool powerStatus) override {
+        virtual MC_SERVO_CODE setPower(bool powerStatus) override 
+        {
             powerStatus_ = powerStatus;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setPos(int32_t pos) override {
+        virtual MC_SERVO_CODE setPos(int32_t pos) override
+        {
             position_ = pos;
             p.push_back(pos);
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setVel(int32_t vel) override {
+        virtual MC_SERVO_CODE setVel(int32_t vel) override 
+        {
             velocity_ = vel;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setTorque(int32_t torque) override {
+        virtual MC_SERVO_CODE setTorque(int32_t torque) override 
+        {
             torque_ = torque;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override {
+        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override
+        {
             mode_ = mode;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual int32_t pos(void) override {
+        virtual int32_t pos(void) override 
+        {
             return position_;
         }
         
-        virtual int32_t vel(void) override {
+        virtual int32_t vel(void) override
+        {
             return velocity_;
         }
         
-        virtual int32_t acc(void) override {
+        virtual int32_t acc(void) override
+        {
             return acceleration_;
         }
         
-        virtual int32_t torque(void) override {
+        virtual int32_t torque(void) override
+        {
             return torque_;
         }
         
-        virtual bool readVal(int index, double& value) override {
+        virtual bool readVal(int index, double& value) override 
+        {
             // 虚拟实现：根据索引返回相应的值
-            switch(index) {
+            switch(index) 
+            {
                 case 0: value = position_; return true;
                 case 1: value = velocity_; return true;
                 case 2: value = acceleration_; return true;
@@ -76,9 +91,11 @@ namespace ZrcsHardware
             }
         }
         
-        virtual bool writeVal(int index, double value) override {
+        virtual bool writeVal(int index, double value) override 
+        {
             // 虚拟实现：根据索引设置相应的值
-            switch(index) {
+            switch(index)
+            {
                 case 0: position_ = value; return true;
                 case 1: velocity_ = value; return true;
                 case 2: acceleration_ = value; return true;
@@ -87,18 +104,21 @@ namespace ZrcsHardware
             }
         }
         
-        virtual MC_SERVO_CODE resetError(bool& isDone) override {
+        virtual MC_SERVO_CODE resetError(bool& isDone) override 
+        {
             // 虚拟实现：总是成功重置错误
             isDone = true;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual void runCycle() override {
+        virtual void runCycle() override 
+        {
             // 虚拟实现：模拟运行周期
             // 在实际实现中，这里会执行伺服控制循环
         }
         
-        virtual void emergStop(void) override {
+        virtual void emergStop(void) override
+        {
             // 虚拟实现：紧急停止
             velocity_ = 0.0;
             acceleration_ = 0.0;

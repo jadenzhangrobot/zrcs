@@ -2,8 +2,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include "nrt_process.hpp"
-
+#include "../../include/common/Shared memory/nrt_process.hpp"
 
 using namespace std::chrono_literals;
 
@@ -32,6 +31,7 @@ while (true)
     //  nrt_process.shared_block_->registers.sysControl.store(control_flags);
       std::string cmd;
       std::getline(std::cin, cmd);
+      
       Command cmd_;
       strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
       cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination

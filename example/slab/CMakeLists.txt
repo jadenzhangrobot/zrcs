@@ -15,15 +15,13 @@ endif()
 
 set(SOURCES
     main.cpp
-    nrt_process.cpp
+   
 )
 
-set(HEADERS
-    nrt_process.hpp
-)
+
 
 # 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # 查找Boost库
 find_package(Boost REQUIRED)

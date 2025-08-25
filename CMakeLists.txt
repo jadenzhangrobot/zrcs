@@ -39,7 +39,8 @@ endif(ethercat)
 if(test)
   add_subdirectory(test)
 endif(test)
- add_subdirectory(nrt)
+ add_subdirectory(example/terminal)
+ add_subdirectory(example/slab)
 message("ethercat ${ethercat}")
       #编译链接xenomai的库
       if(realtime)
@@ -69,6 +70,10 @@ include_directories(
    ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
  )
  find_package(Boost REQUIRED COMPONENTS system)
+# 添加CoppeliaSim的头文件
+include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApi")
+include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/include")
+
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
 # 强制 ruckig 生成静态库
@@ -78,6 +83,8 @@ add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
 find_package(Threads REQUIRED)
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
+link_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Windows")
+
 link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
@@ -103,6 +110,7 @@ Threads::Threads
 ruckig
 tinyxml2
 atomic
+remoteApi
 #fakeethercat
 )
 endif()

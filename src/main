@@ -1,0 +1,103 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <chrono>
+#include <thread>
+
+// *** FIX 1: 定义这个宏是必须的，必须在包含 extApi.h 之前 ***
+// 这会告诉头文件为远程API客户端编译，并启用相关函数和常量。
+#define MAX_EXT_API_CONNECTIONS 255
+
+// 包含 CoppeliaSim 的远程 API 头文件
+extern "C" {
+    #include "extApi.h"
+    #include "simLib/simConst.h"
+}
+
+int main() {
+    // 1. 连接到 CoppeliaSim
+
+    std::cout<<"hello world"<<std::endl;
+    // ----------------------------------------------------
+    std::string serverIP = "127.0.0.1";
+    int serverPort = 8888;
+    simxFinish(-1) ;
+
+    int clientID = simxStart(serverIP.c_str(), serverPort, true, true, 5000, simx_opmode_blocking);
+
+    if (clientID == -1) {
+        std::cerr << "错误：无法连接到 CoppeliaSim。请确保：\n";
+        std::cerr << "1. CoppeliaSim 正在运行。\n";
+        std::cerr << "2. 场景中的脚本已启动远程 API 服务（例如 simRemoteApi.start(19999)）。\n";
+        std::cerr << "3. IP 地址和端口号正确。\n";
+        return 1;
+    }
+    std::cout << "已成功连接到 CoppeliaSim. Client ID: " << clientID << std::endl;
+
+     int objectCount = 0;
+    int* objectHandles = nullptr;
+
+    // 1. 调用 simxGetObjects 获取所有关节
+    // sim_object_joint_type 是一个常量，定义在 v_repConst.h 中，值为 2
+    int returnCode = simxGetObjects(clientID, sim_object_joint_type, &objectCount, &objectHandles, simx_opmode_blocking);
+
+
+    // 2. 获取关节句柄 (Handles)
+    // ----------------------------------------------------
+    // !!! 重要: 请将 "joint_name_X" 替换为您在 CoppeliaSim 场景中实际的关节名称 !!!
+    std::vector<std::string> jointNames = {
+        "UR5_joint1", "UR5_joint2", "UR5_joint3",
+        "UR5_joint4", "UR5_joint5", "UR5_joint6"
+    };
+    std::vector<int> jointHandles(jointNames.size());
+
+    for (size_t i = 0; i < jointNames.size(); ++i) {
+        // simx_opmode_blocking 确保函数会等待服务器的响应
+        int returnCode = simxGetObjectHandle(clientID, jointNames[i].c_str(), &jointHandles[i], simx_opmode_blocking);
+        if (returnCode != simx_return_ok) {
+            std::cerr << "错误：无法获取关节 '" << jointNames[i] << "' 的句柄。请检查关节名称是否正确。\n";
+            simxFinish(clientID); // 关闭连接
+            return 1;
+        }
+        std::cout << "成功获取句柄：" << jointNames[i] << " -> " << jointHandles[i] << std::endl;
+    }
+    
+    // 为了让服务器有时间准备数据流，先用 streaming 模式请求一次
+    for (int handle : jointHandles) {
+        float angle;
+        simxGetJointPosition(clientID, handle, &angle, 5);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // 短暂等待
+
+    // 3. 在循环中获取关节角度
+    // ----------------------------------------------------
+    while (simxGetConnectionId(clientID) != -1) {
+        std::cout << "当前关节角度 (度): [";
+        for (size_t i = 0; i < jointHandles.size(); ++i) {
+            float jointAngleRad = 0.0f;
+            // *** FIX 2: 移除了行尾错误的 [3, 5] 标记 ***
+            // 使用 simx_opmode_buffer 读取 streaming 模式的数据
+            int returnCode = simxGetJointPosition(clientID, jointHandles[i], &jointAngleRad, simx_opmode_blocking);
+
+           // if (returnCode == simx_return_ok) {
+                // CoppeliaSim 返回的角度是弧度 (radians)，我们将其转换为度 (degrees) 以便阅读
+                float jointAngleDeg = jointAngleRad * 180.0f / 3.14159f;
+                std::cout << jointNames[i] << ": " << jointAngleDeg;
+                if (i < jointHandles.size() - 1) {
+                    std::cout << ", ";
+                }
+          //  }
+        }
+        std::cout << "]" << std::endl;
+
+        // 等待一段时间再进行下一次读取，避免刷屏太快
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    // 4. 关闭连接
+    // ----------------------------------------------------
+    simxFinish(clientID);
+    std::cout << "连接已关闭。" << std::endl;
+
+    return 0;
+}

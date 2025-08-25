@@ -29,11 +29,10 @@ class DataPub:public zrcsSystem::PersistentNode
         {    
               std::cout<<"DataPub run"<<std::endl;            
         }
-      void exit(void) override
-      {
-            //rt_printf("Flyingshot 执行成功\n");
-            // node_status=EXIT;
-      }
+        void exit(void) override
+        {
+            
+        }
      
 };
 REGISTERNODE(DataPub);
