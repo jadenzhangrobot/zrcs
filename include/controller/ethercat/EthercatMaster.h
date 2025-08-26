@@ -13,7 +13,6 @@
 #include <map>
 #include <string>
 #include <vector>
-//#include "controller/ControllerInterface.h"
 namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器
 #define  SMIN 3 //ethercat第三个同步管理器

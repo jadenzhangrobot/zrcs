@@ -21,18 +21,35 @@ int main() {
         return 1;
     }
    
-bool flag;
 // 移除未使用的变量 control
+int sw=0;
+int sp=0;
 std::thread th=std::thread([&]()
-{
-    while (flag) 
+{ 
+    SingleAxisMotion sam;
+    sam.axisId=0;
+    sam.position=1;
+    while (true) 
     {
-      std::string cmd="";
-      Command cmd_;
-      strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
-      cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      nrt_process.shared_block_->command_queue.push(cmd_);
-      std::this_thread::sleep_for(10ms);
+      if (sw==1&&sp==0) 
+      {
+             
+        sam.velocity=1;
+        sam.acceleration=0;
+        nrt_process.shared_block_->manualPositionQueue.push(sam);
+        std::cout<<"--------------"<<std::endl;
+         sam.position++;
+      }
+      if((sp==1)&&(sw==1))
+      {
+        std::cout<<"*************"<<std::endl;
+        SingleAxisMotion sam;
+        sam.velocity=0;
+        sam.acceleration=0;
+        nrt_process.shared_block_->manualPositionQueue.push(sam);
+        sp=0;
+      }
+       std::this_thread::sleep_for(500ms);
     }
 
 });
@@ -41,16 +58,18 @@ std::thread th=std::thread([&]()
     // 创建RT进程对象
 while (true)
 {
-      std::array<bool, 100> control_flags={};
-      control_flags[5] = true;
+
     //  nrt_process.shared_block_->registers.sysControl.store(control_flags);
       std::string cmd;
       std::getline(std::cin, cmd);
-      Command cmd_;
-      strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
-      cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      nrt_process.shared_block_->command_queue.push(cmd_);
-      std::this_thread::sleep_for(10ms);
+      if (cmd=="start") 
+      {
+          sw=1;
+      }
+      if (cmd=="stop")
+      {
+          sp=1;
+      }
 }
 
 

@@ -30,12 +30,13 @@ while (true)
       control_flags[5] = true;
     //  nrt_process.shared_block_->registers.sysControl.store(control_flags);
       std::string cmd;
-      std::getline(std::cin, cmd);
-      
+      std::cout<<"----------"<<std::endl;
+      std::getline(std::cin, cmd);     
       Command cmd_;
+      std::cout<<cmd<<std::endl;
       strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
       cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      nrt_process.shared_block_->command_queue.push(cmd_);
+      nrt_process.shared_block_->commandQueue.push(cmd_);
       std::this_thread::sleep_for(10ms);
 }
     

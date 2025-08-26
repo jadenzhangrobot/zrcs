@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <string>
 #include "common/rtLog.h" 
+#include "common/Shared memory/rtProcess.h"
 namespace zrcsSystem {
 
 class Basenode {
@@ -26,7 +27,7 @@ public:
     //命令参数
     std::string cmdParam={};
     ZrcsHardware::Controller* control;
-    
+    RTProcess *rtProcess;
     Basenode() : control(nullptr) {}
     virtual ~Basenode() = default;
     
@@ -42,9 +43,10 @@ public:
     // }
     
     // 注册控制器
-    void registered(ZrcsHardware::Controller* ct) 
+    void registered(ZrcsHardware::Controller* ct , RTProcess *rtProcess_) 
     {
         control = ct;
+        rtProcess=rtProcess_;
     }
     //获取节点名字
     std::string getNodeNAME(void)
@@ -179,6 +181,8 @@ public:
                        run();
                        break;
                   case PersistentNodeStatus::RTEXIT:
+                       exit();
+                       SetPersistentStatus(PersistentNodeStatus::RTINIT);   
                        break;
                   case PersistentNodeStatus::FAILED:
                        break;

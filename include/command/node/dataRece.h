@@ -31,7 +31,7 @@ class DataRece:public zrcsSystem::PersistentNode
         }
       void exit(void) override
       {
-             //rt_printf("Flyingshot 执行成功\n");
+                  //rt_printf("Flyingshot 执行成功\n");
             // node_status=EXIT;
       }
      

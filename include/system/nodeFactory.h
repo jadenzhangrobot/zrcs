@@ -22,7 +22,7 @@ class PersistentNode;
 template <typename BaseType>
 class NodeFactory {
 public:
-    using Creator = std::function<std::unique_ptr<BaseType>()>;
+    using Creator = std::shared_ptr<BaseType>;
 
     /**
      * @brief 获取工厂单例
@@ -38,7 +38,7 @@ public:
      * @param creator 创建者函数
      */
     void regist(const std::string& name, Creator creator) {
-        registry_[name] = creator;
+        registry_[name] =creator;
     }
 
     /**
@@ -46,10 +46,10 @@ public:
      * @param name 节点类型名
      * @return 节点实例的 unique_ptr，如果类型未注册则返回 nullptr
      */
-    std::unique_ptr<BaseType> create(const std::string& name) {
+    Creator getNodePtr(const std::string& name) {
         auto it = registry_.find(name);
         if (it != registry_.end()) {
-            return it->second();
+            return it->second;
         }
         return nullptr;
     }
@@ -81,9 +81,7 @@ template <typename T, typename BaseType>
 class RegisterNode {
 public:
     RegisterNode(const std::string& name) {
-        NodeFactory<BaseType>::getInstance().regist(name, []() {
-            return std::make_unique<T>();
-        });
+        NodeFactory<BaseType>::getInstance().regist(name,  std::make_shared<T>());
     }
 };
 

@@ -35,6 +35,9 @@ namespace ZrcsHardware
         
         virtual MC_SERVO_CODE setPos(int32_t pos) override
         {
+            double velocity=(pos-position_)/0.001;
+            acceleration_=(velocity-velocity_)/0.001;
+            velocity_=velocity;
             position_ = pos;
             p.push_back(pos);
             return MC_SERVO_CODE::SERVONOERROR;

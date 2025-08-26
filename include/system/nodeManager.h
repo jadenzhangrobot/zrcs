@@ -10,7 +10,6 @@
 #include "basenodeInterface.h"
 #include "cmdline.h"
 #include "command/Cmdhead.h"
-#include "common/Shared memory/rtProcess.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
@@ -208,7 +207,7 @@ public:
       while (rtFlag) 
       {
         Command cmd_;
-        if (rtProcess->shared_block_->command_queue.pop(cmd_))
+        if (rtProcess->shared_block_->commandQueue.pop(cmd_))
         {
             std::string cmd(cmd_.cmd);
             std::string cmdParam = {};
@@ -216,41 +215,80 @@ public:
             registerObject(cmd, cmdName, cmdParam);
             if (NodeFactory<OneShotNode>::getInstance().exist(cmdName)) 
             {
-                auto node =NodeFactory<OneShotNode>::getInstance().create(cmdName);
+                auto node =NodeFactory<OneShotNode>::getInstance().getNodePtr(cmdName);
                 if (node) 
                 {
-                    oneShotNode = node.release(); // 转移所有权
+                    oneShotNode = node.get(); 
                     if (oneShotNode->GetOneShotStatus() ==OneShotNodeStatus::START)
                     {
-                      oneShotNode->registered(control);
+                      oneShotNode->registered(control,rtProcess);
                       oneShotNode->pushCmdArgs(cmdParam);
                       oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);
                     } 
                     else 
                     {
                       std::cout << oneShotNode->getNodeNAME() << "状态错误"<< std::endl;
-                      delete oneShotNode; // 如果状态错误，则清理
                       oneShotNode = nullptr;
                     }
                 }
             } 
             else if (NodeFactory<PersistentNode>::getInstance().exist(cmdName)) 
             {
-                auto node =NodeFactory<PersistentNode>::getInstance().create(cmdName);
+                auto node =NodeFactory<PersistentNode>::getInstance().getNodePtr(cmdName);
                 if (node) 
                 {
-                  // 处理持久节点
-                  persistentNode.push_back(node.release());
+                  node->registered(control,rtProcess);
+                  persistentNode.push_back(node.get());
                 }
             }
-            else 
+            else if (cmdName=="Stop") 
+            {
+               
+            }
+            else if (cmdName=="Recover")
+            {
+            
+            }
+            else if (cmdName=="RemoveNode") 
+            {
+                 if (!cmdParam.empty())
+                 { 
+                     const char* WHITESPACE = " \t\n\r\f\v";
+                     size_t first_char_pos = cmdParam.find_first_not_of(WHITESPACE);
+                    if (std::string::npos == first_char_pos) {
+                        // 如果字符串全是空格，则清空
+                        cmdParam.clear();
+                    } else {
+                        cmdParam.erase(0, first_char_pos);
+                    }
+                    auto node =NodeFactory<PersistentNode>::getInstance().getNodePtr(cmdParam);
+                    if (node) 
+                    {                          
+                              auto it = std::find(persistentNode.begin(), persistentNode.end(), node.get());                                
+                              if (it != persistentNode.end()) 
+                              {
+                                  persistentNode.erase(it);
+                                  
+                              } 
+                              else 
+                              {
+                                  std::cout << "在vector中未找到该指针。" << std::endl;
+                              }
+                    }
+                  
+                 }
+            }
+            else if (cmdName=="RemoveCmd") 
+            {
+                   oneShotNode = nullptr;
+            }
+            else
             {
                 std::cout << "指令不存在" << std::endl;
             }
           
          
-      }
-      
+      }      
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
     });

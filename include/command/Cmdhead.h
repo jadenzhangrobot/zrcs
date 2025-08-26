@@ -1,7 +1,6 @@
 #ifndef CMDHEAD_H
 #define CMDHEAD_H
-#include "node/dataPub.h"
-#include "node/dataRece.h"
+#include "ContinuousJog.h"
 #include "JogabsJ.h"
 // #include "Movehome.h" 
 // #include "Enable.h"

@@ -76,7 +76,7 @@ public:
 // 从 NRT -> RT 的命令结构
 struct Command {
     char cmd [100];
-    // 可以添加更多参数
+     // 可以添加更多参数
 };
 
 // 从 RT -> NRT 的状态结构
@@ -86,6 +86,13 @@ struct Status {
     uint64_t update_count{0}; // 状态更新计数，方便观察
 };
 
+struct SingleAxisMotion
+{
+   int axisId;
+   double position;
+   double velocity;
+   double acceleration;
+};
 struct systemRegister {
     // 使用数组存储所有布尔寄存器，通过索引访问
     std::array<std::atomic<bool>, OUTPUTIOSIZE> outputIo{}; // 支持32个布尔寄存器
@@ -98,10 +105,12 @@ struct systemRegister {
 };
 struct SharedBlock {
     // NRT -> RT 的命令通道
-    SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> command_queue;
+    SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
 
     // RT -> NRT 的状态通道
-    SPSCRingBuffer<Status, STATUS_BUFFER_SIZE> status_queue;
+    SPSCRingBuffer<Status, STATUS_BUFFER_SIZE> statusQueue;
+
+    SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
     
     systemRegister registers;
     //心跳
