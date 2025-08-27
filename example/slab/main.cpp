@@ -29,27 +29,41 @@ std::thread th=std::thread([&]()
     SingleAxisMotion sam;
     sam.axisId=0;
     sam.position=1;
+    std::string cmd="ContinuousJog";
+    Command cmd_;
+    
+    strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
+    cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
+    nrt_process.shared_block_->commandQueue.push(cmd_);
     while (true) 
     {
       if (sw==1&&sp==0) 
       {
              
-        sam.velocity=1;
+        sam.velocity=2;
         sam.acceleration=0;
         nrt_process.shared_block_->manualPositionQueue.push(sam);
-        std::cout<<"--------------"<<std::endl;
+       // std::cout<<"--------------"<<std::endl;
          sam.position++;
       }
       if((sp==1)&&(sw==1))
       {
         std::cout<<"*************"<<std::endl;
-        SingleAxisMotion sam;
-        sam.velocity=0;
-        sam.acceleration=0;
-        nrt_process.shared_block_->manualPositionQueue.push(sam);
+        SingleAxisMotion sam1;
+        sam1.position=sam.position;
+        sam1.axisId=0;
+        sam1.velocity=0;
+        sam1.acceleration=0;
+        nrt_process.shared_block_->manualPositionQueue.push(sam1);
+        // std::string cmd="RemoveNode ContinuousJog";
+        // Command cmd_;
+        // strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
+        // cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
+        // nrt_process.shared_block_->commandQueue.push(cmd_);
         sp=0;
+        sw=0;
       }
-       std::this_thread::sleep_for(500ms);
+       std::this_thread::sleep_for(3000ms);
     }
 
 });

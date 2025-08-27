@@ -9,6 +9,7 @@
 #define CONTINUOUSJOG_H
 #include "system/basenodeInterface.h"
 #include <array>
+#include <iostream>
 #include <ruckig/ruckig.hpp>
 #include <vector>
 #include "system/nodeFactory.h"
@@ -37,7 +38,7 @@ class ContinuousJog:public zrcsSystem::PersistentNode
        void init() override
        {     
             SingleAxisMotion  sam;
-           if  (rtProcess->shared_block_->manualPositionQueue.pop(sam))
+           if(rtProcess->shared_block_->manualPositionQueue.pop(sam))
             { 
               axisId=sam.axisId;   
               input.current_position[0]=control->axiss[axisId]->actualPos();       
@@ -46,9 +47,9 @@ class ContinuousJog:public zrcsSystem::PersistentNode
               input.target_position[0]=sam.position;
               input.target_velocity[0] =sam.velocity;
               input.target_acceleration[0] =sam.acceleration;
-              input.max_velocity[0] =2;
-              input.max_acceleration[0] =1;
-              input.max_jerk[0] =0.5;
+              input.max_velocity[0] =30;
+              input.max_acceleration[0] =20;
+              input.max_jerk[0] =10;
             }
        }
 
@@ -56,8 +57,8 @@ class ContinuousJog:public zrcsSystem::PersistentNode
            
       void  run(void) override
       {                
-                                   
-                     if(otg.update(input, output) == Result::Working)            
+                     auto status  = otg.update(input, output) ;      
+                     if(status==Result::Working)            
                       {                        
                         auto& p = output.new_position;
                         auto& v=output.new_velocity;
@@ -66,31 +67,56 @@ class ContinuousJog:public zrcsSystem::PersistentNode
                         {
                           control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
                           output.pass_to_input(input);
-                          std::cout<<"p--- "<<p[0]<<std::endl;
                           po.push_back(p[0]);
                           ve.push_back(v[0]);
                           aa.push_back(a[0]);                        
-                        }
-                                                
+                        }                                               
                        }
-                     else if(otg.update(input, output)==Result::Finished)
+                     else if(status==Result::Finished)
                       {
                         //po.clear();
-                       // ve.clear();
-                       // aa.clear();
-                       SetPersistentStatus(zrcsSystem::PersistentNodeStatus::RTEXIT);
-                        //SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
+                        // ve.clear();
+                        // aa.clear();
+                        SingleAxisMotion  sam;
+                      if(rtProcess->shared_block_->manualPositionQueue.pop(sam))
+                        { 
+                          axisId=sam.axisId;   
+                          input.current_position[0]=control->axiss[axisId]->actualPos();       
+                          input.current_velocity[0]= control->axiss[axisId]->actualVel();
+                          input.current_acceleration[0]=control->axiss[axisId]->actualAcc();                               
+                          input.target_position[0]=sam.position;
+                          input.target_velocity[0] =sam.velocity;
+                          input.target_acceleration[0] =sam.acceleration;
+                          input.max_velocity[0] =2;
+                          input.max_acceleration[0] =10;
+                          input.max_jerk[0] =10;                 
+                        }
+                        auto status1  = otg.update(input, output) ;  
+                        if(status1==Result::Working)            
+                        {                        
+                          auto& p = output.new_position;
+                          auto& v=output.new_velocity;
+                          auto& a=output.new_acceleration;
+                          if (control!=nullptr&&control->axiss.size()>axisId) 
+                          {
+                            control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
+                            output.pass_to_input(input);
+                            po.push_back(p[0]);
+                            ve.push_back(v[0]);
+                            aa.push_back(a[0]);                        
+                          }                                               
+                          }                      
                       }
-                     else if(otg.update(input, output)==Result::ErrorInvalidInput) 
+                     else if(status==Result::ErrorInvalidInput) 
                       {
                         SetPersistentStatus(zrcsSystem::PersistentNodeStatus::RTINIT);
                       }
                      else
                       { 
-                        std::cout<<"status--- "<<otg.update(input, output)<<std::endl;                     
-                        //SetPersistentStatus(zrcsSystem::PersistentNodeStatus::FAILED);
+                                       
+                        SetPersistentStatus(zrcsSystem::PersistentNodeStatus::FAILED);
                       }
-        
+                        
       }
       void exit(void) override
       {

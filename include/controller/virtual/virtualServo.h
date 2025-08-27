@@ -1,6 +1,7 @@
 #ifndef VIRTUALSERVO_H
 #define VIRTUALSERVO_H
 #include "controller/ControllerInterface.h"
+#include <cstdint>
 extern "C" {
     #include "extApi.h"
     #include "simLib/simConst.h"
@@ -11,15 +12,18 @@ namespace ZrcsHardware
     class virtualServo : public Servo
     {
     private:
-        double position_;      // 当前位置
-        double velocity_;      // 当前速度
-        double acceleration_;  // 当前加速度
-        double torque_;        // 当前扭矩
+        int32_t position_;      // 当前位置
+        int32_t lastPosition_;      // 上个周期位置
+        int32_t velocity_;      // 当前速度
+        int32_t lastVelocity_;      // 上个周期速度
+        int32_t acceleration_;  // 当前加速度
+        int32_t torque_;        // 当前扭矩
         bool powerStatus_;     // 电源状态
         Cia402Mode mode_;      // 控制模式
         std::pmr::vector<int32_t> p;
+          std::pmr::vector<int32_t> lp;
     public:
-        virtualServo(int slaveId) : position_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
+        virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
             {
                 
             }
@@ -35,11 +39,11 @@ namespace ZrcsHardware
         
         virtual MC_SERVO_CODE setPos(int32_t pos) override
         {
-            double velocity=(pos-position_)/0.001;
-            acceleration_=(velocity-velocity_)/0.001;
-            velocity_=velocity;
+            lastPosition_=position_;
             position_ = pos;
-            p.push_back(pos);
+           
+            lp.push_back(lastPosition_);
+            p.push_back(position_);
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
@@ -68,11 +72,14 @@ namespace ZrcsHardware
         
         virtual int32_t vel(void) override
         {
+            lastVelocity_=velocity_;
+            velocity_=(position_-lastPosition_)*1000;           
             return velocity_;
         }
         
         virtual int32_t acc(void) override
         {
+            acceleration_=(velocity_-lastVelocity_)*1000;
             return acceleration_;
         }
         
