@@ -2,7 +2,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include "../../include/common/Shared memory/nrt_process.hpp"
+#include "../../include/common/Shared memory/nrt_process.h"
 
 using namespace std::chrono_literals;
 

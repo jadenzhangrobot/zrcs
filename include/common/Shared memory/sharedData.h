@@ -89,7 +89,7 @@ struct Status {
 struct SingleAxisMotion
 {
    int axisId;
-   double position;
+   double SteppingDistance;
    double velocity;
    double acceleration;
 };
@@ -113,6 +113,7 @@ struct SharedBlock {
     SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
     
     systemRegister registers;
+    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, 0.0, 0.0, 0.0}};
     //心跳
     std::atomic<uint64_t>  heartBeat; 
 };

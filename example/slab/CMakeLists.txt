@@ -13,22 +13,41 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 endif()
 
+# 设置Qt5路径为MinGW版本
+set(CMAKE_PREFIX_PATH "D:/msys2/mingw64")
+set(Qt5_DIR "D:/msys2/mingw64/lib/cmake/Qt5")
+
+# 查找Qt5库
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+
+# 启用Qt5的自动MOC、UIC和RCC
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+# 设置UI文件搜索路径
+set(CMAKE_AUTOUIC_SEARCH_PATHS ui)
+
+# 源文件
 set(SOURCES
     main.cpp
-   
+    mainwindow.cpp
 )
 
+# 头文件
+set(HEADERS
+    mainwindow.h
+)
 
+# UI文件
+set(UI_FILES
+    ui/slab.ui
+)
 
 # 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES})
 
-# 查找Boost库
-find_package(Boost REQUIRED)
-if(Boost_FOUND)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} atomic)
-endif()
+# 链接Qt5库
+target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets atomic)
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES
