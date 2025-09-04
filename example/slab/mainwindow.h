@@ -12,7 +12,8 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QTimer>
-#include "../../include/common/Shared memory/nrt_process.h"
+#include <functional>
+#include "../../include/common/sharedMemory/nrt_process.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -74,6 +75,7 @@ private:
     Ui::MainWindow *ui;
     NRTProcess *nrt_process;
     QTimer *moveTimer;  // 用于长按移动的定时器
+    std::function<void()> currentMoveFunction;  // 当前活动的移动函数
     // 初始化信号槽连接
     void setupConnections();
     

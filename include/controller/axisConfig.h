@@ -43,6 +43,11 @@ namespace ZrcsHardware
                      {
                         axisPara.mode_ = MC_SERVO_CONTROL_MODE::mcServoControlModeVelocity;
                      }
+                     axisPara.max_vel_ = std::stod(child.second->children["motion"]->attribute["max_vel"]);
+                     axisPara.max_acc_ = std::stod( child.second->children["motion"]->attribute["max_acc"]);
+                     axisPara.pos_positive_limit_ = std::stod( child.second->children["motion"]->attribute["max_pos"]);
+                     axisPara.pos_negative_limit_ = std::stod( child.second->children["motion"]->attribute["min_pos"]);
+
                      axisPara.encoder_count_per_unit_= std::stoll(child.second->children["encoder"]->attribute["pos_factor"]);
                      axisParas.push_back(axisPara);                                                        
                 }

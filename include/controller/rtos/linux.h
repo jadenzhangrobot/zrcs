@@ -20,18 +20,23 @@ class Nativelinux:Rtos
 {
     public:
     std::thread my_thread;
-    std::uint32_t control_period=1;
     std::function<void()> strategy_{ nullptr };
     void rtos_task_create(void)override
     {
+       
         my_thread=std::thread([this](void)
         {
-            while(1)
+            using clock = std::chrono::high_resolution_clock;
+            const std::chrono::milliseconds target_period(10); // 目标周期1ms
+            auto next_wake_time = clock::now();
+            while(true)
             {  
+                next_wake_time += target_period;
                 if (strategy_!=nullptr) {
                       strategy_();
                 }               
-                std::this_thread::sleep_for(std::chrono::milliseconds(control_period));  
+                  auto sleep_until = next_wake_time;
+              std::this_thread::sleep_until(sleep_until);
             }
         });
     }

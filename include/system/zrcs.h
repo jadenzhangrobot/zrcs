@@ -2,7 +2,7 @@
 #define ZRCS
 #include "nodeManager.h"
 #include <thread>
-#include "common/Shared memory/rtProcess.h"
+#include "common/sharedMemory/rtProcess.h"
 
 
 namespace zrcsSystem {

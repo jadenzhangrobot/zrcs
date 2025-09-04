@@ -20,7 +20,7 @@ class JogabsJ:public zrcsSystem::OneShotNode
   {
 
              public:
-             Ruckig<1> otg {0.001}; 
+             Ruckig<1> otg {cycletime*0.001}; 
              InputParameter<1> input;
              OutputParameter<1> output;            
              int axisId;
@@ -32,10 +32,7 @@ class JogabsJ:public zrcsSystem::OneShotNode
              double acceleration_;
              double position_;
              double jerk_;
-             std::pmr::vector<double> po;
-             std::pmr::vector<double> ve;
-             std::pmr::vector<double> aa;
-            JogabsJ()
+             JogabsJ()
             {
               port_input.add<int>("axis", 'm', "axis id", false, 0, cmdline::range(000, 1000));
               port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-2000.000, 2000.000));
@@ -55,7 +52,7 @@ class JogabsJ:public zrcsSystem::OneShotNode
               velocity=port_input.get<double>("velocity");
               acceleration= port_input.get<double>("acceleration");
               jerk=port_input.get<double>("jerk");
-              axisId=port_input.get<int>("motor");
+             
 
               input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= 0;
@@ -80,18 +77,11 @@ class JogabsJ:public zrcsSystem::OneShotNode
                         if (control!=nullptr&&control->axiss.size()>axisId) 
                         {
                           control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
-                          output.pass_to_input(input);
-                          po.push_back(p[0]);
-                          ve.push_back(v[0]);
-                          aa.push_back(a[0]);                        
-                        }
-                                                
+                          output.pass_to_input(input);                                              
+                        }                                               
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {
-                        po.clear();
-                        ve.clear();
-                        aa.clear();
                         SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
                       }
                      else

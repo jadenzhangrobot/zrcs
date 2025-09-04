@@ -49,6 +49,8 @@ void MainWindow::setupConnections()
     // -X按钮使用pressed和released信号实现长按功能
     connect(ui->pushButton_4, &QPushButton::pressed, this, &MainWindow::onMinusXPressed);
     connect(ui->pushButton_4, &QPushButton::released, this, &MainWindow::onMinusXReleased);
+
+
     // +Y按钮使用pressed和released信号实现长按功能
     connect(ui->pushButton_3, &QPushButton::pressed, this, &MainWindow::onPlusYPressed);
     connect(ui->pushButton_3, &QPushButton::released, this, &MainWindow::onPlusYReleased);
@@ -82,12 +84,26 @@ void MainWindow::setupConnections()
     connect(ui->pushButton_21, &QPushButton::clicked, this, &MainWindow::onBetaAxisHomeClicked);
     connect(ui->pushButton_22, &QPushButton::clicked, this, &MainWindow::onAllAxisHomeClicked);
 }
-
+void MainWindow::onPlusXClicked()
+{
+    qDebug() << "X轴正向移动";
+    showStatusMessage("X轴正向移动");
+    // TODO: 在这里添加实际的X轴正向移动控制代码
+    SingleAxisMotion sam;
+    sam.axisId=0;
+    sam.motion=true;
+    sam.direction=true;
+    sam.Multiplied=100;
+    nrt_process->shared_block_->manualPosition.store(sam);
+}
 // 控制按钮槽函数实现
 void MainWindow::onPlusXPressed()
 {
     qDebug() << "X轴正向移动开始";
     showStatusMessage("X轴正向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onPlusXClicked(); };
     
     // 立即发送第一个移动命令
     onPlusXClicked();
@@ -106,18 +122,35 @@ void MainWindow::onPlusXReleased()
     
     SingleAxisMotion sam;
     sam.axisId=0;
-    sam.velocity=0;
-    sam.acceleration=0;
-    sam.SteppingDistance=0;
+    sam.motion=false;
+    sam.direction=true;
+    sam.Multiplied=100;
     nrt_process->shared_block_->manualPosition.store(sam);
     // 发送停止命令
     // TODO: 在这里添加实际的停止命令
 }
+void MainWindow::onMinusXClicked()
+{
+    qDebug() << "X轴负向移动";
+    showStatusMessage("X轴负向移动");
+    
+    SingleAxisMotion sam;
+    sam.axisId=0;
+    sam.direction=false;
+    sam.motion=true;
+    sam.Multiplied=100;
+    nrt_process->shared_block_->manualPosition.store(sam);
+    // TODO: 在这里添加实际的X轴负向移动控制代码
+}
+
 
 void MainWindow::onMinusXPressed()
 {
     qDebug() << "X轴负向移动开始";
     showStatusMessage("X轴负向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onMinusXClicked(); };
     
     // 立即发送第一个移动命令
     onMinusXClicked();
@@ -130,6 +163,12 @@ void MainWindow::onMinusXReleased()
 {
     qDebug() << "X轴负向移动停止";
     showStatusMessage("X轴负向移动停止");
+     SingleAxisMotion sam;
+    sam.axisId=0;
+    sam.motion=false;
+    sam.direction=false;
+    sam.Multiplied=100;
+    nrt_process->shared_block_->manualPosition.store(sam);
     
     // 停止定时器
     moveTimer->stop();
@@ -142,6 +181,9 @@ void MainWindow::onPlusYPressed()
 {
     qDebug() << "Y轴正向移动开始";
     showStatusMessage("Y轴正向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onPlusYClicked(); };
     
     // 立即发送第一个移动命令
     onPlusYClicked();
@@ -167,6 +209,9 @@ void MainWindow::onMinusYPressed()
     qDebug() << "Y轴负向移动开始";
     showStatusMessage("Y轴负向移动开始");
     
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onMinusYClicked(); };
+    
     // 立即发送第一个移动命令
     onMinusYClicked();
     
@@ -190,6 +235,9 @@ void MainWindow::onPlusZPressed()
 {
     qDebug() << "Z轴正向移动开始";
     showStatusMessage("Z轴正向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onPlusZClicked(); };
     
     // 立即发送第一个移动命令
     onPlusZClicked();
@@ -215,6 +263,9 @@ void MainWindow::onMinusZPressed()
     qDebug() << "Z轴负向移动开始";
     showStatusMessage("Z轴负向移动开始");
     
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onMinusZClicked(); };
+    
     // 立即发送第一个移动命令
     onMinusZClicked();
     
@@ -238,6 +289,9 @@ void MainWindow::onPlusAlphaPressed()
 {
     qDebug() << "α轴正向移动开始";
     showStatusMessage("α轴正向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onPlusAlphaClicked(); };
     
     // 立即发送第一个移动命令
     onPlusAlphaClicked();
@@ -263,6 +317,9 @@ void MainWindow::onMinusAlphaPressed()
     qDebug() << "α轴负向移动开始";
     showStatusMessage("α轴负向移动开始");
     
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onMinusAlphaClicked(); };
+    
     // 立即发送第一个移动命令
     onMinusAlphaClicked();
     
@@ -286,6 +343,9 @@ void MainWindow::onPlusBetaPressed()
 {
     qDebug() << "β轴正向移动开始";
     showStatusMessage("β轴正向移动开始");
+    
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onPlusBetaClicked(); };
     
     // 立即发送第一个移动命令
     onPlusBetaClicked();
@@ -311,6 +371,9 @@ void MainWindow::onMinusBetaPressed()
     qDebug() << "β轴负向移动开始";
     showStatusMessage("β轴负向移动开始");
     
+    // 设置当前移动函数
+    currentMoveFunction = [this]() { onMinusBetaClicked(); };
+    
     // 立即发送第一个移动命令
     onMinusBetaClicked();
     
@@ -333,27 +396,9 @@ void MainWindow::onMinusBetaReleased()
 void MainWindow::onTimerTimeout()
 {
     // 定时器触发时发送移动命令
-    onPlusXClicked();
-}
-
-void MainWindow::onPlusXClicked()
-{
-    qDebug() << "X轴正向移动";
-    showStatusMessage("X轴正向移动");
-    // TODO: 在这里添加实际的X轴正向移动控制代码
-    SingleAxisMotion sam;
-    sam.axisId=0;
-    sam.velocity=1;
-    sam.acceleration=1;
-    sam.SteppingDistance=1;
-    nrt_process->shared_block_->manualPosition.store(sam);
-}
-
-void MainWindow::onMinusXClicked()
-{
-    qDebug() << "X轴负向移动";
-    showStatusMessage("X轴负向移动");
-    // TODO: 在这里添加实际的X轴负向移动控制代码
+    if (currentMoveFunction) {
+        currentMoveFunction();
+    }
 }
 
 void MainWindow::onPlusYClicked()

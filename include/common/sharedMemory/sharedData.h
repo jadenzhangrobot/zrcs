@@ -89,9 +89,9 @@ struct Status {
 struct SingleAxisMotion
 {
    int axisId;
-   double SteppingDistance;
-   double velocity;
-   double acceleration;
+   bool motion;
+   bool direction;
+   uint16_t Multiplied;
 };
 struct systemRegister {
     // 使用数组存储所有布尔寄存器，通过索引访问
@@ -113,7 +113,7 @@ struct SharedBlock {
     SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
     
     systemRegister registers;
-    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, 0.0, 0.0, 0.0}};
+    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, false, false, 0}};
     //心跳
     std::atomic<uint64_t>  heartBeat; 
 };

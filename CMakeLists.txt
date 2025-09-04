@@ -23,27 +23,23 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
+
 # 设置 G++ 编译器路径
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
 option(realtime "Build realtime programs" OFF)
 message("realtime ${realtime}")
-option(ethercat "Build ethercat programs" OFF)
 option(test "Build test programs" ON)
-if(ethercat)
-   add_definitions(-Dethercat)
-endif(ethercat)
-
 #添加单元测试程序
 if(test)
-  add_subdirectory(test)
+  add_subdirectory(example/terminal)
+  add_subdirectory(example/slab)
 endif(test)
- add_subdirectory(example/terminal)
- add_subdirectory(example/slab)
-message("ethercat ${ethercat}")
+ 
+
       #编译链接xenomai的库
-      if(realtime)
+ if(realtime)
       add_definitions(-DREALTIME)
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -57,9 +53,8 @@ message("ethercat ${ethercat}")
       set(CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${xeno_cflags} -fpermissive")
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${xeno_ldflags}")
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
-      endif()
+ endif()
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-#include_directories("")
 include_directories( 
    /usr/local/include
    /usr/include
@@ -94,7 +89,7 @@ add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
 # Make your main target depend on the Python scripts
 add_dependencies(motion_control run_python_scripts)
 
- if(ethercat)
+ if(realtime)
  target_link_libraries(motion_control
  PRIVATE 
  Threads::Threads

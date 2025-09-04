@@ -12,6 +12,8 @@
 #include "ethercat/EthercatMotor.h"
 #endif
 #include <controller/virtual/virtualServo.h>
+#include <controller/virtual/Coppeliasim.h>
+
 #include "controller/rtos/linux.h"
 #
 namespace ZrcsHardware {
@@ -27,7 +29,7 @@ namespace ZrcsHardware {
            
             for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
             {                
-                   axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,std::make_unique<virtualServo>(it->slaveId)));             
+                   axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,std::make_unique<Coppeliasim>(it->slaveId)));             
             }
             #ifdef REALTIME
               rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));

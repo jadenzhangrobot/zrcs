@@ -14,7 +14,10 @@
 #include <cstdint>
 #include <string>
 #include "common/rtLog.h" 
-#include "common/Shared memory/rtProcess.h"
+#include "common/sharedMemory/rtProcess.h"
+#include "common/sharedMemory/rtProcess.h"
+#include "common/config/parameter.h"
+
 namespace zrcsSystem {
 
 class Basenode {

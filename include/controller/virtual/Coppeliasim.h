@@ -1,7 +1,13 @@
-#ifndef VIRTUALSERVO_H
-#define VIRTUALSERVO_H
+#ifndef COPPELIASIM_H
+#define COPPELIASIM_H
 #include "controller/ControllerInterface.h"
-#include<thread>
+#include <cstdint>
+#include <thread>
+#include <chrono>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <memory>
 extern "C" {
     #include "extApi.h"
     #include "simLib/simConst.h"
@@ -12,109 +18,154 @@ namespace ZrcsHardware
     class Coppeliasim: public Servo
     {
     private:
-        double position_;      // 当前位置
-        double velocity_;      // 当前速度
-        double acceleration_;  // 当前加速度
-        double torque_;        // 当前扭矩
+        int32_t position_;      // 当前位置
+        int32_t lastPosition_;      // 上个周期位置
+        int32_t velocity_;      // 当前速度
+        int32_t lastVelocity_;      // 上个周期速度
+        int32_t acceleration_;  // 当前加速度
+        int32_t torque_;        // 当前扭矩
         bool powerStatus_;     // 电源状态
         Cia402Mode mode_;      // 控制模式
-        std::pmr::vector<int32_t> p;
+        
+        // CoppeliaSim 连接相关
+        int clientID_;         // CoppeliaSim 客户端ID
+        std::vector<int> jointHandles_;  // 关节句柄
+        std::vector<std::string> jointNames_;  // 关节名称
+        int slaveId_;          // 从站ID
+        bool connected_;       // 连接状态
     public:
-        Coppeliasim(int slaveId) : position_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
+        Coppeliasim(int slaveId) : position_(0), velocity_(0), acceleration_(0), torque_(0), 
+                                   powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION),
+                                   slaveId_(slaveId), connected_(false)
+        {
+            // 初始化关节名称
+            jointNames_ = {
+                "UR5_joint1", "UR5_joint2", "UR5_joint3",
+                "UR5_joint4", "UR5_joint5", "UR5_joint6"
+            };
+            
+            // 连接到 CoppeliaSim
+            clientID_ = simxStart((simxChar*)"127.0.0.1", 8888, true, true, 2000, 5);
+            if (clientID_ != -1)
             {
-                int clientID=simxStart((simxChar*)"127.0.0.1",8888,true,true,2000,5);
-                if (clientID!=-1)
+                connected_ = true;
+                std::cout << "Connected to CoppeliaSim remote API server" << std::endl;
+
+                // 获取场景中的对象数量
+                int objectCount;
+                int* objectHandles;
+                int ret = simxGetObjects(clientID_, sim_handle_all, &objectCount, &objectHandles, simx_opmode_blocking);
+                if (ret == simx_return_ok)
+                    std::cout << "Number of objects in the scene: " << objectCount << std::endl;
+                else
+                    std::cout << "Remote API function call returned with error code: " << ret << std::endl;
+
+                // 获取关节句柄
+                jointHandles_.resize(jointNames_.size());
+                for (size_t i = 0; i < jointNames_.size(); ++i) 
                 {
-                        printf("Connected to remote API server\n");
-
-                        // Now try to retrieve data in a blocking fashion (i.e. a service call):
-                        int objectCount;
-                        int* objectHandles;
-                        int ret=simxGetObjects(clientID,sim_handle_all,&objectCount,&objectHandles,simx_opmode_blocking);
-                        if (ret==simx_return_ok)
-                            printf("Number of objects in the scene: %d\n",objectCount);
-                        else
-                            printf("Remote API function call returned with error code: %d\n",ret);
-
-                    
-                        std::vector<std::string> jointNames = {
-                        "UR5_joint1", "UR5_joint2", "UR5_joint3",
-                        "UR5_joint4", "UR5_joint5", "UR5_joint6"
-                    };
-                    std::vector<int> jointHandles(jointNames.size());
-                    for (size_t i = 0; i < jointNames.size(); ++i) 
-                    {
-                        // simx_opmode_blocking 确保函数会等待服务器的响应
-                        int returnCode = simxGetObjectHandle(clientID, jointNames[i].c_str(), &jointHandles[i], simx_opmode_blocking);
-                        if (returnCode != simx_return_ok) {
-                            std::cerr << "错误：无法获取关节 '" << jointNames[i] << "' 的句柄。请检查关节名称是否正确。\n";
-                            //simxFinish(clientID); // 关闭连接
-                            //return 1;
-                        }
-                        std::cout << "成功获取句柄：" << jointNames[i] << " -> " << jointHandles[i] << std::endl;
+                    int returnCode = simxGetObjectHandle(clientID_, jointNames_[i].c_str(), &jointHandles_[i], simx_opmode_blocking);
+                    if (returnCode != simx_return_ok) {
+                        std::cerr << "错误：无法获取关节 '" << jointNames_[i] << "' 的句柄。请检查关节名称是否正确。" << std::endl;
+                        connected_ = false;
+                    } else {
+                        std::cout << "成功获取句柄：" << jointNames_[i] << " -> " << jointHandles_[i] << std::endl;
                     }
-                    // 为了让服务器有时间准备数据流，先用 streaming 模式请求一次
-                      for (int handle : jointHandles) 
-                      {
+                }
+                
+                // 初始化数据流
+                if (connected_) {
+                    for (int handle : jointHandles_) 
+                    {
                         float angle;
-                        simxGetJointPosition(clientID, handle, &angle, 5);
-                      }
-                      std::this_thread::sleep_for(std::chrono::milliseconds(50)); // 短暂等待
-
+                        simxGetJointPosition(clientID_, handle, &angle, simx_opmode_streaming);
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // 短暂等待
                 }
             }
+            else
+            {
+                std::cerr << "无法连接到 CoppeliaSim 服务器" << std::endl;
+                connected_ = false;
+            }
+        }
         
         virtual ~Coppeliasim()
         {
-            
+            // 关闭 CoppeliaSim 连接
+            if (connected_ && clientID_ != -1) {
+                simxFinish(clientID_);
+                std::cout << "CoppeliaSim 连接已关闭" << std::endl;
+            }
         }
-        
-        // 必须实现的纯虚函数
-        virtual MC_SERVO_CODE setPower(bool powerStatus) override {
+         // 必须实现的纯虚函数
+        virtual MC_SERVO_CODE setPower(bool powerStatus) override 
+        {
             powerStatus_ = powerStatus;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setPos(int32_t pos) override {
-            position_ = pos;
-            p.push_back(pos);
-            return MC_SERVO_CODE::SERVONOERROR;
+        virtual MC_SERVO_CODE setPos(int32_t pos) override
+        {
+           
+            if (!connected_ || clientID_ == -1) 
+            {
+                return MC_SERVO_CODE::SERVONOERROR;
+            }      
+               
+            // 将位置转换为弧度（假设输入是编码器计数）
+             float targetPosition =  pos / 1000000.0f;
+         
+            // 设置关节位置到 CoppeliaSim
+            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(jointHandles_.size())) 
+            {
+                int ret = simxSetJointTargetPosition(clientID_, jointHandles_[slaveId_], targetPosition, simx_opmode_oneshot);
+                
+                if (ret == simx_return_ok||ret==1) 
+                {
+                    return MC_SERVO_CODE::SERVONOERROR;
+                } else {
+                   std::cerr << "设置关节位置失败，错误码: " << ret << std::endl;
+                   return MC_SERVO_CODE::SERVONOERROR;
+                }
+            } 
+            else 
+            {
+                std::cerr << "无效的从站ID: " << slaveId_ << std::endl;
+                 return MC_SERVO_CODE::SERVONOERROR;
+             }
+             
         }
-        
-        virtual MC_SERVO_CODE setVel(int32_t vel) override {
+            
+        virtual MC_SERVO_CODE setVel(int32_t vel) override 
+        {
             velocity_ = vel;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setTorque(int32_t torque) override {
+        virtual MC_SERVO_CODE setTorque(int32_t torque) override 
+        {
             torque_ = torque;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override {
+        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override
+        {
             mode_ = mode;
             return MC_SERVO_CODE::SERVONOERROR;
         }
+       
         
-        virtual int32_t pos(void) override {
-            return position_;
-        }
-        
-        virtual int32_t vel(void) override {
-            return velocity_;
-        }
-        
-        virtual int32_t acc(void) override {
-            return acceleration_;
-        }
-        
-        virtual int32_t torque(void) override {
+        virtual int32_t torque(void) override
+        {
             return torque_;
         }
         
-        virtual bool readVal(int index, double& value) override {
+        virtual bool readVal(int index, double& value) override 
+        {
             // 虚拟实现：根据索引返回相应的值
-            switch(index) {
+            switch(index) 
+            {
                 case 0: value = position_; return true;
                 case 1: value = velocity_; return true;
                 case 2: value = acceleration_; return true;
@@ -123,9 +174,11 @@ namespace ZrcsHardware
             }
         }
         
-        virtual bool writeVal(int index, double value) override {
+        virtual bool writeVal(int index, double value) override 
+        {
             // 虚拟实现：根据索引设置相应的值
-            switch(index) {
+            switch(index)
+            {
                 case 0: position_ = value; return true;
                 case 1: velocity_ = value; return true;
                 case 2: acceleration_ = value; return true;
@@ -134,23 +187,78 @@ namespace ZrcsHardware
             }
         }
         
-        virtual MC_SERVO_CODE resetError(bool& isDone) override {
+        virtual MC_SERVO_CODE resetError(bool& isDone) override 
+        {
             // 虚拟实现：总是成功重置错误
             isDone = true;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
-        virtual void runCycle() override {
+        virtual void runCycle() override 
+        {
             // 虚拟实现：模拟运行周期
             // 在实际实现中，这里会执行伺服控制循环
         }
         
-        virtual void emergStop(void) override {
+        virtual void emergStop(void) override
+        {
             // 虚拟实现：紧急停止
             velocity_ = 0.0;
             acceleration_ = 0.0;
             powerStatus_ = false;
         }
+        
+      
+      
+
+        virtual int32_t pos(void) override 
+        {
+            
+            if (!connected_ || clientID_ == -1) 
+            {
+                return position_; // 返回缓存的位置
+            }
+             lastPosition_=position_;
+            // 从 CoppeliaSim 读取实际关节位置
+            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(jointHandles_.size()))
+             {
+                float currentPosition;
+                int ret = simxGetJointPosition(clientID_, jointHandles_[slaveId_], &currentPosition, simx_opmode_blocking);
+                std::cout<<"currentPosition:"<<currentPosition<<std::endl;
+                if (ret == simx_return_ok||ret==1)
+                {
+                    // 将弧度转换为编码器计数
+                    position_ = static_cast<int32_t>(currentPosition*1000000); // 根据实际编码器分辨率调整
+                    std::cout<<"position_:"<<position_<<std::endl;
+                    return position_;
+                } 
+                else 
+                {
+                    // 如果读取失败，返回缓存的位置
+                    return position_;
+                }
+            } 
+            else 
+            {
+                return position_;
+            }
+         }
+        
+        virtual int32_t vel(void) override 
+        {
+            lastVelocity_=velocity_;
+            velocity_=(position_-lastPosition_)*1000/cycletime;           
+            return velocity_;
+        
+        }
+        
+        virtual int32_t acc(void) override 
+        {
+            // CoppeliaSim 中通常不直接提供加速度读取
+             acceleration_=(velocity_-lastVelocity_)*1000/cycletime;
+            return acceleration_;
+        }
+        
     };
 }
 

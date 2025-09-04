@@ -9,12 +9,11 @@
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
 #include <cstdint>
-#include <climits>
 #include <functional>
 #include <memory>
 #include "axisConfig.h"
 #include "global.h"
-
+#include "common/config/parameter.h"
 namespace ZrcsHardware {
 class Servo
 {
@@ -25,7 +24,7 @@ public:
 
   virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
   virtual MC_SERVO_CODE setPos(int32_t pos)=0;
-  virtual MC_SERVO_CODE setVel(int32_t vel)=0;
+  virtual MC_SERVO_CODE setVel(int32_t vel) { return SERVONOERROR; }
   virtual MC_SERVO_CODE setTorque(int32_t torque) { return SERVONOERROR; }
   virtual MC_SERVO_CODE setMode(Cia402Mode mode) { return SERVONOERROR; }
 
@@ -160,9 +159,6 @@ public:
     //   axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
     //   return false;
     // }
-
-    // Process home position offset
-
     return true;
   }
 /**
@@ -185,9 +181,10 @@ public:
     // Update servo state to axis
     axisPos_ = toUserUnit(servo_->pos() - overflowCount_ * INT32_MAX * 2.0);
     axisVel_ = toUserUnit(servo_->vel());
+    axisAcc_ = toUserUnit(servo_->acc());
 
   }
-
+  
   auto actualPos()->double 
   {
     return axisPos_;

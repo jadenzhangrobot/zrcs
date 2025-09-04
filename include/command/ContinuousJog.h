@@ -9,7 +9,6 @@
 #define CONTINUOUSJOG_H
 #include "system/basenodeInterface.h"
 #include <array>
-#include <iostream>
 #include <ruckig/ruckig.hpp>
 #include <vector>
 #include "system/nodeFactory.h"
@@ -19,16 +18,14 @@ class ContinuousJog:public zrcsSystem::PersistentNode
   {
 
              public:
-             Ruckig<1> otg {0.001}; 
+             Ruckig<1> otg {cycletime*0.001}; 
              InputParameter<1> input;
              OutputParameter<1> output;            
              int axisId=0;
-             double lastVelocity=0;
-             double lastAcceleration=0;
-             std::pmr::vector<double> po;
-             std::pmr::vector<double> ve;
-             std::pmr::vector<double> aa;
-               int flog=0;
+             double maxVelocity=4;
+             double targetVelocity=0;
+             bool accelerateStart=true;
+             bool decelerateStart=true;
             ContinuousJog()
             {
 
@@ -38,19 +35,19 @@ class ContinuousJog:public zrcsSystem::PersistentNode
        {     
             // 从共享内存中加载手动位置数据
               input.control_interface = ruckig::ControlInterface::Velocity;        
-              input.max_acceleration[0] =100;
-              input.max_jerk[0] =100;
+              input.max_acceleration[0] =20;
+              input.max_jerk[0] =250;
        }
        void accelerate()
-       {
-          
-             if (flog==0) {
+       {         
+             if (accelerateStart==true) 
+             {
               input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= control->axiss[axisId]->actualVel();
               input.current_acceleration[0]=control->axiss[axisId]->actualAcc();
-              input.target_velocity[0] =1;
+              input.target_velocity[0] =targetVelocity;
               input.target_acceleration[0] =0;
-              flog=1;
+              accelerateStart=false;
              }
              
                auto status  = otg.update(input, output);  
@@ -76,19 +73,20 @@ class ContinuousJog:public zrcsSystem::PersistentNode
        void uniformSpeed()
        {
            
-           control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos()+0.001);
+            control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos()+targetVelocity*cycletime*0.001);
 
        }
        void decelerate()
        {
-                    static int flog_=0;
-                    if (flog_==0) {
+                   
+                    if (decelerateStart==true)
+                    {
                       input.current_position[0]=control->axiss[axisId]->actualPos();       
                       input.current_velocity[0]= control->axiss[axisId]->actualVel();
                       input.current_acceleration[0]=control->axiss[axisId]->actualAcc();
                       input.target_velocity[0] =0;
                       input.target_acceleration[0] =0;
-                      flog_=1;
+                      decelerateStart=false;
                     }
                       auto status  = otg.update(input, output);  
                       if(status==Result::Working)            
@@ -99,34 +97,36 @@ class ContinuousJog:public zrcsSystem::PersistentNode
                         if (control!=nullptr&&control->axiss.size()>axisId) 
                         {
                           control->axiss[axisId]->setAxisPositionCmd(p[0]);
-
-                          output.pass_to_input(input);
-                         
-                          //aa.push_back(a[0]);                                              
+                          output.pass_to_input(input);                                                                    
                         }                                  
                       }
-                      if (status==Result::Finished) {
-                        flog_=0;
+                      if (status==Result::Finished)
+                      {
+                        decelerateStart=true;
                       }
        }
 
   
            
       void  run(void) override
-      {        
-                          po.push_back(control->axiss[axisId]->actualPos());
-                          ve.push_back(control->axiss[axisId]->actualVel());
+      {                        
                   SingleAxisMotion sam = rtProcess->shared_block_->manualPosition.load();
-                    if (sam.SteppingDistance==1)                                                               
-                    { 
-                        accelerate();
-                        
-                    }
-                    else if (sam.SteppingDistance==0)
-                    {
-                        flog=0;
-                        decelerate();
-                    }
+                  targetVelocity = double(sam.Multiplied)/100.0 * maxVelocity;
+                  if (sam.direction==false) 
+                  {
+                      targetVelocity=-targetVelocity;
+                  }
+                
+                  if (sam.motion==true)                                                               
+                  { 
+                      decelerateStart=true;
+                      accelerate();                       
+                  }
+                  else if (sam.motion==false)
+                  {
+                      accelerateStart=true;
+                      decelerate();
+                  }
                         
       }
       void exit(void) override
