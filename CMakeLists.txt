@@ -66,8 +66,14 @@ include_directories(
  )
  find_package(Boost REQUIRED COMPONENTS system)
 # 添加CoppeliaSim的头文件
-include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApi")
-include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/include")
+if(WIN32)
+    include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApi")
+    include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/include")
+elseif(UNIX)
+    include_directories("/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/legacyRemoteApi/remoteApi")
+    include_directories("/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/include")
+endif()
+
 
 # 添加tinyxml2库
 add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
@@ -78,7 +84,12 @@ add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
 find_package(Threads REQUIRED)
 link_directories(/usr/local/lib)
 link_directories(/opt/etherlab/lib/)
-link_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Windows")
+if(WIN32)
+    link_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Windows")
+elseif(UNIX)
+    link_directories(/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Ubuntu20_04)
+    
+endif()
 
 link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
 
