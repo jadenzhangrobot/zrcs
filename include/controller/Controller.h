@@ -4,10 +4,9 @@
 #include <vector>
 #include "axisConfig.h"
 #include "ControllerInterface.h"
+#include "controller/ethercat/EthercatMaster.h"
 #ifdef REALTIME 
 #include "controller/rtos/xenomai.h"
-#endif
-#ifdef ethercat
 #include "ethercat/EthercatMaster.h"
 #include "ethercat/EthercatMotor.h"
 #endif
@@ -27,22 +26,28 @@ namespace ZrcsHardware {
         Controller():axConfig(new AxisConfig("axisConfig.xml"))
         {
            
-            for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
-            {                
-                   axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,std::make_unique<Coppeliasim>(it->slaveId)));             
-            }
+           
             #ifdef REALTIME
-              rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
-            #else
-             rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
-             #endif
-
-               //  if (!ethercatMaster->OutputOffset.empty()) {
+                  for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
+                  {                
+                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMotor(it->slaveId)));             
+                  }
+                  rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
+               //     if (!ethercatMaster->OutputOffset.empty()) {
                //     outputData.resize( ethercatMaster->OutputOffset.back().back());
                //     inputData.resize( ethercatMaster->InputOffset.back().back());                   
                //  } else {
                //      // 处理空向量的情况（如抛出异常或返回错误）
                //  }
+            #else
+                  for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
+                  {                
+                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,std::make_unique<Coppeliasim>(it->slaveId)));             
+                  }
+                  rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
+            #endif
+
+               
                      
 
         }

@@ -8,7 +8,6 @@
  */
 #ifndef XENOMAI_H
 #define XENOMAI_H
-
 #include "controller/ControllerInterface.h"
 #include "controller/ethercat/EthercatMaster.h"
 #include <alchemy/timer.h> 
@@ -21,7 +20,7 @@ namespace ZrcsHardware
 {
  class xenomai:public Rtos
 {
-   public:
+    public:
     RT_TASK task_desc;
     std::function<void()> strategy_{ nullptr };
     xenomai()
@@ -61,7 +60,7 @@ namespace ZrcsHardware
             CPU_ZERO(&mask);               // 置空
             CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
         int a= rt_task_set_affinity(&task_desc,&mask); 
-        err=rt_task_start(&task_desc,real_fun,(void*)this); 
+        err=rt_task_start(&task_desc,real_fun,(this)); 
 
         if(err<0) 
         { 

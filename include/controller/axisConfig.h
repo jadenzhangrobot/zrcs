@@ -34,6 +34,7 @@ namespace ZrcsHardware
                      AxisPara axisPara;
                      axisPara.axisId =std::stoi(child.second->attribute["ID"]);
                      axisPara.axisName = child.second->children["machine"]->attribute["value"];
+                     axisPara.slaveId = std::stoi(child.second->attribute["slaveId"]);
                       std::string mode = child.second->attribute["mode"];
                      if(mode == "position")
                      {

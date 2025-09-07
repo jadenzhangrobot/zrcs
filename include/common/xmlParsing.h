@@ -46,7 +46,7 @@
              if(status==XML_SUCCESS)
              {
                  //加载xml文件失败
-                  std::cout<<"加载xml文件成功"<<std::endl;
+                  std::cout<<"加载"<<xmlName<<"文件成功"<<std::endl;
              
              }
              else if(status==XML_ERROR_FILE_NOT_FOUND)

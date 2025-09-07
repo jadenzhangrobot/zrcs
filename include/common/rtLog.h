@@ -2,7 +2,7 @@
 #pragma once
 
 #ifdef REALTIME
-#include <rtdk.h>  // Xenomai real-time development kit
+#include <cobalt/stdio.h>
 #define RT_PRINTF rt_printf
 #else
 #include <stdio.h>

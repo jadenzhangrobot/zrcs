@@ -39,7 +39,7 @@ public:
 
   virtual MC_SERVO_CODE resetError(bool& isDone)=0;
 
-  virtual void runCycle()=0;
+  virtual void runCycle(void)=0;
   virtual void emergStop(void)=0;
 };
 
@@ -47,7 +47,7 @@ class Axis {
 private:
 
   AxisPara *config_;
-  std::unique_ptr<Servo> servo_;
+  Servo* servo_;
 
   uint32_t axisId_=0;
   uint32_t slaveId_=0;
@@ -70,11 +70,19 @@ private:
   bool enableNegative_;
 public:
 
-  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config,std::unique_ptr<Servo> servo): axisId_(axisId),slaveId_(salveId),config_(config),servo_(std::move(servo))
+  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config,Servo* servo): axisId_(axisId),slaveId_(salveId),config_(config),servo_(servo)
   {
      
   }
+  virtual ~Axis()
+  {
+      if (servo_ != nullptr) 
+      {
 
+          delete servo_;
+          servo_ = nullptr;
+      }
+  };
   MC_ERROR_CODE setAxisId(uint32_t id)
   {
       axisId_=id;
@@ -316,7 +324,7 @@ public:
     return static_cast<MC_ERROR_CODE>(0x60 + error_id);
   }
 
-  virtual ~Axis(){};
+  
 };
 class Io {
 public:

@@ -1,5 +1,6 @@
 #ifndef COPPELIASIM_H
 #define COPPELIASIM_H
+#ifndef REALTIME
 #include "controller/ControllerInterface.h"
 #include <cstdint>
 #include <thread>
@@ -8,6 +9,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+
 extern "C" {
     #include "extApi.h"
     #include "simLib/simConst.h"
@@ -261,5 +263,5 @@ namespace ZrcsHardware
         
     };
 }
-
+#endif
 #endif

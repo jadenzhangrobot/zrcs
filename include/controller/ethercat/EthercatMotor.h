@@ -3,13 +3,12 @@
 #define ETHERCATMOTOR_H
 #include "EthercatMaster.h"
 #include "controller/ControllerInterface.h"
-
 #include <cstdint>
 #include <string>
 #include <sys/types.h>
 namespace ZrcsHardware {
 	
-class EthercatMotor:Servo
+class EthercatMotor:public Servo
 {
      private:
 		int ModeOffset;
@@ -58,38 +57,45 @@ class EthercatMotor:Servo
 		MC_SERVO_CODE setMode(Cia402Mode mode) override
 		{             	
 			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ModeOffset],mode);
-			return Servo_No_Error;
+			return SERVONOERROR;
 		}
-        MC_SERVO_CODE setPos(double position) override
+        MC_SERVO_CODE setPos(int32_t position) override
         {	  
               EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],static_cast<int32_t>(99));
-			  return Servo_No_Error;
+			  return SERVONOERROR;
         }
-        double pos(void) override
+        int32_t pos(void) override
         {   			 			 
              int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
 			 return static_cast<double>(pos);						
         }
 		
-        // double vel(void) override
-        // {
+        int32_t vel(void) override
+        {
 		   
-        //    return 0;
-        // }
-        // int  setTargetToq(double toq) override
-        // {  
-		// 	return 0;
-        // }
-        // double actualToq(void) override
-        // {
-        //       return 0;
-        // }
+           return 0;
+        }
+        
+		MC_SERVO_CODE resetError(bool& isDone) override
+		{
+
+		}
+
+		//  void runCycle(void) override
+		// {
+
+		// }
+		void emergStop(void) override
+		{
+			
+		}
+
        
-        // std::uint16_t controlWord() override
-        //  {
+         std::uint16_t controlWord()
+         {
                 
-        //       //return EC_READ_U16(em.DomainWrite+em.OutputOffset[0]);
-        //  }
+              //return EC_READ_U16(em.DomainWrite+em.OutputOffset[0]);
+         }
 
          void setControlWord(std::uint16_t control_word)
          {
@@ -106,7 +112,7 @@ class EthercatMotor:Servo
 		MC_SERVO_CODE setPower(bool powerSwitch) override
 		{
 			power=powerSwitch;
-            return Servo_No_Error;
+            return SERVONOERROR;
 		}
 		bool getPower()
 		{
