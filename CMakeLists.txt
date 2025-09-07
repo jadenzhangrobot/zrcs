@@ -44,7 +44,7 @@ endif(test)
       set(xeno_cflags_params "--alchemy"  "--cflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-      set(xeno_ldflags_params "--alchemy"  "--ldflags" "--no-auto-init")
+      set(xeno_ldflags_params "--alchemy"  "--ldflags")
       execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_ldflags_params} OUTPUT_VARIABLE xeno_ldflags OUTPUT_STRIP_TRAILING_WHITESPACE)
 
       set(xeno_g++_params "--cc")

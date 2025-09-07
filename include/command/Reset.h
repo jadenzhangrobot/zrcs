@@ -5,18 +5,18 @@
  * @LastEditTime: 2023-06-10 15:12:05
  * @Description: 电机使能指令
  */
-#ifndef ENABLE_H_
-#define ENABLE_H_
+#ifndef RESET_H_
+#define RESET_H_
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
-class Enable:public zrcsSystem::OneShotNode
+class Reset:public zrcsSystem::OneShotNode
 {
    private:
       int axisId;
       
    public:
-        Enable()
+        Reset()
         {
            port_input.add<int>("axis", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
         }
@@ -36,11 +36,12 @@ class Enable:public zrcsSystem::OneShotNode
       {                               
                      if(control->axiss.size()>axisId)            
                       {                        
-                                 if(!control->axiss[axisId]->powerOn())
+                                 if(!control->axiss[axisId]->resetError())
                                  {
                                     SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
                                  }
-                                 else {
+                                 else 
+                                 {
                                   SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
                                  }
                       }
@@ -57,5 +58,5 @@ class Enable:public zrcsSystem::OneShotNode
             
       }
 };
-REGISTERCMD(Enable);
+REGISTERCMD(Reset);
 #endif

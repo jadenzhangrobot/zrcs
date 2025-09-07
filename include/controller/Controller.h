@@ -22,15 +22,16 @@ namespace ZrcsHardware {
         private:     
         // EthercatMaster* ethercatMaster;    
          AxisConfig *axConfig;
+         EthercatMaster *ethercatMaster;
         public:
-        Controller():axConfig(new AxisConfig("axisConfig.xml"))
+        Controller():axConfig(new AxisConfig("axisConfig.xml")), ethercatMaster(new EthercatMaster())
         {
            
            
             #ifdef REALTIME
                   for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
                   {                
-                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMotor(it->slaveId)));             
+                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMotor(it->slaveId,ethercatMaster)));             
                   }
                   rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
                //     if (!ethercatMaster->OutputOffset.empty()) {
@@ -57,14 +58,18 @@ namespace ZrcsHardware {
                   for(auto it=axiss.begin();it!=axiss.end();++it)
                   {
                     (*it)->updateMotionCmdsToServo();
-                  }       
+                  }
+                  ethercatMaster->send();
+
          }
          void receiveData()
-         { 
+         {       ethercatMaster->receive();
                  for(auto it=axiss.begin();it!=axiss.end();++it)
                  {
                     (*it)->statusSync();
+                    (*it)->cyclerun();
                  }
+
          }
          void readIo()
          {
@@ -76,6 +81,8 @@ namespace ZrcsHardware {
          } 
         ~Controller()
         {
+           delete axConfig;
+           delete ethercatMaster;
            for (auto ptr : axiss) 
            {
             delete ptr; // 对每个指针调用 delete

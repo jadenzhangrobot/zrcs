@@ -1,59 +1,61 @@
 /*
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
- * @Date: 2023-03-29 18:37:34
- * @LastEditTime: 2023-06-06 14:24:28
- * @Description: 电机失能指令
- * 
+ * @Date: 2023-03-28 15:25:04
+ * @LastEditTime: 2023-06-10 15:12:05
+ * @Description: 电机使能指令
  */
-
 #ifndef DISABLE_H_
 #define DISABLE_H_
 #include "system/basenodeInterface.h"
-#include "system/centre.h"
+#include "system/nodeFactory.h"
 #include <iostream>
-class Disable:zrcs_system::Basenode
+class Disable:public zrcsSystem::OneShotNode
 {
    private:
-      int motor_id;
+      int axisId;
+      
    public:
         Disable()
         {
-         
+           port_input.add<int>("axisId", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
+        }
     
-        }
-        void init() override
-       {   
-           port_input.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
-        
-          if (!cmdParam->empty()) 
-          {
-              std::string str=cmdParam->front();
-              port_input.parse_check(str);
-              cmdParam->pop();
-          }                       
-              motor_id=port_input.get<int>("motor");
-              node_status=RUNNING;                 
-          }
+         void init() override
+       {     
+             if(!cmdParam.empty())
+             {
+                   port_input.parse_check(cmdParam);
+             }
+            axisId=port_input.get<int>("axisId");
+       }
 
-
-        void  excuteRt(void) override
-        {            
+  
            
-                  if(control->motors[motor_id]->disable()==0)
-                  {                     
-                     node_status=SUCCESS;
-                  } 
-                  else {
-                      node_status=FAILURE;
-                   }                     
-                                                  
-        }
+      void  run(void) override
+      {                               
+                     if(control->axiss.size()>axisId)            
+                      {                        
+                                 if(!control->axiss[axisId]->powerOff())
+                                 {
+                                    SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                                 }
+                                else {
+                                SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
+                                }
+                      }
+                     else
+                        {
+                              SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                        }                        
+       }
+                     
+        
+      
       void exit(void) override
       {
-           //std::cout<<"Disable 执行成功"<<std::endl;
+            
       }
 };
-
- REGISTERCMD(Disable);
+REGISTERCMD(Disable);
 #endif

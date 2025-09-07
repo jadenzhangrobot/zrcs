@@ -22,7 +22,9 @@ public:
   {}
   virtual~Servo() = default;
 
-  virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
+  virtual bool enable(void)=0;
+  virtual bool disable(void)=0;
+  //virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
   virtual MC_SERVO_CODE setPos(int32_t pos)=0;
   virtual MC_SERVO_CODE setVel(int32_t vel) { return SERVONOERROR; }
   virtual MC_SERVO_CODE setTorque(int32_t torque) { return SERVONOERROR; }
@@ -30,17 +32,19 @@ public:
 
   virtual int32_t pos(void)=0;
   virtual int32_t vel(void)=0;
-  virtual int32_t acc(void) { return 0.0; }
+  virtual int32_t acc(void)=0;
   virtual int32_t torque(void) { return 0.0; }
 
   virtual bool readVal(int index, double& value) { return false; }
   virtual bool writeVal(int index, double value) { return false; }
   
 
-  virtual MC_SERVO_CODE resetError(bool& isDone)=0;
+  virtual bool resetError()=0;
 
-  virtual void runCycle(void)=0;
+  virtual void send(void)=0;
+  virtual void receive(void)=0;
   virtual void emergStop(void)=0;
+  virtual void runCycle(void)=0;
 };
 
 class Axis {
@@ -190,7 +194,7 @@ public:
     axisPos_ = toUserUnit(servo_->pos() - overflowCount_ * INT32_MAX * 2.0);
     axisVel_ = toUserUnit(servo_->vel());
     axisAcc_ = toUserUnit(servo_->acc());
-
+    
   }
   
   auto actualPos()->double 
@@ -292,26 +296,26 @@ public:
     }
     return MC_ERRORCODE_GOOD;
   }
-  void setPower(bool power_on, bool enable_positive, bool enable_negative)
-  {
-    powerOn_ = power_on;
-    enablePositive_ = enable_positive;
-    enableNegative_ = enable_negative;
-  }
 
-  void resetError(bool reset)
+  MC_ERROR_CODE cyclerun()
   {
-    reset_ = reset;
+    servo_->runCycle();
+    return MC_ERRORCODE_GOOD;
+    
+  }
+  bool resetError(void)
+  {
+     return servo_->resetError();
   }
 
   bool powerOn()
   {
-    return powerStatus_;
+    return servo_->enable();
   }
 
-  bool powerTriggered()
+  bool powerOff()
   {
-    return powerOn_;
+    return servo_->disable();
   }
 
   MC_ERROR_CODE getAxisError()

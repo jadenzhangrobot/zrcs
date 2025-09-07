@@ -26,13 +26,7 @@ namespace ZrcsHardware
         
         virtual ~virtualServo() {}
         
-        // 必须实现的纯虚函数
-        virtual MC_SERVO_CODE setPower(bool powerStatus) override 
-        {
-            powerStatus_ = powerStatus;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
+     
         virtual MC_SERVO_CODE setPos(int32_t pos) override
         {
             lastPosition_=position_;
@@ -109,18 +103,6 @@ namespace ZrcsHardware
             }
         }
         
-        virtual MC_SERVO_CODE resetError(bool& isDone) override 
-        {
-            // 虚拟实现：总是成功重置错误
-            isDone = true;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
-        virtual void runCycle() override 
-        {
-            // 虚拟实现：模拟运行周期
-            // 在实际实现中，这里会执行伺服控制循环
-        }
         
         virtual void emergStop(void) override
         {

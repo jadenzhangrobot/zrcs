@@ -16,13 +16,15 @@ class EthercatMotor:public Servo
 		int ControlOffset;
 		int ActualPos;
 		int StatusWord;
-
-	 bool power=false;
-	 bool powerStatus=false;
+        int32_t position_;      // 当前位置
+        int32_t lastPosition_;      // 上个周期位置
+        int32_t velocity_;      // 当前速度
+        int32_t lastVelocity_;      // 上个周期速度
+        int32_t acceleration_;  // 当前加速度
      public:
 	    EthercatMaster* ethercatMaster;
         int slaveId;
-        EthercatMotor(int id):slaveId(id),ethercatMaster(new EthercatMaster())
+        EthercatMotor(int id, EthercatMaster* master):slaveId(id),ethercatMaster(master)
         {			   
 		        ModeOffset=findNumberOutputKey("controlMode");
 				ControlOffset=findNumberOutputKey("ControlWord");
@@ -61,42 +63,55 @@ class EthercatMotor:public Servo
 		}
         MC_SERVO_CODE setPos(int32_t position) override
         {	  
-              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],static_cast<int32_t>(99));
+              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],position);
 			  return SERVONOERROR;
         }
         int32_t pos(void) override
-        {   			 			 
-             int32_t pos= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
-			 return static_cast<double>(pos);						
+        {   	
+			 lastPosition_=position_;		 			 
+             position_= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
+			 
+			 return position_;		
         }
 		
         int32_t vel(void) override
         {
 		   
-           return 0;
+           lastVelocity_=velocity_;
+            velocity_=(position_-lastPosition_)*1000/cycletime;           
+            return velocity_;
+        }
+		 int32_t acc(void) override 
+        {
+            // CoppeliaSim 中通常不直接提供加速度读取
+             acceleration_=(velocity_-lastVelocity_)*1000/cycletime;
+            return acceleration_;
         }
         
-		MC_SERVO_CODE resetError(bool& isDone) override
+		bool resetError(void) override
 		{
-
+			auto status_word = statusWord();
+            if ((status_word & 0x4F) == 0x08) 
+			{
+			  setControlWord(std::uint16_t(0x80));
+			  return true;
+		    }
+		    return false;   
 		}
 
-		//  void runCycle(void) override
-		// {
+		void send(void) override
+		{
+			ethercatMaster->send();
+		}
+		void receive(void) override
+		{
+             ethercatMaster->receive();
 
-		// }
+		}
 		void emergStop(void) override
 		{
 			
 		}
-
-       
-         std::uint16_t controlWord()
-         {
-                
-              //return EC_READ_U16(em.DomainWrite+em.OutputOffset[0]);
-         }
-
          void setControlWord(std::uint16_t control_word)
          {
                 EC_WRITE_U16(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ControlOffset], control_word ); 
@@ -108,129 +123,71 @@ class EthercatMotor:public Servo
               return EC_READ_U16(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][StatusWord]);
 
          }
-
-		MC_SERVO_CODE setPower(bool powerSwitch) override
+		bool enable(void) override
 		{
-			power=powerSwitch;
-            return SERVONOERROR;
-		}
-		bool getPower()
-		{
-			return powerStatus;
-		}
-        void  runCycle()override
-		{
-            if (power) 
-			{
-			    int result=  motorPowerOn();
-				if (result==3) 
-				{
-				      powerStatus=true;
+			    auto status_word = statusWord();
+                if ((status_word & 0x6F) == 0x23) 
+				{								
+							setControlWord(std::uint16_t(0x0F));
+							switch (0x08) 
+							{
+							case 0x08: setPos(pos()); break;
+						
+							default: setPos(pos());
+							}
+					return true;
 				}
-			}
-		    else 
-			{
-			    int result= motorPowerOff();
-				if (result==0) 
-				{
-				    powerStatus=false;
-				}
-			}
-             
+
+				return false;
 		}
-
-        int  motorPowerOff(void)
-        {
-
+		bool disable(void) override
+		{
 			auto status_word = statusWord();
-					
-			if ((status_word & 0x4F) == 0x00) {							
-				setControlWord(std::uint16_t(0x00));
-				return 1;
+			if ((status_word & 0x6F) == 0x27) 
+			{								
+				setControlWord(std::uint16_t(0x07));						
+				return true;
 			}
-			
-			else if ((status_word & 0x4F) == 0x40) {
-				// transition 2 //
-				
-				setControlWord(std::uint16_t(0x00));
-				return 0;
-			}
-			
-			else if ((status_word & 0x6F) == 0x21) {
-				// transition 3 //
-			
-				setControlWord(std::uint16_t(0x00));
-				return 0;
-			}
-			
-			else if ((status_word & 0x6F) == 0x23) {
-				
-				setControlWord(std::uint16_t(0x06));//change to 0x06 for cooldrive
-				return 3;
-			}
-			
-			else if ((status_word & 0x6F) == 0x27) {			
-				
-				setControlWord(std::uint16_t(0x07));//change to 0x07 for cooldrive
-				return 4;
-			}
-			
-			else if ((status_word & 0x6F) == 0x07) {
-				
-				setControlWord(std::uint16_t(0x00));
-				return 5;
-			}
-			
-			else if ((status_word & 0x4F) == 0x0F) {			
-				setControlWord(std::uint16_t(0x00));
-				return 6;
-			}
-		
-        }
-          int  motorPowerOn(void) 
-          {
-			// control word
-			// 0x06    0b xxxx xxxx 0xxx 0110    A: transition 2,6,8       Shutdown
-			// 0x07    0b xxxx xxxx 0xxx 0111    B: transition 3           Switch ON
-			// 0x0F    0b xxxx xxxx 0xxx 1111    C: transition 3           Switch ON
-			// 0x00    0b xxxx xxxx 0xxx 0000    D: transition 7,9,10,12   Disable Voltage
-			// 0x02    0b xxxx xxxx 0xxx 0000    E: transition 7,10,11     Quick Stop
-			// 0x07    0b xxxx xxxx 0xxx 0111    F: transition 5           Disable Operation
-			// 0x0F    0b xxxx xxxx 0xxx 1111    G: transition 4,16        Enable Operation
-			// 0x80    0b xxxx xxxx 1xxx xxxx    H: transition 15          Fault Reset
-			// 
-			// status word
-			// 0x00    0b xxxx xxxx x0xx 0000    A: not ready to switch on     
-			// 0x40    0b xxxx xxxx x1xx 0000    B: switch on disabled         
-			// 0x21    0b xxxx xxxx x01x 0001    C: ready to switch on         
-			// 0x23    0b xxxx xxxx x01x 0011    D: switch on                  
-			// 0x27    0b xxxx xxxx x01x 0111    E: operation enabled          
-			// 0x07    0b xxxx xxxx x00x 0111    F: quick stop active
-			// 0x0F    0b xxxx xxxx x0xx 1111    G: fault reaction active
-			// 0x08    0b xxxx xxxx x0xx 1000    H: fault
-			// 
-			// 0x6F    0b 0000 0000 0110 1111
-			// 0x4F    0b 0000 0000 0100 1111
-			// enable change state to A/B/C/D/F/G/H to E
-			auto status_word = statusWord();  
-			if ((status_word & 0x4F) == 0x00) {
-				return 1;
-			}
-			// check status B, now transition 2
-			else if ((status_word & 0x4F) == 0x40) 
+
+			return false;
+		}
+
+		bool getState()
+		{
+			  auto status_word = statusWord();
+			  if ((status_word & 0x6F) == 0x27)
+			  {
+				  return true;
+			  }
+			  return false;
+		}
+        void  runCycle() override
+		{           
+			auto status_word = statusWord();
+
+
+			 if ((status_word & 0x4F) == 0x40) 
 			{
-				// transition 2 //				
+						
 				setControlWord(std::uint16_t(0x06));
-				return 2;
+			
 			}
-			// check status C, now transition 3
+			
 			else if ((status_word & 0x6F) == 0x21) 
 			{
-				// transition 3 //				
+				
+				
 				setControlWord(std::uint16_t(0x07));
-				return 3;
+				
 			}
-       }
+			else if ((status_word & 0x4F) == 0x08) 
+			{
+			  setControlWord(std::uint16_t(0x80));
+		    }        
+		}
+
+        
+          
 };
 }
 

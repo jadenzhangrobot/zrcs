@@ -1,5 +1,5 @@
-#ifdef realtime
-#define cycletime 1
+#ifdef REALTIME
+  #define cycletime 1
 #else
-#define cycletime 10
+  #define cycletime 10
 #endif
