@@ -52,6 +52,7 @@ typedef enum
     MC_ERRORCODE_COMMUNICATION                  = 0x1F0, //硬件通信异常
     MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE     = 0x1F1, //正向移动不合法
     MC_ERRORCODE_INVALID_DIRTCTION_NEGATIVE     = 0x1F2, //负向移动不合法  
+    MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR         = 0x1F3, //多驱轴同步误差过大
 
     /** 配置错误**/
     MC_ERRORCODE_CFGAXISIDILLEGAL               = 0x201,

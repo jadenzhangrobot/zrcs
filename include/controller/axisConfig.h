@@ -2,7 +2,9 @@
 #define PARAMETERREAD_H
 #include "common/xmlParsing.h"
 #include "global.h"
+#include <boost/container/options.hpp>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <vector>
 using namespace tinyxml2;
@@ -12,16 +14,17 @@ namespace ZrcsHardware
         uint32_t axisId;
         uint32_t slaveId;
         std::string axisName;
-        MC_SERVO_CONTROL_MODE mode_ ;
-        uint64_t encoder_count_per_unit_;
-        uint64_t node_buffer_size_;
-        bool max_vel_ ;
-        double min_vel_;
-        bool max_acc_ ;
-        double min_acc_;
-        double pos_positive_limit_;
-        double pos_negative_limit_ ;
-        double frequency_ ;
+        MC_SERVO_CONTROL_MODE mode;
+        std::string controller;
+        uint64_t encoderCountPerUnit;
+        double maxVel;
+        double minVel;
+        double maxAcc;
+        double minAcc;
+        double posPositiveLimit;
+        double posNegativeLimit;
+        double maxPosDiff;
+        double frequency;
     }AxisPara;
     class AxisConfig:private XmlParsing
     {      
@@ -29,30 +32,38 @@ namespace ZrcsHardware
             std::vector<AxisPara> axisParas;
             AxisConfig(const std::string& xmlFileName):XmlParsing(xmlFileName)
             {
-                for (auto child:tree->root->children)
-                {
-                     AxisPara axisPara;
-                     axisPara.axisId =std::stoi(child.second->attribute["ID"]);
-                     axisPara.axisName = child.second->children["machine"]->attribute["value"];
-                     axisPara.slaveId = std::stoi(child.second->attribute["slaveId"]);
-                      std::string mode = child.second->attribute["mode"];
-                     if(mode == "position")
-                     {
-                        axisPara.mode_ = MC_SERVO_CONTROL_MODE::mcServoControlModePosition;
-                     }
-                     else if(mode== "velocity")
-                     {
-                        axisPara.mode_ = MC_SERVO_CONTROL_MODE::mcServoControlModeVelocity;
-                     }
-                     axisPara.max_vel_ = std::stod(child.second->children["motion"]->attribute["max_vel"]);
-                     axisPara.max_acc_ = std::stod( child.second->children["motion"]->attribute["max_acc"]);
-                     axisPara.pos_positive_limit_ = std::stod( child.second->children["motion"]->attribute["max_pos"]);
-                     axisPara.pos_negative_limit_ = std::stod( child.second->children["motion"]->attribute["min_pos"]);
-
-                     axisPara.encoder_count_per_unit_= std::stoll(child.second->children["encoder"]->attribute["pos_factor"]);
-                     axisParas.push_back(axisPara);                                                        
-                }
-                          
+              try {       
+                    for (auto child:tree->root->children)
+                    {
+                        AxisPara axisPara;
+                        axisPara.axisId =std::stoi(child.second->children["attribute"]->attribute["id"]);
+                        axisPara.axisName =child.second->children["attribute"]->attribute["name"];
+                        axisPara.slaveId =std::stoi(child.second->children["attribute"]->attribute["slaveId"]);
+                        std::string mode = child.second->children["attribute"]->attribute["mode"];
+                        if(mode == "position")
+                        {
+                            axisPara.mode = MC_SERVO_CONTROL_MODE::mcServoControlModePosition;
+                        }
+                        else if(mode== "velocity")
+                        {
+                            axisPara.mode = MC_SERVO_CONTROL_MODE::mcServoControlModeVelocity;
+                        }
+                        axisPara.controller =child.second->children["attribute"]->attribute["controller"];
+                        axisPara.axisName = child.second->children["machine"]->attribute["value"];                  
+                        axisPara.maxVel = std::stod(child.second->children["motion"]->attribute["maxVel"]);
+                        axisPara.maxAcc = std::stod( child.second->children["motion"]->attribute["maxAcc"]);
+                        axisPara.minVel = std::stod( child.second->children["motion"]->attribute["minVel"]);
+                        axisPara.posPositiveLimit = std::stod( child.second->children["motion"]->attribute["maxPos"]);
+                        axisPara.posNegativeLimit = std::stod( child.second->children["motion"]->attribute["minPos"]);
+                        axisPara.maxPosDiff = std::stod( child.second->children["motion"]->attribute["maxPosDiff"]);
+                        axisPara.minAcc = std::stod( child.second->children["motion"]->attribute["minAcc"]);
+                        axisPara.encoderCountPerUnit= std::stoll(child.second->children["encoder"]->attribute["posFactor"]);
+                        axisParas.push_back(axisPara);                                                        
+                    }
+                 } 
+                 catch (const std::exception& e) {
+                   throw std::runtime_error("读取轴参数失败");
+                }          
             }       
     };
 }

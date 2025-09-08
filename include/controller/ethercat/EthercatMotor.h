@@ -98,16 +98,6 @@ class EthercatMotor:public Servo
 		    }
 		    return false;   
 		}
-
-		void send(void) override
-		{
-			ethercatMaster->send();
-		}
-		void receive(void) override
-		{
-             ethercatMaster->receive();
-
-		}
 		void emergStop(void) override
 		{
 			

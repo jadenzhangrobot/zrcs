@@ -17,31 +17,23 @@ extern "C" {
 
 namespace ZrcsHardware 
 {
-    class Coppeliasim: public Servo
+    class CoppeliasimMaster
     {
-    private:
-        int32_t position_;      // 当前位置
-        int32_t lastPosition_;      // 上个周期位置
-        int32_t velocity_;      // 当前速度
-        int32_t lastVelocity_;      // 上个周期速度
-        int32_t acceleration_;  // 当前加速度
-        int32_t torque_;        // 当前扭矩
-        bool powerStatus_;     // 电源状态
-        Cia402Mode mode_;      // 控制模式
-        
-        // CoppeliaSim 连接相关
+            // 连接状态
+    public:
         int clientID_;         // CoppeliaSim 客户端ID
         std::vector<int> jointHandles_;  // 关节句柄
         std::vector<std::string> jointNames_;  // 关节名称
-        int slaveId_;          // 从站ID
-        bool connected_;       // 连接状态
-    public:
-        Coppeliasim(int slaveId) : position_(0), velocity_(0), acceleration_(0), torque_(0), 
-                                   powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION),
-                                   slaveId_(slaveId), connected_(false)
+         bool connected_ ;  
+        ~CoppeliasimMaster()
         {
-            // 初始化关节名称
-            jointNames_ = {
+            if (connected_) {
+                simxFinish(clientID_);
+            }
+        }
+         CoppeliasimMaster():connected_(false)
+        {
+             jointNames_ = {
                 "UR5_joint1", "UR5_joint2", "UR5_joint3",
                 "UR5_joint4", "UR5_joint5", "UR5_joint6"
             };
@@ -60,7 +52,7 @@ namespace ZrcsHardware
                 if (ret == simx_return_ok)
                     std::cout << "Number of objects in the scene: " << objectCount << std::endl;
                 else
-                    std::cout << "Remote API function call returned with error code: " << ret << std::endl;
+                    throw std::runtime_error("远程API调用失败,错误码: " + std::to_string(ret));
 
                 // 获取关节句柄
                 jointHandles_.resize(jointNames_.size());
@@ -68,7 +60,7 @@ namespace ZrcsHardware
                 {
                     int returnCode = simxGetObjectHandle(clientID_, jointNames_[i].c_str(), &jointHandles_[i], simx_opmode_blocking);
                     if (returnCode != simx_return_ok) {
-                        std::cerr << "错误：无法获取关节 '" << jointNames_[i] << "' 的句柄。请检查关节名称是否正确。" << std::endl;
+                        throw std::runtime_error("错误：无法获取关节" + std::to_string(returnCode));
                         connected_ = false;
                     } else {
                         std::cout << "成功获取句柄：" << jointNames_[i] << " -> " << jointHandles_[i] << std::endl;
@@ -87,30 +79,42 @@ namespace ZrcsHardware
             }
             else
             {
-                std::cerr << "无法连接到 CoppeliaSim 服务器" << std::endl;
+                throw std::runtime_error("无法连接到 CoppeliaSim 服务器");
                 connected_ = false;
             }
+        }
+    }; 
+     
+
+    class Coppeliasim: public Servo
+    {
+    private:
+        int32_t position_;      // 当前位置
+        int32_t lastPosition_;      // 上个周期位置
+        int32_t velocity_;      // 当前速度
+        int32_t lastVelocity_;      // 上个周期速度
+        int32_t acceleration_;  // 当前加速度
+    
+       static inline CoppeliasimMaster master_;
+        // CoppeliaSim 连接相关
+       int slaveId_;
+       
+    public:
+        Coppeliasim(int slaveId) : position_(0), velocity_(0), acceleration_(0),slaveId_(slaveId)
+        {
+            
         }
         
         virtual ~Coppeliasim()
         {
-            // 关闭 CoppeliaSim 连接
-            if (connected_ && clientID_ != -1) {
-                simxFinish(clientID_);
-                std::cout << "CoppeliaSim 连接已关闭" << std::endl;
-            }
+            
         }
          // 必须实现的纯虚函数
-        virtual MC_SERVO_CODE setPower(bool powerStatus) override 
-        {
-            powerStatus_ = powerStatus;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
         
         virtual MC_SERVO_CODE setPos(int32_t pos) override
         {
            
-            if (!connected_ || clientID_ == -1) 
+            if (!master_.connected_ || master_.clientID_ == -1) 
             {
                 return MC_SERVO_CODE::SERVONOERROR;
             }      
@@ -119,9 +123,9 @@ namespace ZrcsHardware
              float targetPosition =  pos / 1000000.0f;
          
             // 设置关节位置到 CoppeliaSim
-            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(jointHandles_.size())) 
+            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(master_.jointHandles_.size())) 
             {
-                int ret = simxSetJointTargetPosition(clientID_, jointHandles_[slaveId_], targetPosition, simx_opmode_oneshot);
+                int ret = simxSetJointTargetPosition(master_.clientID_, master_.jointHandles_[slaveId_], targetPosition, simx_opmode_oneshot);
                 
                 if (ret == simx_return_ok||ret==1) 
                 {
@@ -147,21 +151,17 @@ namespace ZrcsHardware
         
         virtual MC_SERVO_CODE setTorque(int32_t torque) override 
         {
-            torque_ = torque;
+           // torque_ = torque;
             return MC_SERVO_CODE::SERVONOERROR;
         }
         
         virtual MC_SERVO_CODE setMode(Cia402Mode mode) override
         {
-            mode_ = mode;
+            //mode_ = mode;
             return MC_SERVO_CODE::SERVONOERROR;
         }
        
         
-        virtual int32_t torque(void) override
-        {
-            return torque_;
-        }
         
         virtual bool readVal(int index, double& value) override 
         {
@@ -171,7 +171,7 @@ namespace ZrcsHardware
                 case 0: value = position_; return true;
                 case 1: value = velocity_; return true;
                 case 2: value = acceleration_; return true;
-                case 3: value = torque_; return true;
+                //case 3: value = torque_; return true;
                 default: return false;
             }
         }
@@ -184,17 +184,11 @@ namespace ZrcsHardware
                 case 0: position_ = value; return true;
                 case 1: velocity_ = value; return true;
                 case 2: acceleration_ = value; return true;
-                case 3: torque_ = value; return true;
+               // case 3: torque_ = value; return true;
                 default: return false;
             }
         }
         
-        virtual MC_SERVO_CODE resetError(bool& isDone) override 
-        {
-            // 虚拟实现：总是成功重置错误
-            isDone = true;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
         
         virtual void runCycle() override 
         {
@@ -207,7 +201,7 @@ namespace ZrcsHardware
             // 虚拟实现：紧急停止
             velocity_ = 0.0;
             acceleration_ = 0.0;
-            powerStatus_ = false;
+            //powerStatus_ = false;
         }
         
       
@@ -216,22 +210,21 @@ namespace ZrcsHardware
         virtual int32_t pos(void) override 
         {
             
-            if (!connected_ || clientID_ == -1) 
+            if (!master_.connected_ || master_.clientID_ == -1) 
             {
                 return position_; // 返回缓存的位置
             }
              lastPosition_=position_;
             // 从 CoppeliaSim 读取实际关节位置
-            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(jointHandles_.size()))
+            if (slaveId_ >= 0 && slaveId_ < static_cast<int>(master_.jointHandles_.size()))
              {
                 float currentPosition;
-                int ret = simxGetJointPosition(clientID_, jointHandles_[slaveId_], &currentPosition, simx_opmode_blocking);
-                std::cout<<"currentPosition:"<<currentPosition<<std::endl;
+                int ret = simxGetJointPosition(master_.clientID_, master_.jointHandles_[slaveId_], &currentPosition, simx_opmode_blocking);
+              
                 if (ret == simx_return_ok||ret==1)
                 {
                     // 将弧度转换为编码器计数
                     position_ = static_cast<int32_t>(currentPosition*1000000); // 根据实际编码器分辨率调整
-                    std::cout<<"position_:"<<position_<<std::endl;
                     return position_;
                 } 
                 else 

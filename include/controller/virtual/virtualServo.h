@@ -102,6 +102,22 @@ namespace ZrcsHardware
                 default: return false;
             }
         }
+        virtual bool enable(void) override
+        {
+            return true;
+        }
+        virtual bool disable(void) override
+        {
+            return true;
+        }
+        virtual bool resetError(void) override
+        {
+            return true;
+        }
+        virtual void runCycle(void) override
+        {
+            // 虚拟实现：运行周期
+        }
         
         
         virtual void emergStop(void) override

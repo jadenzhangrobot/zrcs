@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <axisConfig>
-     <axis-1 ID="0" name="x轴" slaveId="0" mode="position">
-          <machine Direction="1" Ratio="1" Backlash="0.01" />
-          <motion  max_vel="1000" max_acc="5000" max_pos="100000" min_pos="-10000"/>
-          <encoder pos_factor="1048575" pos_offset="0.0" home_pos="0.0" vel_factor="1.0"/>
-     </axis-1>
-     <!-- <axis-2 ID="1" name="y轴" slaveId="1" mode="position">
-          <machine Direction="1" Ratio="1" Backlash="0.01" />
-          <motion  max_vel="1000" min_vel="-1000" max_acc="5000" min_acc="-5000" max_pos="100000" min_pos="-10000"/>
-          <encoder pos_factor="1048575" pos_offset="0.0" home_pos="0.0" vel_factor="1.0"/>
-     </axis-2> -->
+    <axis-1>
+        <attribute controller="coppeliaSim" id="0" mode="position" name="xAxis" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000" minVel=""/>
+    </axis-1>
 </axisConfig>

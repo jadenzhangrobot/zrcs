@@ -66,7 +66,7 @@ include_directories(
  )
  find_package(Boost REQUIRED COMPONENTS system)
 # 添加CoppeliaSim的头文件
-if(realtime)
+if(NOT realtime)
     if(WIN32)
         include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApi")
         include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/include")

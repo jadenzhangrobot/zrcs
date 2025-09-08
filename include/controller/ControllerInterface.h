@@ -10,7 +10,6 @@
 #define CONTROLLER_INTERFACE_H
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include "axisConfig.h"
 #include "global.h"
 #include "common/config/parameter.h"
@@ -22,8 +21,14 @@ public:
   {}
   virtual~Servo() = default;
 
-  virtual bool enable(void)=0;
-  virtual bool disable(void)=0;
+  virtual bool enable(void)
+  {
+    return true;
+  }
+  virtual bool disable(void)
+  {
+    return true;
+  }
   //virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
   virtual MC_SERVO_CODE setPos(int32_t pos)=0;
   virtual MC_SERVO_CODE setVel(int32_t vel) { return SERVONOERROR; }
@@ -39,10 +44,10 @@ public:
   virtual bool writeVal(int index, double value) { return false; }
   
 
-  virtual bool resetError()=0;
-
-  virtual void send(void)=0;
-  virtual void receive(void)=0;
+  virtual bool resetError()
+  {
+    return true;
+  }
   virtual void emergStop(void)=0;
   virtual void runCycle(void)=0;
 };
@@ -51,7 +56,7 @@ class Axis {
 private:
 
   AxisPara *config_;
-  Servo* servo_;
+  std::vector<Servo*> servo_;
 
   uint32_t axisId_=0;
   uint32_t slaveId_=0;
@@ -74,19 +79,23 @@ private:
   bool enableNegative_;
 public:
 
-  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config,Servo* servo): axisId_(axisId),slaveId_(salveId),config_(config),servo_(servo)
+  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): axisId_(axisId),slaveId_(salveId),config_(config)
   {
      
   }
   virtual ~Axis()
   {
-      if (servo_ != nullptr) 
-      {
-
-          delete servo_;
-          servo_ = nullptr;
-      }
+          for (auto servo : servo_)
+          {
+              delete servo;
+          }
+          servo_.clear();
+      
   };
+  void pushServo(Servo* servo)
+  {
+    servo_.push_back(servo);
+  }
   MC_ERROR_CODE setAxisId(uint32_t id)
   {
       axisId_=id;
@@ -107,12 +116,12 @@ public:
 
   double toUserUnit(double x)
   {
-    return x / config_->encoder_count_per_unit_;
+    return x / config_->encoderCountPerUnit;
   }
 
   int32_t toEncoderUnit(double x)
   {
-    return (int32_t)fixOverFlow(x * config_->encoder_count_per_unit_);
+    return (int32_t)fixOverFlow(x * config_->encoderCountPerUnit);
   }
 
   double fixOverFlow(double x)
@@ -148,7 +157,7 @@ public:
       return false;
     }
 
-    if (config_->max_vel_ <vel_cmd&&vel_cmd>config_->min_vel_)
+    if (config_->maxVel <vel_cmd&&vel_cmd>config_->minVel)
     {
       axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
       return false;
@@ -179,10 +188,20 @@ public:
  */
   void updateMotionCmdsToServo()
   {
-    if (config_->mode_ == mcServoControlModePosition)
-      servo_->setPos(toEncoderUnit(axisPosCmd_));
-    if (config_->mode_ == mcServoControlModeVelocity)
-      servo_->setVel(toEncoderUnit(axisVelCmd_));
+    if (config_->mode== mcServoControlModePosition)
+    {
+      for (auto servo : servo_)
+      {
+        servo->setPos(toEncoderUnit(axisPosCmd_));
+      }
+    }
+    if (config_->mode == mcServoControlModeVelocity)
+    {
+      for (auto servo : servo_)
+      {
+        servo->setVel(toEncoderUnit(axisVelCmd_));
+      }
+    }
   }
   /**
    * @brief 将伺服电机的数据更新给轴，更新轴的位置和速度
@@ -190,10 +209,24 @@ public:
    */
   void statusSync()
   {
-    // Update servo state to axis
-    axisPos_ = toUserUnit(servo_->pos() - overflowCount_ * INT32_MAX * 2.0);
-    axisVel_ = toUserUnit(servo_->vel());
-    axisAcc_ = toUserUnit(servo_->acc());
+    double lastAxisPos_;
+    for (int i=0;i<servo_.size();i++)
+    {
+     
+      double axisPos_ = toUserUnit(servo_[i]->pos() - overflowCount_ * INT32_MAX * 2.0);
+      double axisVel_ = toUserUnit(servo_[i]->vel());
+      double axisAcc_ = toUserUnit(servo_[i]->acc());
+      // 计算位置差值     
+      if (i!=0) 
+      {
+          double posDiff = axisPos_ - lastAxisPos_;
+          if (posDiff>config_->maxPosDiff) 
+          {
+             axisError_=MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
+          }
+      }
+      lastAxisPos_=axisPos_;
+    }
     
   }
   
@@ -299,23 +332,47 @@ public:
 
   MC_ERROR_CODE cyclerun()
   {
-    servo_->runCycle();
+    for (auto servo : servo_)
+    {
+      servo->runCycle();
+    }
     return MC_ERRORCODE_GOOD;
     
   }
   bool resetError(void)
   {
-     return servo_->resetError();
+     for (auto servo : servo_)
+     {
+       if(!servo->resetError())
+       {
+         return false;
+       }  
+     }
+     return true;
   }
 
   bool powerOn()
   {
-    return servo_->enable();
+    for (auto servo : servo_)
+    {
+      if(!servo->enable())
+      {
+        return false;
+      }
+    }
+    return true;
   }
 
-  bool powerOff()
+  bool powerOff() 
   {
-    return servo_->disable();
+    for (auto servo : servo_)
+    {
+      if (!servo->disable())
+      {
+         return false;
+      }
+    }
+    return true;
   }
 
   MC_ERROR_CODE getAxisError()

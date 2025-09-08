@@ -1,55 +1,70 @@
 #ifndef CONTROLLER
 #define CONTROLLER
+#include <fstream>
 #include <memory>
 #include <vector>
 #include "axisConfig.h"
 #include "ControllerInterface.h"
-#include "controller/ethercat/EthercatMaster.h"
 #ifdef REALTIME 
-#include "controller/rtos/xenomai.h"
 #include "ethercat/EthercatMaster.h"
+#include "controller/rtos/xenomai.h"
 #include "ethercat/EthercatMotor.h"
 #endif
 #include <controller/virtual/virtualServo.h>
 #include <controller/virtual/Coppeliasim.h>
-
 #include "controller/rtos/linux.h"
+#include "common/rtLog.h"
 #
 namespace ZrcsHardware {
    
  class Controller
     {  
-        private:     
-        // EthercatMaster* ethercatMaster;    
+        private:        
          AxisConfig *axConfig;
-         EthercatMaster *ethercatMaster;
-        public:
-        Controller():axConfig(new AxisConfig("axisConfig.xml")), ethercatMaster(new EthercatMaster())
+          public:
+         #ifdef REALTIME 
+          EthercatMaster* ethercatMaster;
+          Controller():axConfig(new AxisConfig("axisConfig.xml")),ethercatMaster(new EthercatMaster())
+          #else 
+          Controller():axConfig(new AxisConfig("axisConfig.xml"))
+         #endif
         {
-           
-           
-            #ifdef REALTIME
+                  
                   for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
-                  {                
-                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,new EthercatMotor(it->slaveId,ethercatMaster)));             
-                  }
-                  rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));
-               //     if (!ethercatMaster->OutputOffset.empty()) {
-               //     outputData.resize( ethercatMaster->OutputOffset.back().back());
-               //     inputData.resize( ethercatMaster->InputOffset.back().back());                   
-               //  } else {
-               //      // 处理空向量的情况（如抛出异常或返回错误）
-               //  }
-            #else
-                  for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
-                  {                
-                        axiss.push_back(new Axis(it->axisId,it->slaveId,&*it,std::make_unique<Coppeliasim>(it->slaveId)));             
-                  }
-                  rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
-            #endif
+                  {     
+                        if (it->controller == "ethercat") 
+                        {
+                           #ifdef REALTIME 
+                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
+                              axis->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
+                              axiss.push_back(axis);                           
+                           #endif
+                        }
+                        else if (it->controller == "coppeliasim")
+                        {
+                           Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
+                           axis->pushServo(new Coppeliasim(it->slaveId));
+                           axiss.push_back(axis);
 
-               
-                     
+                        }
+                        else if (it->controller == "virtual")
+                        {
+                          Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
+                          axis->pushServo(new virtualServo(it->slaveId));
+                          axiss.push_back(axis);
+                        }
+                        else 
+                        {
+                          throw std::runtime_error("未定义的控制器类型");
+                        }       
+                  }
+          
+                 
+                  #ifdef REALTIME 
+                        rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));            
+                  #else
+                        rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
+                  #endif                  
 
         }
             
@@ -59,11 +74,16 @@ namespace ZrcsHardware {
                   {
                     (*it)->updateMotionCmdsToServo();
                   }
-                  ethercatMaster->send();
+                 #ifdef REALTIME 
+                  rtos_->send();
+                 #endif
 
          }
          void receiveData()
-         {       ethercatMaster->receive();
+         {      
+                  #ifdef REALTIME 
+                     rtos_->receive();
+                  #endif
                  for(auto it=axiss.begin();it!=axiss.end();++it)
                  {
                     (*it)->statusSync();
@@ -82,7 +102,9 @@ namespace ZrcsHardware {
         ~Controller()
         {
            delete axConfig;
+           #ifdef REALTIME 
            delete ethercatMaster;
+           #endif
            for (auto ptr : axiss) 
            {
             delete ptr; // 对每个指针调用 delete

@@ -2,8 +2,6 @@
 #define SLAVECONFIG_H
 #include "ecrt.h"
 #include <cstdint>
-#include <cstdlib>
-#include <cstring>
 #include <string>
 #include <vector>
 #include <map>
