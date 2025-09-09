@@ -52,11 +52,9 @@ namespace ZrcsHardware
                         axisPara.axisName = child.second->children["machine"]->attribute["value"];                  
                         axisPara.maxVel = std::stod(child.second->children["motion"]->attribute["maxVel"]);
                         axisPara.maxAcc = std::stod( child.second->children["motion"]->attribute["maxAcc"]);
-                        axisPara.minVel = std::stod( child.second->children["motion"]->attribute["minVel"]);
                         axisPara.posPositiveLimit = std::stod( child.second->children["motion"]->attribute["maxPos"]);
                         axisPara.posNegativeLimit = std::stod( child.second->children["motion"]->attribute["minPos"]);
                         axisPara.maxPosDiff = std::stod( child.second->children["motion"]->attribute["maxPosDiff"]);
-                        axisPara.minAcc = std::stod( child.second->children["motion"]->attribute["minAcc"]);
                         axisPara.encoderCountPerUnit= std::stoll(child.second->children["encoder"]->attribute["posFactor"]);
                         axisParas.push_back(axisPara);                                                        
                     }

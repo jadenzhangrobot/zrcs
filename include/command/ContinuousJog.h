@@ -14,7 +14,7 @@
 #include "system/nodeFactory.h"
 
 using namespace ruckig;
-class ContinuousJog:public zrcsSystem::PersistentNode
+class ContinuousJog:public zrcsSystem::RtCmdNode
   {
 
              public:
@@ -135,7 +135,6 @@ class ContinuousJog:public zrcsSystem::PersistentNode
       }
      
   };
-
- REGISTERNODE(ContinuousJog);
+ REGISTERRTCMD(ContinuousJog);
 
 #endif

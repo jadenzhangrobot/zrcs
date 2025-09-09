@@ -10,7 +10,7 @@
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
-class Reset:public zrcsSystem::OneShotNode
+class Reset:public zrcsSystem::CmdNode
 {
    private:
       int axisId;
@@ -38,16 +38,16 @@ class Reset:public zrcsSystem::OneShotNode
                       {                        
                                  if(!control->axiss[axisId]->resetError())
                                  {
-                                    SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
                                  else 
                                  {
-                                  SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
+                                  setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                                  }
                       }
                      else
                         {
-                              SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                              setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                         }                        
        }
                      

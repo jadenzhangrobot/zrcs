@@ -16,7 +16,7 @@
 #include "system/nodeFactory.h"
 
 using namespace ruckig;
-class JogabsJ:public zrcsSystem::OneShotNode
+class JogabsJ:public zrcsSystem::CmdNode
   {
 
              public:
@@ -82,11 +82,11 @@ class JogabsJ:public zrcsSystem::OneShotNode
                        }
                      else if(otg.update(input, output)==Result::Finished)
                       {
-                        SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
+                        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                       }
                      else
                       {                         
-                        SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                       }
         
       }

@@ -35,23 +35,44 @@ namespace ZrcsHardware {
                         if (it->controller == "ethercat") 
                         {
                            #ifdef REALTIME 
-                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
-                              axis->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
-                              axiss.push_back(axis);                           
+                           if (it->axisId==axiss.size()) 
+                           {
+                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
+                             axis->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
+                             axiss.push_back(axis);
+                           }
+                           else 
+                           {
+                              axiss[it->axisId]->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
+                           }                                 
                            #endif
                         }
                         else if (it->controller == "coppeliasim")
                         {
-                           Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
-                           axis->pushServo(new Coppeliasim(it->slaveId));
-                           axiss.push_back(axis);
+                           if (it->axisId==axiss.size()) 
+                           {
+                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
+                             axis->pushServo(new Coppeliasim(it->slaveId));
+                             axiss.push_back(axis);
+                           }
+                           else 
+                           {
+                              axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
+                           }                         
 
                         }
                         else if (it->controller == "virtual")
                         {
-                          Axis* axis=new Axis(it->axisId,it->slaveId,&*it); 
-                          axis->pushServo(new virtualServo(it->slaveId));
-                          axiss.push_back(axis);
+                           if (it->axisId==axiss.size()) 
+                           {
+                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
+                             axis->pushServo(new virtualServo(it->slaveId));
+                             axiss.push_back(axis);
+                           }
+                           else 
+                           {
+                              axiss[it->axisId]->pushServo(new virtualServo(it->slaveId));
+                           }            
                         }
                         else 
                         {

@@ -10,7 +10,7 @@
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
-class Disable:public zrcsSystem::OneShotNode
+class Disable:public zrcsSystem::CmdNode
 {
    private:
       int axisId;
@@ -36,17 +36,18 @@ class Disable:public zrcsSystem::OneShotNode
       {                               
                      if(control->axiss.size()>axisId)            
                       {                        
-                                 if(!control->axiss[axisId]->powerOff())
-                                 {
-                                    SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
-                                 }
-                                else {
-                                SetOneShotStatus(zrcsSystem::OneShotNodeStatus::EXIT);
-                                }
+                              if(!control->axiss[axisId]->powerOff())
+                              {
+                                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                              }
+                              else 
+                              {
+                                 setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+                              }
                       }
                      else
                         {
-                              SetOneShotStatus(zrcsSystem::OneShotNodeStatus::FAILED);
+                              setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                         }                        
        }
                      

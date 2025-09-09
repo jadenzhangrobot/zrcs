@@ -79,13 +79,17 @@ private:
   std::thread exit_cmd;
 
   // 命令对象指针容器
-  std::pmr::monotonic_buffer_resource persistentNodePmr; // 实时节点内存资源
-  std::pmr::vector<PersistentNode*> persistentNode;           // 实时节点容器
+  std::pmr::monotonic_buffer_resource outputPlcNodePmr; // 实时节点内存资源
+  std::pmr::monotonic_buffer_resource inputPlcNodePmr; // 实时节点内存资源
+  std::pmr::monotonic_buffer_resource rtCmdNodePmr; // 实时节点内存资源
+
+  std::pmr::vector<OutputPlcNode*> outputPlcNode;       // 实时节点容器
+  std::pmr::vector<InputPlcNode*> inputPlcNode;
+  std::pmr::vector<RtCmdNode*> rtCmdNode;
+  CmdNode *cmdNode = nullptr;
   ZrcsHardware::Controller *control;             // 硬件控制器指针
-  //std::array<bool, 100> controlRegister = {};    // 控制寄存器
-  //std::array<bool, 100> statusRegister = {};     // 状态寄存器
   RTProcess *rtProcess = nullptr;                // 实时进程指针
-  OneShotNode *oneShotNode = nullptr;
+ 
   bool rtFlag = true; // 实时标志
   bool nrtFlag = true;
   // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信
@@ -97,7 +101,7 @@ public:
    * @brief 构造函数
    * @param rtProcess_ 实时进程指针
    */
-  NodeManger(RTProcess *rtProcess_) : persistentNode(&persistentNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
+  NodeManger(RTProcess *rtProcess_) : outputPlcNode(&outputPlcNodePmr),inputPlcNode(&inputPlcNodePmr),rtCmdNode(&rtCmdNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) {
     rtProcess = rtProcess_;
   }
 
@@ -145,8 +149,9 @@ public:
     cmdParsing();
     nrtThread = std::thread([this]() {
       while (true) {
-        if (oneShotNode != nullptr) {
-          oneShotNode->executeNrt();
+        if (cmdNode != nullptr) 
+        {
+          cmdNode->executeNrt();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
@@ -159,29 +164,43 @@ public:
       switch (taskScheduling) 
       {
             case RUN:
-              if (oneShotNode != nullptr)
-               {
-                  // 检查节点状态并执行相应操作
-                  if (oneShotNode->GetOneShotStatus() == OneShotNodeStatus::COMPLETED) 
+                if (!inputPlcNode.empty()) 
+                {
+                    for (auto &node : inputPlcNode)
+                    {
+                      node->execute();
+                    }
+                }
+                if (!rtCmdNode.empty()) 
+                {
+                  for (auto &node : rtCmdNode)
                   {
-                    oneShotNode->popCmdArgs();
-                    oneShotNode->SetOneShotStatus(OneShotNodeStatus::START);
+                    node->execute();
+                  }
+                }
+                if (cmdNode != nullptr)
+                {
+                  // 检查节点状态并执行相应操作
+                  if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
+                  {
+                    cmdNode->popCmdArgs();
+                    cmdNode->setCmdStatus(CmdStatus::START);
                     // 节点已完成或失败，清理资源
-                    oneShotNode = nullptr;
+                    cmdNode = nullptr;
                   } 
                   else 
                   {
                     // 节点仍在运行，继续执行
-                    oneShotNode->execute();
+                    cmdNode->execute();
                   }
-              }
-              if (!persistentNode.empty()) 
-              {   
-                  for (auto &node : persistentNode)
+                }
+               if (!outputPlcNode.empty()) 
+                {   
+                  for (auto &node : outputPlcNode)
                   {
                     node->execute();
                   }
-              }
+                }
               break;
             case STOP:
               break;
@@ -213,32 +232,51 @@ public:
             std::string cmdParam = {};
             std::string cmdName = {};
             registerObject(cmd, cmdName, cmdParam);
-            if (NodeFactory<OneShotNode>::getInstance().exist(cmdName)) 
+            if (NodeFactory<CmdNode>::getInstance().exist(cmdName)) 
             {
-                auto node =NodeFactory<OneShotNode>::getInstance().getNodePtr(cmdName);
+                auto node =NodeFactory<CmdNode>::getInstance().getNodePtr(cmdName);
                 if (node) 
                 {
-                    oneShotNode = node.get(); 
-                    if (oneShotNode->GetOneShotStatus() ==OneShotNodeStatus::START)
+                    cmdNode = node.get(); 
+                    if (cmdNode->getCmdStatus() ==CmdStatus::START)
                     {
-                      oneShotNode->registered(control,rtProcess);
-                      oneShotNode->pushCmdArgs(cmdParam);
-                      oneShotNode->SetOneShotStatus(OneShotNodeStatus::INIT);
+                      cmdNode->registered(control,rtProcess);
+                      cmdNode->pushCmdArgs(cmdParam);
+                      cmdNode->setCmdStatus(CmdStatus::INIT);
                     } 
                     else 
                     {
-                      std::cout << oneShotNode->getNodeNAME() << "状态错误"<< std::endl;
-                      oneShotNode = nullptr;
+                      std::cout << cmdNode->getNodeNAME() << "状态错误"<< std::endl;
+                      cmdNode = nullptr;
                     }
                 }
-            } 
-            else if (NodeFactory<PersistentNode>::getInstance().exist(cmdName)) 
+            }
+            else if (NodeFactory<RtCmdNode>::getInstance().exist(cmdName)) 
             {
-                auto node =NodeFactory<PersistentNode>::getInstance().getNodePtr(cmdName);
+                auto node =NodeFactory<RtCmdNode>::getInstance().getNodePtr(cmdName);
                 if (node) 
                 {
                   node->registered(control,rtProcess);
-                  persistentNode.push_back(node.get());
+                  rtCmdNode.push_back(node.get());
+                }
+            
+            }
+            else if (NodeFactory<InputPlcNode>::getInstance().exist(cmdName)) 
+            {
+                  auto node =NodeFactory<InputPlcNode>::getInstance().getNodePtr(cmdName);
+                  if (node) 
+                  {
+                    node->registered(control,rtProcess);
+                    inputPlcNode.push_back(node.get());
+                  }
+            }
+            else if (NodeFactory<OutputPlcNode>::getInstance().exist(cmdName)) 
+            {
+                auto node =NodeFactory<OutputPlcNode>::getInstance().getNodePtr(cmdName);
+                if (node) 
+                {
+                  node->registered(control,rtProcess);
+                  outputPlcNode.push_back(node.get());
                 }
             }
             else if (cmdName=="Stop") 
@@ -261,26 +299,25 @@ public:
                     } else {
                         cmdParam.erase(0, first_char_pos);
                     }
-                    auto node =NodeFactory<PersistentNode>::getInstance().getNodePtr(cmdParam);
+                    auto node =NodeFactory<OutputPlcNode>::getInstance().getNodePtr(cmdParam);
                     if (node) 
                     {                          
-                              auto it = std::find(persistentNode.begin(), persistentNode.end(), node.get());                                
-                              if (it != persistentNode.end()) 
+                              auto it = std::find(outputPlcNode.begin(), outputPlcNode.end(), node.get());                                
+                              if (it != outputPlcNode.end()) 
                               {
-                                  persistentNode.erase(it);
+                                  outputPlcNode.erase(it);
                                   
                               } 
                               else 
                               {
                                   std::cout << "在vector中未找到该指针。" << std::endl;
                               }
-                    }
-                  
+                    }                  
                  }
             }
             else if (cmdName=="RemoveCmd") 
             {
-                   oneShotNode = nullptr;
+                   cmdNode = nullptr;
             }
             else
             {

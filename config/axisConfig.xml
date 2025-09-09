@@ -1,9 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <axisConfig>
     <axis-1>
-        <attribute controller="coppeliaSim" id="0" mode="position" name="xAxis" slaveId="0"/>
+        <attribute controller="virtual" id="0" mode="position" name="xAxis" slaveId="0"/>
         <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000" minVel=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000"/>
     </axis-1>
+    <axis-2>
+        <attribute controller="virtual" id="0" mode="position" name="xAxis" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000" />
+    </axis-2>
+    <axis-3>
+        <attribute controller="virtual" id="1" mode="position" name="xAxis" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000" />
+    </axis-3>
+    <axis-4>
+        <attribute controller="virtual" id="2" mode="position" name="xAxis" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000"/>
+    </axis-4>
+    <axis-5>
+        <attribute controller="virtual" id="0" mode="position" name="xAxis" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1000000" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxPos="100000" maxPosDiff="00" maxVel="1000" minPos="-10000"/>
+    </axis-5>
 </axisConfig>

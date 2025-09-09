@@ -12,8 +12,10 @@ namespace zrcsSystem {
 
 // 前向声明
 class Basenode;
-class OneShotNode;
-class PersistentNode;
+class RtCmdNode;
+class CmdNode;
+class InputPlcNode;
+class OutputPlcNode;
 
 /**
  * @brief 节点工厂，使用静态反射实现
@@ -94,7 +96,10 @@ public:
 #define REGISTER_NODE(className, baseType) \
     REGISTER_NODE_IMPL(className, baseType, __COUNTER__)
 
-#define REGISTERCMD(className) REGISTER_NODE(className, OneShotNode)
-#define REGISTERNODE(className) REGISTER_NODE(className, PersistentNode)
+#define REGISTERCMD(className) REGISTER_NODE(className, CmdNode)
+#define REGISTERRTCMD(className) REGISTER_NODE(className, RtCmdNode)
+#define REGISTERINPUTPLCNODE(className) REGISTER_NODE(className, InputPlcNode)
+#define REGISTEROUTPUTPLCNODE(className) REGISTER_NODE(className, OutputPlcNode)
+
 
 #endif // NODE_FACTORY_H_

@@ -33,6 +33,11 @@ namespace ZrcsHardware
         }
          CoppeliasimMaster():connected_(false)
         {
+            
+        }
+
+        void init()
+        {
              jointNames_ = {
                 "UR5_joint1", "UR5_joint2", "UR5_joint3",
                 "UR5_joint4", "UR5_joint5", "UR5_joint6"
@@ -82,6 +87,7 @@ namespace ZrcsHardware
                 throw std::runtime_error("无法连接到 CoppeliaSim 服务器");
                 connected_ = false;
             }
+
         }
     }; 
      
@@ -102,7 +108,10 @@ namespace ZrcsHardware
     public:
         Coppeliasim(int slaveId) : position_(0), velocity_(0), acceleration_(0),slaveId_(slaveId)
         {
-            
+            if (!master_.connected_) 
+            {
+                master_.init();
+            }
         }
         
         virtual ~Coppeliasim()
