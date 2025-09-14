@@ -14,7 +14,6 @@
 #include <controller/virtual/Coppeliasim.h>
 #include "controller/rtos/linux.h"
 #include "common/rtLog.h"
-#
 namespace ZrcsHardware {
    
  class Controller
@@ -49,6 +48,7 @@ namespace ZrcsHardware {
                         }
                         else if (it->controller == "coppeliasim")
                         {
+                           #ifndef REALTIME 
                            if (it->axisId==axiss.size()) 
                            {
                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
@@ -58,7 +58,8 @@ namespace ZrcsHardware {
                            else 
                            {
                               axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
-                           }                         
+                           }
+                           #endif                      
 
                         }
                         else if (it->controller == "virtual")
@@ -96,14 +97,14 @@ namespace ZrcsHardware {
                     (*it)->updateMotionCmdsToServo();
                   }
                  #ifdef REALTIME 
-                  rtos_->send();
+                  ethercatMaster->send();
                  #endif
 
          }
          void receiveData()
          {      
                   #ifdef REALTIME 
-                     rtos_->receive();
+                     ethercatMaster->receive();
                   #endif
                  for(auto it=axiss.begin();it!=axiss.end();++it)
                  {
