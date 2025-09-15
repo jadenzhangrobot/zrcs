@@ -213,9 +213,9 @@ public:
     for (int i=0;i<servo_.size();i++)
     {
      
-      double axisPos_ = toUserUnit(servo_[i]->pos() - overflowCount_ * INT32_MAX * 2.0);
-      double axisVel_ = toUserUnit(servo_[i]->vel());
-      double axisAcc_ = toUserUnit(servo_[i]->acc());
+       axisPos_ = toUserUnit(servo_[i]->pos() - overflowCount_ * INT32_MAX * 2.0);
+       axisVel_ = toUserUnit(servo_[i]->vel());
+       axisAcc_ = toUserUnit(servo_[i]->acc());
       // 计算位置差值     
       if (i!=0) 
       {
@@ -355,12 +355,13 @@ public:
   {
     for (auto servo : servo_)
     {
-      if(!servo->enable())
+      if(servo->enable())
       {
-        return false;
+        return true;
       }
+
     }
-    return true;
+    return false;
   }
 
   bool powerOff() 

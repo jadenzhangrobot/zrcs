@@ -2,7 +2,6 @@
 #define ETHERCATMASTER
 #include <time.h>
 #include "ethercatParameter.h"
-#include "ControllerInterface.h"
 #ifdef REALTIME 
 #include "ecrt.h"
 #include <alchemy/timer.h>
@@ -15,9 +14,9 @@
 namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器
 #define  SMIN 3 //ethercat第三个同步管理器
-class EthercatMaster::public ControllerInterface {
+class EthercatMaster
+{
 private:
-
   static inline ec_master_t *master = NULL;
 
   static inline ec_master_state_t master_state = {};

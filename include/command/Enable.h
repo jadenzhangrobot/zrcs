@@ -35,12 +35,15 @@ class Enable:public zrcsSystem::CmdNode
       void  run(void) override
       {                               
                      if(control->axiss.size()>axisId)            
-                      {                        
+                      {          
+                                 control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos());            
                                  if(!control->axiss[axisId]->powerOn())
                                  {
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
-                                 else {
+                                 else 
+                                 {
+                                  
                                   setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                                  }
                       }

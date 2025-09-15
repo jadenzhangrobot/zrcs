@@ -118,13 +118,7 @@ class EthercatMotor:public Servo
 			    auto status_word = statusWord();
                 if ((status_word & 0x6F) == 0x23) 
 				{								
-							setControlWord(std::uint16_t(0x0F));
-							switch (0x08) 
-							{
-							case 0x08: setPos(pos()); break;
-						
-							default: setPos(pos());
-							}
+					setControlWord(std::uint16_t(0x0F));							
 					return true;
 				}
 
@@ -170,14 +164,11 @@ class EthercatMotor:public Servo
 				setControlWord(std::uint16_t(0x07));
 				
 			}
-			else if ((status_word & 0x4F) == 0x08) 
-			{
-			  setControlWord(std::uint16_t(0x80));
-		    }        
-		}
-
-        
-          
+			// else if ((status_word & 0x4F) == 0x08) 
+			// {
+			//   setControlWord(std::uint16_t(0x80));
+		    // }        
+		}          
 };
 }
 
