@@ -23,9 +23,9 @@ namespace ZrcsHardware {
           public:
          #ifdef REALTIME 
           EthercatMaster* ethercatMaster;
-          Controller():axConfig(new AxisConfig("axisConfig.xml")),ethercatMaster(new EthercatMaster())
+          Controller():axConfig(new AxisConfig("axis.xml")),ethercatMaster(new EthercatMaster())
           #else 
-          Controller():axConfig(new AxisConfig("axisConfig.xml"))
+          Controller():axConfig(new AxisConfig("axis.xml"))
          #endif
         {
                   

@@ -32,16 +32,7 @@ class Setmode:public zrcsSystem::Basenode
                   cmdParam.pop();
             } 
              motor_mode=port_input.get<int>("mode"); 
-             // 添加空指针检查
-             if(control)
-             {
-                 motor_num=control->axiss.size();
-             }
-             else
-             {
-                 motor_num=0;
-                 std::cout << "Warning: control is null, setting motor_num to 0" << std::endl;
-             }
+             motor_num=control->axiss.size();
         }
         void init() override
        {                

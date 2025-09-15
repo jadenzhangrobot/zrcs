@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <array>
+#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -85,6 +86,16 @@ struct Status {
     bool is_moving{false};
     uint64_t update_count{0}; // 状态更新计数，方便观察
 };
+struct MotionParam {
+    double model;
+    double x;
+    double y;
+    double z;
+    double a;
+    double b;
+    double c;
+    double velocity;
+};
 
 struct SingleAxisMotion
 {
@@ -106,7 +117,7 @@ struct systemRegister {
 struct SharedBlock {
     // NRT -> RT 的命令通道
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
-
+    SPSCRingBuffer<MotionParam, COMMAND_BUFFER_SIZE> motionParamQueue;
     // RT -> NRT 的状态通道
     SPSCRingBuffer<Status, STATUS_BUFFER_SIZE> statusQueue;
 
