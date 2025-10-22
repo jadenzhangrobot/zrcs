@@ -1,6 +1,7 @@
 #ifndef COPPELIASIM_H
 #define COPPELIASIM_H
 #ifndef REALTIME
+#ifdef SIMULATION
 #include "controller/ControllerInterface.h"
 #include <cstdint>
 #include <thread>
@@ -265,5 +266,6 @@ namespace ZrcsHardware
         
     };
 }
+#endif
 #endif
 #endif

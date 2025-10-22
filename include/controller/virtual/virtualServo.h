@@ -2,6 +2,8 @@
 #define VIRTUALSERVO_H
 #include "controller/ControllerInterface.h"
 #include <cstdint>
+#include <iomanip>
+#include <vector>
 
 
 namespace ZrcsHardware 
@@ -17,6 +19,7 @@ namespace ZrcsHardware
         int32_t torque_;        // 当前扭矩
         bool powerStatus_;     // 电源状态
         Cia402Mode mode_;      // 控制模式
+        std::pmr::vector<double> positionCommand_;
       
     public:
         virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
@@ -32,7 +35,7 @@ namespace ZrcsHardware
             lastPosition_=position_;
             position_ = pos;
            
-           
+            positionCommand_.push_back(pos);
             return MC_SERVO_CODE::SERVONOERROR;
         }
         

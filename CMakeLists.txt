@@ -28,7 +28,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 添加调试编译选项
-option(realtime "Build realtime programs" ON)
+option(realtime "Build realtime programs" OFF)
+option(simulation "Build simulation programs" OFF)
 message("realtime ${realtime}")
 option(test "Build test programs" ON)
 #添加单元测试程序
@@ -37,6 +38,9 @@ if(test)
   add_subdirectory(example/slab)
 endif(test)
  
+if(simulation)
+    add_definitions(-DSIMULATION)
+endif()
 
       #编译链接xenomai的库
  if(realtime)
@@ -95,23 +99,34 @@ add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
 add_dependencies(motion_control run_python_scripts)
 
  if(realtime)
- target_link_libraries(motion_control
- PRIVATE 
- Threads::Threads
- ruckig
- ethercat_rtdm
- tinyxml2
- atomic
-)
+    target_link_libraries(motion_control
+    PRIVATE 
+    Threads::Threads
+    ruckig
+    ethercat_rtdm
+    tinyxml2
+    atomic
+    )
 else()
-target_link_libraries(motion_control
-PRIVATE 
-Threads::Threads
-ruckig
-tinyxml2
-atomic
-remoteApi
-#fakeethercat
-)
+    if(simulation) 
+        target_link_libraries(motion_control
+        PRIVATE 
+        Threads::Threads
+        ruckig
+        tinyxml2
+        atomic
+        remoteApi
+        #fakeethercat
+        )
+    else()
+        target_link_libraries(motion_control
+        PRIVATE 
+        Threads::Threads
+        ruckig
+        tinyxml2
+        atomic
+        #fakeethercat
+       )
+    endif()   
 endif()
 

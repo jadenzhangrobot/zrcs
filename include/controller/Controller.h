@@ -49,6 +49,7 @@ namespace ZrcsHardware {
                         else if (it->controller == "coppeliasim")
                         {
                            #ifndef REALTIME 
+                           #ifdef SIMULATION
                            if (it->axisId==axiss.size()) 
                            {
                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
@@ -59,6 +60,7 @@ namespace ZrcsHardware {
                            {
                               axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
                            }
+                           #endif
                            #endif                      
 
                         }
