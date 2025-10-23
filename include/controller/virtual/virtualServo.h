@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <vector>
+#include <memory_resource>
 
 
 namespace ZrcsHardware 
