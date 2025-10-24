@@ -12,21 +12,20 @@ namespace ZrcsHardware
     class virtualServo : public Servo
     {
     private:
-        int32_t position_;      // 当前位置
-        int32_t lastPosition_;      // 上个周期位置
-        int32_t velocity_;      // 当前速度
-        int32_t lastVelocity_;      // 上个周期速度
-        int32_t acceleration_;  // 当前加速度
-        int32_t torque_;        // 当前扭矩
-        bool powerStatus_;     // 电源状态
+        int32_t position_=0;      // 当前位置
+        int32_t lastPosition_=0;      // 上个周期位置
+        int32_t velocity_=0;      // 当前速度
+        int32_t lastVelocity_=0;      // 上个周期速度
+        int32_t acceleration_=0;  // 当前加速度
+        int32_t torque_=0;        // 当前扭矩
         Cia402Mode mode_;      // 控制模式
         std::pmr::vector<double> positionCommand_;
       
     public:
-        virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), powerStatus_(false), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
-            {
+        virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
+        {
                 
-            }
+        }
         
         virtual ~virtualServo() {}
         
@@ -129,9 +128,7 @@ namespace ZrcsHardware
             // 虚拟实现：紧急停止
             velocity_ = 0.0;
             acceleration_ = 0.0;
-            powerStatus_ = false;
         }
     };
 }
-
 #endif
