@@ -73,8 +73,9 @@ class ContinuousJog:public zrcsSystem::OutputPlcNode
        }
        void uniformSpeed()
        {     
-            control->axiss[axisId]->setAxisPositionCmd(setCurrentPosition);
             setCurrentPosition=setCurrentPosition+targetVelocity*cycletime*0.001;
+            control->axiss[axisId]->setAxisPositionCmd(setCurrentPosition);
+            
        }
        void decelerate()
        {

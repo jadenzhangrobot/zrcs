@@ -61,17 +61,18 @@ class EthercatMotor:public Servo
 			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ModeOffset],mode);
 			return SERVONOERROR;
 		}
-        MC_SERVO_CODE setPos(int32_t position) override
-        {	  
-              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],position);
+        MC_SERVO_CODE setPos(int32_t pos) override
+        {	  lastPosition_=position_;
+              position_ = pos;
+              EC_WRITE_S32(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][TargetposOffset],pos);
 			  return SERVONOERROR;
         }
         int32_t pos(void) override
         {   	
-			 lastPosition_=position_;		 			 
-             position_= EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
+			 	 			 
+            return   EC_READ_S32(ethercatMaster->DomainRead+ethercatMaster->InputOffset[slaveId][ActualPos]);
 			 
-			 return position_;		
+			 		
         }
 		
         int32_t vel(void) override
