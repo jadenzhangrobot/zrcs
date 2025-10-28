@@ -1,132 +1,89 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(zrcs)
-# Add this near the top of your CMakeLists.txt, after project()
-find_package(Python3 REQUIRED)
+project(zrcs VERSION 1.0.0)
 
-# Add custom command to execute Python scripts
-add_custom_target(run_python_scripts ALL
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tool/config.py
-    # Add more scripts as needed:
-    # COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tool/your_script2.py
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Executing Python scripts from tool folder"
-)
-
-# 添加生成文件的自定义命令到构建过程中
-add_custom_target(generate_file_target DEPENDS generated_file.txt)
-
-#add_compile_definitions(Ros)
 # 设置 C++ 标准为 C++17
 set(CMAKE_CXX_STANDARD 17)
-
-# 强制要求编译器支持 C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-
-# 设置 G++ 编译器路径
-
+# 启用编译命令导出
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# 添加调试编译选项
+
+# 构建选项
 option(realtime "Build realtime programs" OFF)
 option(simulation "Build simulation programs" OFF)
-message("realtime ${realtime}")
 option(test "Build test programs" ON)
-#添加单元测试程序
-if(test)
-  add_subdirectory(example/terminal)
-  add_subdirectory(example/slab)
-endif(test)
- 
-if(simulation)
-    add_definitions(-DSIMULATION)
-endif()
 
-      #编译链接xenomai的库
- if(realtime)
-      add_definitions(-DREALTIME)
-      set(xeno_cflags_params "--alchemy"  "--cflags")
-      execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_cflags_params} OUTPUT_VARIABLE xeno_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+# 显示构建配置
+message(STATUS "Build configuration:")
+message(STATUS "  realtime: ${realtime}")
+message(STATUS "  simulation: ${simulation}")
+message(STATUS "  test: ${test}")
 
-      set(xeno_ldflags_params "--alchemy"  "--ldflags")
-      execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_ldflags_params} OUTPUT_VARIABLE xeno_ldflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+# 包含模块文件
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/contorler.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 
-      set(xeno_g++_params "--cc")
-      execute_process(COMMAND /usr/xenomai/bin/xeno-config ${xeno_g++_params} OUTPUT_VARIABLE xeno_g++)
-      set(CMAKE_C_FLAGS          "${CMAKE_CXX_FLAGS} ${xeno_cflags}")
-      set(CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${xeno_cflags} -fpermissive")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${xeno_ldflags}")
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${xeno_ldflags}")
- endif()
-set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories( 
-   /usr/local/include
-   /usr/include
-   /opt/etherlab/include
-   ${DEVEL_INCLUDE_DIRS}/include
-   ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
-   ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
-   ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
- )
- find_package(Boost REQUIRED COMPONENTS system)
-# 添加CoppeliaSim的头文件
-    if(WIN32)
-        include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApi")
-        include_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/include")
-        link_directories("C:/Program Files/CoppeliaRobotics/CoppeliaSimEdu/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Windows")
-    elseif(UNIX)
-        include_directories("/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/legacyRemoteApi/remoteApi")
-        include_directories("/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/include")
-        link_directories("/home/zrcs/Downloads/CoppeliaSim_Edu_V4_10_0_rev0_Ubuntu24_04/programming/legacyRemoteApi/remoteApiBindings/lib/lib/Ubuntu20_04")
-    endif()
-# 添加tinyxml2库
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2)
-# 强制 ruckig 生成静态库
-set(BUILD_SHARED_LIBS OFF)
-# 添加ruckig库
-add_subdirectory(${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig)
-find_package(Threads REQUIRED)
-link_directories(/usr/local/lib)
-link_directories(/opt/etherlab/lib/)
+# 设置包含目录
+# set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+# include_directories( 
+#     ${DEVEL_INCLUDE_DIRS}/include
+#     ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
+#     ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
+# )
 
-link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
+# 平台特定的包含目录
+# if(UNIX)
+#     include_directories(
+#         /usr/local/include
+#         /usr/include
+#         /opt/etherlab/include
+#         ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
+#     )
+#     link_directories(/usr/local/lib)
+#     if(ethercat)
+#         link_directories(/opt/etherlab/lib/)
+#     endif()
+# endif()
 
+# 链接目录
+# link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
+
+# 源文件
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
 aux_source_directory(./src SOURCE_FILES)
+
+# 主可执行文件
 add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
 
-# Make your main target depend on the Python scripts
+# 依赖关系
 add_dependencies(motion_control run_python_scripts)
-
- if(realtime)
-    target_link_libraries(motion_control
-    PRIVATE 
-    Threads::Threads
-    ruckig
-    ethercat_rtdm
-    tinyxml2
-    atomic
-    )
-else()
-    if(simulation) 
-        target_link_libraries(motion_control
+target_link_libraries(
+        motion_control
         PRIVATE 
         Threads::Threads
         ruckig
         tinyxml2
-        atomic
-        remoteApi
-        #fakeethercat
-        )
-    else()
-        target_link_libraries(motion_control
-        PRIVATE 
-        Threads::Threads
-        ruckig
-        tinyxml2
-        atomic
-        #fakeethercat
-       )
-    endif()   
+        atomic)
+# 链接库配置
+if(realtime)
 endif()
+if(simulation) 
+        target_link_libraries(motion_control PRIVATE remoteApi)
+endif()
+
+# 测试程序
+if(test)
+    add_subdirectory(example/terminal)
+    add_subdirectory(example/slab)
+endif()
+
+# 安装配置
+install(TARGETS motion_control
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 

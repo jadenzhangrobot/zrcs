@@ -5,6 +5,11 @@
 #include <cfloat>
 #include <cmath>
 
+// 定义数学常量，确保在所有平台上都可用
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 namespace ruckig {
 
