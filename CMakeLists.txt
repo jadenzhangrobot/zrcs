@@ -21,42 +21,19 @@ message(STATUS "  simulation: ${simulation}")
 message(STATUS "  test: ${test}")
 
 # 包含模块文件
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/contorler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# 设置包含目录
-# set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-# include_directories( 
-#     ${DEVEL_INCLUDE_DIRS}/include
-#     ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
-#     ${DEVEL_INCLUDE_DIRS}/3rdParty/ruckig/include
-# )
 
-# 平台特定的包含目录
-# if(UNIX)
-#     include_directories(
-#         /usr/local/include
-#         /usr/include
-#         /opt/etherlab/include
-#         ${DEVEL_INCLUDE_DIRS}/3rdParty/libzmq/include
-#     )
-#     link_directories(/usr/local/lib)
-#     if(ethercat)
-#         link_directories(/opt/etherlab/lib/)
-#     endif()
-# endif()
 
-# 链接目录
-# link_directories(${DEVEL_INCLUDE_DIRS}/build/3rdParty/ruckig)
 
 # 源文件
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/build/message PROTO_FILE)
 aux_source_directory(./src SOURCE_FILES)
 
 # 主可执行文件
-add_executable(motion_control ${SOURCE_FILES} ${PROTO_FILE})
+add_executable(motion_control ${SOURCE_FILES})
 
 # 依赖关系
 add_dependencies(motion_control run_python_scripts)
@@ -69,6 +46,7 @@ target_link_libraries(
         atomic)
 # 链接库配置
 if(realtime)
+
 endif()
 if(simulation) 
         target_link_libraries(motion_control PRIVATE remoteApi)

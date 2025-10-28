@@ -15,7 +15,6 @@ namespace ZrcsHardware
         uint32_t slaveId;
         std::string axisName;
         MC_SERVO_CONTROL_MODE mode;
-        std::string controller;
         uint64_t encoderCountPerUnit;
         double maxVel;
         double minVel;
@@ -48,7 +47,6 @@ namespace ZrcsHardware
                         {
                             axisPara.mode = MC_SERVO_CONTROL_MODE::mcServoControlModeVelocity;
                         }
-                        axisPara.controller =child.second->children["attribute"]->attribute["controller"];
                         axisPara.axisName = child.second->children["machine"]->attribute["value"];                  
                         axisPara.maxVel = std::stod(child.second->children["motion"]->attribute["maxVel"]);
                         axisPara.maxAcc = std::stod( child.second->children["motion"]->attribute["maxAcc"]);

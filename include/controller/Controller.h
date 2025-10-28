@@ -31,8 +31,7 @@ namespace ZrcsHardware {
                   
                   for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
                   {     
-                        if (it->controller == "ethercat") 
-                        {
+                      
                            #ifdef REALTIME 
                            if (it->axisId==axiss.size()) 
                            {
@@ -45,10 +44,9 @@ namespace ZrcsHardware {
                               axiss[it->axisId]->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
                            }                                 
                            #endif
-                        }
-                        else if (it->controller == "coppeliasim")
-                        {
-                           #ifndef REALTIME 
+                        
+                        
+                          
                            #ifdef SIMULATION
                            if (it->axisId==axiss.size()) 
                            {
@@ -61,11 +59,10 @@ namespace ZrcsHardware {
                               axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
                            }
                            #endif
-                           #endif                      
+                                          
 
-                        }
-                        else if (it->controller == "virtual")
-                        {
+                        
+                      
                            if (it->axisId==axiss.size()) 
                            {
                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
@@ -76,11 +73,8 @@ namespace ZrcsHardware {
                            {
                               axiss[it->axisId]->pushServo(new virtualServo(it->slaveId));
                            }            
-                        }
-                        else 
-                        {
-                          throw std::runtime_error("未定义的控制器类型");
-                        }       
+                        
+                       
                   }
           
                  

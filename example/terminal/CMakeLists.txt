@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 project(teminnal)
 
+# 设置CMake策略以处理Boost库查找
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 # 设置C++标准为C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,7 +27,11 @@ set(SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES} )
  
 # 查找Boost库
-find_package(Boost REQUIRED)
+# 优先使用BoostConfig.cmake，如果不可用则回退到FindBoost.cmake
+find_package(Boost QUIET CONFIG)
+if(NOT Boost_FOUND)
+    find_package(Boost REQUIRED)
+endif()
 if(Boost_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} atomic)
