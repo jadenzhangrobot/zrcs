@@ -8,26 +8,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 启用编译命令导出
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# 构建选项
-option(realtime "Build realtime programs" OFF)
-option(simulation "Build simulation programs" OFF)
+set(BUILD_MODE "standard" CACHE STRING "Build configuration mode")
 option(test "Build test programs" ON)
-
-# 显示构建配置
-message(STATUS "Build configuration:")
-message(STATUS "  realtime: ${realtime}")
-message(STATUS "  simulation: ${simulation}")
-message(STATUS "  test: ${test}")
-
 # 包含模块文件
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/contorler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-
-
 
 # 源文件
 aux_source_directory(./src SOURCE_FILES)

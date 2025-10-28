@@ -58,11 +58,8 @@ namespace ZrcsHardware {
                            {
                               axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
                            }
-                           #endif
-                                          
-
-                        
-                      
+                           #endif                                                                
+                          #ifdef STANDARD
                            if (it->axisId==axiss.size()) 
                            {
                              Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
@@ -73,7 +70,7 @@ namespace ZrcsHardware {
                            {
                               axiss[it->axisId]->pushServo(new virtualServo(it->slaveId));
                            }            
-                        
+                        #endif
                        
                   }
           
