@@ -15,7 +15,7 @@
 #include "system/classfactory.h"
 using namespace ruckig;
 
-class JogJ:basefun
+class JogJ::public zrcsSystem::CmdNode
   {
     public:
        

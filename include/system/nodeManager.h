@@ -5,8 +5,8 @@
  * @author: zhangyongjing@oetsky.com
  * @createdate: 2024-01-04
  */
-#ifndef CENTRE_H_
-#define CENTRE_H_
+#ifndef NODEMANAGER_H_
+#define NODEMANAGER_H_
 #include "basenodeInterface.h"
 #include "cmdline.h"
 #include "command/Cmdhead.h"

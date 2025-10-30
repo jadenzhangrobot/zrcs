@@ -29,15 +29,7 @@ public:
   void init() override
   {  
     MotionParam param;
-    param.model = 0;
-    param.x = 0;
-    param.y = 0;
-    param.z = 0;
-    param.a = 0;
-    param.b = 0;
-    param.c = 0;
-    param.velocity = 0;
-    rtProcess->shared_block_->motionParamQueue.pop(param);
+    rtProcess->shared_block_->motionParamQueue.pop(param);    
   }
 
    void run(void) override
