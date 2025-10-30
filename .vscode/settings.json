@@ -4,5 +4,7 @@
     ],
     "files.associations": {
         "mutex": "cpp"
-    }
+    },
+    "cmake.generator": "Ninja",
+    "cmake.mergedCompileCommands": "Ninja"
 }
