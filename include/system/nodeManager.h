@@ -66,11 +66,12 @@ private:
    * @brief 任务调度状态枚举
    */
   enum TaskScheduling {
-    STOP = 0,           // 停止
-    RUN = 1,            // 运行
-    SchedulingError = 2 // 调度错误
+    INIT,
+    STOP,           // 停止
+    RUN,            // 运行
+    ERROR  // 调度错误
   };
-  TaskScheduling taskScheduling = RUN; // 任务调度状态
+  TaskScheduling taskScheduling =INIT; // 任务调度状态
   // 命令解析线程
   std::thread cmdThread;
   std::thread nrtThread;
@@ -88,7 +89,7 @@ private:
   std::pmr::vector<RtCmdNode*> rtCmdNode;
   ZrcsHardware::Controller *control;             // 硬件控制器指针
   RTProcess *rtProcess = nullptr;                // 实时进程指针
- 
+  CmdNode*   cmdNode = nullptr;                     // 一次性命令节点指针
   bool rtFlag = true; // 实时标志
   bool nrtFlag = true;
   // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信
@@ -152,22 +153,42 @@ public:
     {
       control->receiveData();
       switch (taskScheduling) 
-      {
-            Command cmd_;
-            case RUN:                       
+      {     Command cmd_ ;   
+            case INIT:
                 if (rtProcess->shared_block_->commandQueue.pop(cmd_))
                 {
-                  std::string_view cmdName(cmd_.cmd);
-                  auto cmdNode =NodeFactory::getInstance().getNodePtr(cmdName);
+                   std::string_view cmdName(cmd_.cmd);
+                   cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
+                   cmdNode->registered(control,rtProcess);
+                   taskScheduling= RUN;
+                }               
+              break; 
+            case RUN:                              
                   if (cmdNode != nullptr)
-                  {                 
+                  { 
+                    if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
+                    {
+                      cmdNode->setCmdStatus(CmdStatus::INIT);
+                      taskScheduling= INIT;
+                      // 节点已完成或失败，清理资源
+                      cmdNode = nullptr;
+                    } 
+                    else if(cmdNode->getCmdStatus() == CmdStatus::FAILED)
+                    {
+                      // 节点仍在运行，继续执行
+                      cmdNode = nullptr;
+                      taskScheduling= INIT;
+                    }
+                    else 
+                    {
+                      // 节点仍在运行，继续执行
                       cmdNode->execute();
+                    }                  
                   }
-                }
                 break;
             case STOP:
               break;
-            case SchedulingError:
+            case ERROR:
               break;
             default:
               break;

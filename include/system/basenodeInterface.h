@@ -85,60 +85,7 @@ enum class  CmdStatus {
     FAILED         // 执行失败
 };
 
-// 一次性节点：执行一次后退出
-// class CmdNode : public Basenode {
-// public:
-//     std::atomic<CmdStatus> cmdStatus{CmdStatus::START};
-    
-//     virtual ~CmdNode() = default;
-    
-//     // 非实时初始化
-//     virtual void init() = 0;
-//     virtual void run()=0;
-//        // 非实时退出
-//     virtual void exit() = 0;
-//     void execute()override
-//     {
-//           switch (cmdStatus.load())
-//                 {                                   
-//                   case CmdStatus::EXECUTING:
-//                        run();
-//                        break;                   
-//                   default:                    
-//                        break;
-//                 }
-//           nodeCount++;
-//     }
-//   void executeNrt()
-//   {
-//            switch (cmdStatus.load())
-//                 {              
-//                   case CmdStatus::INIT:
-//                         init();
-//                         cmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
-//                         break;                
-//                   case CmdStatus::EXIT:
-//                         exit();
-//                         INFO_PRINT("%s 执行成功\n",nodeName.c_str());
-//                         cmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
-//                         break;                  
-//                   case  CmdStatus::FAILED: 
-//                         INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
-//                     break;                
-//                   default:                                     
-//                     break;
-//                 }
-//   } 
-//     // 获取一次性节点特定状态
-//     CmdStatus getCmdStatus() const noexcept {
-//         return cmdStatus.load(std::memory_order_acquire);
-//     }
-    
-//     // 设置一次性节点状态
-//     void setCmdStatus(CmdStatus status) {
-//         cmdStatus.store(status, std::memory_order_release);
-//     }
-// };
+
 class CmdNode : public Basenode {
 public:
     std::atomic<CmdStatus> cmdStatus{CmdStatus::INIT};
@@ -156,6 +103,7 @@ public:
                 {              
                   case CmdStatus::INIT:
                         init();
+                        INFO_PRINT("%s 初始化成功\n",nodeName.c_str());
                         cmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
                         break;
                   case CmdStatus::EXECUTING:
