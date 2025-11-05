@@ -86,9 +86,62 @@ enum class  CmdStatus {
 };
 
 // 一次性节点：执行一次后退出
+// class CmdNode : public Basenode {
+// public:
+//     std::atomic<CmdStatus> cmdStatus{CmdStatus::START};
+    
+//     virtual ~CmdNode() = default;
+    
+//     // 非实时初始化
+//     virtual void init() = 0;
+//     virtual void run()=0;
+//        // 非实时退出
+//     virtual void exit() = 0;
+//     void execute()override
+//     {
+//           switch (cmdStatus.load())
+//                 {                                   
+//                   case CmdStatus::EXECUTING:
+//                        run();
+//                        break;                   
+//                   default:                    
+//                        break;
+//                 }
+//           nodeCount++;
+//     }
+//   void executeNrt()
+//   {
+//            switch (cmdStatus.load())
+//                 {              
+//                   case CmdStatus::INIT:
+//                         init();
+//                         cmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
+//                         break;                
+//                   case CmdStatus::EXIT:
+//                         exit();
+//                         INFO_PRINT("%s 执行成功\n",nodeName.c_str());
+//                         cmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
+//                         break;                  
+//                   case  CmdStatus::FAILED: 
+//                         INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
+//                     break;                
+//                   default:                                     
+//                     break;
+//                 }
+//   } 
+//     // 获取一次性节点特定状态
+//     CmdStatus getCmdStatus() const noexcept {
+//         return cmdStatus.load(std::memory_order_acquire);
+//     }
+    
+//     // 设置一次性节点状态
+//     void setCmdStatus(CmdStatus status) {
+//         cmdStatus.store(status, std::memory_order_release);
+//     }
+// };
 class CmdNode : public Basenode {
 public:
-    std::atomic<CmdStatus> cmdStatus{CmdStatus::START};
+    std::atomic<CmdStatus> cmdStatus{CmdStatus::INIT};
     
     virtual ~CmdNode() = default;
     
@@ -97,26 +150,17 @@ public:
     virtual void run()=0;
        // 非实时退出
     virtual void exit() = 0;
-    void execute()override
-    {
-          switch (cmdStatus.load())
-                {                                   
-                  case CmdStatus::EXECUTING:
-                       run();
-                       break;                   
-                  default:                    
-                       break;
-                }
-          nodeCount++;
-    }
-  void executeNrt()
+  void execute()
   {
            switch (cmdStatus.load())
                 {              
                   case CmdStatus::INIT:
                         init();
                         cmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
-                        break;                
+                        break;
+                  case CmdStatus::EXECUTING:
+                       run();
+                       break;                
                   case CmdStatus::EXIT:
                         exit();
                         INFO_PRINT("%s 执行成功\n",nodeName.c_str());
@@ -130,6 +174,7 @@ public:
                 }
   } 
     // 获取一次性节点特定状态
+    //     // 获取一次性节点特定状态
     CmdStatus getCmdStatus() const noexcept {
         return cmdStatus.load(std::memory_order_acquire);
     }
@@ -139,62 +184,9 @@ public:
         cmdStatus.store(status, std::memory_order_release);
     }
 };
-class RtCmdNode : public Basenode {
-public:
-    std::atomic<CmdStatus> rtCmdStatus{CmdStatus::START};
-    
-    virtual ~RtCmdNode() = default;
-    
-    // 非实时初始化
-    virtual void init() = 0;
-    virtual void run()=0;
-       // 非实时退出
-    virtual void exit() = 0;
-    void execute()override
-    {
-          switch (rtCmdStatus.load())
-                {                                   
-                  case CmdStatus::EXECUTING:
-                       run();
-                       break;                   
-                  default:                    
-                       break;
-                }
-          nodeCount++;
-    }
-  void executeNrt()
-  {
-           switch (rtCmdStatus.load())
-                {              
-                  case CmdStatus::INIT:
-                        init();
-                        rtCmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
-                        break;                
-                  case CmdStatus::EXIT:
-                        exit();
-                        INFO_PRINT("%s 执行成功\n",nodeName.c_str());
-                        rtCmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
-                        break;                  
-                  case  CmdStatus::FAILED: 
-                        INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
-                    break;                
-                  default:                                     
-                    break;
-                }
-  } 
-    // 获取一次性节点特定状态
-    CmdStatus getRtStatus() const noexcept {
-        return rtCmdStatus.load(std::memory_order_acquire);
-    }
-    
-    // 设置一次性节点状态
-    void setRtStatus(CmdStatus status) {
-        rtCmdStatus.store(status, std::memory_order_release);
-    }
-};
 
 
-enum class PlcNodeStatus 
+enum class NodeStatus 
 {
     CREATED,
     RTINIT,       // 实时初始化中
@@ -204,12 +196,12 @@ enum class PlcNodeStatus
 };
 
 // 持久性节点：持续运行的节点
-class OutputPlcNode : public Basenode {
+class OutputNode : public Basenode {
 public:
-    std::atomic<PlcNodeStatus> plcNodeStatus{PlcNodeStatus::CREATED};
+    std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
     
-    OutputPlcNode() = default;
-    virtual ~OutputPlcNode() = default;
+    OutputNode() = default;
+    virtual ~OutputNode() = default;
     
     // 实时初始化
     virtual void init() = 0;
@@ -220,23 +212,23 @@ public:
 
      void execute()override
     {
-          switch (plcNodeStatus.load())
+          switch (nodeStatus.load())
                 {          
-                  case PlcNodeStatus::CREATED:
-                       setPlcStatus(PlcNodeStatus::RTINIT);
+                  case NodeStatus::CREATED:
+                       setStatus(NodeStatus::RTINIT);
                        break;
-                  case PlcNodeStatus::RTINIT:
+                  case NodeStatus::RTINIT:
                        init();
-                       setPlcStatus(PlcNodeStatus::EXECUTING);                   
+                       setStatus(NodeStatus::EXECUTING);                   
                        break;
-                  case PlcNodeStatus::EXECUTING:
+                  case NodeStatus::EXECUTING:
                        run();
                        break;
-                  case PlcNodeStatus::RTEXIT:
+                  case NodeStatus::RTEXIT:
                        exit();
-                       setPlcStatus(PlcNodeStatus::RTINIT);   
+                       setStatus(NodeStatus::RTINIT);   
                        break;
-                  case PlcNodeStatus::FAILED:
+                  case NodeStatus::FAILED:
                        break;
                   default:                    
                        break;
@@ -244,21 +236,21 @@ public:
            nodeCount++;
     }
     // 获取持久性节点特定状态
-    PlcNodeStatus getPlcStatus() const noexcept {
-        return plcNodeStatus.load(std::memory_order_acquire);
+    NodeStatus getStatus() const noexcept {
+        return nodeStatus.load(std::memory_order_acquire);
     }
     
     // 设置持久性节点状态
-    void setPlcStatus(PlcNodeStatus status) {
-         plcNodeStatus.store(status, std::memory_order_release);
+    void setStatus(NodeStatus status) {
+         nodeStatus.store(status, std::memory_order_release);
     }
 };
-class InputPlcNode : public Basenode {
+class InputNode : public Basenode {
 public:
-    std::atomic<PlcNodeStatus> plcNodeStatus{PlcNodeStatus::CREATED};
+    std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
     
-    InputPlcNode() = default;
-    virtual ~InputPlcNode() = default;
+    InputNode() = default;
+    virtual ~InputNode() = default;
     
     // 实时初始化
     virtual void init() = 0;
@@ -269,23 +261,23 @@ public:
 
      void execute()override
     {
-          switch (plcNodeStatus.load())
+          switch (nodeStatus.load())
                 {          
-                  case PlcNodeStatus::CREATED:
-                       setPlcStatus(PlcNodeStatus::RTINIT);
+                  case NodeStatus::CREATED:
+                       setStatus(NodeStatus::RTINIT);
                        break;
-                  case PlcNodeStatus::RTINIT:
+                  case NodeStatus::RTINIT:
                        init();
-                       setPlcStatus(PlcNodeStatus::EXECUTING);                   
+                       setStatus(NodeStatus::EXECUTING);                   
                        break;
-                  case PlcNodeStatus::EXECUTING:
+                  case NodeStatus::EXECUTING:
                        run();
                        break;
-                  case PlcNodeStatus::RTEXIT:
+                  case NodeStatus::RTEXIT:
                        exit();
-                       setPlcStatus(PlcNodeStatus::RTINIT);   
+                       setStatus(NodeStatus::RTINIT);   
                        break;
-                  case PlcNodeStatus::FAILED:
+                  case NodeStatus::FAILED:
                        break;
                   default:                    
                        break;
@@ -293,13 +285,13 @@ public:
            nodeCount++;
     }
     // 获取持久性节点特定状态
-    PlcNodeStatus getPlcStatus() const noexcept {
-        return plcNodeStatus.load(std::memory_order_acquire);
+    NodeStatus getStatus() const noexcept {
+        return nodeStatus.load(std::memory_order_acquire);
     }
     
     // 设置持久性节点状态
-    void setPlcStatus(PlcNodeStatus status) {
-         plcNodeStatus.store(status, std::memory_order_release);
+    void setStatus(NodeStatus status) {
+         nodeStatus.store(status, std::memory_order_release);
     }
 };
 

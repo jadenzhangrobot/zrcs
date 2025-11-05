@@ -21,10 +21,9 @@ class OutputPlcNode;
  * @brief 节点工厂，使用静态反射实现
  * @tparam BaseType 节点的基类类型
  */
-template <typename BaseType>
 class NodeFactory {
 public:
-    using Creator = std::shared_ptr<BaseType>;
+    using Creator = std::shared_ptr<CmdNode>;
 
     /**
      * @brief 获取工厂单例
@@ -39,7 +38,7 @@ public:
      * @param name 节点类型名
      * @param creator 创建者函数
      */
-    void regist(const std::string& name, Creator creator) {
+    void regist(const std::string_view& name, Creator creator) {
         registry_[name] =creator;
     }
 
@@ -48,7 +47,7 @@ public:
      * @param name 节点类型名
      * @return 节点实例的 unique_ptr，如果类型未注册则返回 nullptr
      */
-    Creator getNodePtr(const std::string& name) {
+    Creator getNodePtr(const std::string_view& name) {
         auto it = registry_.find(name);
         if (it != registry_.end()) {
             return it->second;
@@ -61,7 +60,7 @@ public:
      * @param name 节点类型名
      * @return 如果存在则为 true，否则为 false
      */
-    bool exist(const std::string& name) const {
+    bool exist(const std::string_view& name) const {
         return registry_.find(name) != registry_.end();
     }
 
@@ -71,7 +70,7 @@ private:
     NodeFactory(const NodeFactory&) = delete;
     NodeFactory& operator=(const NodeFactory&) = delete;
 
-    std::unordered_map<std::string, Creator> registry_;
+    std::unordered_map<std::string_view, Creator> registry_;
 };
 
 /**
@@ -79,27 +78,25 @@ private:
  * @tparam T 节点类型
  * @tparam BaseType 节点的基类类型
  */
-template <typename T, typename BaseType>
+template <typename T>
 class RegisterNode {
 public:
-    RegisterNode(const std::string& name) {
-        NodeFactory<BaseType>::getInstance().regist(name,  std::make_shared<T>());
+    RegisterNode(const std::string_view& name) {
+        NodeFactory::getInstance().regist(name,  std::make_shared<T>());
     }
 };
 
 } // namespace zrcsSystem
 
-#define REGISTER_NODE_IMPL(className, baseType, counter) \
-    static zrcsSystem::RegisterNode<className, zrcsSystem::baseType> \
+#define REGISTERCMD(className)\
+    static zrcsSystem::RegisterNode<className> \
     register_##className##_##counter(#className);
 
-#define REGISTER_NODE(className, baseType) \
-    REGISTER_NODE_IMPL(className, baseType, __COUNTER__)
 
-#define REGISTERCMD(className) REGISTER_NODE(className, CmdNode)
-#define REGISTERRTCMD(className) REGISTER_NODE(className, RtCmdNode)
-#define REGISTERINPUTPLCNODE(className) REGISTER_NODE(className, InputPlcNode)
-#define REGISTEROUTPUTPLCNODE(className) REGISTER_NODE(className, OutputPlcNode)
+
+//#define REGISTERRTCMD(className) REGISTER_NODE(className, RtCmdNode)
+//#define REGISTERINPUTNODE(className) REGISTER_NODE(className, InputNode)
+//#define REGISTEROUTPUTNODE(className) REGISTER_NODE(className, OutputNode)
 
 
 #endif // NODE_FACTORY_H_

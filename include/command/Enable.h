@@ -13,21 +13,21 @@
 class Enable:public zrcsSystem::CmdNode
 {
    private:
-      int axisId;
+      int axisId=0;
       
    public:
         Enable()
         {
-           port_input.add<int>("axis", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
+           //port_input.add<int>("axis", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
         }
     
-         void init() override
+       void init() override
        {     
-             if(!cmdParam.empty())
-             {
-                   port_input.parse_check(cmdParam);
-             }
-            axisId=port_input.get<int>("axis");
+            //  if(!cmdParam.empty())
+            //  {
+            //        port_input.parse_check(cmdParam);
+            //  }
+            // axisId=port_input.get<int>("axis");
        }
 
   

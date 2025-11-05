@@ -28,25 +28,25 @@ class JogabsJ:public zrcsSystem::CmdNode
              double acceleration;
              double position;
              double jerk;
-              double velocity_;
+             double velocity_;
              double acceleration_;
              double position_;
              double jerk_;
              JogabsJ()
             {
-              port_input.add<int>("axis", 'm', "axis id", false, 0, cmdline::range(000, 1000));
-              port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-2000.000, 2000.000));
-              port_input.add<double>("velocity", 'v', "servo velocity", false, 10, cmdline::range(-1000.0, 1000.0));
-              port_input.add<double>("acceleration", 'a', "servo acceleration", false, 10, cmdline::range(-1000.0, 1000.0));
-              port_input.add<double>("jerk", 'j', "servo jerk", false, 10, cmdline::range(-1000.0, 1000.0));
+              // port_input.add<int>("axis", 'm', "axis id", false, 0, cmdline::range(000, 1000));
+              // port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-2000.000, 2000.000));
+              // port_input.add<double>("velocity", 'v', "servo velocity", false, 10, cmdline::range(-1000.0, 1000.0));
+              // port_input.add<double>("acceleration", 'a', "servo acceleration", false, 10, cmdline::range(-1000.0, 1000.0));
+              // port_input.add<double>("jerk", 'j', "servo jerk", false, 10, cmdline::range(-1000.0, 1000.0));
             }    
 ;
        void init() override
        {     
-             if(!cmdParam.empty())
-             {
-                   port_input.parse_check(cmdParam);
-             }
+            //  if(!cmdParam.empty())
+            //  {
+            //        port_input.parse_check(cmdParam);
+            //  }
               axisId=port_input.get<int>("axis");       
               position=port_input.get<double>("position"); 
               velocity=port_input.get<double>("velocity");
