@@ -41,8 +41,9 @@ target_link_libraries(motion_control PRIVATE ${MOTION_CONTROL_LIBS})
 
 # 测试程序
 if(test)
-    add_subdirectory(example/terminal)
-    add_subdirectory(example/slab)
+    add_subdirectory(program/terminal)
+    add_subdirectory(program/slab)
+    add_subdirectory(program/plot)
 endif()
 
 # 安装配置

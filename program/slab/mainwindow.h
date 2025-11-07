@@ -13,7 +13,7 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <functional>
-#include "../../include/common/sharedMemory/nrt_process.h"
+#include "common/sharedMemory/nrt_process.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

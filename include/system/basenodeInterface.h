@@ -34,18 +34,6 @@ public:
     Basenode() : control(nullptr) {}
     virtual ~Basenode() = default;
     
-    // 纯虚函数：执行节点逻辑
-    virtual void execute() = 0;
-    
-    // 处理失败状态
-    void failure();
-    
-    // 获取任务状态（线程安全）
-    // virtual BaseNodeStatus GetTaskState() const noexcept {
-    //     return nodeStatus.load(std::memory_order_acquire);
-    // }
-    
-    // 注册控制器
     void registered(ZrcsHardware::Controller* ct , RTProcess *rtProcess_) 
     {
         control = ct;
@@ -59,21 +47,6 @@ public:
     std::uint64_t getNodeCount()
     {
       return nodeCount;
-    }
-    // 推送命令参数
-    void pushCmdArgs(const std::string& cmdargs) {
-        if (cmdParam.empty()) 
-        {
-           cmdParam=cmdargs;
-        }
-    }
-    //移除节点参数
-    void popCmdArgs()
-    {
-      if (!cmdParam.empty()) 
-      {
-          cmdParam.clear();
-      }
     }
 };
 enum class  CmdStatus {
@@ -143,105 +116,105 @@ enum class NodeStatus
     FAILED         // 运行失败
 };
 
-// 持久性节点：持续运行的节点
-class OutputNode : public Basenode {
-public:
-    std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
+// // 持久性节点：持续运行的节点
+// class OutputNode : public Basenode {
+// public:
+//     std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
     
-    OutputNode() = default;
-    virtual ~OutputNode() = default;
+//     OutputNode() = default;
+//     virtual ~OutputNode() = default;
     
-    // 实时初始化
-    virtual void init() = 0;
+//     // 实时初始化
+//     virtual void init() = 0;
     
-    virtual void run()=0;
-    // 实时退出
-    virtual void exit() = 0;
+//     virtual void run()=0;
+//     // 实时退出
+//     virtual void exit() = 0;
 
-     void execute()override
-    {
-          switch (nodeStatus.load())
-                {          
-                  case NodeStatus::CREATED:
-                       setStatus(NodeStatus::RTINIT);
-                       break;
-                  case NodeStatus::RTINIT:
-                       init();
-                       setStatus(NodeStatus::EXECUTING);                   
-                       break;
-                  case NodeStatus::EXECUTING:
-                       run();
-                       break;
-                  case NodeStatus::RTEXIT:
-                       exit();
-                       setStatus(NodeStatus::RTINIT);   
-                       break;
-                  case NodeStatus::FAILED:
-                       break;
-                  default:                    
-                       break;
-                }
-           nodeCount++;
-    }
-    // 获取持久性节点特定状态
-    NodeStatus getStatus() const noexcept {
-        return nodeStatus.load(std::memory_order_acquire);
-    }
+//      void execute()override
+//     {
+//           switch (nodeStatus.load())
+//                 {          
+//                   case NodeStatus::CREATED:
+//                        setStatus(NodeStatus::RTINIT);
+//                        break;
+//                   case NodeStatus::RTINIT:
+//                        init();
+//                        setStatus(NodeStatus::EXECUTING);                   
+//                        break;
+//                   case NodeStatus::EXECUTING:
+//                        run();
+//                        break;
+//                   case NodeStatus::RTEXIT:
+//                        exit();
+//                        setStatus(NodeStatus::RTINIT);   
+//                        break;
+//                   case NodeStatus::FAILED:
+//                        break;
+//                   default:                    
+//                        break;
+//                 }
+//            nodeCount++;
+//     }
+//     // 获取持久性节点特定状态
+//     NodeStatus getStatus() const noexcept {
+//         return nodeStatus.load(std::memory_order_acquire);
+//     }
     
-    // 设置持久性节点状态
-    void setStatus(NodeStatus status) {
-         nodeStatus.store(status, std::memory_order_release);
-    }
-};
-class InputNode : public Basenode {
-public:
-    std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
+//     // 设置持久性节点状态
+//     void setStatus(NodeStatus status) {
+//          nodeStatus.store(status, std::memory_order_release);
+//     }
+// };
+// class InputNode : public Basenode {
+// public:
+//     std::atomic<NodeStatus> nodeStatus{NodeStatus::CREATED};
     
-    InputNode() = default;
-    virtual ~InputNode() = default;
+//     InputNode() = default;
+//     virtual ~InputNode() = default;
     
-    // 实时初始化
-    virtual void init() = 0;
+//     // 实时初始化
+//     virtual void init() = 0;
     
-    virtual void run()=0;
-    // 实时退出
-    virtual void exit() = 0;
+//     virtual void run()=0;
+//     // 实时退出
+//     virtual void exit() = 0;
 
-     void execute()override
-    {
-          switch (nodeStatus.load())
-                {          
-                  case NodeStatus::CREATED:
-                       setStatus(NodeStatus::RTINIT);
-                       break;
-                  case NodeStatus::RTINIT:
-                       init();
-                       setStatus(NodeStatus::EXECUTING);                   
-                       break;
-                  case NodeStatus::EXECUTING:
-                       run();
-                       break;
-                  case NodeStatus::RTEXIT:
-                       exit();
-                       setStatus(NodeStatus::RTINIT);   
-                       break;
-                  case NodeStatus::FAILED:
-                       break;
-                  default:                    
-                       break;
-                }
-           nodeCount++;
-    }
-    // 获取持久性节点特定状态
-    NodeStatus getStatus() const noexcept {
-        return nodeStatus.load(std::memory_order_acquire);
-    }
+//      void execute()override
+//     {
+//           switch (nodeStatus.load())
+//                 {          
+//                   case NodeStatus::CREATED:
+//                        setStatus(NodeStatus::RTINIT);
+//                        break;
+//                   case NodeStatus::RTINIT:
+//                        init();
+//                        setStatus(NodeStatus::EXECUTING);                   
+//                        break;
+//                   case NodeStatus::EXECUTING:
+//                        run();
+//                        break;
+//                   case NodeStatus::RTEXIT:
+//                        exit();
+//                        setStatus(NodeStatus::RTINIT);   
+//                        break;
+//                   case NodeStatus::FAILED:
+//                        break;
+//                   default:                    
+//                        break;
+//                 }
+//            nodeCount++;
+//     }
+//     // 获取持久性节点特定状态
+//     NodeStatus getStatus() const noexcept {
+//         return nodeStatus.load(std::memory_order_acquire);
+//     }
     
-    // 设置持久性节点状态
-    void setStatus(NodeStatus status) {
-         nodeStatus.store(status, std::memory_order_release);
-    }
-};
+//     // 设置持久性节点状态
+//     void setStatus(NodeStatus status) {
+//          nodeStatus.store(status, std::memory_order_release);
+//     }
+// };
 
 
 

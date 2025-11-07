@@ -10,7 +10,7 @@
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
-class DataPub:public zrcsSystem::PersistentNode
+class DataPub:public zrcsSystem::Basenode
 {
    private:
       int motor_id;
@@ -20,18 +20,8 @@ class DataPub:public zrcsSystem::PersistentNode
         {
           
         }
-     
-         void init() override
-         {                 
-              std::cout<<"DataPub init"<<std::endl;
-         }
-        void  run(void) override
-        {    
-              std::cout<<"DataPub run"<<std::endl;            
-        }
-        void exit(void) override
-        {
-            
+        void{
+         
         }
      
 };
