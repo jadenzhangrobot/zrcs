@@ -93,7 +93,7 @@ void MainWindow::onPlusXClicked()
     sam.axisId=0;
     sam.motion=true;
     sam.direction=true;
-    sam.Multiplied=100;
+    nrt_process->shared_block_->Multiplied.store(100);    
     nrt_process->shared_block_->manualPosition.store(sam);
 }
 // 控制按钮槽函数实现
@@ -124,7 +124,7 @@ void MainWindow::onPlusXReleased()
     sam.axisId=0;
     sam.motion=false;
     sam.direction=true;
-    sam.Multiplied=100;
+    nrt_process->shared_block_->Multiplied.store(100);
     nrt_process->shared_block_->manualPosition.store(sam);
     // 发送停止命令
     // TODO: 在这里添加实际的停止命令
@@ -138,7 +138,7 @@ void MainWindow::onMinusXClicked()
     sam.axisId=0;
     sam.direction=false;
     sam.motion=true;
-    sam.Multiplied=100;
+   nrt_process->shared_block_->Multiplied.store(100);
     nrt_process->shared_block_->manualPosition.store(sam);
     // TODO: 在这里添加实际的X轴负向移动控制代码
 }
@@ -167,7 +167,7 @@ void MainWindow::onMinusXReleased()
     sam.axisId=0;
     sam.motion=false;
     sam.direction=false;
-    sam.Multiplied=100;
+    nrt_process->shared_block_->Multiplied.store(100);
     nrt_process->shared_block_->manualPosition.store(sam);
     
     // 停止定时器

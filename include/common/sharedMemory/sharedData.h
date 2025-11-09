@@ -99,7 +99,6 @@ struct SingleAxisMotion
    int axisId;
    bool motion;
    bool direction;
-   uint16_t Multiplied;
 };
 struct Command 
 {
@@ -124,14 +123,15 @@ struct SharedBlock {
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
     SPSCRingBuffer<MotionParam, COMMAND_BUFFER_SIZE> motionParamQueue;
     // RT -> NRT 的状态通道
-    SPSCRingBuffer<std::array<std::array<double, 100>, AXISMAXCOUNT>, 1000> cmdAxisPositionQueue;
+   // SPSCRingBuffer<std::array<std::array<double, 100>, AXISMAXCOUNT>,32> cmdAxisPositionQueue;
 
     SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
     
     systemRegister registers;
-    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, false, false, 0}};
+    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, false, false}};
     //心跳
     std::atomic<uint64_t>  heartBeat; 
+    std::atomic<uint8_t>   Multiplied;
 };
 
 

@@ -112,7 +112,7 @@ class ContinuousJog:public zrcsSystem::CmdNode
       void  run(void) override
       {                        
                   SingleAxisMotion sam = rtProcess->shared_block_->manualPosition.load();
-                  targetVelocity = double(sam.Multiplied)/100.0 * maxVelocity;
+                  targetVelocity = double(rtProcess->shared_block_->Multiplied.load()/100.0) * maxVelocity;
                   if (sam.direction==false) 
                   {
                       targetVelocity=-targetVelocity;

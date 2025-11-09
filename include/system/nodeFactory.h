@@ -81,22 +81,29 @@ private:
 template <typename T>
 class RegisterNode {
 public:
-    RegisterNode(const std::string_view& name) {
+    RegisterNode(const std::string_view& name) 
+    {
         NodeFactory::getInstance().regist(name,  std::make_shared<T>());
     }
 };
+static inline std::vector<OutputNode> outPutNodes;
+static inline std::vector<InputNode> inPutNodes;
+
+template<typename T>
+void registerAndAddOutputNode() {
+    auto node = std::make_shared<T>();
+    outPutNodes.push_back(*node);
+}
 
 } // namespace zrcsSystem
 
 #define REGISTERCMD(className)\
-    static zrcsSystem::RegisterNode<className> \
-    register_##className##_##counter(#className);
+    static zrcsSystem::RegisterNode<className> register##className(#className);
 
+#define REGISTEROUTPUT(className)\
+    static auto register_##className = zrcsSystem::registerAndAddOutputNode<className>();
 
-
-//#define REGISTERRTCMD(className) REGISTER_NODE(className, RtCmdNode)
-//#define REGISTERINPUTNODE(className) REGISTER_NODE(className, InputNode)
-//#define REGISTEROUTPUTNODE(className) REGISTER_NODE(className, OutputNode)
-
+#define REGISTERINPUT(className)\
+    static zrcsSystem::RegisterNode<className> register_##className(#className);
 
 #endif // NODE_FACTORY_H_

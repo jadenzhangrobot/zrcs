@@ -154,11 +154,12 @@ public:
     {
       control->receiveData();
       switch (taskScheduling) 
-      {     Command cmd_ ;   
+      {    
+         Command cmd ;   
             case INIT:
-                if (rtProcess->shared_block_->commandQueue.pop(cmd_))
+                if (rtProcess->shared_block_->commandQueue.pop(cmd))
                 {
-                   std::string_view cmdName(cmd_.cmd);
+                   std::string_view cmdName(cmd.cmd);
                    cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
                    cmdNode->registered(control,rtProcess);
                    taskScheduling= RUN;
@@ -197,123 +198,6 @@ public:
      control->SendData();
     });
   }
-  
-
-
-  /**
-   * @brief 命令解析函数
-   * 启动命令解析线程，持续从命令队列中读取并处理命令
-   */
-  void cmdParsing() 
-  {
-    cmdThread = std::thread([this]() {
-      while (rtFlag) 
-      {
-        Command cmd_;
-        if (rtProcess->shared_block_->commandQueue.pop(cmd_))
-        {
-            std::string cmd(cmd_.cmd);
-            std::string cmdParam = {};
-            std::string cmdName = {};
-            registerObject(cmd, cmdName, cmdParam);
-            // if (NodeFactory<CmdNode>::getInstance().exist(cmdName)) 
-            // {
-            //     auto node =NodeFactory<CmdNode>::getInstance().getNodePtr(cmdName);
-            //     if (node) 
-            //     {
-            //         cmdNode = node.get(); 
-            //         if (cmdNode->getCmdStatus() ==CmdStatus::START)
-            //         {
-            //           cmdNode->registered(control,rtProcess);
-            //           cmdNode->pushCmdArgs(cmdParam);
-            //           cmdNode->setCmdStatus(CmdStatus::INIT);
-            //         } 
-            //         else 
-            //         {
-            //           std::cout << cmdNode->getNodeNAME() << "状态错误"<< std::endl;
-            //           cmdNode = nullptr;
-            //         }
-            //     }
-            // }
-            // else if (NodeFactory<RtCmdNode>::getInstance().exist(cmdName)) 
-            // {
-            //     auto node =NodeFactory<RtCmdNode>::getInstance().getNodePtr(cmdName);
-            //     if (node) 
-            //     {
-            //       node->registered(control,rtProcess);
-            //       rtCmdNode.push_back(node.get());
-            //     }
-            
-            // }
-            // else if (NodeFactory<InputPlcNode>::getInstance().exist(cmdName)) 
-            // {
-            //       auto node =NodeFactory<InputPlcNode>::getInstance().getNodePtr(cmdName);
-            //       if (node) 
-            //       {
-            //         node->registered(control,rtProcess);
-            //         inputPlcNode.push_back(node.get());
-            //       }
-            // }
-            // else if (NodeFactory<OutputPlcNode>::getInstance().exist(cmdName)) 
-            // {
-            //     auto node =NodeFactory<OutputPlcNode>::getInstance().getNodePtr(cmdName);
-            //     if (node) 
-            //     {
-            //       node->registered(control,rtProcess);
-            //       outputPlcNode.push_back(node.get());
-            //     }
-            // }
-            // else if (cmdName=="Stop") 
-            // {
-               
-            // }
-            // else if (cmdName=="Recover")
-            // {
-            
-            // }
-            // else if (cmdName=="RemoveNode") 
-            // {
-            //      if (!cmdParam.empty())
-            //      { 
-            //          const char* WHITESPACE = " \t\n\r\f\v";
-            //          size_t first_char_pos = cmdParam.find_first_not_of(WHITESPACE);
-            //         if (std::string::npos == first_char_pos) {
-            //             // 如果字符串全是空格，则清空
-            //             cmdParam.clear();
-            //         } else {
-            //             cmdParam.erase(0, first_char_pos);
-            //         }
-            //         auto node =NodeFactory<OutputPlcNode>::getInstance().getNodePtr(cmdParam);
-            //         if (node) 
-            //         {                          
-            //                   auto it = std::find(outputPlcNode.begin(), outputPlcNode.end(), node.get());                                
-            //                   if (it != outputPlcNode.end()) 
-            //                   {
-            //                       outputPlcNode.erase(it);
-                                  
-            //                   } 
-            //                   else 
-            //                   {
-            //                       std::cout << "在vector中未找到该指针。" << std::endl;
-            //                   }
-            //         }                  
-            //      }
-            // }
-            // else if (cmdName=="RemoveCmd") 
-            // {
-            //        cmdNode = nullptr;
-            // }
-            // else
-            // {
-            //     std::cout << "指令不存在" << std::endl;
-            // }
-          
-         
-      }      
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }
-    });
-  }
 };
-} // namespace zrcsSystem
+}
 #endif

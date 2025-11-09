@@ -38,7 +38,7 @@ public:
          ipc::shared_memory_object::remove(shm_name_);
         try {
             // 创建共享内存和 SharedBlock 对象
-            shm_ = new ipc::managed_shared_memory(ipc::create_only, shm_name_, 65536);
+            shm_ = new ipc::managed_shared_memory(ipc::create_only, shm_name_, 655360);
             shared_block_ = shm_->find_or_construct<SharedBlock>("SharedBlock")();
             
             std::cout << "[NRT Process] Shared memory created. Starting simulation." << std::endl;
