@@ -10,20 +10,17 @@
 #include "system/nodeFactory.h"
 #include <array>
 #include <iostream>
-class DataPub:public zrcsSystem::OutputNode
+class DataPub:public zrcsSystem::InputNode
 {
    public:
         void execute() override
         {
             std::array<double, 100> AxisPositon;
-            for(int i;  control->axiss.size(); i++)
+            for(int i=0; i< control->axiss.size(); i++)
             {
                 AxisPositon[i] = control->axiss[i]->actualposCmd();  
             }
             rtProcess->shared_block_->cmdAxisPositionQueue.push(AxisPositon);           
-        }
-        
-       
-     
+        }    
 };
-REGISTEROUTPUT(DataPub);
+REGISTERINPUT(DataPub);

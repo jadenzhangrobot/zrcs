@@ -14,6 +14,7 @@
 #include "system/zrcs.h"
 #include <unistd.h>
 #include <vector>
+#include "command/Cmdhead.h"
 int main(int argc, char **argv) 
 {
  
@@ -29,8 +30,8 @@ int main(int argc, char **argv)
 #endif
     try 
     {
-      zrcsSystem::Zrcs zs;
-      zs.run();
+      zrcsSystem::NodeManger nodeManger;
+      nodeManger.run();
       while(true)
       {
         std::this_thread::sleep_for(std::chrono::seconds(1));

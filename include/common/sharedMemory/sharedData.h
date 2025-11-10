@@ -76,14 +76,7 @@ public:
     }
 };
 
-
-// 从 RT -> NRT 的状态结构
-struct Status {
-    double current_position{0.0};
-    bool is_moving{false};
-    uint64_t update_count{0}; // 状态更新计数，方便观察
-};
-struct MotionParam {
+struct motionParam {
     double model;
     double x;
     double y;
@@ -93,43 +86,41 @@ struct MotionParam {
     double c;
     double velocity;
 };
-
-struct SingleAxisMotion
+struct jogabsj
 {
-   int axisId;
-   bool motion;
-   bool direction;
+    uint8_t axisId;
+    double position;
+};
+
+struct singleAxisContinueMotion
+{
+   uint8_t  axisId=0;
+   bool motion=false;
+   bool direction=true;
+};
+struct EnableAxis
+{
+    uint8_t axisId=0;
+};
+struct DisableAxis
+{
+    uint8_t axisId=0;
 };
 struct Command 
 {
     char cmd[100];
-    uint8_t axisId;
-    double targetPosition;
-    uint8_t Multiplied;
+    motionParam motionParam_;
+    jogabsj jogabsj_;
+    singleAxisContinueMotion singleAxisContinueMotion_;
+    EnableAxis enableAxis_;
+    DisableAxis disableAxis_;
 };
 
-struct systemRegister 
-{
-    // 使用数组存储所有布尔寄存器，通过索引访问
-    std::array<std::atomic<bool>, OUTPUTIOSIZE> outputIo{}; //支持32个布尔寄存器   
-    // 保留原有的状态寄存器数组
-    std::array<std::atomic<bool>, INPUTIOSIZE> inputIo{}; //系统状态寄存器
-    // std::atomic<std::array<uint64_t, 100>> R;
-    // std::atomic<std::array<uint64_t, 100>> C;
-    // std::atomic<std::array<uint64_t, 100>> C;
-};
 struct SharedBlock {
     // NRT -> RT 的命令通道
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
-    SPSCRingBuffer<MotionParam, COMMAND_BUFFER_SIZE> motionParamQueue;
     // RT -> NRT 的状态通道
     SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> cmdAxisPositionQueue;
-
-    SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
-    
-    systemRegister registers;
-    std::atomic<SingleAxisMotion> manualPosition{SingleAxisMotion{0, false, false}};
-    //心跳
     std::atomic<uint64_t>  heartBeat; 
     std::atomic<uint8_t>   Multiplied;
 };

@@ -9,7 +9,6 @@
 #define NODEMANAGER_H_
 #include "basenodeInterface.h"
 #include "cmdline.h"
-#include "command/Cmdhead.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
@@ -20,42 +19,8 @@
 #include <thread>
 #include <vector>
 #include <queue>
-
 namespace zrcsSystem {
-/**
- * @brief 命令队列类，用于线程安全的命令传递
- */
-class CmdQueue {
-  std::mutex cmdMutex;              // 命令队列互斥锁
-  std::queue<std::string> cmdQueue; // 命令队列
-public:
-  /**
-   * @brief 构造函数
-   */
-  CmdQueue() {}
-  /**
-   * @brief 写入命令到队列
-   * @param cmd 要写入的命令字符串
-   */
-  void writeCmd(std::string &cmd) {
-    std::lock_guard<std::mutex> lock(cmdMutex);
-    cmdQueue.push(cmd);
-  }
-  /**
-   * @brief 从队列读取命令
-   * @param cmd 输出参数，读取到的命令
-   * @return 0表示成功，-1表示队列为空
-   */
-  int cmdRead(std::string &cmd) {
-    if (!cmdQueue.empty()) {
-      std::lock_guard<std::mutex> lock(cmdMutex);
-      cmd = cmdQueue.front();
-      cmdQueue.pop();
-      return 0;
-    }
-    return -1;
-  }
-};
+
 /**
  * @brief 系统中心控制类，负责整个系统的任务调度和节点管理
  */
@@ -72,42 +37,14 @@ private:
     ERROR  // 调度错误
   };
   TaskScheduling taskScheduling =INIT; // 任务调度状态
-  // 命令解析线程
-  std::thread cmdThread;
-  std::thread nrtThread;
-
-  // 命令销毁线程
-  std::thread exit_cmd;
-
-  // 命令对象指针容器
-  std::pmr::monotonic_buffer_resource outputPlcNodePmr; // 实时节点内存资源
-  std::pmr::monotonic_buffer_resource inputPlcNodePmr; // 实时节点内存资源
-  std::pmr::monotonic_buffer_resource rtCmdNodePmr; // 实时节点内存资源
-
-  std::pmr::vector<OutputPlcNode*> outputPlcNode;       // 实时节点容器
-  std::pmr::vector<InputPlcNode*> inputPlcNode;
-  std::pmr::vector<RtCmdNode*> rtCmdNode;
+  // 命令对象指针容
   ZrcsHardware::Controller *control;             // 硬件控制器指针
   RTProcess *rtProcess = nullptr;                // 实时进程指针
-  CmdNode*   cmdNode = nullptr;                     // 一次性命令节点指针
-  OutputNode *outputNode = nullptr;
-  InputNode *inputNode = nullptr;
-  bool rtFlag = true; // 实时标志
-  bool nrtFlag = true;
-  // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信
+  CmdNode*   cmdNode = nullptr;      
 public:
-  // 命令队列
-  CmdQueue *cmdQueue;
 
-  /**
-   * @brief 构造函数
-   * @param rtProcess_ 实时进程指针
-   */
-  NodeManger(RTProcess *rtProcess_) : outputPlcNode(&outputPlcNodePmr),inputPlcNode(&inputPlcNodePmr),rtCmdNode(&rtCmdNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) 
+  NodeManger() : rtProcess(new RTProcess("rtMotion")), control(new ZrcsHardware::Controller())
   {
-    rtProcess = rtProcess_;
-    NodeFactory::getInstance().control=control;
-    NodeFactory::getInstance().rtProcess=rtProcess;
   }
 
   // 禁用拷贝构造函数
@@ -120,61 +57,51 @@ public:
    */
   ~NodeManger(void) 
   {
-
     delete control;
-    delete cmdQueue;
-    cmdThread.join();
-    nrtThread.join();
+    delete rtProcess;
   }
   
 
-  /**
-   * @brief 注册对象到系统中
-   * @param cmd 命令字符串，包含类名和参数
-   */
-  void registerObject(std::string cmd, std::string &cmdName,std::string &cmdParam) 
-  {
-    if (cmd.npos != cmd.find_first_of(" --")) 
-    {
-      cmdName = cmd.substr(0, cmd.find_first_of(" --"));
-
-      cmdParam = cmd.substr(cmd.find_first_of(" --"));
-    } 
-    else
-    {
-      cmdName = cmd;
-    }
-   
-  }
+  
   /**
    * @brief 运行系统主循环
    * 创建实时任务并启动任务调度器
    */
   void run() 
   {
+    rtProcess->initialize();
+    for (auto &node : NodeFactory::getInstance().inPutNodes)
+      {
+        node->registered(control,rtProcess);
+      }
+      for (auto &node : NodeFactory::getInstance().outPutNodes)
+      {
+        node->registered(control,rtProcess);
+      }
+
     control->rtos_->rtos_task_create();
     // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() 
     {
-      control->receiveData();
+        control->receiveData();
+        for (auto &node : NodeFactory::getInstance().inPutNodes)
+        {
+          node->execute();
+        }
       switch (taskScheduling) 
-      {    
-         Command cmd ;   
+      {   
+         
+            Command cmd ;   
             case INIT:
                 if (rtProcess->shared_block_->commandQueue.pop(cmd))
                 {
                    std::string_view cmdName(cmd.cmd);
                    cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
+                   cmdNode->registered(control,rtProcess,&cmd);
                    taskScheduling= RUN;
                 }               
               break; 
-            case RUN: 
-               
-                  for (auto &node : NodeFactory::getInstance().outPutNodes)
-                  {
-                    node->execute();
-                  }
-                                       
+            case RUN:                         
                   if (cmdNode != nullptr)
                   { 
                     if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
@@ -196,10 +123,7 @@ public:
                       cmdNode->execute();
                     }                  
                   }
-                  for (auto &node : NodeFactory::getInstance().inPutNodes)
-                  {
-                    node->execute();
-                  }
+                
                 break;
             case STOP:
               break;
@@ -207,6 +131,11 @@ public:
               break;
             default:
               break;
+
+      }
+      for (auto &node : NodeFactory::getInstance().outPutNodes)
+      {
+        node->execute();
       }
      control->SendData();
     });

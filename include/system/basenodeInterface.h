@@ -8,14 +8,13 @@
 #ifndef BASENODE_INTERFACE_H_
 #define BASENODE_INTERFACE_H_
 #include "cmdline.h"
+#include "common/sharedMemory/rtProcess.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include <atomic>
 #include <cstdint>
 #include <string>
 #include "common/rtLog.h" 
-#include "common/sharedMemory/rtProcess.h"
-#include "common/sharedMemory/rtProcess.h"
 #include "common/config/parameter.h"
 
 namespace zrcsSystem {
@@ -31,9 +30,19 @@ public:
     std::string cmdParam={};
     ZrcsHardware::Controller* control;
     RTProcess *rtProcess;
-    Basenode() : control() {}
+    Command* command=nullptr;
+
+    Basenode() : control(nullptr), rtProcess(nullptr)
+    {
+    }
     virtual ~Basenode() = default;
     
+    void registered(ZrcsHardware::Controller* ct , RTProcess *rtProcess_,Command* command_) 
+    {
+        control = ct;
+        rtProcess=rtProcess_;
+        command=command_;
+    }
     void registered(ZrcsHardware::Controller* ct , RTProcess *rtProcess_) 
     {
         control = ct;

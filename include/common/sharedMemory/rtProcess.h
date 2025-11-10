@@ -9,15 +9,7 @@ namespace ipc = boost::interprocess;
 class RTProcess {
 private:
     const char* shm_name_;
-    ipc::managed_shared_memory* shm_;
-    
-    bool initialized_;
-    bool running_;
-    
-    // 运动控制状态
-    Status rt_status_;
-    double target_position_;
-    uint64_t status_updates_;
+    ipc::managed_shared_memory* shm_;  
 
 public:
     SharedBlock* shared_block_;
@@ -42,7 +34,6 @@ public:
             shared_block_ = shm_->find_or_construct<SharedBlock>("SharedBlock")();
             
             std::cout << "[NRT Process] Shared memory created. Starting simulation." << std::endl;
-            initialized_ = true;
             return true;
         } catch (const ipc::interprocess_exception& e) {
             std::cerr << "[NRT Process] Initialization error: " << e.what() << std::endl;

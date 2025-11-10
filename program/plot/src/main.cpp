@@ -21,13 +21,16 @@ int main()
     double timestamp = 0.0;
     while (true) {   
         nlohmann::json j;
-        
-        j["axis-1"] = radius * sin(phi) * cos(theta);
-        j["axis-2"] = radius * sin(phi) * sin(theta);
-        j["axis-3"] = radius * cos(phi);
-        j["timestamp"] = timestamp;
-        timestamp += 0.001;
-        zs.send(j);
+        std::array<double, 100> axisPosition;
+        while(nrt_process.shared_block_->cmdAxisPositionQueue.pop(axisPosition))
+        {
+            j["axis-1"] = axisPosition[0];
+            j["axis-2"] = axisPosition[1];
+            j["axis-3"] = axisPosition[2];
+            j["timestamp"] = timestamp;
+            timestamp += 0.001;
+            zs.send(j);
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 

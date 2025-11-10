@@ -157,7 +157,7 @@ public:
       return false;
     }
 
-    if (config_->maxVel <vel_cmd&&vel_cmd>config_->minVel)
+    if (config_->maxVel <vel_cmd&&vel_cmd>-config_->maxVel)
     {
       axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
       return false;
@@ -386,6 +386,18 @@ public:
     return static_cast<MC_ERROR_CODE>(0x60 + error_id);
   }
 
+  double getMaxVelocity()
+  {
+    return config_->maxVel;
+  }
+  double getMaxAcceleration()
+  {
+    return config_->maxAcc;
+  }
+  double getMaxJerk()
+  {
+    return config_->maxJerk;
+  }
   
 };
 class Io {

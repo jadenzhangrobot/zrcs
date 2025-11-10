@@ -24,45 +24,26 @@ class JogabsJ:public zrcsSystem::CmdNode
              InputParameter<1> input;
              OutputParameter<1> output;            
              int axisId;
-             double velocity;
-             double acceleration;
              double position;
-             double jerk;
-             double velocity_;
-             double acceleration_;
-             double position_;
-             double jerk_;
-             JogabsJ()
+            JogabsJ()
             {
-              // port_input.add<int>("axis", 'm', "axis id", false, 0, cmdline::range(000, 1000));
-              // port_input.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-2000.000, 2000.000));
-              // port_input.add<double>("velocity", 'v', "servo velocity", false, 10, cmdline::range(-1000.0, 1000.0));
-              // port_input.add<double>("acceleration", 'a', "servo acceleration", false, 10, cmdline::range(-1000.0, 1000.0));
-              // port_input.add<double>("jerk", 'j', "servo jerk", false, 10, cmdline::range(-1000.0, 1000.0));
+               
             }    
 ;
        void init() override
-       {     
-            //  if(!cmdParam.empty())
-            //  {
-            //        port_input.parse_check(cmdParam);
-            //  }
+       { 
+              rtProcess->shared_block_->heartBeat.fetch_add(1,std::memory_order_relaxed);
               axisId=port_input.get<int>("axis");       
-              position=port_input.get<double>("position"); 
-              velocity=port_input.get<double>("velocity");
-              acceleration= port_input.get<double>("acceleration");
-              jerk=port_input.get<double>("jerk");
-             
-
+              position=port_input.get<double>("position");
               input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               
               input.target_position[0]=position;
               input.target_velocity[0] =0;
               input.target_acceleration[0] =0;
-              input.max_velocity[0] =velocity;
-              input.max_acceleration[0] =acceleration;
-              input.max_jerk[0] =jerk;
+              input.max_velocity[0] =control->axiss[axisId]->getMaxVelocity();
+              input.max_acceleration[0] =control->axiss[axisId]->getMaxAcceleration();
+              input.max_jerk[0] =control->axiss[axisId]->getMaxJerk();
        }
 
   

@@ -17,9 +17,8 @@ namespace ZrcsHardware
         MC_SERVO_CONTROL_MODE mode;
         uint64_t encoderCountPerUnit;
         double maxVel;
-        double minVel;
         double maxAcc;
-        double minAcc;
+        double maxJerk;
         double posPositiveLimit;
         double posNegativeLimit;
         double maxPosDiff;
@@ -50,6 +49,7 @@ namespace ZrcsHardware
                         axisPara.axisName = child.second->children["machine"]->attribute["value"];                  
                         axisPara.maxVel = std::stod(child.second->children["motion"]->attribute["maxVel"]);
                         axisPara.maxAcc = std::stod( child.second->children["motion"]->attribute["maxAcc"]);
+                        axisPara.maxJerk = std::stod( child.second->children["motion"]->attribute["maxJerk"]);
                         axisPara.posPositiveLimit = std::stod( child.second->children["motion"]->attribute["maxPos"]);
                         axisPara.posNegativeLimit = std::stod( child.second->children["motion"]->attribute["minPos"]);
                         axisPara.maxPosDiff = std::stod( child.second->children["motion"]->attribute["maxPosDiff"]);

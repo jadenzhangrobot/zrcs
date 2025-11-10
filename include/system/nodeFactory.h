@@ -12,10 +12,7 @@ namespace zrcsSystem {
 
 // 前向声明
 class Basenode;
-class RtCmdNode;
 class CmdNode;
-class InputPlcNode;
-class OutputPlcNode;
 
 /**
  * @brief 节点工厂，使用静态反射实现
@@ -28,8 +25,8 @@ public:
     using Input = std::shared_ptr<InputNode>;
     std::vector<Output> outPutNodes;
     std::vector<Input> inPutNodes;
-    ZrcsHardware::Controller *control;
-    RTProcess *rtProcess;  
+    ZrcsHardware::Controller *control=nullptr;
+    RTProcess *rtProcess=nullptr;  
 
     /**
      * @brief 获取工厂单例
@@ -97,12 +94,9 @@ public:
     RegisterNode(const std::string_view& name) 
     {
         auto node = std::make_shared<T>();
-        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
         zrcsSystem::NodeFactory::getInstance().regist(name,  node);
     }
 };
-static inline std::vector<OutputNode> outPutNodes;
-static inline std::vector<InputNode> inPutNodes;
 
 template<typename T>
 class registerAndAddOutputNode {
@@ -110,7 +104,6 @@ public:
     registerAndAddOutputNode() {
 
         auto node = std::make_shared<T>();
-        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
         zrcsSystem::NodeFactory::getInstance().addOutputNode(node);
     }
 };
@@ -119,7 +112,6 @@ class registerAndAddInputNode {
 public:
     registerAndAddInputNode() {
         auto node = std::make_shared<T>();
-        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
         zrcsSystem::NodeFactory::getInstance().addInputNode(node);
     }
 };
