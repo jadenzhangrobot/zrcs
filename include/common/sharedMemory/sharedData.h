@@ -123,7 +123,7 @@ struct SharedBlock {
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
     SPSCRingBuffer<MotionParam, COMMAND_BUFFER_SIZE> motionParamQueue;
     // RT -> NRT 的状态通道
-   // SPSCRingBuffer<std::array<std::array<double, 100>, AXISMAXCOUNT>,32> cmdAxisPositionQueue;
+    SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> cmdAxisPositionQueue;
 
     SPSCRingBuffer<SingleAxisMotion, STATUS_BUFFER_SIZE> manualPositionQueue;
     

@@ -8,6 +8,12 @@
  #include "Disable.h"
  #include "Reset.h"
 
+
+
+
+ 
+ #include "cmdAxisPosition.h"
+
 // #include "JogJ.h"
 // #include "Stop.h"
  // #include "Show.h"

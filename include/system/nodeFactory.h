@@ -24,6 +24,12 @@ class OutputPlcNode;
 class NodeFactory {
 public:
     using Creator = std::shared_ptr<CmdNode>;
+    using Output = std::shared_ptr<OutputNode>;
+    using Input = std::shared_ptr<InputNode>;
+    std::vector<Output> outPutNodes;
+    std::vector<Input> inPutNodes;
+    ZrcsHardware::Controller *control;
+    RTProcess *rtProcess;  
 
     /**
      * @brief 获取工厂单例
@@ -41,7 +47,13 @@ public:
     void regist(const std::string_view& name, Creator creator) {
         registry_[name] =creator;
     }
-
+   
+    void addOutputNode(Output node) {
+        outPutNodes.push_back(node);
+    }
+    void addInputNode(Input node) {
+        inPutNodes.push_back(node);
+    }
     /**
      * @brief 创建节点实例
      * @param name 节点类型名
@@ -64,12 +76,13 @@ public:
         return registry_.find(name) != registry_.end();
     }
 
+
+
 private:
     NodeFactory() = default;
     ~NodeFactory() = default;
     NodeFactory(const NodeFactory&) = delete;
     NodeFactory& operator=(const NodeFactory&) = delete;
-
     std::unordered_map<std::string_view, Creator> registry_;
 };
 
@@ -83,17 +96,33 @@ class RegisterNode {
 public:
     RegisterNode(const std::string_view& name) 
     {
-        NodeFactory::getInstance().regist(name,  std::make_shared<T>());
+        auto node = std::make_shared<T>();
+        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
+        zrcsSystem::NodeFactory::getInstance().regist(name,  node);
     }
 };
 static inline std::vector<OutputNode> outPutNodes;
 static inline std::vector<InputNode> inPutNodes;
 
 template<typename T>
-void registerAndAddOutputNode() {
-    auto node = std::make_shared<T>();
-    outPutNodes.push_back(*node);
-}
+class registerAndAddOutputNode {
+public:
+    registerAndAddOutputNode() {
+
+        auto node = std::make_shared<T>();
+        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
+        zrcsSystem::NodeFactory::getInstance().addOutputNode(node);
+    }
+};
+template<typename T>
+class registerAndAddInputNode {
+public:
+    registerAndAddInputNode() {
+        auto node = std::make_shared<T>();
+        node->registered(NodeFactory::getInstance().control, NodeFactory::getInstance().rtProcess);
+        zrcsSystem::NodeFactory::getInstance().addInputNode(node);
+    }
+};
 
 } // namespace zrcsSystem
 
@@ -101,9 +130,10 @@ void registerAndAddOutputNode() {
     static zrcsSystem::RegisterNode<className> register##className(#className);
 
 #define REGISTEROUTPUT(className)\
-    static auto register_##className = zrcsSystem::registerAndAddOutputNode<className>();
+    static zrcsSystem::registerAndAddOutputNode<className> register_##className;
 
 #define REGISTERINPUT(className)\
-    static zrcsSystem::RegisterNode<className> register_##className(#className);
+    static zrcsSystem::registerAndAddInputNode<className> register_##className;
+   
 
 #endif // NODE_FACTORY_H_

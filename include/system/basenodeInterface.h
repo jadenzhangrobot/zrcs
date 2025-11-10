@@ -31,7 +31,7 @@ public:
     std::string cmdParam={};
     ZrcsHardware::Controller* control;
     RTProcess *rtProcess;
-    Basenode() : control(nullptr) {}
+    Basenode() : control() {}
     virtual ~Basenode() = default;
     
     void registered(ZrcsHardware::Controller* ct , RTProcess *rtProcess_) 

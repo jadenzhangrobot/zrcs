@@ -15,19 +15,19 @@ int main()
         std::cerr << "Failed to initialize NRT process" << std::endl;
         return 1;
     }
+    ZmqServer zs;
     //  Prepare our context and publisher
    
     double timestamp = 0.0;
     while (true) {   
         nlohmann::json j;
-        double radius = 1.0;
-        double theta = timestamp * 2.0; // 经度角
-        double phi = timestamp * 1.0;  // 纬度角
-        j["x"] = radius * sin(phi) * cos(theta);
-        j["y"] = radius * sin(phi) * sin(theta);
-        j["z"] = radius * cos(phi);
+        
+        j["axis-1"] = radius * sin(phi) * cos(theta);
+        j["axis-2"] = radius * sin(phi) * sin(theta);
+        j["axis-3"] = radius * cos(phi);
         j["timestamp"] = timestamp;
-        timestamp += 0.1;
+        timestamp += 0.001;
+        zs.send(j);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 

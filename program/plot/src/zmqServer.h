@@ -14,7 +14,7 @@ public:
             throw std::runtime_error(std::string("ZMQ 初始化失败: ") + e.what());
         }
     }
-    ~ZmqServer();
+    ~ZmqServer(){};
     void send(const nlohmann::json& message)
     {
         try {

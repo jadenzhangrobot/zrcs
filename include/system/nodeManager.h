@@ -90,6 +90,8 @@ private:
   ZrcsHardware::Controller *control;             // 硬件控制器指针
   RTProcess *rtProcess = nullptr;                // 实时进程指针
   CmdNode*   cmdNode = nullptr;                     // 一次性命令节点指针
+  OutputNode *outputNode = nullptr;
+  InputNode *inputNode = nullptr;
   bool rtFlag = true; // 实时标志
   bool nrtFlag = true;
   // NodeCommunicaion<Motor> motorFeedback; // 电机反馈通信
@@ -104,6 +106,8 @@ public:
   NodeManger(RTProcess *rtProcess_) : outputPlcNode(&outputPlcNodePmr),inputPlcNode(&inputPlcNodePmr),rtCmdNode(&rtCmdNodePmr),control(new ZrcsHardware::Controller()), cmdQueue(new CmdQueue()) 
   {
     rtProcess = rtProcess_;
+    NodeFactory::getInstance().control=control;
+    NodeFactory::getInstance().rtProcess=rtProcess;
   }
 
   // 禁用拷贝构造函数
@@ -161,11 +165,16 @@ public:
                 {
                    std::string_view cmdName(cmd.cmd);
                    cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
-                   cmdNode->registered(control,rtProcess);
                    taskScheduling= RUN;
                 }               
               break; 
-            case RUN:                              
+            case RUN: 
+               
+                  for (auto &node : NodeFactory::getInstance().outPutNodes)
+                  {
+                    node->execute();
+                  }
+                                       
                   if (cmdNode != nullptr)
                   { 
                     if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
@@ -186,6 +195,10 @@ public:
                       // 节点仍在运行，继续执行
                       cmdNode->execute();
                     }                  
+                  }
+                  for (auto &node : NodeFactory::getInstance().inPutNodes)
+                  {
+                    node->execute();
                   }
                 break;
             case STOP:
