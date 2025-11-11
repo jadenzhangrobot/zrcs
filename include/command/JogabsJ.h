@@ -32,9 +32,9 @@ class JogabsJ:public zrcsSystem::CmdNode
 ;
        void init() override
        { 
-              rtProcess->shared_block_->heartBeat.fetch_add(1,std::memory_order_relaxed);
-              axisId=port_input.get<int>("axis");       
-              position=port_input.get<double>("position");
+             
+              axisId=command->axisId;       
+              position=command->jogabsj_.position;
               input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               

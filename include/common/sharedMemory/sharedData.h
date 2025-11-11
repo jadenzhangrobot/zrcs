@@ -88,32 +88,21 @@ struct motionParam {
 };
 struct jogabsj
 {
-    uint8_t axisId;
     double position;
 };
 
 struct singleAxisContinueMotion
 {
-   uint8_t  axisId=0;
    bool motion=false;
    bool direction=true;
-};
-struct EnableAxis
-{
-    uint8_t axisId=0;
-};
-struct DisableAxis
-{
-    uint8_t axisId=0;
 };
 struct Command 
 {
     char cmd[100];
+    uint8_t axisId=0;
     motionParam motionParam_;
     jogabsj jogabsj_;
     singleAxisContinueMotion singleAxisContinueMotion_;
-    EnableAxis enableAxis_;
-    DisableAxis disableAxis_;
 };
 
 struct SharedBlock {

@@ -18,16 +18,13 @@ class Reset:public zrcsSystem::CmdNode
    public:
         Reset()
         {
-           port_input.add<int>("axis", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
+                                  
         }
     
-         void init() override
-       {     
-             if(!cmdParam.empty())
-             {
-                   port_input.parse_check(cmdParam);
-             }
-            axisId=port_input.get<int>("axis");
+       void init() override
+       {    
+
+            axisId=command->axisId;
        }
 
   

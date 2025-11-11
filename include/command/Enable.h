@@ -23,11 +23,7 @@ class Enable:public zrcsSystem::CmdNode
     
        void init() override
        {     
-            //  if(!cmdParam.empty())
-            //  {
-            //        port_input.parse_check(cmdParam);
-            //  }
-            // axisId=port_input.get<int>("axis");
+          axisId=command->axisId;
        }
 
   
@@ -42,19 +38,15 @@ class Enable:public zrcsSystem::CmdNode
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
                                  else 
-                                 {
-                                  
+                                 {                                 
                                   setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                                  }
                       }
                      else
-                        {
-                              setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-                        }                        
-       }
-                     
-        
-      
+                     {
+                           setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                     }                        
+       }     
       void exit(void) override
       {
             

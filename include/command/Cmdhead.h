@@ -1,6 +1,6 @@
 #ifndef CMDHEAD_H
 #define CMDHEAD_H
-#include "ContinuousJog.h"
+//#include "ContinuousJog.h"
 #include "JogabsJ.h"
 // #include "Movehome.h" 
  #include "Enable.h"

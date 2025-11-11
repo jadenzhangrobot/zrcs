@@ -14,13 +14,15 @@
 class DataPub:public zrcsSystem::InputNode
 {
    public:
+        std::array<double, 100> AxisPositon;
         void execute() override
         {
             std::array<double, 100> AxisPositon;
             for(int i=0; i< control->axiss.size(); i++)
             {
-                AxisPositon[i] = control->axiss[i]->actualposCmd();  
+                AxisPositon[i] = control->axiss[i]->actualPos();  
             }
+               AxisPositon[1] = control->axiss[0]->actualposCmd(); 
             rtStatusQueue.push(AxisPositon);           
         }    
 };
