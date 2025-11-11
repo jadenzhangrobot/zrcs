@@ -11,10 +11,11 @@
 #include <array>
 #include <ruckig/ruckig.hpp>
 #include <vector>
+#include "system/nodeCommunication.h"
 #include "system/nodeFactory.h"
 
 using namespace ruckig;
-class ContinuousJog:public zrcsSystem::CmdNode
+class ContinuousJog:public zrcsSystem::OutputNode
   {
 
              public:
@@ -35,9 +36,9 @@ class ContinuousJog:public zrcsSystem::CmdNode
        void init() override
        {     
             // 从共享内存中加载手动位置数据
-              input.control_interface = ruckig::ControlInterface::Velocity;        
-              input.max_acceleration[0] =20;
-              input.max_jerk[0] =250;
+              input.control_interface = ruckig::ControlInterface::Velocity;                     
+              input.max_acceleration[0] =control->axiss[axisId]->getMaxAcceleration();
+              input.max_jerk[0] =control->axiss[axisId]->getMaxJerk();
        }
        void accelerate()
        {     
@@ -111,30 +112,25 @@ class ContinuousJog:public zrcsSystem::CmdNode
            
       void  run(void) override
       {                        
-                  SingleAxisMotion sam = rtProcess->shared_block_->manualPosition.load();
-                  targetVelocity = double(rtProcess->shared_block_->Multiplied.load()/100.0) * maxVelocity;
-                  if (sam.direction==false) 
+            
+                  targetVelocity = double(rtMultiplied.load()/100.0) * control->axiss[axisId]->getMaxVelocity();
+                  if (rtContinueMotion.load().direction==false) 
                   {
                       targetVelocity=-targetVelocity;
                   }
                 
-                  if (sam.motion==true)                                                               
+                  if (rtContinueMotion.load().motion==true)                                                               
                   { 
                       decelerateStart=true;
                       accelerate();                       
                   }
-                  else if (sam.motion==false)
+                  else if (rtContinueMotion.load().motion==false)
                   {
                       accelerateStart=true;
                       decelerate();
                   }                       
       }
-      void exit(void) override
-      {
-           
-      }
-     
   };
- REGISTERCMD(ContinuousJog);
+ REGISTEROUTPUT(ContinuousJog);
 
 #endif

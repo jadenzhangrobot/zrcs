@@ -73,7 +73,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    NRTProcess *nrt_process;
+    NRTProcess *nrtProcess;
     QTimer *moveTimer;  // 用于长按移动的定时器
     std::function<void()> currentMoveFunction;  // 当前活动的移动函数
     // 初始化信号槽连接

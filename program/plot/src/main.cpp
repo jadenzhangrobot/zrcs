@@ -22,7 +22,7 @@ int main()
     while (true) {   
         nlohmann::json j;
         std::array<double, 100> axisPosition;
-        while(nrt_process.shared_block_->cmdAxisPositionQueue.pop(axisPosition))
+        while(nrt_process.shared_block_->statusQueue.pop(axisPosition))
         {
             j["axis-1"] = axisPosition[0];
             j["axis-2"] = axisPosition[1];

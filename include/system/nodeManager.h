@@ -60,9 +60,6 @@ public:
     delete control;
     delete rtProcess;
   }
-  
-
-  
   /**
    * @brief 运行系统主循环
    * 创建实时任务并启动任务调度器
@@ -87,13 +84,12 @@ public:
         for (auto &node : NodeFactory::getInstance().inPutNodes)
         {
           node->execute();
-        }
+        } 
+      Command cmd ; 
       switch (taskScheduling) 
-      {   
-         
-            Command cmd ;   
-            case INIT:
-                if (rtProcess->shared_block_->commandQueue.pop(cmd))
+      {       
+            case INIT:              
+                if (rtCmdQueue.pop(cmd))
                 {
                    std::string_view cmdName(cmd.cmd);
                    cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
@@ -135,7 +131,20 @@ public:
       }
       for (auto &node : NodeFactory::getInstance().outPutNodes)
       {
-        node->execute();
+        if (node->getNodeStatus() == NodeStatus::RTINIT) 
+        {
+          node->init();
+          node->setNodeStatus(NodeStatus::EXECUTING);
+        }
+        else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+        {
+            node->execute();
+        }
+        else
+        {
+           INFO_PRINT("%s 执行失败\n",node->getNodeNAME().c_str());  
+        }
+        
       }
      control->SendData();
     });

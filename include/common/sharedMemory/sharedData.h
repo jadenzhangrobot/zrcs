@@ -120,10 +120,17 @@ struct SharedBlock {
     // NRT -> RT 的命令通道
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
     // RT -> NRT 的状态通道
-    SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> cmdAxisPositionQueue;
+    SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> statusQueue;
     std::atomic<uint64_t>  heartBeat; 
     std::atomic<uint8_t>   Multiplied;
+    std::atomic<singleAxisContinueMotion> sacm;
 };
+
+#define rtCmdQueue rtProcess->shared_block_->commandQueue
+#define rtStatusQueue rtProcess->shared_block_->statusQueue
+#define rtHeartBeat rtProcess->shared_block_->heartBeat
+#define rtMultiplied rtProcess->shared_block_->Multiplied
+#define rtContinueMotion rtProcess->shared_block_->sacm
 
 
 #endif // SHARED_DATA_HPP

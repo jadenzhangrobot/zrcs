@@ -4,7 +4,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow),nrt_process(new NRTProcess("rtMotion")), moveTimer(new QTimer(this))
+    , ui(new Ui::MainWindow),nrtProcess(new NRTProcess("rtMotion")), moveTimer(new QTimer(this))
 {
     ui->setupUi(this);
     
@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupConnections();
     
     // 初始化NRT进程（创建共享内存）
-    if (!nrt_process->initialize()) 
+    if (!nrtProcess->initialize()) 
     {
         throw std::runtime_error("NRT进程初始化失败");
         
@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
       std::string cmd="ContinuousJog";
       strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
       cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      nrt_process->shared_block_->commandQueue.push(cmd_);
+      nrtProcess->shared_block_->commandQueue.push(cmd_);
 
     // 设置窗口标题
     setWindowTitle("SLAB控制系统");
@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete nrt_process;
+    delete nrtProcess;
     delete ui;
 }
 
@@ -89,12 +89,12 @@ void MainWindow::onPlusXClicked()
     qDebug() << "X轴正向移动";
     showStatusMessage("X轴正向移动");
     // TODO: 在这里添加实际的X轴正向移动控制代码
-    SingleAxisMotion sam;
-    sam.axisId=0;
-    sam.motion=true;
-    sam.direction=true;
-    nrt_process->shared_block_->Multiplied.store(100);    
-    nrt_process->shared_block_->manualPosition.store(sam);
+   // SingleAxisMotion sam;
+//   //  sam.axisId=0;
+//     sam.motion=true;
+//     sam.direction=true;
+//     nrt_process->shared_block_->Multiplied.store(100);    
+//     nrt_process->shared_block_->manualPosition.store(sam);
 }
 // 控制按钮槽函数实现
 void MainWindow::onPlusXPressed()
@@ -120,12 +120,12 @@ void MainWindow::onPlusXReleased()
     // 停止定时器
     moveTimer->stop();
     
-    SingleAxisMotion sam;
-    sam.axisId=0;
-    sam.motion=false;
-    sam.direction=true;
-    nrt_process->shared_block_->Multiplied.store(100);
-    nrt_process->shared_block_->manualPosition.store(sam);
+    // SingleAxisMotion sam;
+    // sam.axisId=0;
+    // sam.motion=false;
+    // sam.direction=true;
+    // nrt_process->shared_block_->Multiplied.store(100);
+    // nrt_process->shared_block_->manualPosition.store(sam);
     // 发送停止命令
     // TODO: 在这里添加实际的停止命令
 }
@@ -134,12 +134,12 @@ void MainWindow::onMinusXClicked()
     qDebug() << "X轴负向移动";
     showStatusMessage("X轴负向移动");
     
-    SingleAxisMotion sam;
-    sam.axisId=0;
-    sam.direction=false;
-    sam.motion=true;
-   nrt_process->shared_block_->Multiplied.store(100);
-    nrt_process->shared_block_->manualPosition.store(sam);
+//     SingleAxisMotion sam;
+//     sam.axisId=0;
+//     sam.direction=false;
+//     sam.motion=true;
+//    nrt_process->shared_block_->Multiplied.store(100);
+//     nrt_process->shared_block_->manualPosition.store(sam);
     // TODO: 在这里添加实际的X轴负向移动控制代码
 }
 
@@ -163,12 +163,12 @@ void MainWindow::onMinusXReleased()
 {
     qDebug() << "X轴负向移动停止";
     showStatusMessage("X轴负向移动停止");
-     SingleAxisMotion sam;
-    sam.axisId=0;
-    sam.motion=false;
-    sam.direction=false;
-    nrt_process->shared_block_->Multiplied.store(100);
-    nrt_process->shared_block_->manualPosition.store(sam);
+    //  SingleAxisMotion sam;
+    // sam.axisId=0;
+    // sam.motion=false;
+    // sam.direction=false;
+    // nrt_process->shared_block_->Multiplied.store(100);
+    // nrt_process->shared_block_->manualPosition.store(sam);
     
     // 停止定时器
     moveTimer->stop();
