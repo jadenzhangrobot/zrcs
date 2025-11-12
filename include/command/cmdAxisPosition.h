@@ -6,7 +6,6 @@
  * @Description: 电机使能指令
  */
 #pragma once
-#include "common/sharedMemory/sharedData.h"
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <array>
@@ -22,7 +21,7 @@ class DataPub:public zrcsSystem::InputNode
             {
                 AxisPositon[i] = control->axiss[i]->actualPos();  
             }
-               AxisPositon[1] = control->axiss[0]->actualposCmd(); 
+            AxisPositon[1] = control->axiss[0]->actualposCmd(); 
             rtStatusQueue.push(AxisPositon);           
         }    
 };

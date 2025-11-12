@@ -5,11 +5,11 @@
  * @LastEditTime: 2023-06-10 15:12:05
  * @Description: 电机使能指令
  */
-#ifndef DISABLE_H_
-#define DISABLE_H_
+#pragma once
+#include <iostream>
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
-#include <iostream>
+
 class Disable:public zrcsSystem::CmdNode
 {
    private:
@@ -23,7 +23,7 @@ class Disable:public zrcsSystem::CmdNode
     
          void init() override
        {     
-         axisId=command->axisId;
+         axisId=command->args[DisableAxisId];
        }
 
   
@@ -55,4 +55,3 @@ class Disable:public zrcsSystem::CmdNode
       }
 };
 REGISTERCMD(Disable);
-#endif

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(slab)
+project(zrcsgui VERSION 1.0.0)
 
 # 设置C++标准为C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -37,10 +37,9 @@ set(SOURCES
 set(HEADERS
     mainwindow.h
 )
-
 # UI文件
 set(UI_FILES
-    ui/slab.ui
+    ui/zrcsgui.ui
 )
 
 # 创建可执行文件

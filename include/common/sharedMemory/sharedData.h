@@ -7,7 +7,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <sys/types.h>
 #include "common/config/parameter.h"
+#include "common/config/cmdArgs.h"
+
+
+
  
 // ===================================================================
 // 1. 定义要在进程间传递的数据结构
@@ -76,20 +81,7 @@ public:
     }
 };
 
-struct motionParam {
-    double model;
-    double x;
-    double y;
-    double z;
-    double a;
-    double b;
-    double c;
-    double velocity;
-};
-struct jogabsj
-{
-    double position;
-};
+
 
 struct singleAxisContinueMotion
 {
@@ -98,11 +90,8 @@ struct singleAxisContinueMotion
 };
 struct Command 
 {
-    char cmd[100];
-    uint8_t axisId=0;
-    motionParam motionParam_;
-    jogabsj jogabsj_;
-    singleAxisContinueMotion singleAxisContinueMotion_;
+    char   cmd[100];
+    double args[10]={0};
 };
 
 struct SharedBlock {

@@ -18,9 +18,9 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 aux_source_directory(./src SOURCE_FILES)
 
 # 主可执行文件
-add_executable(motion_control ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 # 依赖关系
-add_dependencies(motion_control run_python_scripts)
+add_dependencies(${PROJECT_NAME} run_python_scripts)
 
 set(MOTION_CONTROL_LIBS
     Threads::Threads
@@ -37,19 +37,21 @@ if(BUILD_MODE STREQUAL "simulation")
 endif()
 
 
-target_link_libraries(motion_control PRIVATE ${MOTION_CONTROL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${MOTION_CONTROL_LIBS})
 
 # 测试程序
 if(test)
     add_subdirectory(program/terminal)
-    add_subdirectory(program/slab)
+    add_subdirectory(program/zrcsgui)
     add_subdirectory(program/plot)
 endif()
 
 # 安装配置
-install(TARGETS motion_control
+install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
-
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)

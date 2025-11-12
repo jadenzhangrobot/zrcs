@@ -8,6 +8,7 @@
 #ifndef JOGABSJ_H
 #define JOGABSJ_H
 
+#include "common/config/cmdArgs.h"
 #include "system/basenodeInterface.h"
 #include <array>
 #include <ruckig/ruckig.hpp>
@@ -33,8 +34,8 @@ class JogabsJ:public zrcsSystem::CmdNode
        void init() override
        { 
              
-              axisId=command->axisId;       
-              position=command->jogabsj_.position;
+              axisId=command->args[JogabsjAxisId];       
+              position=command->args[JogabsjTargetPosition];
               input.current_position[0]=control->axiss[axisId]->actualPos();       
               input.current_velocity[0]= 0;
               input.current_acceleration[0] =0;                               

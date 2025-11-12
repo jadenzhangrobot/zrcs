@@ -7,9 +7,11 @@
  */
 #ifndef ENABLE_H_
 #define ENABLE_H_
+#include "common/config/cmdArgs.h"
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
+
 class Enable:public zrcsSystem::CmdNode
 {
    private:
@@ -18,12 +20,12 @@ class Enable:public zrcsSystem::CmdNode
    public:
         Enable()
         {
-           //port_input.add<int>("axis", 'm', "motor number", false, 0, cmdline::range(000, 100));                        
+              
         }
     
        void init() override
        {     
-          axisId=command->axisId;
+          axisId=command->args[EnableAxisId];
        }
 
   

@@ -35,8 +35,8 @@ while (true)
       std::cout<<cmd<<std::endl;
       strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
       cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      cmd_.jogabsj_.position=100.0;
-      nrt_process.shared_block_->commandQueue.push(cmd_);
+     // cmd_.jogabsj_.position=100.0;
+      //nrt_process.shared_block_->commandQueue.push(cmd_);
       std::this_thread::sleep_for(10ms);
 }
     

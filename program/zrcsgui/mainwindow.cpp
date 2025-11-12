@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "ui_slab.h"
+#include "ui_zrcsgui.h"
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
       nrtProcess->shared_block_->commandQueue.push(cmd_);
 
     // 设置窗口标题
-    setWindowTitle("SLAB控制系统");
+    setWindowTitle("ZRCS控制系统");
     
     // 显示欢迎信息
     showStatusMessage("系统已就绪");

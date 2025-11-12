@@ -24,7 +24,7 @@ class Reset:public zrcsSystem::CmdNode
        void init() override
        {    
 
-            axisId=command->axisId;
+            axisId=command->args[ResetAxisId];
        }
 
   
