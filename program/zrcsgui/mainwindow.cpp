@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "common/config/cmdArgs.h"
 #include "ui_zrcsgui.h"
 #include <QDebug>
 
@@ -18,18 +19,12 @@ MainWindow::MainWindow(QWidget *parent)
     // 初始化NRT进程（创建共享内存）
     if (!nrtProcess->initialize()) 
     {
-        throw std::runtime_error("NRT进程初始化失败");
-        
+        throw std::runtime_error("NRT进程初始化失败");  
     }
-      Command cmd_;
-      std::string cmd="ContinuousJog";
-      strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
-      cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
-      nrtProcess->shared_block_->commandQueue.push(cmd_);
+      
 
     // 设置窗口标题
-    setWindowTitle("ZRCS控制系统");
-    
+    setWindowTitle("ZRCS控制系统");    
     // 显示欢迎信息
     showStatusMessage("系统已就绪");
 }
@@ -75,7 +70,12 @@ void MainWindow::setupConnections()
     // -β按钮使用pressed和released信号实现长按功能
     connect(ui->pushButton_14, &QPushButton::pressed, this, &MainWindow::onMinusBetaPressed);
     connect(ui->pushButton_14, &QPushButton::released, this, &MainWindow::onMinusBetaReleased);
-    
+    // 连接使能按钮信号槽
+    connect(ui->pushButton_enable, &QPushButton::clicked, this, &MainWindow::onEnableClicked);
+    // 连接复位按钮信号槽
+    connect(ui->pushButton_reset, &QPushButton::clicked, this, &MainWindow::onResetClicked);
+    // 连接失能按钮信号槽
+    connect(ui->pushButton_disable, &QPushButton::clicked, this, &MainWindow::onDisableClicked);
     // 连接回零按钮信号槽
     connect(ui->pushButton_17, &QPushButton::clicked, this, &MainWindow::onXAxisHomeClicked);
     connect(ui->pushButton_18, &QPushButton::clicked, this, &MainWindow::onYAxisHomeClicked);
@@ -84,14 +84,45 @@ void MainWindow::setupConnections()
     connect(ui->pushButton_21, &QPushButton::clicked, this, &MainWindow::onBetaAxisHomeClicked);
     connect(ui->pushButton_22, &QPushButton::clicked, this, &MainWindow::onAllAxisHomeClicked);
 }
+void MainWindow::onDisableClicked()
+{
+    qDebug() << "使能按钮点击";
+    showStatusMessage("使能按钮点击");
+    Command cmd_;
+    std::strcpy(cmd_.cmd, "Enable");
+    cmd_.args[EnableAxisId]=0;
+    nrtProcess->shared_block_->commandQueue.push(cmd_);
+    // TODO: 在这里添加实际的使能控制代码
+}
+void MainWindow::onResetClicked()
+{
+      qDebug() << "复位按钮点击";
+      showStatusMessage("复位按钮点击");
+      Command cmd_;
+      std::strcpy(cmd_.cmd, "Reset");
+      nrtProcess->shared_block_->commandQueue.push(cmd_);
+    // TODO: 在这里添加实际的复位控制代码
+}
+void MainWindow::onEnableClicked()
+{
+    qDebug() << "失能按钮点击";
+    showStatusMessage("失能按钮点击");
+    Command cmd_;
+    std::strcpy(cmd_.cmd, "Disable");
+    cmd_.args[EnableAxisId]=0;
+    nrtProcess->shared_block_->commandQueue.push(cmd_);
+    // TODO: 在这里添加实际的失能控制代码
+}
+
+
 void MainWindow::onPlusXClicked()
 {
     qDebug() << "X轴正向移动";
     showStatusMessage("X轴正向移动");
     // TODO: 在这里添加实际的X轴正向移动控制代码
-   // SingleAxisMotion sam;
-//   //  sam.axisId=0;
-//     sam.motion=true;
+    // SingleAxisMotion sam;
+    //   //  sam.axisId=0;
+    //     sam.motion=true;
 //     sam.direction=true;
 //     nrt_process->shared_block_->Multiplied.store(100);    
 //     nrt_process->shared_block_->manualPosition.store(sam);

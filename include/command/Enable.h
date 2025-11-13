@@ -16,6 +16,7 @@ class Enable:public zrcsSystem::CmdNode
 {
    private:
       int axisId=0;
+         std::strcpy(nodeName,"Enable");
       
    public:
         Enable()

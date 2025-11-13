@@ -22,7 +22,7 @@ namespace zrcsSystem {
 class Basenode {
 public:
     uint64_t nodeCount = 0;
-    std::string nodeName;
+    char nodeName[32]={};
     
  
     cmdline::parser port_input;

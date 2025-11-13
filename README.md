@@ -1,7 +1,13 @@
 zrcs (zhang real time control system)
-# 需要先安装JZMQ绑定
+# 需要先安装JZMQ绑定 linxu系统
 sudo apt install libjzmq-dev
 sudo apt install nlohmann-json3-dev
+
+#windos系统msys2系统安装
+pacman -S mingw-w64-ucrt-x86_64-nlohmann-json
+pacman -S mingw-w64-ucrt-x86_64-zeromq
+pacman -S mingw-w64-ucrt-x86_64-cppzmq
+
 
 编译器要求gcc 9.3
 需要库ruckig
