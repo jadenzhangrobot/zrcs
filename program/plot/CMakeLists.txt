@@ -15,7 +15,7 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 
 # Link libraries
 target_include_directories(${PROJECT_NAME} PRIVATE ${ZMQ_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${ZMQ_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${ZMQ_LIBRARIES} rt Threads::Threads)
 target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.18.1)
 project(zrcs VERSION 1.0.0)
 
 # 设置 C++ 标准为 C++17
@@ -27,6 +27,7 @@ set(MOTION_CONTROL_LIBS
     ruckig
     tinyxml2
     atomic
+    rt
 )
 if(BUILD_MODE STREQUAL "realtime")
     list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)
