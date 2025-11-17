@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="iconSize">
        <size>
@@ -268,6 +268,45 @@
        <attribute name="title">
         <string>设置</string>
        </attribute>
+       <widget class="QPushButton" name="pushButton_enable">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>60</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>使能</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_reset">
+        <property name="geometry">
+         <rect>
+          <x>130</x>
+          <y>60</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>复位</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_disable">
+        <property name="geometry">
+         <rect>
+          <x>230</x>
+          <y>60</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>失能</string>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -279,7 +318,7 @@
      <x>0</x>
      <y>0</y>
      <width>1108</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

@@ -1,8 +1,8 @@
 /**
- * @copyright 版权所有(c)2024 Glroad公司
+ * @copyright 版权所有(c)2024
  * @filename: centre.h
  * @brief: 系统中心控制类，负责任务调度和节点管理
- * @author: zhangyongjing@oetsky.com
+ * @author: 649894200@qq.com
  * @createdate: 2024-01-04
  */
 #ifndef NODEMANAGER_H_

@@ -29,6 +29,9 @@ public:
 
 private slots:
     // 控制按钮槽函数
+    void onDisableClicked();
+    void onResetClicked();
+    void onEnableClicked();
     void onPlusXPressed();   // +X按钮按下
     void onPlusXReleased();  // +X按钮松开
     void onMinusXPressed();  // -X按钮按下

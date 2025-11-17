@@ -11,7 +11,6 @@
 
 #include "controller/ControllerInterface.h"
 #include "system/nodeManager.h"
-#include "system/zrcs.h"
 #include <unistd.h>
 #include <vector>
 #include "command/Cmdhead.h"

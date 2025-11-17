@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.18.1)
 project(zrcs VERSION 1.0.0)
 
 # 设置 C++ 标准为 C++17
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 启用编译命令导出
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(BUILD_MODE "realtime" CACHE STRING "Build configuration mode")
+set(BUILD_MODE "standard" CACHE STRING "Build configuration mode")
 option(test "Build test programs" ON)
 # 包含模块文件
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/contorler.cmake)
@@ -27,6 +27,7 @@ set(MOTION_CONTROL_LIBS
     ruckig
     tinyxml2
     atomic
+    rt
 )
 if(BUILD_MODE STREQUAL "realtime")
     list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)

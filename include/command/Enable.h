@@ -16,11 +16,11 @@ class Enable:public zrcsSystem::CmdNode
 {
    private:
       int axisId=0;
-      
+       
    public:
         Enable()
         {
-              
+                std::strcpy(nodeName,"Enable");
         }
     
        void init() override

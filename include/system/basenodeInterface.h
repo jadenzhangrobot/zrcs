@@ -22,7 +22,7 @@ namespace zrcsSystem {
 class Basenode {
 public:
     uint64_t nodeCount = 0;
-    std::string nodeName;
+    char nodeName[32]={};
     
  
     cmdline::parser port_input;
@@ -85,7 +85,7 @@ public:
                 {              
                   case CmdStatus::INIT:
                         init();
-                        INFO_PRINT("%s 初始化成功\n",nodeName.c_str());
+                        INFO_PRINT("%s 初始化成功\n",nodeName);
                         cmdStatus.store(CmdStatus::EXECUTING,std::memory_order_release);             
                         break;
                   case CmdStatus::EXECUTING:
@@ -93,11 +93,11 @@ public:
                        break;                
                   case CmdStatus::EXIT:
                         exit();
-                        INFO_PRINT("%s 执行成功\n",nodeName.c_str());
+                        INFO_PRINT("%s 执行成功\n",nodeName);
                         cmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
                         break;                  
                   case  CmdStatus::FAILED: 
-                        INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
+                        INFO_PRINT("%s 执行失败\n",nodeName);  
                     break;                
                   default:                                     
                     break;
@@ -139,14 +139,14 @@ public:
                 {              
                   case NodeStatus::RTINIT:
                         init();
-                        INFO_PRINT("%s 初始化成功\n",nodeName.c_str());
+                        INFO_PRINT("%s 初始化成功\n",nodeName);
                         nodeStatus.store(NodeStatus::EXECUTING,std::memory_order_release);             
                         break;
                   case NodeStatus::EXECUTING:
                         run();
                        break;                          
                   case  NodeStatus::FAILED: 
-                        INFO_PRINT("%s 执行失败\n",nodeName.c_str());  
+                        INFO_PRINT("%s 执行失败\n",nodeName);  
                     break;                
                   default:                                     
                     break;
