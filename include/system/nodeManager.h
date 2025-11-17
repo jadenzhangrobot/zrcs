@@ -42,7 +42,6 @@ private:
   RTProcess *rtProcess = nullptr;                // 实时进程指针
   CmdNode*   cmdNode = nullptr;      
 public:
-
   NodeManger() : rtProcess(new RTProcess("rtMotion")), control(new ZrcsHardware::Controller())
   {
   }
@@ -118,8 +117,7 @@ public:
                       // 节点仍在运行，继续执行
                       cmdNode->execute();
                     }                  
-                  }
-                
+                  }                
                 break;
             case STOP:
               break;

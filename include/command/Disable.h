@@ -14,11 +14,12 @@ class Disable:public zrcsSystem::CmdNode
 {
    private:
       int axisId=0;
+
       
    public:
         Disable()
         {
-                                
+                     std::strcpy(nodeName,"Disable");               
         }
     
          void init() override

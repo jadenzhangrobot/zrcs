@@ -18,7 +18,7 @@ class Reset:public zrcsSystem::CmdNode
    public:
         Reset()
         {
-                                  
+                    std::strcpy(nodeName,"Reset");                
         }
     
        void init() override
