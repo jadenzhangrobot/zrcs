@@ -26,6 +26,7 @@ class Enable:public zrcsSystem::CmdNode
        void init() override
        {     
           axisId=command->args[EnableAxisId];
+          rt_printf("zhou %d",axisId);
        }
 
   
@@ -34,6 +35,7 @@ class Enable:public zrcsSystem::CmdNode
       {                               
                      if(control->axiss.size()>axisId)            
                       {          
+                                 double p=control->axiss[axisId]->actualPos();
                                  control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos());            
                                  if(!control->axiss[axisId]->powerOn())
                                  {

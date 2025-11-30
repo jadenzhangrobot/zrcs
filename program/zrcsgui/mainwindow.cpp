@@ -86,10 +86,10 @@ void MainWindow::setupConnections()
 }
 void MainWindow::onDisableClicked()
 {
-    qDebug() << "使能按钮点击";
-    showStatusMessage("使能按钮点击");
+    qDebug() << "失能按钮点击";
+    showStatusMessage("失能按钮点击");
     Command cmd_;
-    std::strcpy(cmd_.cmd, "Enable");
+    std::strcpy(cmd_.cmd, "Disable");
     cmd_.args[EnableAxisId]=0;
     nrtProcess->shared_block_->commandQueue.push(cmd_);
     // TODO: 在这里添加实际的使能控制代码
@@ -105,12 +105,33 @@ void MainWindow::onResetClicked()
 }
 void MainWindow::onEnableClicked()
 {
-    qDebug() << "失能按钮点击";
-    showStatusMessage("失能按钮点击");
-    Command cmd_;
-    std::strcpy(cmd_.cmd, "Disable");
-    cmd_.args[EnableAxisId]=0;
-    nrtProcess->shared_block_->commandQueue.push(cmd_);
+    qDebug() << "使能按钮点击";
+    showStatusMessage("使能按钮点击");
+    Command cmd1;
+    std::strcpy(cmd1.cmd, "Enable");
+    cmd1.args[EnableAxisId]=0;
+    nrtProcess->shared_block_->commandQueue.push(cmd1);
+
+    Command cmd2;
+    std::strcpy(cmd2.cmd, "Enable");
+    cmd2.args[EnableAxisId]=1;
+    nrtProcess->shared_block_->commandQueue.push(cmd2);
+
+    Command cmd3;
+    std::strcpy(cmd3.cmd, "Enable");
+    cmd3.args[EnableAxisId]=2;
+    nrtProcess->shared_block_->commandQueue.push(cmd3);
+
+    Command cmd4;
+    std::strcpy(cmd4.cmd, "Enable");
+    cmd4.args[EnableAxisId]=3;
+    nrtProcess->shared_block_->commandQueue.push(cmd4);
+
+    Command cmd5;
+    std::strcpy(cmd5.cmd, "Enable");
+    cmd5.args[EnableAxisId]=4;
+    nrtProcess->shared_block_->commandQueue.push(cmd5);
+    
     // TODO: 在这里添加实际的失能控制代码
 }
 
