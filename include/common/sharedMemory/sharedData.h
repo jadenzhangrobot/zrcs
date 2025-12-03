@@ -99,11 +99,12 @@ struct SharedBlock {
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
     // RT -> NRT 的状态通道
     SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> statusQueue;
+    std::atomic<TaskScheduling>  cmd; 
     std::atomic<uint64_t>  heartBeat; 
     std::atomic<uint8_t>   Multiplied;
     std::atomic<singleAxisContinueMotion> sacm;
 };
-
+#define taskScheduling     rtProcess->shared_block_->cmd
 #define rtCmdQueue rtProcess->shared_block_->commandQueue
 #define rtStatusQueue rtProcess->shared_block_->statusQueue
 #define rtHeartBeat rtProcess->shared_block_->heartBeat

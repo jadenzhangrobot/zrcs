@@ -9,6 +9,7 @@
  * 
  */
 
+#include "common/sharedMemory/sharedData.h"
 #include "controller/ControllerInterface.h"
 #include "system/nodeManager.h"
 #include <unistd.h>

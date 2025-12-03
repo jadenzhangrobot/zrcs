@@ -8,6 +8,7 @@
 #ifndef BASENODE_INTERFACE_H_
 #define BASENODE_INTERFACE_H_
 #include "cmdline.h"
+#include "common/config/cmdArgs.h"
 #include "common/sharedMemory/rtProcess.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
@@ -97,7 +98,8 @@ public:
                         cmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
                         break;                  
                   case  CmdStatus::FAILED: 
-                        INFO_PRINT("%s 执行失败\n",nodeName);  
+                        INFO_PRINT("%s 执行失败\n",nodeName);
+                        
                     break;                
                   default:                                     
                     break;

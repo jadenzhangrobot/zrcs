@@ -30,18 +30,15 @@ private:
   /**
    * @brief 任务调度状态枚举
    */
-  enum TaskScheduling {
-    INIT,
-    STOP,           // 停止
-    RUN,            // 运行
-    ERROR  // 调度错误
-  };
-  TaskScheduling taskScheduling =INIT; // 任务调度状态
+
+  TaskScheduling taskScheduling =TaskScheduling::RUN; // 任务调度状态
   // 命令对象指针容
-  ZrcsHardware::Controller *control;             // 硬件控制器指针
-  RTProcess *rtProcess = nullptr;                // 实时进程指针
-  CmdNode*   cmdNode = nullptr;      
+  ZrcsHardware::Controller *control;             // 硬件控制器指针               // 实时进程指针
+  CmdNode*   cmdNode = nullptr; 
+  Command cmd ;      
 public:
+  RTProcess *rtProcess = nullptr; 
+  //TaskScheduling taskScheduling =TaskScheduling::RUN; 
   NodeManger() : rtProcess(new RTProcess("rtMotion")), control(new ZrcsHardware::Controller())
   {
   }
@@ -84,48 +81,47 @@ public:
         {
           node->execute();
         } 
-      Command cmd ; 
-      switch (taskScheduling) 
+      
+      switch (taskScheduling.load()) 
       {       
-            case INIT:              
-                if (rtCmdQueue.pop(cmd))
-                {
-                   std::string_view cmdName(cmd.cmd);
-                   cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
-                   cmdNode->registered(control,rtProcess,&cmd);
-                   taskScheduling= RUN;
-                }               
-              break; 
-            case RUN:                         
+            case TaskScheduling::RUN:                         
                   if (cmdNode != nullptr)
                   { 
                     if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
                     {
                       cmdNode->setCmdStatus(CmdStatus::INIT);
-                      taskScheduling= INIT;
+                      //taskScheduling= INIT;
                       // 节点已完成或失败，清理资源
                       cmdNode = nullptr;
                     } 
-                    else if(cmdNode->getCmdStatus() == CmdStatus::FAILED)
-                    {
-                      // 节点仍在运行，继续执行
-                      cmdNode = nullptr;
-                      taskScheduling= INIT;
-                    }
                     else 
                     {
                       // 节点仍在运行，继续执行
                       cmdNode->execute();
                     }                  
-                  }                
+                  }
+                  else
+                  {
+                    if (rtCmdQueue.pop(cmd)) 
+                    {
+                        std::string_view cmdName(cmd.cmd);
+                         cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
+                         cmdNode->registered(control,rtProcess,&cmd);
+                    }
+                    else
+                    {
+                       
+                    }
+                   
+                  }                            
                 break;
-            case STOP:
+            case TaskScheduling::STOP:
               break;
-            case ERROR:
+            case TaskScheduling::RESET:
               break;
+            case TaskScheduling::START:            
             default:
               break;
-
       }
       for (auto &node : NodeFactory::getInstance().outPutNodes)
       {

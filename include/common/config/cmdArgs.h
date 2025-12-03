@@ -18,4 +18,10 @@ enum
 };
 
 
-
+  enum class TaskScheduling {
+    RUN, 
+    ERROR,
+    STOP,            // 停止         
+    RESET,           //
+    START 
+  };

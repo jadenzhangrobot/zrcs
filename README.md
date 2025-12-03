@@ -14,4 +14,9 @@ pacman -S mingw-w64-ucrt-x86_64-cppzmq
 ethercat_rtdm
 
 cmake -Drealtime=YES -Ddebug=YES -Dethercat=YES ..
-cmake -Drealtime=YES -Ddebug=NO -Dethercat=YES ..
+
+
+
+
+
+

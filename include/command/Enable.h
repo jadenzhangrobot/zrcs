@@ -26,7 +26,6 @@ class Enable:public zrcsSystem::CmdNode
        void init() override
        {     
           axisId=command->args[EnableAxisId];
-          rt_printf("zhou %d",axisId);
        }
 
   
@@ -38,7 +37,8 @@ class Enable:public zrcsSystem::CmdNode
                                  double p=control->axiss[axisId]->actualPos();
                                  control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos());            
                                  if(!control->axiss[axisId]->powerOn())
-                                 {
+                                 {  
+                                    ERROR_PRINT("zhou %d 使能失败轴\n", axisId);                      
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
                                  else 
@@ -48,6 +48,7 @@ class Enable:public zrcsSystem::CmdNode
                       }
                      else
                      {
+                           ERROR_PRINT("%s 使能轴超过限制");
                            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                      }                        
        }     
