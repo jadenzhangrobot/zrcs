@@ -104,8 +104,8 @@ struct SharedBlock {
     std::atomic<uint8_t>   Multiplied;
     std::atomic<singleAxisContinueMotion> sacm;
 };
-#define taskScheduling     rtProcess->shared_block_->cmd
-#define rtCmdQueue rtProcess->shared_block_->commandQueue
+#define taskScheduling rtProcess->shared_block_->cmd
+#define rtCmdQueue     rtProcess->shared_block_->commandQueue
 #define rtStatusQueue rtProcess->shared_block_->statusQueue
 #define rtHeartBeat rtProcess->shared_block_->heartBeat
 #define rtMultiplied rtProcess->shared_block_->Multiplied

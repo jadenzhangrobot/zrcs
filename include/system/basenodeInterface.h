@@ -97,9 +97,9 @@ public:
                         INFO_PRINT("%s 执行成功\n",nodeName);
                         cmdStatus.store(CmdStatus::COMPLETED,std::memory_order_release);                
                         break;                  
-                  case  CmdStatus::FAILED: 
-                        INFO_PRINT("%s 执行失败\n",nodeName);
-                        
+                  case  CmdStatus::FAILED:
+                        INFO_PRINT("%s 执行失败\n",nodeName); 
+                        taskScheduling.store(TaskScheduling::ERROR,std::memory_order_release);                    
                     break;                
                   default:                                     
                     break;

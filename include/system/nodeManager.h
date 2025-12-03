@@ -31,7 +31,7 @@ private:
    * @brief 任务调度状态枚举
    */
 
-  TaskScheduling taskScheduling =TaskScheduling::RUN; // 任务调度状态
+  
   // 命令对象指针容
   ZrcsHardware::Controller *control;             // 硬件控制器指针               // 实时进程指针
   CmdNode*   cmdNode = nullptr; 
@@ -104,13 +104,13 @@ public:
                   {
                     if (rtCmdQueue.pop(cmd)) 
                     {
-                        std::string_view cmdName(cmd.cmd);
+                         std::string_view cmdName(cmd.cmd);
                          cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
                          cmdNode->registered(control,rtProcess,&cmd);
                     }
                     else
                     {
-                       
+                        
                     }
                    
                   }                            
