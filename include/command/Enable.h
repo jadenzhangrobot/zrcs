@@ -26,6 +26,7 @@ class Enable:public zrcsSystem::CmdNode
        void init() override
        {     
           axisId=command->args[EnableAxisId];
+          ERROR_PRINT("zhou %d 使能失败轴\n", axisId);  
        }
 
   

@@ -98,9 +98,7 @@ void MainWindow::onResetClicked()
 {
       qDebug() << "复位按钮点击";
       showStatusMessage("复位按钮点击");
-      Command cmd_;
-      std::strcpy(cmd_.cmd, "Reset");
-      nrtProcess->shared_block_->commandQueue.push(cmd_);
+      nrtProcess->shared_block_->cmd.store(TaskScheduling::RESET,std::memory_order_release);
     // TODO: 在这里添加实际的复位控制代码
 }
 void MainWindow::onEnableClicked()

@@ -118,6 +118,13 @@ public:
             case TaskScheduling::STOP:
               break;
             case TaskScheduling::RESET:
+                if (cmdNode!=nullptr) 
+                {
+                    cmdNode->setCmdStatus(CmdStatus::INIT);
+                    cmdNode=nullptr;
+                }
+                
+                 taskScheduling.store(TaskScheduling::RUN,std::memory_order_release);
               break;
             case TaskScheduling::START:            
             default:
