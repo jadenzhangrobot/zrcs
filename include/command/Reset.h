@@ -42,6 +42,20 @@ class Reset:public zrcsSystem::CmdNode
                                   setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                                  }
                       }
+                     else if(control->axiss.size()==axisId)
+                     {
+                             for (int i=0; i<axisId; i++) 
+                             {
+                                   if(!control->axiss[i]->resetError())
+                                 {
+                                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                                 }
+                                 else 
+                                 {
+                                  setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+                                 }
+                             }
+                     }
                      else
                         {
                               setCmdStatus(zrcsSystem::CmdStatus::FAILED);

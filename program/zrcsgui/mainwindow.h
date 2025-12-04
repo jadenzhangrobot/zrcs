@@ -29,6 +29,7 @@ public:
 
 private slots:
     // 控制按钮槽函数
+    void onerrorClear();
     void onDisableClicked();
     void onResetClicked();
     void onEnableClicked();

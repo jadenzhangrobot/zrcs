@@ -47,6 +47,23 @@ class Enable:public zrcsSystem::CmdNode
                                   setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                                  }
                       }
+                     else if(control->axiss.size()==axisId)
+                     {
+                             for (int i=0; i<axisId; i++) 
+                             {
+                                 double p=control->axiss[i]->actualPos();
+                                 control->axiss[i]->setAxisPositionCmd(control->axiss[i]->actualPos());            
+                                 if(!control->axiss[i]->powerOn())
+                                 {  
+                                    ERROR_PRINT("zhou %d 使能失败轴\n", axisId);                      
+                                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                                 }
+                                 else 
+                                 {                                 
+                                    setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+                                 }
+                             }
+                      }
                      else
                      {
                            ERROR_PRINT("%s 使能轴超过限制");
