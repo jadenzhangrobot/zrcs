@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     // 初始化定时器
     moveTimer->setSingleShot(false);  // 重复触发
-    moveTimer->setInterval(1000);     // 1秒间隔
+    moveTimer->setInterval(100);     // 1秒间隔
     connect(moveTimer, &QTimer::timeout, this, &MainWindow::onTimerTimeout);
     
     setupConnections();
@@ -190,12 +190,6 @@ void MainWindow::onMinusXReleased()
 {
     qDebug() << "X轴负向移动停止";
     showStatusMessage("X轴负向移动停止");
-    //  SingleAxisMotion sam;
-    // sam.axisId=0;
-    // sam.motion=false;
-    // sam.direction=false;
-    // nrt_process->shared_block_->Multiplied.store(100);
-    // nrt_process->shared_block_->manualPosition.store(sam);
     
     // 停止定时器
     moveTimer->stop();
@@ -432,6 +426,11 @@ void MainWindow::onPlusYClicked()
 {
     qDebug() << "Y轴正向移动";
     showStatusMessage("Y轴正向移动");
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=1;
+    cmd.args[JogjTargetPosition]=ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
     // TODO: 在这里添加实际的Y轴正向移动控制代码
 }
 
@@ -439,6 +438,11 @@ void MainWindow::onMinusYClicked()
 {
     qDebug() << "Y轴负向移动";
     showStatusMessage("Y轴负向移动");
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=1;
+    cmd.args[JogjTargetPosition]=-ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
     // TODO: 在这里添加实际的Y轴负向移动控制代码
 }
 
@@ -446,42 +450,67 @@ void MainWindow::onPlusZClicked()
 {
     qDebug() << "Z轴正向移动";
     showStatusMessage("Z轴正向移动");
-    // TODO: 在这里添加实际的Z轴正向移动控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=2;
+    cmd.args[JogjTargetPosition]=ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 
 void MainWindow::onMinusZClicked()
 {
     qDebug() << "Z轴负向移动";
     showStatusMessage("Z轴负向移动");
-    // TODO: 在这里添加实际的Z轴负向移动控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=2;
+    cmd.args[JogjTargetPosition]=-ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 
 void MainWindow::onPlusAlphaClicked()
 {
     qDebug() << "α轴正向旋转";
     showStatusMessage("α轴正向旋转");
-    // TODO: 在这里添加实际的α轴正向旋转控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=3;
+    cmd.args[JogjTargetPosition]=ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 
 void MainWindow::onMinusAlphaClicked()
 {
     qDebug() << "α轴负向旋转";
     showStatusMessage("α轴负向旋转");
-    // TODO: 在这里添加实际的α轴负向旋转控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=3;
+    cmd.args[JogjTargetPosition]=-ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
+
 }
 
 void MainWindow::onPlusBetaClicked()
 {
     qDebug() << "β轴正向旋转";
     showStatusMessage("β轴正向旋转");
-    // TODO: 在这里添加实际的β轴正向旋转控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=4;
+    cmd.args[JogjTargetPosition]=ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 
 void MainWindow::onMinusBetaClicked()
 {
     qDebug() << "β轴负向旋转";
     showStatusMessage("β轴负向旋转");
-    // TODO: 在这里添加实际的β轴负向旋转控制代码
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=4;
+    cmd.args[JogjTargetPosition]=-ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 
 // 回零按钮槽函数实现

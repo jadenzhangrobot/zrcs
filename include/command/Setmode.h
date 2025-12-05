@@ -11,7 +11,7 @@
 #include "system/basenodeInterface.h"
 #include "system/centre.h"
 #include <iostream>
-class Setmode:public zrcsSystem::Basenode
+class Setmode:public zrcsSystem::CmdNode
 {
    private:
       int motor_num;
@@ -22,23 +22,12 @@ class Setmode:public zrcsSystem::Basenode
         {
              port_input.add<int>("mode", 'o', "motor mode", false, 8, cmdline::range(0, 100));                    
         }
-        void config() override
-        {   
-                   
-            if (!cmdParam.empty()) 
-            {
-                  std::string str=cmdParam.front();
-                  port_input.parse_check(str);
-                  cmdParam.pop();
-            } 
-             motor_mode=port_input.get<int>("mode"); 
-             motor_num=control->axiss.size();
-        }
+       
         void init() override
        {                
             node_status=RUNNING;
        }
-        void  excuteRt(void) override
+        void  run(void) override
         {                     
                 // 添加安全检查
                 if(control && !control->axiss.empty())

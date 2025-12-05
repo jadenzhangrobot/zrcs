@@ -375,7 +375,13 @@ public:
     }
     return true;
   }
-
+  void setModeOfOperation()
+  {
+    for (auto servo : servo_)
+    {
+      servo->setMode(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION);
+    }
+  }
   MC_ERROR_CODE getAxisError()
   {
     return axisError_;

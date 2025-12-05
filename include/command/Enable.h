@@ -34,7 +34,8 @@ class Enable:public zrcsSystem::CmdNode
       void  run(void) override
       {                               
                      if(control->axiss.size()>axisId)            
-                      {          
+                      { 
+                                 control->axiss[axisId]->setModeOfOperation();
                                  double p=control->axiss[axisId]->actualPos();
                                  control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos());            
                                  if(!control->axiss[axisId]->powerOn())
@@ -51,6 +52,7 @@ class Enable:public zrcsSystem::CmdNode
                      {
                              for (int i=0; i<axisId; i++) 
                              {
+                                 control->axiss[i]->setModeOfOperation();
                                  double p=control->axiss[i]->actualPos();
                                  control->axiss[i]->setAxisPositionCmd(control->axiss[i]->actualPos());            
                                  if(!control->axiss[i]->powerOn())
