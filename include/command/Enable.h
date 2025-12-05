@@ -26,7 +26,7 @@ class Enable:public zrcsSystem::CmdNode
        void init() override
        {     
           axisId=command->args[EnableAxisId];
-          ERROR_PRINT("zhou %d 使能失败轴\n", axisId);  
+         
        }
 
   
@@ -55,7 +55,7 @@ class Enable:public zrcsSystem::CmdNode
                                  control->axiss[i]->setAxisPositionCmd(control->axiss[i]->actualPos());            
                                  if(!control->axiss[i]->powerOn())
                                  {  
-                                    ERROR_PRINT("zhou %d 使能失败轴\n", axisId);                      
+                                    ERROR_PRINT("zhou %d 使能失败轴\n", i);                      
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
                                

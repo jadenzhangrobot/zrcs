@@ -92,7 +92,7 @@ void MainWindow::onerrorClear()
     showStatusMessage("清除伺服错误点击");
     Command cmd_;
     std::strcpy(cmd_.cmd, "Reset");
-    cmd_.args[EnableAxisId]=5;
+    cmd_.args[EnableAxisId]=6;
     nrtProcess->shared_block_->commandQueue.push(cmd_);
 }
 void MainWindow::onDisableClicked()
@@ -101,7 +101,7 @@ void MainWindow::onDisableClicked()
     showStatusMessage("失能按钮点击");
     Command cmd_;
     std::strcpy(cmd_.cmd, "Disable");
-    cmd_.args[EnableAxisId]=5;
+    cmd_.args[EnableAxisId]=6;
     nrtProcess->shared_block_->commandQueue.push(cmd_);
     // TODO: 在这里添加实际的使能控制代码
 }
@@ -118,7 +118,7 @@ void MainWindow::onEnableClicked()
     showStatusMessage("使能按钮点击");
     Command cmd1;
     std::strcpy(cmd1.cmd, "Enable");
-    cmd1.args[EnableAxisId]=5;
+    cmd1.args[EnableAxisId]=6;
     nrtProcess->shared_block_->commandQueue.push(cmd1);
     
 }
