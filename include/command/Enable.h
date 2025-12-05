@@ -58,11 +58,9 @@ class Enable:public zrcsSystem::CmdNode
                                     ERROR_PRINT("zhou %d 使能失败轴\n", axisId);                      
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
-                                 else 
-                                 {                                 
-                                    setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-                                 }
+                               
                              }
+                              setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                       }
                      else
                      {

@@ -50,11 +50,12 @@ class Reset:public zrcsSystem::CmdNode
                                  {
                                     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
                                  }
-                                 else 
-                                 {
-                                  setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-                                 }
+                                 // else 
+                                 // {
+                                  
+                                 // }
                              }
+                             setCmdStatus(zrcsSystem::CmdStatus::EXIT);
                      }
                      else
                         {
