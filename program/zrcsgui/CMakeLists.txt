@@ -46,7 +46,7 @@ set(UI_FILES
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES})
 
 # 链接Qt5库
-target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets atomic rt Threads::Threads)
+target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets atomic Threads::Threads)
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES

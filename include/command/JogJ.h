@@ -2,97 +2,83 @@
  * @Author: zhangyongjing
  * @email: 649894200@qq.com
  * @Date: 2023-03-15 14:49:54
- * @LastEditTime: 2023-06-10 15:51:25
- * @Description: 关节运动相对位置指令
+ * @LastEditTime: 2023-08-03 06:50:30
+ * @Description: 关节运动绝对位置指令
  */
 #ifndef JOGJ_H
-#define JOGJ_H
+#define JOG_H
 
+#include "common/config/cmdArgs.h"
 #include "system/basenodeInterface.h"
-#include "system/centre.h"
-#include "system/centre.h"
-#include <iostream>
-#include "system/classfactory.h"
+#include <array>
+#include <ruckig/ruckig.hpp>
+#include <string>
+#include <vector>
+#include "system/nodeFactory.h"
+
 using namespace ruckig;
-
-class JogJ::public zrcsSystem::CmdNode
+class JogJ:public zrcsSystem::CmdNode
   {
-    public:
-       
-            centre& cenobj=centre::getInstance();
-            Ruckig<JointNum> otg {0.001}; 
-            InputParameter<JointNum> input;
-            OutputParameter<JointNum> output;
-            
-           //int motor_num;
-          
-    JogJ(){
-         cmdline::parser cmd;
-         cmd.add<int>("motor", 'm', "motor number", false, 0, cmdline::range(000, 100));
-         cmd.add<double>("position", 'p', "servo position", false, 0, cmdline::range(-20.000, 20.000));
-         cmd.add<double>("velocity", 'v', "servo velocity", false, 300, cmdline::range(-10, 10));
-         cmd.add<double>("acceleration", 'a', "servo acceleration", false, 50, cmdline::range(-10, 10));
 
-          if (!cenobj.nrt_cmdParam.empty()) 
-          {
-              std::string str=cenobj.nrt_cmdParam.front();
-              cmd.parse_check(str);
-              cenobj.nrt_cmdParam.pop();
-          }   
-           for(int i=0;i<JointNum;i++)
-           {
-             input.current_position[i]=cenobj.ec_control->motors[i]->actualPos();
-             std::cout<<"JogabsJ motor-----"<<i<<"  "<< input.current_position[i]<<std::endl;
-             input.current_velocity[i]= 0;
-             input.current_acceleration[i] =0;
-           }
-                     
-           for(int i=0;i<JointNum;i++) 
-           {
-              input.target_position[i]=cenobj.ec_control->motors[i]->actualPos();
-              input.target_velocity[i] = 0;
-              input.target_acceleration[i] =0;
-              input.max_velocity[i] = 1;
-              input.max_acceleration[i] = 0.5;
-              input.max_jerk[i] =0.5 ;
-           }
-           input.target_position[cmd.get<int>("motor")]=cmd.get<double>("position")+cenobj.ec_control->motors[cmd.get<int>("motor")]->actualPos();
-    }
+             public:
+             Ruckig<1> otg {cycletime*0.001}; 
+             InputParameter<1> input;
+             OutputParameter<1> output;            
+             int axisId;
+             double position;
+            JogJ()
+            {
+                std::strcpy(nodeName,"JogJ");
+            }    
+;
+       void init() override
+       { 
+             
+              axisId=command->args[JogjAxisId];       
+              position=command->args[JogjTargetPosition];
+              input.current_position[0]=control->axiss[axisId]->actualPos();       
+              input.current_velocity[0]= 0;
+              input.current_acceleration[0] =0;                               
+              input.target_position[0]=position+control->axiss[axisId]->actualPos();
+              input.target_velocity[0] =0;
+              input.target_acceleration[0] =0;
+              input.max_velocity[0] =control->axiss[axisId]->getMaxVelocity();
+              input.max_acceleration[0] =control->axiss[axisId]->getMaxAcceleration();
+              input.max_jerk[0] =control->axiss[axisId]->getMaxJerk();
+       }
+
   
-      void  excute_rt(void) override
-      {         
-                                      
-                    if(otg.update(input, output) == Result::Working)            
-                     { 
-                       
-                       auto& p = output.new_position;
-                       for (int i=0; i<JointNum; i++) 
-                       {
-                         cenobj.ec_control->motors[i]->setTargetPos(p[i]);
-                         //std::cout<<"JogabsJ motor-----"<<i<<"  "<<p[i]<<std::endl;
-                       }                                                                                             
-                       output.pass_to_input(input);
-                       rt_flag=1;
-                     }
-                    else
-                     {
-                     // if( forcenobj.ec_control->motors[i]->setTargetPos(p[i])==cenobj.ec_control->motors[i]->act)
-                       
-                        rt_flag=2;
-                        cmd_frame cf;
-                        strcpy(cf.type,"JogJ");
-                        cf.status=2;
-                        strcpy(cf.error,"success");
-                        //LOGGER_INFO("JogJ finished");
-                        std::string str="MotionCtrlMsgCmd";
-                        cenobj.zmq_cmd.pub(str.c_str(),str.length(),ZMQ_SNDMORE);
-                        cenobj.zmq_cmd.pub(&cf,sizeof(cf),0);                           
-                     }
-         
-      }      
-   
+           
+      void  run(void) override
+      {                               
+                     if(otg.update(input, output) == Result::Working)            
+                      {                        
+                        auto& p = output.new_position;
+                        auto& v=output.new_velocity;
+                        auto& a=output.new_acceleration;
+                        if (control!=nullptr&&control->axiss.size()>axisId) 
+                        {
+                          control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
+                          output.pass_to_input(input);                                              
+                        }                                               
+                       }
+                     else if(otg.update(input, output)==Result::Finished)
+                      {
+                        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+                      }
+                     else
+                      {                         
+                        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                      }
+        
+      }
+      void exit(void) override
+      {
+            
+      }
+     
   };
 
- REGISTER(JogJ);
+ REGISTERCMD(JogJ);
 
 #endif

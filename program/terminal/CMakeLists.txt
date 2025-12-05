@@ -34,7 +34,7 @@ if(NOT Boost_FOUND)
 endif()
 if(Boost_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} atomic rt Threads::Threads)
+    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} atomic  Threads::Threads)
 endif()
 
 # 设置输出目录

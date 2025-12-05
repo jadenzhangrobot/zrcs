@@ -28,7 +28,7 @@ class JogabsJ:public zrcsSystem::CmdNode
              double position;
             JogabsJ()
             {
-               
+                std::strcpy(nodeName,"JogabsJ");
             }    
 ;
        void init() override

@@ -5,6 +5,18 @@
 
 int main(int argc, char *argv[])
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    // 2. 允许图标使用高分率图片 (防止图标模糊)
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+#endif
+
+    // 3. 针对 4K 屏幕可能的调整 (Qt 5.14+)
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    QCoreApplication::setAttribute(Qt::AA_Use96Dpi); // 可选，视情况而定
+    // 或者设置缩放策略
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+#endif
     QApplication app(argc, argv);
     
     // 设置应用程序信息

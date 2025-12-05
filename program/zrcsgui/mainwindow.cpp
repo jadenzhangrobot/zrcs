@@ -128,13 +128,11 @@ void MainWindow::onPlusXClicked()
 {
     qDebug() << "X轴正向移动";
     showStatusMessage("X轴正向移动");
-    // TODO: 在这里添加实际的X轴正向移动控制代码
-    // SingleAxisMotion sam;
-    //   //  sam.axisId=0;
-    //     sam.motion=true;
-//     sam.direction=true;
-//     nrt_process->shared_block_->Multiplied.store(100);    
-//     nrt_process->shared_block_->manualPosition.store(sam);
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=0;
+    cmd.args[JogjTargetPosition]=ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
 }
 // 控制按钮槽函数实现
 void MainWindow::onPlusXPressed()
@@ -159,28 +157,17 @@ void MainWindow::onPlusXReleased()
     
     // 停止定时器
     moveTimer->stop();
-    
-    // SingleAxisMotion sam;
-    // sam.axisId=0;
-    // sam.motion=false;
-    // sam.direction=true;
-    // nrt_process->shared_block_->Multiplied.store(100);
-    // nrt_process->shared_block_->manualPosition.store(sam);
-    // 发送停止命令
-    // TODO: 在这里添加实际的停止命令
 }
 void MainWindow::onMinusXClicked()
 {
     qDebug() << "X轴负向移动";
     showStatusMessage("X轴负向移动");
+    Command cmd;
+    std::strcpy(cmd.cmd, "JogJ");
+    cmd.args[JogjAxisId]=0;
+    cmd.args[JogjTargetPosition]=-ui->lineEditlen->text().toInt(); // 每次移动10个单位
+    nrtProcess->shared_block_->commandQueue.push(cmd);
     
-//     SingleAxisMotion sam;
-//     sam.axisId=0;
-//     sam.direction=false;
-//     sam.motion=true;
-//    nrt_process->shared_block_->Multiplied.store(100);
-//     nrt_process->shared_block_->manualPosition.store(sam);
-    // TODO: 在这里添加实际的X轴负向移动控制代码
 }
 
 

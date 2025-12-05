@@ -14,6 +14,11 @@ enum
 };
 enum 
 {
+   JogjAxisId,
+   JogjTargetPosition,
+};
+enum 
+{
    ResetAxisId,
 };
 

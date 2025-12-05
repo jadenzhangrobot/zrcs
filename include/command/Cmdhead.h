@@ -10,7 +10,7 @@
 //#include "ContinuousJog.h"
 //#include "cmdAxisPosition.h"
 
-// #include "JogJ.h"
+ #include "JogJ.h"
 // #include "Stop.h"
  // #include "Show.h"
   // #include "MoveJ.h"
