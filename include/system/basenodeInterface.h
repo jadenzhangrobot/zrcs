@@ -7,7 +7,6 @@
  */
 #ifndef BASENODE_INTERFACE_H_
 #define BASENODE_INTERFACE_H_
-#include "cmdline.h"
 #include "common/config/cmdArgs.h"
 #include "common/sharedMemory/rtProcess.h"
 #include "controller/Controller.h"
@@ -26,7 +25,7 @@ public:
     char nodeName[32]={};
     
  
-    cmdline::parser port_input;
+   // cmdline::parser port_input;
     //命令参数
     std::string cmdParam={};
     ZrcsHardware::Controller* control;

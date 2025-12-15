@@ -3,10 +3,18 @@
 #include <thread>
 #include <chrono>
 #include "common/sharedMemory/nrt_process.h"
+#include "common/cmdline.h"
+
 
 using namespace std::chrono_literals;
 
 int main() {
+    cmdline::parser port_input;
+    port_input.add<std::string>("ip", '\0', "ip address", true);
+    port_input.add<int>("port", '\0', "port number", true);
+    std::string ip = port_input.get<std::string>("ip");
+    int port = port_input.get<int>("port");
+
     std::cout << "Starting IPC Demo with C++ Classes" << std::endl;
     
     // 创建NRT进程对象

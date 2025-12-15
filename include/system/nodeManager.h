@@ -8,7 +8,6 @@
 #ifndef NODEMANAGER_H_
 #define NODEMANAGER_H_
 #include "basenodeInterface.h"
-#include "cmdline.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "controller/rtos/linux.h"
