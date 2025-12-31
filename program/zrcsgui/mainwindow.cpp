@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow),nrtProcess(new NRTProcess("rtMotion")), moveTimer(new QTimer(this))
 {
     ui->setupUi(this);
-    manualControl = new ManualControl(ui, nrtProcess);
+   
     
     // 初始化定时器
     moveTimer->setSingleShot(false);  // 重复触发
@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     {
         throw std::runtime_error("NRT进程初始化失败");  
     }
-      
+    manualControl = new ManualControl(ui, nrtProcess);
 
     // 设置窗口标题
     setWindowTitle("ZRCS控制系统");    

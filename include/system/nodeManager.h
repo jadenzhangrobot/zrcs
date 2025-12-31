@@ -55,14 +55,19 @@ public:
     delete control;
     delete rtProcess;
   }
+  void  initData()
+  {
+      
+      AxisCount.store(control->axiss.size(),std::memory_order_release); 
+  }
   /**
    * @brief 运行系统主循环
    * 创建实时任务并启动任务调度器
    */
   void run() 
   {
-    rtProcess->initialize();
-    for (auto &node : NodeFactory::getInstance().inPutNodes)
+      rtProcess->initialize();
+      for (auto &node : NodeFactory::getInstance().inPutNodes)
       {
         node->registered(control,rtProcess);
       }
@@ -70,6 +75,8 @@ public:
       {
         node->registered(control,rtProcess);
       }
+
+   initData();
 
     control->rtos_->rtos_task_create();
     // 将实时节点的实时函数放入实时线程

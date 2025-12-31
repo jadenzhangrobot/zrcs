@@ -37,15 +37,15 @@ class ContinuousJog:public zrcsSystem::OutputNode
        {     
             // 从共享内存中加载手动位置数据
               input.control_interface = ruckig::ControlInterface::Velocity;                     
-              input.max_acceleration[0] =control->axiss[rtContinueMotion.load().axisId]->getMaxAcceleration();
-              input.max_jerk[0] =control->axiss[rtContinueMotion.load().axisId]->getMaxJerk();
+              input.max_acceleration[0] =control->axiss[ContinueMotion.load().axisId]->getMaxAcceleration();
+              input.max_jerk[0] =control->axiss[ContinueMotion.load().axisId]->getMaxJerk();
        }
        void accelerate()
        {     
                 
             if (accelerateStart==true) 
             {
-              input.current_position[0]=control->axiss[rtContinueMotion.load().axisId]->actualPos();       
+              input.current_position[0]=control->axiss[ContinueMotion.load().axisId]->actualPos();       
               input.current_velocity[0]= lastVelocity;
               input.current_acceleration[0]=lastAcceleration;
               input.target_velocity[0] =targetVelocity;
@@ -59,9 +59,9 @@ class ContinuousJog:public zrcsSystem::OutputNode
                 auto& p = output.new_position;
                 auto& v=output.new_velocity;
                 auto& a=output.new_acceleration;
-                if (control!=nullptr&&control->axiss.size()>rtContinueMotion.load().axisId) 
+                if (control!=nullptr&&control->axiss.size()>ContinueMotion.load().axisId) 
                 {
-                  control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                  control->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
                   lastVelocity=v[0];
                   lastAcceleration=a[0];
                   output.pass_to_input(input);
@@ -79,7 +79,7 @@ class ContinuousJog:public zrcsSystem::OutputNode
             setCurrentPosition=setCurrentPosition+targetVelocity*cycletime*0.001;
             lastVelocity=targetVelocity;
             lastAcceleration=0;
-            control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(setCurrentPosition);
+            control->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(setCurrentPosition);
             
        }
        void decelerate()
@@ -100,9 +100,9 @@ class ContinuousJog:public zrcsSystem::OutputNode
                         auto& p = output.new_position;
                         auto& v=output.new_velocity;
                         auto& a=output.new_acceleration;
-                        if (control!=nullptr&&control->axiss.size()>rtContinueMotion.load().axisId) 
+                        if (control!=nullptr&&control->axiss.size()>ContinueMotion.load().axisId) 
                         {
-                          control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                          control->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
                           lastVelocity=v[0];
                           lastAcceleration=a[0];
                           output.pass_to_input(input);                                                                    
@@ -119,18 +119,18 @@ class ContinuousJog:public zrcsSystem::OutputNode
       void  run(void) override
       {                        
             
-                  targetVelocity = double(rtMultiplied.load()/100.0) * control->axiss[rtContinueMotion.load().axisId]->getMaxVelocity();
-                  if (rtContinueMotion.load().direction==false) 
+                  targetVelocity = double(MultiPlied.load()/100.0) * control->axiss[ContinueMotion.load().axisId]->getMaxVelocity();
+                  if (ContinueMotion.load().direction==false) 
                   {
                       targetVelocity=-targetVelocity;
                   }
                 
-                  if (rtContinueMotion.load().motion==true)                                                               
+                  if (ContinueMotion.load().motion==true)                                                               
                   { 
                       decelerateStart=true;
                       accelerate();                       
                   }
-                  else if (rtContinueMotion.load().motion==false)
+                  else if (ContinueMotion.load().motion==false)
                   {
                       accelerateStart=true;
                       decelerate();

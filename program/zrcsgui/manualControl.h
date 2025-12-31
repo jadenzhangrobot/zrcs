@@ -26,7 +26,7 @@ public:
             layout = new QVBoxLayout(ui->scrollAreaWidgetContents);
             ui->scrollAreaWidgetContents->setLayout(layout);
         }
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < nrtProcess->shared_block_->axisCount.load(); i++)
         {
             QWidget *axisWidget = new QWidget(ui->scrollAreaWidgetContents);
             QHBoxLayout *hLayout = new QHBoxLayout(axisWidget);

@@ -3,6 +3,7 @@
 #include <QDir>
 #include "mainwindow.h"
 #include <QProcess>
+#include <unistd.h>
 int main(int argc, char *argv[])
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
@@ -22,11 +23,18 @@ int main(int argc, char *argv[])
     QString programPath = appDir + "/zrcs.exe";
     QString plotPublisherPath = appDir + "/plotPublisher.exe";
     QProcess *zrcsProcess;
-    zrcsProcess = new QProcess();
-    zrcsProcess->start(programPath);
+    zrcsProcess = new QProcess(&app);
+    zrcsProcess->start(programPath, QStringList());
     QProcess *plot;
-    plot = new QProcess();
-    plot->start(plotPublisherPath);
+    plot = new QProcess(&app);
+    plot->start(plotPublisherPath, QStringList());
+
+    // 确保主程序退出时子进程也能退出
+    QObject::connect(&app, &QApplication::aboutToQuit, [zrcsProcess, plot](){
+        zrcsProcess->kill();
+        plot->kill();
+    });
+
     // 设置应用程序信息
     app.setApplicationName("ZRCS控制系统");
     app.setApplicationVersion("1.0");

@@ -8,9 +8,9 @@
 #include "Disable.h"
 #include "Reset.h"
 #include "ContinuousJog.h"
-#include "cmdAxisPosition.h"
-
+#include "DataCollection.h"
  #include "JogJ.h"
+ #include "dataPub.h"
 // #include "Stop.h"
  // #include "Show.h"
   // #include "MoveJ.h"

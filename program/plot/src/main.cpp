@@ -21,12 +21,14 @@ int main()
     double timestamp = 0.0;
     while (true) {   
         nlohmann::json j;
-        std::array<double, 100> axisPosition;
+        std::array<double, AXISMAXCOUNT> axisPosition;
         while(nrt_process.shared_block_->statusQueue.pop(axisPosition))
         {
             j["axis-1"] = axisPosition[0];
             j["axis-2"] = axisPosition[1];
             j["axis-3"] = axisPosition[2];
+            j["axis-4"] = axisPosition[3];
+            j["axis-5"] = axisPosition[4];
             j["timestamp"] = timestamp;
             timestamp += 0.001;
             zs.send(j);

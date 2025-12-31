@@ -101,16 +101,22 @@ struct SharedBlock {
     // RT -> NRT 的状态通道
     SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> statusQueue;
     std::atomic<TaskScheduling>  cmd; 
-    std::atomic<uint64_t>  heartBeat; 
-    std::atomic<uint8_t>   Multiplied;
+    std::atomic<uint64_t>  heartBeat; //心跳
+    std::atomic<uint8_t>   Multiplied;//倍率
+    std::atomic<uint8_t>   axisCount;//轴数量
+    std::array<double, AXISMAXCOUNT>  axisPosition;
+    std::array<double, AXISMAXCOUNT>  axisVelocity;
+
+
     std::atomic<singleAxisContinueMotion> sacm;
 };
 #define taskScheduling rtProcess->shared_block_->cmd
 #define rtCmdQueue     rtProcess->shared_block_->commandQueue
-#define rtStatusQueue rtProcess->shared_block_->statusQueue
-#define rtHeartBeat rtProcess->shared_block_->heartBeat
-#define rtMultiplied rtProcess->shared_block_->Multiplied
-#define rtContinueMotion rtProcess->shared_block_->sacm
+#define rtStatusQueue  rtProcess->shared_block_->statusQueue
+#define HeartBeat      rtProcess->shared_block_->heartBeat
+#define AxisCount      rtProcess->shared_block_->axisCount
+#define MultiPlied     rtProcess->shared_block_->Multiplied
+#define ContinueMotion rtProcess->shared_block_->sacm
 
 
 #endif // SHARED_DATA_HPP
