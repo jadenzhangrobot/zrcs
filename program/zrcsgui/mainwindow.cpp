@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "common/config/cmdArgs.h"
+#include "common/sharedMemory/sharedData.h"
 #include "ui_zrcsgui.h"
 #include <QDebug>
 
@@ -8,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow),nrtProcess(new NRTProcess("rtMotion")), moveTimer(new QTimer(this))
 {
     ui->setupUi(this);
+    manualControl = new ManualControl(ui, nrtProcess);
     
     // 初始化定时器
     moveTimer->setSingleShot(false);  // 重复触发
@@ -31,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete manualControl;
     delete nrtProcess;
     delete ui;
 }
@@ -85,7 +88,44 @@ void MainWindow::setupConnections()
     connect(ui->pushButton_20, &QPushButton::clicked, this, &MainWindow::onAlphaAxisHomeClicked);
     connect(ui->pushButton_21, &QPushButton::clicked, this, &MainWindow::onBetaAxisHomeClicked);
     connect(ui->pushButton_22, &QPushButton::clicked, this, &MainWindow::onAllAxisHomeClicked);
+
+   // connect(ui->pushButton_6, &QPushButton::pressed, this, &MainWindow::addJogJ);
+    //connect(ui->pushButton_6, &QPushButton::released, this, &MainWindow::deleteJogJ);
+   
 }
+void MainWindow::addJogJ()
+{
+    qDebug() << "J+ 按钮按下";
+    showStatusMessage("J+ 轴正向移动开始");
+    nrtProcess->shared_block_->Multiplied.store(1,std::memory_order_release);
+    // 设置当前移动函数
+    currentMoveFunction = [this]() {
+        singleAxisContinueMotion motion;
+        motion.motion=true;
+        motion.direction=true;
+        nrtProcess->shared_block_->sacm.store(motion,std::memory_order_release);
+    };
+
+    // 立即发送第一个移动命令
+    currentMoveFunction();
+
+    // 启动定时器，每100ms发送一次命令
+    moveTimer->start();
+}
+
+void MainWindow::deleteJogJ()
+{
+    qDebug() << "J+ 按钮松开";
+    showStatusMessage("J+ 轴正向移动停止");
+    singleAxisContinueMotion motion;
+    motion.motion=false;
+    nrtProcess->shared_block_->sacm.store(motion,std::memory_order_release);
+
+    // 停止定时器
+    moveTimer->stop();
+}
+
+
 void MainWindow::onerrorClear()
 {
     qDebug() << "清除伺服错误点击";

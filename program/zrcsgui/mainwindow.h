@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <functional>
 #include "common/sharedMemory/nrt_process.h"
+#include "manualControl.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -75,8 +76,12 @@ private slots:
     // 定时器槽函数
     void onTimerTimeout();
 
+    void addJogJ();
+    void deleteJogJ();
+
 private:
     Ui::MainWindow *ui;
+    ManualControl *manualControl;
     NRTProcess *nrtProcess;
     QTimer *moveTimer;  // 用于长按移动的定时器
     std::function<void()> currentMoveFunction;  // 当前活动的移动函数

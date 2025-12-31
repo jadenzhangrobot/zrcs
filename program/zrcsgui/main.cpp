@@ -2,7 +2,7 @@
 #include <QStyleFactory>
 #include <QDir>
 #include "mainwindow.h"
-
+#include <QProcess>
 int main(int argc, char *argv[])
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
@@ -18,7 +18,15 @@ int main(int argc, char *argv[])
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
     QApplication app(argc, argv);
-    
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString programPath = appDir + "/zrcs.exe";
+    QString plotPublisherPath = appDir + "/plotPublisher.exe";
+    QProcess *zrcsProcess;
+    zrcsProcess = new QProcess();
+    zrcsProcess->start(programPath);
+    QProcess *plot;
+    plot = new QProcess();
+    plot->start(plotPublisherPath);
     // 设置应用程序信息
     app.setApplicationName("ZRCS控制系统");
     app.setApplicationVersion("1.0");

@@ -85,6 +85,7 @@ public:
 
 struct singleAxisContinueMotion
 {
+   int axisId=0;
    bool motion=false;
    bool direction=true;
 };

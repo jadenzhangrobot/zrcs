@@ -44,14 +44,9 @@ while (true)
       strncpy(cmd_.cmd, cmd.c_str(), sizeof(cmd_.cmd) - 1);
       cmd_.cmd[sizeof(cmd_.cmd) - 1] = '\0';  // Ensure null termination
      // cmd_.jogabsj_.position=100.0;
-      //nrt_process.shared_block_->commandQueue.push(cmd_);
-      std::this_thread::sleep_for(10ms);
+     // nrt_process.shared_block_->commandQueue.push(cmd_);
+      //std::this_thread::sleep_for(10ms);
 }
-    
-    // 初始化RT进程（连接到共享内存）
-
-    // 在主线程中运行NRT进程
-    
     std::cout << "IPC Demo completed successfully" << std::endl;
     return 0;
 }

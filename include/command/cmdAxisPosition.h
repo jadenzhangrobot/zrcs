@@ -19,9 +19,9 @@ class DataPub:public zrcsSystem::InputNode
             std::array<double, 100> AxisPositon;
             for(int i=0; i< control->axiss.size(); i++)
             {
-                AxisPositon[i] = control->axiss[i]->actualPos();  
+                AxisPositon[i] = control->axiss[i]->actualposCmd(); 
             }
-            AxisPositon[1] = control->axiss[0]->actualposCmd(); 
+            
             rtStatusQueue.push(AxisPositon);           
         }    
 };

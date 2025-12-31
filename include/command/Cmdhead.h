@@ -7,7 +7,7 @@
  //#include "Setmode.h" 
 #include "Disable.h"
 #include "Reset.h"
-//#include "ContinuousJog.h"
+#include "ContinuousJog.h"
 #include "cmdAxisPosition.h"
 
  #include "JogJ.h"

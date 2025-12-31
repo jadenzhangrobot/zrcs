@@ -22,10 +22,10 @@ class ContinuousJog:public zrcsSystem::OutputNode
              Ruckig<1> otg {cycletime*0.001}; 
              InputParameter<1> input;
              OutputParameter<1> output;            
-             int axisId=0;
-             double maxVelocity=4;
              double targetVelocity=0;
              double setCurrentPosition; 
+             double lastVelocity=0;
+             double lastAcceleration=0;
              bool accelerateStart=true;
              bool decelerateStart=true;
             ContinuousJog()
@@ -37,31 +37,33 @@ class ContinuousJog:public zrcsSystem::OutputNode
        {     
             // 从共享内存中加载手动位置数据
               input.control_interface = ruckig::ControlInterface::Velocity;                     
-              input.max_acceleration[0] =control->axiss[axisId]->getMaxAcceleration();
-              input.max_jerk[0] =control->axiss[axisId]->getMaxJerk();
+              input.max_acceleration[0] =control->axiss[rtContinueMotion.load().axisId]->getMaxAcceleration();
+              input.max_jerk[0] =control->axiss[rtContinueMotion.load().axisId]->getMaxJerk();
        }
        void accelerate()
        {     
                 
             if (accelerateStart==true) 
             {
-              input.current_position[0]=control->axiss[axisId]->actualPos();       
-              input.current_velocity[0]= control->axiss[axisId]->actualVel();
-              input.current_acceleration[0]=control->axiss[axisId]->actualAcc();
+              input.current_position[0]=control->axiss[rtContinueMotion.load().axisId]->actualPos();       
+              input.current_velocity[0]= lastVelocity;
+              input.current_acceleration[0]=lastAcceleration;
               input.target_velocity[0] =targetVelocity;
               input.target_acceleration[0] =0;
               accelerateStart=false;
             }
       
-            auto status  = otg.update(input, output);  
+              auto status  = otg.update(input, output);  
               if(status==Result::Working)            
               {                        
                 auto& p = output.new_position;
                 auto& v=output.new_velocity;
                 auto& a=output.new_acceleration;
-                if (control!=nullptr&&control->axiss.size()>axisId) 
+                if (control!=nullptr&&control->axiss.size()>rtContinueMotion.load().axisId) 
                 {
-                  control->axiss[axisId]->setAxisPositionCmd(p[0]);
+                  control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                  lastVelocity=v[0];
+                  lastAcceleration=a[0];
                   output.pass_to_input(input);
                   setCurrentPosition=p[0];                                                                   
                 } 
@@ -75,7 +77,9 @@ class ContinuousJog:public zrcsSystem::OutputNode
        void uniformSpeed()
        {     
             setCurrentPosition=setCurrentPosition+targetVelocity*cycletime*0.001;
-            control->axiss[axisId]->setAxisPositionCmd(setCurrentPosition);
+            lastVelocity=targetVelocity;
+            lastAcceleration=0;
+            control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(setCurrentPosition);
             
        }
        void decelerate()
@@ -84,8 +88,8 @@ class ContinuousJog:public zrcsSystem::OutputNode
                     if (decelerateStart==true)
                     {
                       input.current_position[0]=setCurrentPosition;       
-                      input.current_velocity[0]= control->axiss[axisId]->actualVel();
-                      input.current_acceleration[0]=control->axiss[axisId]->actualAcc();
+                      input.current_velocity[0]= lastVelocity;
+                      input.current_acceleration[0]= lastAcceleration;
                       input.target_velocity[0] =0;
                       input.target_acceleration[0] =0;
                       decelerateStart=false;
@@ -96,9 +100,11 @@ class ContinuousJog:public zrcsSystem::OutputNode
                         auto& p = output.new_position;
                         auto& v=output.new_velocity;
                         auto& a=output.new_acceleration;
-                        if (control!=nullptr&&control->axiss.size()>axisId) 
+                        if (control!=nullptr&&control->axiss.size()>rtContinueMotion.load().axisId) 
                         {
-                          control->axiss[axisId]->setAxisPositionCmd(p[0]);
+                          control->axiss[rtContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                          lastVelocity=v[0];
+                          lastAcceleration=a[0];
                           output.pass_to_input(input);                                                                    
                         }                                  
                       }
@@ -113,7 +119,7 @@ class ContinuousJog:public zrcsSystem::OutputNode
       void  run(void) override
       {                        
             
-                  targetVelocity = double(rtMultiplied.load()/100.0) * control->axiss[axisId]->getMaxVelocity();
+                  targetVelocity = double(rtMultiplied.load()/100.0) * control->axiss[rtContinueMotion.load().axisId]->getMaxVelocity();
                   if (rtContinueMotion.load().direction==false) 
                   {
                       targetVelocity=-targetVelocity;
