@@ -14,7 +14,12 @@ class DataPub:public zrcsSystem::InputNode
 {
    public:
         std::array<double, AXISMAXCOUNT> AxisPositon;
-        void execute() override
+
+        void init() override
+        {
+           
+        }
+        void run() override
         {
           for (int i=0; i< control->axiss.size(); i++)
           {

@@ -21,9 +21,26 @@ enum
 {
    ResetAxisId,
 };
+enum
+{
+   MoveLX,
+   MoveLY,
+   MoveLZ,
+   MoveLTargetPosition,
+};
+enum
+{
+   G01X,
+   G01Y,
+   G01Z,
+   G01A,
+   GO1B,
+   GO1C,
+   GO1F,
+};
 
-
-  enum class TaskScheduling {
+  enum class TaskScheduling 
+  {
     RUN, 
     ERROR,
     STOP,            // 停止         

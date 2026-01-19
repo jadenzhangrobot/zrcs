@@ -164,13 +164,43 @@ public:
 };
 class InputNode : public Basenode {
 public:
-    
+    std::atomic<NodeStatus> nodeStatus{NodeStatus::RTINIT};
+
     InputNode() = default;
     virtual ~InputNode() = default;
+    virtual void init() = 0;
+    virtual void run()=0;
     
 
-     virtual void execute()=0;
+     virtual void execute()
+     {
+        switch (nodeStatus.load())
+                {              
+                  case NodeStatus::RTINIT:
+                        init();
+                        INFO_PRINT("%s 初始化成功\n",nodeName);
+                        nodeStatus.store(NodeStatus::EXECUTING,std::memory_order_release);             
+                        break;
+                  case NodeStatus::EXECUTING:
+                        run();
+                       break;                          
+                  case  NodeStatus::FAILED: 
+                        INFO_PRINT("%s 执行失败\n",nodeName);  
+                    break;                
+                  default:                                     
+                    break;
+                }
+     }
+    NodeStatus getNodeStatus() 
+    {
+        return nodeStatus.load(std::memory_order_acquire);
+    }
+    void setNodeStatus(NodeStatus status) 
+    {
+        nodeStatus.store(status, std::memory_order_release);
+    }
 };
+
 
 
 

@@ -13,8 +13,12 @@
 class DataCollection:public zrcsSystem::InputNode
 {
    public:
-        
-        void execute() override
+        std::array<double, AXISMAXCOUNT> AxisPositon;
+        void init() override
+        {
+           
+        }
+        void run() override
         {
             // std::array<double, 100> AxisPositon;
             // for(int i=0; i< control->axiss.size(); i++)

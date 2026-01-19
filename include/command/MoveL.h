@@ -18,18 +18,17 @@
 #include <cmath>
 
 using namespace ruckig;
-class MoveL : public zrcsSystem::RtCmdNode 
+class MoveL : public zrcsSystem::CmdNode 
 {
 public:
   MoveL()
   {
-   
+     std::strcpy(nodeName,"MoveL");
   }
   
   void init() override
   {  
-    MotionParam param;
-    rtProcess->shared_block_->motionParamQueue.pop(param);    
+     
   }
 
    void run(void) override
@@ -41,6 +40,6 @@ public:
      
   }
 };
-REGISTERRTCMD(MoveL)
+REGISTERCMD(MoveL)
 
 #endif

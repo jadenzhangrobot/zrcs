@@ -82,11 +82,24 @@ public:
     // 将实时节点的实时函数放入实时线程
     control->rtos_->real_task([this]() 
     {
-        control->receiveData();
-        for (auto &node : NodeFactory::getInstance().inPutNodes)
+      control->receiveData();
+      for (auto &node : NodeFactory::getInstance().inPutNodes)
+      {
+        if (node->getNodeStatus() == NodeStatus::RTINIT) 
         {
-          node->execute();
-        } 
+          node->init();
+          node->setNodeStatus(NodeStatus::EXECUTING);
+        }
+        else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+        {
+            node->execute();
+        }
+        else
+        {
+           INFO_PRINT("%s 执行失败\n",node->getNodeNAME().c_str());  
+        }
+        
+      }
       
       switch (taskScheduling.load()) 
       {       
