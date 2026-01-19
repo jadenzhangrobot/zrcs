@@ -3,7 +3,9 @@
 #include <QDir>
 #include "mainwindow.h"
 #include <QProcess>
+#ifndef Q_OS_WIN
 #include <unistd.h>
+#endif
 int main(int argc, char *argv[])
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
@@ -20,8 +22,13 @@ int main(int argc, char *argv[])
 #endif
     QApplication app(argc, argv);
     QString appDir = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_WIN
     QString programPath = appDir + "/zrcs.exe";
     QString plotPublisherPath = appDir + "/plotPublisher.exe";
+#else
+    QString programPath = appDir + "/zrcs";
+    QString plotPublisherPath = appDir + "/plotPublisher";
+#endif
     QProcess *zrcsProcess;
     zrcsProcess = new QProcess(&app);
     zrcsProcess->start(programPath, QStringList());
