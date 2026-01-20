@@ -3,11 +3,30 @@
 #include <QDir>
 #include "mainwindow.h"
 #include <QProcess>
+#include "motion/velocityPlanner3D.h"
 #ifndef Q_OS_WIN
 #include <unistd.h>
 #endif
 int main(int argc, char *argv[])
 {
+    VelocityPlanner3D planner;
+    planner.setConfig(100.0, 500.0, 0.0, 0.0);
+
+    // 场景：
+    // 1. 地面直线加速 (0,0,0) -> (50,0,0)
+    // 2. 开始爬坡 (50,0,0) -> (100,0,50) [Z轴上升]
+    // 3. 坡顶急转弯 (100,0,50) -> (100,50,50) [Z轴不变，XY平面转弯]
+    
+    planner.addPoint(0, 0, 0);      // 起点
+    planner.addPoint(50, 0, 0);     // 地面点
+    planner.addPoint(100, 0, 50);   // 坡顶路口 (入弯点)
+    planner.addPoint(100, 5, 50);   // 坡顶弯道中 (距离很短，必须减速)
+    planner.addPoint(100, 100, 50); // 出弯后直行
+
+    if (planner.plan()) {
+        planner.printReport();
+    }
+
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     // 2. 允许图标使用高分率图片 (防止图标模糊)

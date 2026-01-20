@@ -42,7 +42,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${MOTION_CONTROL_LIBS})
 
 # 测试程序
 if(test)
-    add_subdirectory(program/terminal)
     add_subdirectory(program/zrcsgui)
     add_subdirectory(program/plot)
 endif()
