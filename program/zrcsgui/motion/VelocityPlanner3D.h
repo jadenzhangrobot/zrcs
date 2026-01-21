@@ -144,19 +144,43 @@ public:
         return true;
     }
 
-    void printReport() const {
-        std::cout << std::fixed << std::setprecision(2);
-        std::cout << "--- 3D Velocity Planning Report ---" << std::endl;
-        std::cout << "Idx\tX\tY\tZ\tDist3D\tVel Limit" << std::endl;
-        std::cout << "----------------------------------------------------" << std::endl;
-        for (size_t i = 0; i < path.size(); ++i) {
-            std::cout << i << "\t" 
-                      << (int)path[i].pos.x << "\t" 
-                      << (int)path[i].pos.y << "\t" 
-                      << (int)path[i].pos.z << "\t" 
-                      << (i < path.size()-1 ? path[i].dist_to_next : 0.0) << "\t" 
-                      << path[i].max_v << std::endl;
+    void printReport(const std::string& filename) const {
+        printReport(filename, {});
+    }
+
+    void printReport(const std::string& filename, const std::vector<Point3D>& rawPoints) const {
+        std::ofstream outFile(filename);
+
+        if (!outFile.is_open()) {
+            std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+            return;
         }
+
+        outFile << std::fixed << std::setprecision(4);
+        outFile << "Index,X,Y,Z,Distance,VelocityLimit" << std::endl;
+
+        for (size_t i = 0; i < path.size(); ++i) {
+            outFile << i << ","
+                    << path[i].pos.x << ","
+                    << path[i].pos.y << ","
+                    << path[i].pos.z << ","
+                    << (i < path.size() - 1 ? path[i].dist_to_next : 0.0) << ","
+                    << path[i].max_v << "\n";
+        }
+
+        if (!rawPoints.empty()) {
+            outFile << "RAW_POINTS" << std::endl;
+            outFile << "Index,X,Y,Z" << std::endl;
+            for (size_t i = 0; i < rawPoints.size(); ++i) {
+                outFile << i << ","
+                        << rawPoints[i].x << ","
+                        << rawPoints[i].y << ","
+                        << rawPoints[i].z << "\n";
+            }
+        }
+
+        outFile.close();
+        std::cout << "Successfully saved planning data to: " << filename << std::endl;
     }
 };
 
