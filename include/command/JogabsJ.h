@@ -17,68 +17,65 @@
 #include "system/nodeFactory.h"
 
 using namespace ruckig;
-class JogabsJ:public zrcsSystem::CmdNode
-  {
 
-             public:
-             Ruckig<1> otg {cycletime*0.001}; 
-             InputParameter<1> input;
-             OutputParameter<1> output;            
-             int axisId;
-             double position;
-            JogabsJ()
+class JogabsJ : public zrcsSystem::CmdNode
+{
+private:
+    Ruckig<1> otg_;
+    InputParameter<1> input_;
+    OutputParameter<1> output_;            
+    int axisId_;
+    double position_;
+    
+public:
+    JogabsJ() : otg_(cycletime * 0.001)
+    {
+        std::strcpy(nodeName_, "JogabsJ");
+    }
+
+    void init() override
+    { 
+        axisId_ = static_cast<int>(command_->args[JogabsjAxisId]);       
+        position_ = command_->args[JogabsjTargetPosition];
+        input_.current_position[0] = controller_->axiss[axisId_]->actualPos();       
+        input_.current_velocity[0] = 0;
+        input_.current_acceleration[0] = 0;                               
+        input_.target_position[0] = position_;
+        input_.target_velocity[0] = 0;
+        input_.target_acceleration[0] = 0;
+        input_.max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity();
+        input_.max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
+        input_.max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
+    }
+
+    void run(void) override
+    {                               
+        if(otg_.update(input_, output_) == Result::Working)            
+        {                        
+            auto& p = output_.new_position;
+            auto& v = output_.new_velocity;
+            auto& a = output_.new_acceleration;
+            if (controller_ != nullptr && controller_->axiss.size() > axisId_) 
             {
-                std::strcpy(nodeName,"JogabsJ");
-            }    
-;
-       void init() override
-       { 
-             
-              axisId=command->args[JogabsjAxisId];       
-              position=command->args[JogabsjTargetPosition];
-              input.current_position[0]=control->axiss[axisId]->actualPos();       
-              input.current_velocity[0]= 0;
-              input.current_acceleration[0] =0;                               
-              input.target_position[0]=position;
-              input.target_velocity[0] =0;
-              input.target_acceleration[0] =0;
-              input.max_velocity[0] =control->axiss[axisId]->getMaxVelocity();
-              input.max_acceleration[0] =control->axiss[axisId]->getMaxAcceleration();
-              input.max_jerk[0] =control->axiss[axisId]->getMaxJerk();
-       }
+                controller_->axiss[axisId_]->setAxisPositionCmd(p[0]);                                                                                        
+                output_.pass_to_input(input_);                                              
+            }                                               
+        }
+        else if(otg_.update(input_, output_) == Result::Finished)
+        {
+            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        }
+        else
+        {                         
+            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        }
+    }
+    
+    void exit(void) override
+    {
+    }
+};
 
-  
-           
-      void  run(void) override
-      {                               
-                     if(otg.update(input, output) == Result::Working)            
-                      {                        
-                        auto& p = output.new_position;
-                        auto& v=output.new_velocity;
-                        auto& a=output.new_acceleration;
-                        if (control!=nullptr&&control->axiss.size()>axisId) 
-                        {
-                          control->axiss[axisId]->setAxisPositionCmd(p[0]);                                                                                        
-                          output.pass_to_input(input);                                              
-                        }                                               
-                       }
-                     else if(otg.update(input, output)==Result::Finished)
-                      {
-                        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-                      }
-                     else
-                      {                         
-                        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-                      }
-        
-      }
-      void exit(void) override
-      {
-            
-      }
-     
-  };
-
- REGISTERCMD(JogabsJ);
+REGISTERCMD(JogabsJ);
 
 #endif

@@ -1,6 +1,6 @@
 /**
  * @copyright 版权所有(c)2024
- * @filename: centre.h
+ * @filename: nodeManager.h
  * @brief: 系统中心控制类，负责任务调度和节点管理
  * @author: 649894200@qq.com
  * @createdate: 2024-01-04
@@ -23,151 +23,142 @@ namespace zrcsSystem {
 /**
  * @brief 系统中心控制类，负责整个系统的任务调度和节点管理
  */
-class NodeManger{
+class NodeManager {
 private:
-  // 节点指针
-  /**
-   * @brief 任务调度状态枚举
-   */
-
+  // 成员变量
+  ZrcsHardware::Controller *controller_;         // 硬件控制器指针
+  CmdNode* cmdNode_;                             // 当前命令节点指针
+  Command cmd_;                                  // 命令对象
   
-  // 命令对象指针容
-  ZrcsHardware::Controller *control;             // 硬件控制器指针               // 实时进程指针
-  CmdNode*   cmdNode = nullptr; 
-  Command cmd ;      
 public:
-  RTProcess *rtProcess = nullptr; 
-  //TaskScheduling taskScheduling =TaskScheduling::RUN; 
-  NodeManger() : rtProcess(new RTProcess("rtMotion")), control(new ZrcsHardware::Controller())
+  RTProcess *rtProcess_;                         // 实时进程指针
+  
+  NodeManager() : rtProcess_(new RTProcess("rtMotion")), 
+                  controller_(new ZrcsHardware::Controller()), 
+                  cmdNode_(nullptr)
   {
   }
 
   // 禁用拷贝构造函数
-  NodeManger(const NodeManger &) = delete;
+  NodeManager(const NodeManager &) = delete;
   // 禁用赋值操作符
-  NodeManger &operator=(const NodeManger &) = delete;
+  NodeManager &operator=(const NodeManager &) = delete;
 
   /**
    * @brief 析构函数，清理资源
    */
-  ~NodeManger(void) 
+  ~NodeManager(void) 
   {
-    delete control;
-    delete rtProcess;
+    delete controller_;
+    delete rtProcess_;
   }
-  void  initData()
+  
+  void initData()
   {
-      
-      AxisCount.store(control->axiss.size(),std::memory_order_release); 
+      AxisCount.store(controller_->axiss.size(), std::memory_order_release); 
   }
+  
   /**
    * @brief 运行系统主循环
    * 创建实时任务并启动任务调度器
    */
   void run() 
   {
-      rtProcess->initialize();
+      rtProcess_->initialize();
       for (auto &node : NodeFactory::getInstance().inPutNodes)
       {
-        node->registered(control,rtProcess);
+        node->registered(controller_, rtProcess_);
       }
       for (auto &node : NodeFactory::getInstance().outPutNodes)
       {
-        node->registered(control,rtProcess);
+        node->registered(controller_, rtProcess_);
       }
 
-   initData();
+      initData();
 
-    control->rtos_->rtos_task_create();
-    // 将实时节点的实时函数放入实时线程
-    control->rtos_->real_task([this]() 
-    {
-      control->receiveData();
-      for (auto &node : NodeFactory::getInstance().inPutNodes)
+      controller_->rtos_->rtos_task_create();
+      // 将实时节点的实时函数放入实时线程
+      controller_->rtos_->real_task([this]() 
       {
-        if (node->getNodeStatus() == NodeStatus::RTINIT) 
+        controller_->receiveData();
+        for (auto &node : NodeFactory::getInstance().inPutNodes)
         {
-          node->init();
-          node->setNodeStatus(NodeStatus::EXECUTING);
-        }
-        else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-        {
-            node->execute();
-        }
-        else
-        {
-           INFO_PRINT("%s 执行失败\n",node->getNodeNAME().c_str());  
+          if (node->getNodeStatus() == NodeStatus::RTINIT) 
+          {
+            node->init();
+            node->setNodeStatus(NodeStatus::EXECUTING);
+          }
+          else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+          {
+              node->execute();
+          }
+          else
+          {
+             INFO_PRINT("%s 执行失败\n", node->getNodeName().c_str());  
+          }
         }
         
-      }
-      
-      switch (taskScheduling.load()) 
-      {       
-            case TaskScheduling::RUN:                         
-                  if (cmdNode != nullptr)
-                  { 
-                    if (cmdNode->getCmdStatus() == CmdStatus::COMPLETED) 
-                    {
-                      cmdNode->setCmdStatus(CmdStatus::INIT);
-                      //taskScheduling= INIT;
-                      // 节点已完成或失败，清理资源
-                      cmdNode = nullptr;
-                    } 
-                    else 
-                    {
-                      // 节点仍在运行，继续执行
-                      cmdNode->execute();
-                    }                  
-                  }
-                  else
-                  {
-                    if (rtCmdQueue.pop(cmd)) 
-                    {
-                         std::string_view cmdName(cmd.cmd);
-                         cmdNode =NodeFactory::getInstance().getNodePtr(cmdName).get();
-                         cmdNode->registered(control,rtProcess,&cmd);
+        switch (taskScheduling.load()) 
+        {       
+              case TaskScheduling::RUN:                         
+                    if (cmdNode_ != nullptr)
+                    { 
+                      if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) 
+                      {
+                        cmdNode_->setCmdStatus(CmdStatus::INIT);
+                        // 节点已完成或失败，清理资源
+                        cmdNode_ = nullptr;
+                      } 
+                      else 
+                      {
+                        // 节点仍在运行，继续执行
+                        cmdNode_->execute();
+                      }                  
                     }
                     else
                     {
-                        
-                    }
-                   
-                  }                            
+                      if (rtCmdQueue.pop(cmd_)) 
+                      {
+                           std::string_view cmdName(cmd_.cmd);
+                           cmdNode_ = NodeFactory::getInstance().getNodePtr(cmdName).get();
+                           cmdNode_->registered(controller_, rtProcess_, &cmd_);
+                      }
+                    }                            
+                  break;
+              case TaskScheduling::STOP:
                 break;
-            case TaskScheduling::STOP:
-              break;
-            case TaskScheduling::RESET:
-                if (cmdNode!=nullptr) 
-                {
-                    cmdNode->setCmdStatus(CmdStatus::INIT);
-                    cmdNode=nullptr;
-                }
-                
-                 taskScheduling.store(TaskScheduling::RUN,std::memory_order_release);
-              break;
-            case TaskScheduling::START:            
-            default:
-              break;
-      }
-      for (auto &node : NodeFactory::getInstance().outPutNodes)
-      {
-        if (node->getNodeStatus() == NodeStatus::RTINIT) 
-        {
-          node->init();
-          node->setNodeStatus(NodeStatus::EXECUTING);
-        }
-        else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-        {
-            node->execute();
-        }
-        else
-        {
-           INFO_PRINT("%s 执行失败\n",node->getNodeNAME().c_str());  
+              case TaskScheduling::RESET:
+                  if (cmdNode_ != nullptr) 
+                  {
+                      cmdNode_->setCmdStatus(CmdStatus::INIT);
+                      cmdNode_ = nullptr;
+                  }
+                  taskScheduling.store(TaskScheduling::RUN, std::memory_order_release);
+                break;
+              case TaskScheduling::START:            
+              default:
+                break;
         }
         
-      }
-     control->SendData();
-    });
+        for (auto &node : NodeFactory::getInstance().outPutNodes)
+        {
+          if (node->getNodeStatus() == NodeStatus::RTINIT) 
+          {
+            node->init();
+            node->setNodeStatus(NodeStatus::EXECUTING);
+          }
+          else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+          {
+              node->execute();
+          }
+          else
+          {
+             INFO_PRINT("%s 执行失败\n", node->getNodeName().c_str());  
+          }
+        }
+        
+        controller_->sendData();
+      });
   }
 };
 }

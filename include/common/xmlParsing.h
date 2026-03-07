@@ -39,34 +39,34 @@
              projectPath  = currentExePath.substr(0, found);
             }
             else {
-                throw std::runtime_error("没有找到工程名 zrcs");
+                throw std::runtime_error("Project 'zrcs' not found in path");
             }
              xmlpath = projectPath + "config/" + xmlName;
              int status = doc->LoadFile(xmlpath.c_str());
              if(status==XML_SUCCESS)
              {
-                 //加载xml文件失败
-                  std::cout<<"加载"<<xmlName<<"文件成功"<<std::endl;
+                 // XML file loaded successfully
+                  std::cout << "Successfully loaded " << xmlName << " file" << std::endl;
              
              }
              else if(status==XML_ERROR_FILE_NOT_FOUND)
              {
-                 //无法找到文件
+                 // File not found
                  std::string str="can't find \n";
                  throw str+xmlpath;
              }else if(status==XML_ERROR_PARSING_ATTRIBUTE||status== XML_CAN_NOT_CONVERT_TEXT)
              {
-                 //有语法错误
+                 // Syntax error
                  std::string str=" has syntax error\n";
                  throw xmlpath+str;
              }else if(status==XML_NO_TEXT_NODE)
              {
-                 //根元素name为空
+                 // Root element name is empty
                  std::string str="The name of rootelement is empty\n";
                  throw str;
              }
              else {
-                throw std::runtime_error("读取xml文件失败");
+                throw std::runtime_error("Failed to read XML file");
              }
              
           XMLElement* root=doc->RootElement();

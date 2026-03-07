@@ -110,13 +110,13 @@ struct SharedBlock {
 
     std::atomic<singleAxisContinueMotion> sacm;
 };
-#define taskScheduling rtProcess->shared_block_->cmd
-#define rtCmdQueue     rtProcess->shared_block_->commandQueue
-#define rtStatusQueue  rtProcess->shared_block_->statusQueue
-#define HeartBeat      rtProcess->shared_block_->heartBeat
-#define AxisCount      rtProcess->shared_block_->axisCount
-#define MultiPlied     rtProcess->shared_block_->Multiplied
-#define ContinueMotion rtProcess->shared_block_->sacm
+#define taskScheduling rtProcess_->shared_block_->cmd
+#define rtCmdQueue     rtProcess_->shared_block_->commandQueue
+#define rtStatusQueue  rtProcess_->shared_block_->statusQueue
+#define HeartBeat      rtProcess_->shared_block_->heartBeat
+#define AxisCount      rtProcess_->shared_block_->axisCount
+#define MultiPlied     rtProcess_->shared_block_->Multiplied
+#define ContinueMotion rtProcess_->shared_block_->sacm
 
 
 #endif // SHARED_DATA_HPP

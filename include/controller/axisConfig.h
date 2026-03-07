@@ -58,7 +58,7 @@ namespace ZrcsHardware
                     }
                  } 
                  catch (const std::exception& e) {
-                   throw std::runtime_error("读取轴参数失败");
+                   throw std::runtime_error("Failed to read axis parameters");
                 }          
             }       
     };

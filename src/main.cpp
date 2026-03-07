@@ -29,8 +29,8 @@ int main(int argc, char **argv)
 #endif
     try 
     {
-      zrcsSystem::NodeManger nodeManger;
-      nodeManger.run();
+      zrcsSystem::NodeManager nodeManager;
+      nodeManager.run();
       while(true)
       {
         std::this_thread::sleep_for(std::chrono::seconds(1));

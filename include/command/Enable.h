@@ -12,68 +12,65 @@
 #include "system/nodeFactory.h"
 #include <iostream>
 
-class Enable:public zrcsSystem::CmdNode
+class Enable : public zrcsSystem::CmdNode
 {
-   private:
-      int axisId=0;
+private:
+    int axisId_;
        
-   public:
-        Enable()
-        {
-                std::strcpy(nodeName,"Enable");
-        }
-    
-       void init() override
-       {     
-          axisId=command->args[EnableAxisId];
-         
-       }
+public:
+    Enable()
+    {
+        std::strcpy(nodeName_, "Enable");
+    }
 
-  
-           
-      void  run(void) override
-      {                               
-                     if(control->axiss.size()>axisId)            
-                      { 
-                                 control->axiss[axisId]->setModeOfOperation();
-                                 double p=control->axiss[axisId]->actualPos();
-                                 control->axiss[axisId]->setAxisPositionCmd(control->axiss[axisId]->actualPos());            
-                                 if(!control->axiss[axisId]->powerOn())
-                                 {  
-                                    ERROR_PRINT("zhou %d 使能失败轴\n", axisId);                      
-                                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-                                 }
-                                 else 
-                                 {                                 
-                                  setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-                                 }
-                      }
-                     else if(control->axiss.size()==axisId)
-                     {
-                             for (int i=0; i<axisId; i++) 
-                             {
-                                 control->axiss[i]->setModeOfOperation();
-                                 double p=control->axiss[i]->actualPos();
-                                 control->axiss[i]->setAxisPositionCmd(control->axiss[i]->actualPos());            
-                                 if(!control->axiss[i]->powerOn())
-                                 {  
-                                    ERROR_PRINT("zhou %d 使能失败轴\n", i);                      
-                                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-                                 }
-                               
-                             }
-                              setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-                      }
-                     else
-                     {
-                           ERROR_PRINT("%s 使能轴超过限制");
-                           setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-                     }                        
-       }     
-      void exit(void) override
-      {
-            
-      }
+    void init() override
+    {     
+        axisId_ = static_cast<int>(command_->args[EnableAxisId]);
+    }
+
+    void run(void) override
+    {                               
+        if(controller_->axiss.size() > axisId_)            
+        { 
+            controller_->axiss[axisId_]->setModeOfOperation();
+            double p = controller_->axiss[axisId_]->actualPos();
+            controller_->axiss[axisId_]->setAxisPositionCmd(controller_->axiss[axisId_]->actualPos());            
+            if(!controller_->axiss[axisId_]->powerOn())
+            {  
+                ERROR_PRINT("轴 %d 使能失败\n", axisId_);                      
+                setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+            }
+            else 
+            {                                 
+                setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+            }
+        }
+        else if(controller_->axiss.size() == axisId_)
+        {
+            for (int i = 0; i < axisId_; i++) 
+            {
+                controller_->axiss[i]->setModeOfOperation();
+                double p = controller_->axiss[i]->actualPos();
+                controller_->axiss[i]->setAxisPositionCmd(controller_->axiss[i]->actualPos());            
+                if(!controller_->axiss[i]->powerOn())
+                {  
+                    ERROR_PRINT("轴 %d 使能失败\n", i);                      
+                    setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+                }
+            }
+            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        }
+        else
+        {
+            ERROR_PRINT("使能轴超过限制\n");
+            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        }                        
+    }     
+    
+    void exit(void) override
+    {
+    }
 };
+
 REGISTERCMD(Enable);
 #endif

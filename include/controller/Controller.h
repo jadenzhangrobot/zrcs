@@ -14,131 +14,131 @@
 #include <controller/virtual/Coppeliasim.h>
 #include "controller/rtos/linux.h"
 #include "common/rtLog.h"
+
 namespace ZrcsHardware {
    
- class Controller
-    {  
-        private:        
-         AxisConfig *axConfig;
-          public:
-         #ifdef REALTIME 
-          EthercatMaster* ethercatMaster;
-          Controller():axConfig(new AxisConfig("axis.xml")),ethercatMaster(new EthercatMaster())
-          #else 
-          Controller():axConfig(new AxisConfig("axis.xml"))
-         #endif
-        {
-                  
-                  for(auto it=axConfig->axisParas.begin();it!=axConfig->axisParas.end();++it)
-                  {     
-                      
-                           #ifdef REALTIME 
-                           if (it->axisId==axiss.size()) 
-                           {
-                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
-                             axis->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
-                             axiss.push_back(axis);
-                           }
-                           else 
-                           {
-                              axiss[it->axisId]->pushServo(new EthercatMotor(it->slaveId,ethercatMaster));
-                           }                                 
-                           #endif
-                        
-                        
-                          
-                           #ifdef SIMULATION
-                           if (it->axisId==axiss.size()) 
-                           {
-                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
-                             axis->pushServo(new Coppeliasim(it->slaveId));
-                             axiss.push_back(axis);
-                           }
-                           else 
-                           {
-                              axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
-                           }
-                           #endif                                                                
-                          #ifdef STANDARD
-                           if (it->axisId==axiss.size()) 
-                           {
-                             Axis* axis=new Axis(it->axisId,it->slaveId,&*it);
-                             axis->pushServo(new virtualServo(it->slaveId));
-                             axiss.push_back(axis);
-                           }
-                           else 
-                           {
-                              axiss[it->axisId]->pushServo(new virtualServo(it->slaveId));
-                           }            
-                        #endif
-                       
-                  }
-          
-                 
-                  #ifdef REALTIME 
-                        rtos_.reset((ZrcsHardware::Rtos*)(new xenomai()));            
-                  #else
-                        rtos_.reset((ZrcsHardware::Rtos*)(new Nativelinux()));
-                  #endif                  
-
-        }
+class Controller {  
+private:        
+    AxisConfig *axisConfig_;
+    
+public:
+    // 禁用拷贝构造和赋值
+    Controller(const Controller&) = delete;
+    Controller& operator=(const Controller&) = delete;
+    
+#ifdef REALTIME 
+    EthercatMaster* ethercatMaster_;
+    Controller() : axisConfig_(new AxisConfig("axis.xml")), 
+                   ethercatMaster_(new EthercatMaster())
+#else 
+    Controller() : axisConfig_(new AxisConfig("axis.xml"))
+#endif
+    {
+        for(auto it = axisConfig_->axisParas.begin(); it != axisConfig_->axisParas.end(); ++it)
+        {     
+#ifdef REALTIME 
+            if (it->axisId == axiss.size()) 
+            {
+                Axis* axis = new Axis(it->axisId, it->slaveId, &*it);
+                axis->pushServo(new EthercatMotor(it->slaveId, ethercatMaster_));
+                axiss.push_back(axis);
+            }
+            else 
+            {
+                axiss[it->axisId]->pushServo(new EthercatMotor(it->slaveId, ethercatMaster_));
+            }                                 
+#endif
             
-         void SendData()
-         {             
-                  for(auto it=axiss.begin();it!=axiss.end();++it)
-                  {
-                    (*it)->updateMotionCmdsToServo();
-                  }
-                 #ifdef REALTIME 
-                  ethercatMaster->send();
-                 #endif
-
-         }
-         void receiveData()
-         {      
-                  #ifdef REALTIME 
-                     ethercatMaster->receive();
-                  #endif
-                 for(auto it=axiss.begin();it!=axiss.end();++it)
-                 {
-                    (*it)->statusSync();
-                    (*it)->cyclerun();
-                 }
-
-         }
-         void readIo()
-         {
-              
-         }
-         void writeIo()
-         {
+#ifdef SIMULATION
+            if (it->axisId == axiss.size()) 
+            {
+                Axis* axis = new Axis(it->axisId, it->slaveId, &*it);
+                axis->pushServo(new Coppeliasim(it->slaveId));
+                axiss.push_back(axis);
+            }
+            else 
+            {
+                axiss[it->axisId]->pushServo(new Coppeliasim(it->slaveId));
+            }
+#endif                                                                
             
-         } 
-        ~Controller()
-        {
-           delete axConfig;
-           #ifdef REALTIME 
-           delete ethercatMaster;
-           #endif
-           for (auto ptr : axiss) 
-           {
-            delete ptr; // 对每个指针调用 delete
-           }
-           axiss.clear(); // 清空vector，虽然不是必须，但算是一个好习惯
-
-        // 遍历并删除 Ios 中的所有对象
-         for (auto ptr : Ios)
-         {
-            delete ptr; // 对每个指针调用 delete
-         }
-         Ios.clear();
-              
+#ifdef STANDARD
+            if (it->axisId == axiss.size()) 
+            {
+                Axis* axis = new Axis(it->axisId, it->slaveId, &*it);
+                axis->pushServo(new virtualServo(it->slaveId));
+                axiss.push_back(axis);
+            }
+            else 
+            {
+                axiss[it->axisId]->pushServo(new virtualServo(it->slaveId));
+            }            
+#endif
         }
-        std::vector<uint8_t> outputData;
-        std::vector<uint8_t> inputData;
-        std::shared_ptr<Rtos> rtos_;
-        std::vector<Axis*> axiss;
-        std::vector<Io*> Ios;
-    };
+        
+#ifdef REALTIME 
+        rtos_.reset(static_cast<ZrcsHardware::Rtos*>(new xenomai()));            
+#else
+        rtos_.reset(static_cast<ZrcsHardware::Rtos*>(new Nativelinux()));
+#endif                  
+    }
+    
+    void sendData()
+    {             
+        for(auto it = axiss.begin(); it != axiss.end(); ++it)
+        {
+            (*it)->updateMotionCmdsToServo();
+        }
+#ifdef REALTIME 
+        ethercatMaster_->send();
+#endif
+    }
+    
+    void receiveData()
+    {      
+#ifdef REALTIME 
+        ethercatMaster_->receive();
+#endif
+        for(auto it = axiss.begin(); it != axiss.end(); ++it)
+        {
+            (*it)->statusSync();
+            (*it)->cyclerun();
+        }
+    }
+    
+    void readIo()
+    {
+    }
+    
+    void writeIo()
+    {
+    } 
+    
+    ~Controller()
+    {
+        delete axisConfig_;
+#ifdef REALTIME 
+        delete ethercatMaster_;
+#endif
+        for (auto ptr : axiss) 
+        {
+            delete ptr;
+        }
+        axiss.clear();
+
+        for (auto ptr : ios_)
+        {
+            delete ptr;
+        }
+        ios_.clear();
+    }
+    
+    std::vector<uint8_t> outputData_;
+    std::vector<uint8_t> inputData_;
+    std::shared_ptr<Rtos> rtos_;
+    std::vector<Axis*> axiss;
+    std::vector<Io*> ios_;
+};
+
 }
 #endif

@@ -16,7 +16,7 @@
 #include <functional>
 namespace ZrcsHardware {
 
-class Nativelinux:Rtos
+class Nativelinux : public Rtos
 {
     public:
     std::thread my_thread;

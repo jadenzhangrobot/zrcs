@@ -29,7 +29,7 @@ public:
     {
          ipc::shared_memory_object::remove(shm_name_);
         try {
-            // 创建共享内存和 SharedBlock 对象
+            // Create shared memory and SharedBlock object
             shm_ = new ipc::managed_shared_memory(ipc::create_only, shm_name_, 4194303);
             shared_block_ = shm_->find_or_construct<SharedBlock>("SharedBlock")();
             
@@ -41,7 +41,7 @@ public:
         }
     }
  
-    // 禁用拷贝构造和赋值
+    // Disable copy constructor and assignment
     RTProcess(const RTProcess&) = delete;
     RTProcess& operator=(const RTProcess&) = delete;
 };

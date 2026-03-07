@@ -58,7 +58,7 @@ namespace ZrcsHardware
                 if (ret == simx_return_ok)
                     std::cout << "Number of objects in the scene: " << objectCount << std::endl;
                 else
-                    throw std::runtime_error("远程API调用失败,错误码: " + std::to_string(ret));
+                    throw std::runtime_error("Remote API call failed, error code: " + std::to_string(ret));
 
                 // 获取关节句柄
                 jointHandles_.resize(jointNames_.size());
@@ -66,10 +66,10 @@ namespace ZrcsHardware
                 {
                     int returnCode = simxGetObjectHandle(clientID_, jointNames_[i].c_str(), &jointHandles_[i], simx_opmode_blocking);
                     if (returnCode != simx_return_ok) {
-                        throw std::runtime_error("错误：无法获取关节" + std::to_string(returnCode));
+                        throw std::runtime_error("Error: Unable to get joint handle, error code: " + std::to_string(returnCode));
                         connected_ = false;
                     } else {
-                        std::cout << "成功获取句柄：" << jointNames_[i] << " -> " << jointHandles_[i] << std::endl;
+                        std::cout << "Successfully got handle: " << jointNames_[i] << " -> " << jointHandles_[i] << std::endl;
                     }
                 }
                 
@@ -85,7 +85,7 @@ namespace ZrcsHardware
             }
             else
             {
-                throw std::runtime_error("无法连接到 CoppeliaSim 服务器");
+                throw std::runtime_error("Unable to connect to CoppeliaSim server");
                 connected_ = false;
             }
 
@@ -141,13 +141,13 @@ namespace ZrcsHardware
                 {
                     return MC_SERVO_CODE::SERVONOERROR;
                 } else {
-                   std::cerr << "设置关节位置失败，错误码: " << ret << std::endl;
+                   std::cerr << "Failed to set joint position, error code: " << ret << std::endl;
                    return MC_SERVO_CODE::SERVONOERROR;
                 }
             } 
             else 
             {
-                std::cerr << "无效的从站ID: " << slaveId_ << std::endl;
+                std::cerr << "Invalid slave ID: " << slaveId_ << std::endl;
                  return MC_SERVO_CODE::SERVONOERROR;
              }
              
