@@ -19,7 +19,13 @@ file(GLOB_RECURSE SOURCES
     # 如果还有其他源文件，添加在这里
 )
 
-add_executable(zrcsrt ${SOURCES} ${PROTO_SRCS} ${PROTO_HDRS})
+set(PROTO_FILES
+    ${CMAKE_SOURCE_DIR}/zrcsCommon/message/message.proto
+)
+protobuf_generate_cpp(ZRCSRT_PROTO_SRCS ZRCSRT_PROTO_HDRS ${PROTO_FILES})
+
+add_executable(zrcsrt ${SOURCES} ${ZRCSRT_PROTO_SRCS} ${ZRCSRT_PROTO_HDRS})
+target_include_directories(zrcsrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库
 target_link_libraries(zrcsrt PRIVATE 

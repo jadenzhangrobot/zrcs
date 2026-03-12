@@ -17,14 +17,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
 
-# Compile Proto file
-file(GLOB PROTO_FILES "zrcsCommon/message/*.proto")
-if(PROTO_FILES)
-    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
-else()
-    message(STATUS "No proto files found in message/ directory.")
-endif()
-
 set(MOTION_CONTROL_LIBS
     Threads::Threads
     ruckig
