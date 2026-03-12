@@ -7,6 +7,7 @@ sudo apt install nlohmann-json3-dev
 pacman -S mingw-w64-ucrt-x86_64-nlohmann-json
 pacman -S mingw-w64-ucrt-x86_64-zeromq
 pacman -S mingw-w64-ucrt-x86_64-cppzmq
+pacman -S mingw-w64-ucrt-x86_64-protobuf
 
 
 编译器要求gcc 9.3

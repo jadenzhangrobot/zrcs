@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package zrcs_message;
+
+message MotionCommand {
+    string command = 1;
+    repeated double args = 2;
+}
+
+message AxisStatus {
+    int32 axis_id = 1;
+    double position = 2;
+    double velocity = 3;
+    double torque = 4;
+}
+
+message SystemStatus {
+    repeated AxisStatus axes = 1;
+    string system_state = 2;
+}

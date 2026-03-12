@@ -15,20 +15,32 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/contorler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# 源文件
-aux_source_directory(./src SOURCE_FILES)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
 
-# 主可执行文件
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-# 依赖关系
-add_dependencies(${PROJECT_NAME} run_python_scripts)
+# Compile Proto file
+file(GLOB PROTO_FILES "zrcsCommon/message/*.proto")
+if(PROTO_FILES)
+    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
+else()
+    message(STATUS "No proto files found in message/ directory.")
+endif()
 
 set(MOTION_CONTROL_LIBS
     Threads::Threads
     ruckig
     tinyxml2
     atomic
+    protobuf::libprotobuf
 )
+
+# 如果找到了 Abseil，也需要链接它（Protobuf 依赖）
+if(absl_FOUND)
+    list(APPEND MOTION_CONTROL_LIBS
+        absl::log_internal_message
+        absl::log_internal_check_op
+        absl::log_globals
+    )
+endif()
 if(BUILD_MODE STREQUAL "realtime")
     list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)
 endif()
@@ -37,21 +49,24 @@ if(BUILD_MODE STREQUAL "simulation")
     list(APPEND MOTION_CONTROL_LIBS remoteApi)
 endif()
 
+# 源文件
+aux_source_directory(./src SOURCE_FILES)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${MOTION_CONTROL_LIBS})
+# 1. zrcsgui (已经在 subdirectory 中定义，这里不需要重复，但确保它被构建)
+add_subdirectory(zrcsGui)
 
-# 测试程序
-if(test)
-    add_subdirectory(program/zrcsgui)
-    add_subdirectory(program/plot)
-endif()
+# 2. zrcsnrt (非实时进程)
+add_subdirectory(zrcsNrt)
+
+# 3. zrcsrt (实时进程)
+add_subdirectory(zrcsRt)
+
 
 # 安装配置
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES
+# 注意：install 命令现在应该在各自的子目录 CMakeLists.txt 中处理
+# 或者在这里引用子目录中的目标（但如果在子目录 install 了，这里可以简化）
+# install(TARGETS zrcsnrt zrcsrt ...) # 已经在子目录处理
+
+set_target_properties(zrcsgui zrcsnrt zrcsrt PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

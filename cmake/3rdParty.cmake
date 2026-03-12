@@ -22,6 +22,20 @@ endif()
 #添加线程库
 find_package(Threads REQUIRED)
 
+find_package(Protobuf REQUIRED)
+if(Protobuf_FOUND)
+    message(STATUS "Found Protobuf: ${Protobuf_VERSION}")
+    include_directories(${Protobuf_INCLUDE_DIRS})
+endif()
+
+# Protobuf 现代版本通常依赖于 Abseil
+find_package(absl QUIET)
+if(absl_FOUND)
+    message(STATUS "Found Abseil: ${absl_VERSION}")
+endif()
+
+
+
 # 添加CoppeliaSim的头文件
 
 
