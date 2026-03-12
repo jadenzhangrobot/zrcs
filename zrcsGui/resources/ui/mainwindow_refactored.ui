@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindowRefactored</class>
+ <widget class="QMainWindow" name="MainWindowRefactored">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1600</width>
+    <height>1000</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ZRCS 工业运动控制系统</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow { background-color: #0f0f0f; }
+QWidget { background-color: #1a1a1a; color: #CCCCCC; }
+QStatusBar { background-color: #2a2a2a; color: #CCCCCC; border-top: 1px solid #444; }</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="leftMargin">
+     <number>10</number>
+    </property>
+    <property name="topMargin">
+     <number>10</number>
+    </property>
+    <property name="rightMargin">
+     <number>10</number>
+    </property>
+    <property name="bottomMargin">
+     <number>10</number>
+    </property>
+    <property name="spacing">
+     <number>10</number>
+    </property>
+    <!-- 左侧面板 -->
+    <item>
+     <widget class="QWidget" name="leftPanel" native="true">
+      <property name="maximumWidth">
+       <number>500</number>
+      </property>
+      <layout class="QVBoxLayout" name="leftLayout">
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <!-- 仪表板 -->
+       <item>
+        <widget class="QGroupBox" name="dashboardGroup">
+         <property name="title">
+          <string>全局状态监控</string>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QGroupBox { color: #FFD700; border: 2px solid #FFD700; border-radius: 5px; padding-top: 10px; }
+QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px 0 3px; }</string>
+         </property>
+         <layout class="QVBoxLayout" name="dashboardLayout">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <!-- 运行状态 -->
+          <item>
+           <layout class="QHBoxLayout" name="statusLayout">
+            <item>
+             <widget class="QLabel" name="statusLabel">
+              <property name="text">
+               <string>运行状态:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="statusIndicator" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>120</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>120</width>
+                <height>120</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <!-- 通信状态 -->
+          <item>
+           <layout class="QHBoxLayout" name="commLayout">
+            <item>
+             <widget class="QLabel" name="zmqLabel">
+              <property name="text">
+               <string>ZMQ 连接:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="zmqStatusLabel">
+              <property name="text">
+               <string>● 已断开</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: #FF6347;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="etherCATLabel">
+              <property name="text">
+               <string>EtherCAT:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="etherCATStatusLabel">
+              <property name="text">
+               <string>● 已连接</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: #00FF00;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <!-- 安全状态 -->
+          <item>
+           <layout class="QHBoxLayout" name="safetyLayout">
+            <item>
+             <widget class="QLabel" name="homedLabel_text">
+              <property name="text">
+               <string>回零状态:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="homedLabel">
+              <property name="text">
+               <string>✓ 已回零</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: #00FF00;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="servoLabel_text">
+              <property name="text">
+               <string>伺服状态:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="servoLabel">
+              <property name="text">
+               <string>✓ 已使能</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: #00FF00;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <!-- 坐标显示滚动区 -->
+       <item>
+        <widget class="QScrollArea" name="positionScroll">
+         <property name="styleSheet">
+          <string notr="true">QScrollArea { background-color: #1a1a1a; border: none; }</string>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <layout class="QVBoxLayout" name="positionLayout"/>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <!-- 中间标签页 -->
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTabWidget::pane { border: 1px solid #444; }
+QTabBar::tab { background-color: #2a2a2a; color: #CCCCCC; padding: 8px 20px; border: 1px solid #444; }
+QTabBar::tab:selected { background-color: #3a3a3a; color: #FFD700; border-bottom: 2px solid #FFD700; }</string>
+      </property>
+      <!-- 手动调试标签页 -->
+      <widget class="QWidget" name="jogTab">
+       <attribute name="title">
+        <string>手动调试</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="jogLayout"/>
+      </widget>
+      <!-- 报警与诊断标签页 -->
+      <widget class="QWidget" name="alarmTab">
+       <attribute name="title">
+        <string>报警与诊断</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="alarmLayout"/>
+      </widget>
+      <!-- I/O 控制标签页 -->
+      <widget class="QWidget" name="ioTab">
+       <attribute name="title">
+        <string>I/O 控制</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="ioLayout"/>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

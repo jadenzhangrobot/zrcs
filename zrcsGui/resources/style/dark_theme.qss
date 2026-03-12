@@ -1,0 +1,252 @@
+/* ZRCS GUI 深色主题样式表 */
+
+/* 主窗口 */
+QMainWindow {
+    background-color: #0f0f0f;
+}
+
+/* 通用 Widget */
+QWidget {
+    background-color: #1a1a1a;
+    color: #CCCCCC;
+}
+
+/* 菜单栏 */
+QMenuBar {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+    border-bottom: 1px solid #444;
+}
+
+QMenuBar::item:selected {
+    background-color: #3a3a3a;
+}
+
+/* 菜单 */
+QMenu {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+}
+
+QMenu::item:selected {
+    background-color: #3a3a3a;
+}
+
+/* 状态栏 */
+QStatusBar {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+    border-top: 1px solid #444;
+}
+
+/* 标签页 */
+QTabWidget::pane {
+    border: 1px solid #444;
+}
+
+QTabBar::tab {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+    padding: 8px 20px;
+    border: 1px solid #444;
+}
+
+QTabBar::tab:selected {
+    background-color: #3a3a3a;
+    color: #FFD700;
+    border-bottom: 2px solid #FFD700;
+}
+
+/* 按钮 */
+QPushButton {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+
+QPushButton:hover {
+    background-color: #3a3a3a;
+}
+
+QPushButton:pressed {
+    background-color: #1a1a1a;
+}
+
+/* 绿色按钮（正常操作） */
+QPushButton.greenButton {
+    background-color: #2a5a2a;
+    color: #00FF00;
+    border: 1px solid #00FF00;
+}
+
+QPushButton.greenButton:hover {
+    background-color: #3a7a3a;
+}
+
+/* 黄色按钮（警告操作） */
+QPushButton.yellowButton {
+    background-color: #5a5a2a;
+    color: #FFD700;
+    border: 1px solid #FFD700;
+}
+
+QPushButton.yellowButton:hover {
+    background-color: #7a7a3a;
+}
+
+/* 红色按钮（危险操作） */
+QPushButton.redButton {
+    background-color: #5a2a2a;
+    color: #FF6347;
+    border: 1px solid #FF6347;
+}
+
+QPushButton.redButton:hover {
+    background-color: #7a3a3a;
+}
+
+/* 文本输入框 */
+QLineEdit {
+    background-color: #2a2a2a;
+    color: #00FF00;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 5px;
+    font-family: monospace;
+}
+
+/* 数值输入框 */
+QSpinBox {
+    background-color: #2a2a2a;
+    color: #00FF00;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 5px;
+}
+
+/* 下拉框 */
+QComboBox {
+    background-color: #2a2a2a;
+    color: #CCCCCC;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 5px;
+}
+
+/* 标签 */
+QLabel {
+    color: #CCCCCC;
+}
+
+/* 分组框 */
+QGroupBox {
+    color: #FFD700;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 3px 0 3px;
+}
+
+/* 高亮分组框 */
+QGroupBox.highlight {
+    color: #FFD700;
+    border: 2px solid #FFD700;
+}
+
+/* 滑块 */
+QSlider::groove:horizontal {
+    background: #444;
+    height: 8px;
+}
+
+QSlider::handle:horizontal {
+    background: #00FF00;
+    width: 18px;
+    margin: -5px 0;
+    border-radius: 9px;
+}
+
+/* 表格 */
+QTableWidget {
+    background-color: #1a1a1a;
+    color: #CCCCCC;
+    border: 1px solid #444;
+}
+
+QHeaderView::section {
+    background-color: #2a2a2a;
+    color: #FFD700;
+    padding: 5px;
+    border: 1px solid #444;
+}
+
+QTableWidget::item {
+    padding: 5px;
+    border-bottom: 1px solid #333;
+}
+
+/* 文本编辑框 */
+QTextEdit {
+    background-color: #0a0a0a;
+    color: #00FF00;
+    border: 1px solid #444;
+    font-family: monospace;
+    font-size: 9pt;
+}
+
+/* 滚动区域 */
+QScrollArea {
+    background-color: #1a1a1a;
+    border: none;
+}
+
+/* 滚动条 */
+QScrollBar:vertical {
+    background-color: #1a1a1a;
+    width: 12px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #444;
+    border-radius: 6px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #555;
+}
+
+QScrollBar:horizontal {
+    background-color: #1a1a1a;
+    height: 12px;
+    border: none;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #444;
+    border-radius: 6px;
+    min-width: 20px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: #555;
+}
+
+/* 消息框 */
+QMessageBox {
+    background-color: #1a1a1a;
+}
+
+QMessageBox QLabel {
+    color: #CCCCCC;
+}

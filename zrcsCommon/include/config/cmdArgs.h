@@ -42,7 +42,7 @@ enum
   enum class TaskScheduling 
   {
     RUN, 
-    ERROR,
+    ERROR_STATE,
     STOP,            // 停止         
     RESET,           //
     START 

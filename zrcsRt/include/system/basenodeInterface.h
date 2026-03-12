@@ -103,7 +103,7 @@ public:
                 break;                  
             case CmdStatus::FAILED:
                 INFO_PRINT("%s 执行失败\n", nodeName_); 
-                taskScheduling.store(TaskScheduling::ERROR, std::memory_order_release);                    
+                taskScheduling.store(TaskScheduling::ERROR_STATE, std::memory_order_release);                    
                 break;                
             default:                                     
                 break;
