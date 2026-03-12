@@ -17,22 +17,20 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
 
+# 查找 Protobuf 和 Abseil
+find_package(Protobuf REQUIRED)
+find_package(absl REQUIRED)
+
 set(MOTION_CONTROL_LIBS
     Threads::Threads
     ruckig
     tinyxml2
     atomic
     protobuf::libprotobuf
+    absl::log_internal_message
+    absl::log_internal_check_op
+    absl::log_globals
 )
-
-# 如果找到了 Abseil，也需要链接它（Protobuf 依赖）
-if(absl_FOUND)
-    list(APPEND MOTION_CONTROL_LIBS
-        absl::log_internal_message
-        absl::log_internal_check_op
-        absl::log_globals
-    )
-endif()
 if(BUILD_MODE STREQUAL "realtime")
     list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)
 endif()

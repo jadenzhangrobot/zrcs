@@ -19,6 +19,9 @@ set(Qt5_DIR "D:/msys2/mingw64/lib/cmake/Qt5")
 
 # 查找Qt5库
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Protobuf REQUIRED)
+find_package(cppzmq REQUIRED)
+find_package(absl REQUIRED)
 
 # 启用Qt5的自动MOC、UIC和RCC
 set(CMAKE_AUTOMOC ON)
@@ -28,21 +31,31 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ui)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/zrcsCommon/include # Added for common/sharedMemory headers
+    ${CMAKE_SOURCE_DIR}/zrcsCommon/include
     ${CMAKE_SOURCE_DIR}/zrcsGui
     ${CMAKE_BINARY_DIR}
 )
+
+# Protobuf 文件
+set(PROTO_FILES
+    ${CMAKE_SOURCE_DIR}/zrcsCommon/message/message.proto
+)
+protobuf_generate_cpp(GUI_PROTO_SRCS GUI_PROTO_HDRS ${PROTO_FILES})
 
 # 源文件
 set(SOURCES
     main.cpp
     mainwindow.cpp
+    zmqClient.cpp
+    ${GUI_PROTO_SRCS}
 )
 
 # 头文件
 set(HEADERS
     mainwindow.h
+    zmqClient.h
 )
+
 # UI文件
 set(UI_FILES
     ui/zrcsgui.ui
@@ -50,9 +63,20 @@ set(UI_FILES
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-# 链接Qt5库
-target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets atomic Threads::Threads)
+# 链接库
+target_link_libraries(${PROJECT_NAME} 
+    Qt5::Core 
+    Qt5::Widgets 
+    atomic 
+    Threads::Threads
+    protobuf::libprotobuf
+    cppzmq
+    absl::log_internal_message
+    absl::log_internal_check_op
+    absl::log_globals
+)
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES

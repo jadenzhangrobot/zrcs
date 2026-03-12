@@ -15,6 +15,7 @@
 #include <functional>
 #include "sharedMemory/nrt_process.h"
 #include "manualControl.h"
+#include "zmqClient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -79,17 +80,29 @@ private slots:
     void addJogJ();
     void deleteJogJ();
 
+    // ZMQ 客户端槽函数
+    void onZMQConnected();
+    void onZMQDisconnected();
+    void onZMQCommandSent(const QString& command, bool success);
+    void onZMQError(const QString& error);
+
 private:
     Ui::MainWindow *ui;
     ManualControl *manualControl;
     NRTProcess *nrtProcess;
+    ZMQClient *zmqClient;  // ZMQ 客户端
     QTimer *moveTimer;  // 用于长按移动的定时器
     std::function<void()> currentMoveFunction;  // 当前活动的移动函数
+    bool useZMQ_;  // 是否使用 ZMQ 发送命令
+    
     // 初始化信号槽连接
     void setupConnections();
     
     // 显示状态信息
     void showStatusMessage(const QString &message);
+    
+    // 发送命令（自动选择 ZMQ 或共享内存）
+    void sendMotionCommand(const QString& command, const QVector<double>& args = {});
 };
 
 #endif // MAINWINDOW_H
