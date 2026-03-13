@@ -250,3 +250,195 @@ QMessageBox {
 QMessageBox QLabel {
     color: #CCCCCC;
 }
+
+#centralRoot {
+    background: #0c0f14;
+}
+
+QScrollArea#leftScrollArea {
+    background: transparent;
+    border: 1px solid #242b38;
+    border-radius: 10px;
+}
+
+QScrollArea#leftScrollArea > QWidget > QWidget {
+    background: #11151d;
+    border-radius: 10px;
+}
+
+QTabWidget#mainTabs::pane {
+    border: 1px solid #283142;
+    border-radius: 10px;
+    background: #111722;
+}
+
+QTabBar::tab {
+    background: #131a25;
+    color: #9facbf;
+    border: 1px solid #293346;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 10px 16px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background: #1c2635;
+    color: #dce7f7;
+    border-color: #4f6787;
+}
+
+QPushButton {
+    background: #1a2330;
+    color: #d6deea;
+    border: 1px solid #334154;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 500;
+}
+
+QPushButton:hover {
+    background: #223044;
+    border-color: #4d6b92;
+}
+
+QPushButton:pressed {
+    background: #161f2c;
+}
+
+QPushButton:checked {
+    background: #2f6feb;
+    border-color: #5f8fff;
+    color: #ffffff;
+}
+
+QPushButton[compact="true"] {
+    padding: 4px 6px;
+    border-radius: 6px;
+    min-width: 56px;
+    max-width: 56px;
+}
+
+QPushButton[compact="true"][kind="secondary"] {
+    min-width: 86px;
+    max-width: 86px;
+}
+
+QPushButton[kind="secondary"] {
+    background: #1f2b21;
+    border-color: #3f6448;
+    color: #a8d9b3;
+}
+
+QPushButton[kind="secondary"]:hover {
+    background: #27402d;
+    border-color: #5a8a67;
+}
+
+QPushButton[kind="danger"] {
+    background: #321c22;
+    border-color: #6e3c49;
+    color: #ffb8c3;
+}
+
+QPushButton[kind="danger"]:hover {
+    background: #44242c;
+    border-color: #a65569;
+}
+
+QPushButton[kind="accent"] {
+    background: #2a4a2a;
+    border-color: #58b658;
+    color: #b7ffb7;
+}
+
+QPushButton[kind="accentBlue"] {
+    background: #2a4a6a;
+    border-color: #66a3ff;
+    color: #9fd1ff;
+}
+
+QPushButton[kind="neutral"] {
+    background: #33465d;
+    border-color: #6f8fb8;
+    color: #d7e7ff;
+}
+
+QLabel#axisPosDisplay {
+    border: 1px solid #2e5b8a;
+    border-radius: 10px;
+    padding: 0 8px;
+    background-color: #101a2b;
+    color: #9fc8ff;
+}
+
+QLabel#gcodeStatsLabel {
+    color: #00FF00;
+    padding: 5px;
+}
+
+QLabel#gcodeValidationLabel {
+    color: #FFB1B1;
+    padding: 5px;
+}
+
+QLabel#gcodeValidationLabel[state="ok"] {
+    color: #00FF00;
+}
+
+QLabel#gcodeValidationLabel[state="error"] {
+    color: #FF6347;
+}
+
+QPlainTextEdit#gcodeEditor {
+    background-color: #1a1a1a;
+    color: #00FF00;
+    font-family: Courier;
+}
+
+QLabel#ioInputLed {
+    color: #333333;
+    font-size: 20pt;
+}
+
+QLabel#ioInputLed[active="true"] {
+    color: #00FF00;
+}
+
+QLabel#statusLabel {
+    color: #FF6347;
+    font-weight: bold;
+}
+
+QLabel#statusLabel[state="connected"] {
+    color: #00FF00;
+}
+
+#axisPositionDisplay {
+    background: #141b26;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+}
+
+QLabel#axisDisplayTitleLabel {
+    color: #c9d6e8;
+    font-size: 10pt;
+    font-weight: 600;
+}
+
+QLabel#axisDisplayPosLabel {
+    color: #7cc7ff;
+    font-family: Consolas;
+    font-size: 10pt;
+}
+
+QLabel#axisDisplayDynLabel {
+    color: #9db4cd;
+    font-family: Consolas;
+}
+
+QLabel#axisDisplayServoLabel {
+    color: #f7a072;
+    font-family: Consolas;
+}

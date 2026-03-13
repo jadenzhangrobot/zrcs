@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PluginPanelUi</class>
+ <widget class="QWidget" name="pluginPanel">
+  <property name="styleSheet">
+   <string notr="true">background-color: #1a1a1a;</string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QStackedWidget" name="stackedWidget">
+     <widget class="QWidget" name="pluginListPage">
+      <layout class="QVBoxLayout" name="pluginListLayout">
+       <item>
+        <widget class="QListWidget" name="pluginList">
+         <property name="styleSheet">
+          <string notr="true">background-color: #1a1a1a; color: #00FF00;</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

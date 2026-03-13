@@ -24,6 +24,23 @@ find_package(cppzmq REQUIRED)
 find_package(absl REQUIRED)
 find_package(OpenGL REQUIRED)
 
+set(OPENCASCADE_ROOT "${CMAKE_SOURCE_DIR}/3rdParty/OpenCASCADE")
+if(EXISTS "${OPENCASCADE_ROOT}")
+    list(APPEND CMAKE_PREFIX_PATH "${OPENCASCADE_ROOT}")
+endif()
+find_package(VTK QUIET COMPONENTS
+    CommonCore
+    RenderingCore
+    RenderingFreeType
+    FiltersGeneral
+    IOImage
+    ImagingCore
+    InteractionStyle
+    RenderingOpenGL2
+    RenderingGL2PSOpenGL2
+)
+find_package(OpenCASCADE QUIET)
+
 # 启用Qt5的自动MOC、UIC和RCC
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -76,11 +93,30 @@ set(HEADERS
 # UI文件
 set(UI_FILES
     resources/ui/mainwindow_refactored.ui
+    resources/ui/jog_control_panel.ui
+    resources/ui/io_panel.ui
+    resources/ui/alarm_panel.ui
+    resources/ui/gcode_panel.ui
+    resources/ui/remote_data_monitor.ui
+    resources/ui/remote_monitor_panel.ui
+    resources/ui/plugin_panel.ui
+    resources/ui/trajectory_panel.ui
 )
 
 # 创建可执行文件
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
+if(OpenCASCADE_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_HAS_OPENCASCADE)
+    if(DEFINED OpenCASCADE_INCLUDE_DIR)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIR})
+    endif()
+    if(DEFINED OpenCASCADE_INCLUDE_DIRS)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIRS})
+    endif()
+endif()
 
 # 链接库
 target_link_libraries(${PROJECT_NAME} 
@@ -97,6 +133,24 @@ target_link_libraries(${PROJECT_NAME}
     absl::log_globals
     OpenGL::GL
 )
+
+if(OpenCASCADE_FOUND)
+    set(OCC_LINK_LIBS "")
+    foreach(occ_lib IN LISTS OpenCASCADE_LIBRARIES)
+        if("${occ_lib}" MATCHES "^[A-Za-z0-9_]+::[A-Za-z0-9_]+$")
+            if(TARGET ${occ_lib})
+                list(APPEND OCC_LINK_LIBS ${occ_lib})
+            else()
+                message(WARNING "Skip unresolved OpenCASCADE dependency target: ${occ_lib}")
+            endif()
+        else()
+            list(APPEND OCC_LINK_LIBS ${occ_lib})
+        endif()
+    endforeach()
+    if(OCC_LINK_LIBS)
+        target_link_libraries(${PROJECT_NAME} ${OCC_LINK_LIBS})
+    endif()
+endif()
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES

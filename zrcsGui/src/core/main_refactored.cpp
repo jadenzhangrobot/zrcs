@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    QCoreApplication::setAttribute(Qt::AA_Use96Dpi);
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 

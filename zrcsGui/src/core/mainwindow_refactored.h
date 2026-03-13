@@ -59,6 +59,7 @@ class JogControlPanel : public QWidget {
 public:
     JogControlPanel(QWidget *parent = nullptr);
     void setAxisCount(int count);
+    void setAxisPosition(int axis, double position);
     
 signals:
     void jogPressed(int axis, int direction);
@@ -67,13 +68,20 @@ signals:
     void overrideChanged(int percent);
     void homeRequested(int axis);
     void homeAllRequested();
+    void setCurrentAsOriginRequested(int axis);
 
 private:
     void setupUI();
+    void refreshAxisButtons();
     QVector<QPushButton*> plusButtons, minusButtons, homeButtons;
+    QVector<QPushButton*> originButtons;
+    QVector<QLabel*> axisPositionLabels;
     QComboBox *stepSizeCombo;
+    QComboBox *axisGroupCombo;
     QSlider *overrideSlider;
     QLabel *overrideLabel;
+    int axisCount;
+    int axisPageSize;
 };
 
 class IOPanel : public QWidget {
@@ -123,6 +131,7 @@ private slots:
     void onOverrideChanged(int percent);
     void onHomeRequested(int axis);
     void onHomeAllRequested();
+    void onSetCurrentAsOriginRequested(int axis);
     
     // IO
     void onOutputToggled(int index, bool state);
@@ -156,6 +165,7 @@ private:
     QVector<AxisPositionDisplay*> axisDisplays;
     JogControlPanel *jogPanel;
     IOPanel *ioPanel;
+    IOPanel *ioMonitorPanel;
     AlarmPanel *alarmPanel;
     
     // Advanced Modules

@@ -6,7 +6,8 @@
 StatusIndicator::StatusIndicator(QWidget *parent)
     : QWidget(parent), currentState(Idle), statusText("就绪")
 {
-    setFixedSize(120, 120);
+    setMinimumSize(96, 96);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 }
 
 void StatusIndicator::setState(State state)
@@ -56,17 +57,24 @@ void StatusIndicator::paintEvent(QPaintEvent *)
     painter.setRenderHint(QPainter::Antialiasing);
     
     QColor color = getColor();
+    const int margin = 10;
+    const int diameter = qMin(width(), height()) - margin * 2;
+    const int x = (width() - diameter) / 2;
+    const int y = (height() - diameter) / 2;
     
     // 绘制外圆
     painter.setBrush(color);
     painter.setPen(QPen(color.darker(150), 3));
-    painter.drawEllipse(10, 10, 100, 100);
+    painter.drawEllipse(x, y, diameter, diameter);
     
     // 绘制内圆（脉冲效果）
     if (currentState == Running) {
         painter.setBrush(color.lighter(120));
         painter.setPen(Qt::NoPen);
-        painter.drawEllipse(30, 30, 60, 60);
+        const int innerDiameter = diameter * 3 / 5;
+        const int innerX = (width() - innerDiameter) / 2;
+        const int innerY = (height() - innerDiameter) / 2;
+        painter.drawEllipse(innerX, innerY, innerDiameter, innerDiameter);
     }
     
     // 绘制文字
@@ -78,27 +86,28 @@ void StatusIndicator::paintEvent(QPaintEvent *)
 AxisPositionDisplay::AxisPositionDisplay(const QString &axisName, QWidget *parent)
     : QWidget(parent)
 {
+    setObjectName("axisPositionDisplay");
     QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(5);
+    layout->setContentsMargins(12, 10, 12, 10);
+    layout->setSpacing(6);
     
     QLabel *titleLabel = new QLabel(QString("<b>%1 轴</b>").arg(axisName));
-    titleLabel->setStyleSheet("color: #FFD700; font-size: 12pt;");
+    titleLabel->setObjectName("axisDisplayTitleLabel");
     layout->addWidget(titleLabel);
     
     // 坐标显示
     QHBoxLayout *posLayout = new QHBoxLayout();
     posLayout->addWidget(new QLabel("机械:"));
     machineLabel = new QLabel("0.000");
-    machineLabel->setStyleSheet("color: #00FF00; font-family: monospace; font-size: 11pt;");
+    machineLabel->setObjectName("axisDisplayPosLabel");
     posLayout->addWidget(machineLabel);
     posLayout->addWidget(new QLabel("绝对:"));
     absoluteLabel = new QLabel("0.000");
-    absoluteLabel->setStyleSheet("color: #00FF00; font-family: monospace; font-size: 11pt;");
+    absoluteLabel->setObjectName("axisDisplayPosLabel");
     posLayout->addWidget(absoluteLabel);
     posLayout->addWidget(new QLabel("相对:"));
     relativeLabel = new QLabel("0.000");
-    relativeLabel->setStyleSheet("color: #00FF00; font-family: monospace; font-size: 11pt;");
+    relativeLabel->setObjectName("axisDisplayPosLabel");
     posLayout->addWidget(relativeLabel);
     layout->addLayout(posLayout);
     
@@ -106,11 +115,11 @@ AxisPositionDisplay::AxisPositionDisplay(const QString &axisName, QWidget *paren
     QHBoxLayout *dynLayout = new QHBoxLayout();
     dynLayout->addWidget(new QLabel("速度:"));
     velocityLabel = new QLabel("0.0");
-    velocityLabel->setStyleSheet("color: #87CEEB; font-family: monospace;");
+    velocityLabel->setObjectName("axisDisplayDynLabel");
     dynLayout->addWidget(velocityLabel);
     dynLayout->addWidget(new QLabel("加速度:"));
     accelerationLabel = new QLabel("0.0");
-    accelerationLabel->setStyleSheet("color: #87CEEB; font-family: monospace;");
+    accelerationLabel->setObjectName("axisDisplayDynLabel");
     dynLayout->addWidget(accelerationLabel);
     layout->addLayout(dynLayout);
     
@@ -118,19 +127,17 @@ AxisPositionDisplay::AxisPositionDisplay(const QString &axisName, QWidget *paren
     QHBoxLayout *servoLayout = new QHBoxLayout();
     servoLayout->addWidget(new QLabel("扭矩:"));
     torqueLabel = new QLabel("0%");
-    torqueLabel->setStyleSheet("color: #FF6347; font-family: monospace;");
+    torqueLabel->setObjectName("axisDisplayServoLabel");
     servoLayout->addWidget(torqueLabel);
     servoLayout->addWidget(new QLabel("跟随误差:"));
     followErrorLabel = new QLabel("0.0");
-    followErrorLabel->setStyleSheet("color: #FF6347; font-family: monospace;");
+    followErrorLabel->setObjectName("axisDisplayServoLabel");
     servoLayout->addWidget(followErrorLabel);
     servoLayout->addWidget(new QLabel("温度:"));
     tempLabel = new QLabel("0°C");
-    tempLabel->setStyleSheet("color: #FF6347; font-family: monospace;");
+    tempLabel->setObjectName("axisDisplayServoLabel");
     servoLayout->addWidget(tempLabel);
     layout->addLayout(servoLayout);
-    
-    setStyleSheet("background-color: #1a1a1a; border: 1px solid #444; border-radius: 5px;");
 }
 
 void AxisPositionDisplay::updatePosition(double machine, double absolute, double relative)

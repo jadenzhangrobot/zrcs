@@ -10,6 +10,9 @@
 #include <QTextDocument>
 #include <QTextBlock>
 #include <QFile>
+#include <QPaintEvent>
+
+class GCodeLineNumberArea;
 
 /**
  * G-code 语法高亮器
@@ -38,8 +41,18 @@ public:
     explicit GCodeEditor(QWidget *parent = nullptr);
 
     int lineNumberAreaWidth() const;
+    void lineNumberAreaPaintEvent(QPaintEvent *event);
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
+private slots:
+    void updateLineNumberAreaWidth(int newBlockCount);
+    void updateLineNumberArea(const QRect &rect, int dy);
+    void highlightCurrentLine();
 
 private:
+    QWidget *lineNumberArea;
     GCodeHighlighter *highlighter;
 };
 
