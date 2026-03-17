@@ -445,7 +445,7 @@ void TrajectoryPanel::clearTrajectory()
     trajectoryPoints3D.clear();
 }
 
-void TrajectoryPanel::parseGCode(const QString &/*filePath*/)
+void TrajectoryPanel::parseGCode(const QString &filePath)
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
