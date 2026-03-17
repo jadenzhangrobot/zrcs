@@ -102,8 +102,8 @@ struct DisplayConfig {
 // 日志配置
 struct LogConfig {
     // 日志级别
-    enum Level { DEBUG, INFO, WARNING, ERROR, CRITICAL };
-    Level minLevel = INFO;
+    enum Level { LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR, LOG_CRITICAL };
+    Level minLevel = LOG_INFO;
     
     // 输出
     bool logToFile = true;
