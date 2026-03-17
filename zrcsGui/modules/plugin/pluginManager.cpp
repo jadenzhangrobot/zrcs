@@ -4,6 +4,7 @@
 #include <QListWidget>
 #include <QDebug>
 #include <QDir>
+#include "ui_plugin_panel.h"
 
 // ============================================================================
 // PluginManager 实现
@@ -89,18 +90,9 @@ PluginPanel::~PluginPanel()
 
 void PluginPanel::setupUI()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    
-    stackedWidget = new QStackedWidget();
-    
-    QListWidget *pluginList = new QListWidget();
-    pluginList->setStyleSheet("background-color: #1a1a1a; color: #00FF00;");
-    
-    stackedWidget->addWidget(pluginList);
-    
-    mainLayout->addWidget(stackedWidget);
-    
-    setStyleSheet("background-color: #1a1a1a;");
+    Ui::PluginPanelUi ui;
+    ui.setupUi(this);
+    stackedWidget = findChild<QStackedWidget*>("stackedWidget");
 }
 
 void PluginPanel::loadPlugins()
