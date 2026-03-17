@@ -3,14 +3,17 @@
 #include <QObject>
 #include <QString>
 #include <QThread>
+#include <QTimer>
 #include <zmq.hpp>
 #include <memory>
 #include <atomic>
 #include "message.pb.h"
+#include "config/zrcsConfig.h"
 
 /**
  * @class ZMQClientWorker
  * @brief ZMQ 客户端工作线程（在后台线程运行，避免阻塞 GUI）
+ * @details 支持指数退避重连策略，超过最大重试次数后停止重连并通知上层
  */
 class ZMQClientWorker : public QObject {
     Q_OBJECT
@@ -31,6 +34,10 @@ signals:
     void disconnected();
     void commandSent(const QString& command, bool success);
     void errorOccurred(const QString& error);
+    void reconnectFailed();  // 超过最大重试次数后发出
+
+private slots:
+    void attemptReconnect();
 
 private:
     QString host_;
@@ -38,8 +45,15 @@ private:
     std::unique_ptr<zmq::context_t> context_;
     std::unique_ptr<zmq::socket_t> socket_;
     std::atomic<bool> connected_{false};
-    
+
+    // 重连状态
+    QTimer* reconnectTimer_ = nullptr;
+    int retryCount_ = 0;
+    int currentIntervalMs_ = 0;
+
     void sendReply(const QString& message);
+    void startReconnect();
+    void stopReconnect();
 };
 
 /**
@@ -76,6 +90,7 @@ signals:
     void disconnected();
     void commandSent(const QString& command, bool success);
     void errorOccurred(const QString& error);
+    void reconnectFailed();
 
 private:
     ZMQClientWorker* worker_;

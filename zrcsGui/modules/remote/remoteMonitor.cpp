@@ -27,7 +27,7 @@ void ZMQDataReceiver::start()
     try {
         context = new zmq::context_t(1);
         socket = new zmq::socket_t(*context, zmq::socket_type::sub);
-        socket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
+        socket->set(zmq::sockopt::subscribe, "");
         socket->connect(endpoint.toStdString());
         
         emit connectionStatusChanged(true);

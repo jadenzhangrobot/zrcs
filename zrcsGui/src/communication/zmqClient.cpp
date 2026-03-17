@@ -1,6 +1,7 @@
 #include "zmqClient.h"
 #include <QDebug>
 #include <QThread>
+#include <algorithm>
 
 // ============================================================================
 // ZMQClientWorker 实现
@@ -13,6 +14,7 @@ ZMQClientWorker::ZMQClientWorker(const QString& host, int port)
 
 ZMQClientWorker::~ZMQClientWorker()
 {
+    stopReconnect();
     disconnect();
 }
 
@@ -22,11 +24,14 @@ void ZMQClientWorker::connect()
         context_ = std::make_unique<zmq::context_t>(1);
         socket_ = std::make_unique<zmq::socket_t>(*context_, zmq::socket_type::req);
         socket_->set(zmq::sockopt::rcvtimeo, 5000); // 5s timeout
-        
+        socket_->set(zmq::sockopt::linger, 0);
+
         QString endpoint = QString("tcp://%1:%2").arg(host_).arg(port_);
         socket_->connect(endpoint.toStdString());
-        
+
         connected_ = true;
+        retryCount_ = 0;
+        stopReconnect();
         qDebug() << "[ZMQClient] Connected to" << endpoint;
         emit connected();
     } catch (const zmq::error_t& e) {
@@ -34,11 +39,18 @@ void ZMQClientWorker::connect()
         QString error = QString("[ZMQClient] Connection error: %1").arg(e.what());
         qDebug() << error;
         emit errorOccurred(error);
+
+        // 连接失败，启动重连
+        const auto& commCfg = ZrcsConfig::Config::instance().comm;
+        if (commCfg.zmqAutoReconnect) {
+            startReconnect();
+        }
     }
 }
 
 void ZMQClientWorker::disconnect()
 {
+    stopReconnect();
     try {
         if (socket_) {
             socket_->close();
@@ -87,7 +99,7 @@ void ZMQClientWorker::sendCommand(const QString& command, const QVector<double>&
         // 接收回复
         zmq::message_t reply;
         auto result = socket_->recv(reply, zmq::recv_flags::none);
-        
+
         if (result) {
             std::string response(static_cast<char*>(reply.data()), reply.size());
             bool success = (response == "OK");
@@ -95,13 +107,103 @@ void ZMQClientWorker::sendCommand(const QString& command, const QVector<double>&
             emit commandSent(command, success);
         } else {
             emit errorOccurred("No response from server");
+            // 通信超时，可能服务端已断开
+            connected_ = false;
+            emit disconnected();
+            const auto& commCfg = ZrcsConfig::Config::instance().comm;
+            if (commCfg.zmqAutoReconnect) {
+                startReconnect();
+            }
         }
 
     } catch (const zmq::error_t& e) {
         QString error = QString("[ZMQClient] Send error: %1").arg(e.what());
         qDebug() << error;
         emit errorOccurred(error);
+        // 通信异常，标记断开并尝试重连
+        connected_ = false;
+        emit disconnected();
+        const auto& commCfg = ZrcsConfig::Config::instance().comm;
+        if (commCfg.zmqAutoReconnect) {
+            startReconnect();
+        }
     }
+}
+
+void ZMQClientWorker::startReconnect()
+{
+    if (reconnectTimer_ && reconnectTimer_->isActive()) {
+        return; // 已在重连中
+    }
+
+    const auto& commCfg = ZrcsConfig::Config::instance().comm;
+    currentIntervalMs_ = commCfg.zmqReconnectIntervalMs;
+    retryCount_ = 0;
+
+    if (!reconnectTimer_) {
+        reconnectTimer_ = new QTimer(this);
+        reconnectTimer_->setSingleShot(true);
+        QObject::connect(reconnectTimer_, &QTimer::timeout, this, &ZMQClientWorker::attemptReconnect);
+    }
+
+    qDebug() << "[ZMQClient] Starting reconnect, interval:" << currentIntervalMs_ << "ms";
+    reconnectTimer_->start(currentIntervalMs_);
+}
+
+void ZMQClientWorker::stopReconnect()
+{
+    if (reconnectTimer_) {
+        reconnectTimer_->stop();
+    }
+}
+
+void ZMQClientWorker::attemptReconnect()
+{
+    const auto& commCfg = ZrcsConfig::Config::instance().comm;
+
+    // 检查是否超过最大重试次数
+    if (commCfg.zmqMaxRetries > 0 && retryCount_ >= commCfg.zmqMaxRetries) {
+        qDebug() << "[ZMQClient] Max reconnect retries reached (" << commCfg.zmqMaxRetries << "), giving up";
+        emit reconnectFailed();
+        return;
+    }
+
+    ++retryCount_;
+    qDebug() << "[ZMQClient] Reconnect attempt" << retryCount_
+             << "/" << (commCfg.zmqMaxRetries > 0 ? QString::number(commCfg.zmqMaxRetries) : "inf");
+
+    // 先清理旧连接
+    try {
+        if (socket_) { socket_->close(); socket_.reset(); }
+        if (context_) { context_.reset(); }
+    } catch (...) {}
+
+    // 尝试连接
+    try {
+        context_ = std::make_unique<zmq::context_t>(1);
+        socket_ = std::make_unique<zmq::socket_t>(*context_, zmq::socket_type::req);
+        socket_->set(zmq::sockopt::rcvtimeo, commCfg.zmqTimeoutMs);
+        socket_->set(zmq::sockopt::linger, 0);
+
+        QString endpoint = QString("tcp://%1:%2").arg(host_).arg(port_);
+        socket_->connect(endpoint.toStdString());
+
+        connected_ = true;
+        retryCount_ = 0;
+        qDebug() << "[ZMQClient] Reconnected to" << endpoint;
+        emit connected();
+        return;
+    } catch (const zmq::error_t& e) {
+        connected_ = false;
+        qDebug() << "[ZMQClient] Reconnect failed:" << e.what();
+    }
+
+    // 指数退避：interval *= multiplier，但不超过上限
+    currentIntervalMs_ = std::min(
+        currentIntervalMs_ * commCfg.zmqBackoffMultiplier,
+        commCfg.zmqMaxReconnectIntervalMs
+    );
+    reconnectTimer_->start(currentIntervalMs_);
 }
 
 // ============================================================================
@@ -117,14 +219,15 @@ ZMQClient::ZMQClient(const QString& host, int port, QObject* parent)
     worker_->moveToThread(worker_thread_);
 
     // 连接信号槽
-    connect(worker_thread_, &QThread::finished, worker_, &QObject::deleteLater);
-    connect(this, &ZMQClient::destroyed, worker_thread_, &QThread::quit);
+    QObject::connect(worker_thread_, &QThread::finished, worker_, &QObject::deleteLater);
+    QObject::connect(this, &ZMQClient::destroyed, worker_thread_, &QThread::quit);
 
     // 转发信号
-    connect(worker_, &ZMQClientWorker::connected, this, &ZMQClient::connected);
-    connect(worker_, &ZMQClientWorker::disconnected, this, &ZMQClient::disconnected);
-    connect(worker_, &ZMQClientWorker::commandSent, this, &ZMQClient::commandSent);
-    connect(worker_, &ZMQClientWorker::errorOccurred, this, &ZMQClient::errorOccurred);
+    QObject::connect(worker_, &ZMQClientWorker::connected, this, &ZMQClient::connected);
+    QObject::connect(worker_, &ZMQClientWorker::disconnected, this, &ZMQClient::disconnected);
+    QObject::connect(worker_, &ZMQClientWorker::commandSent, this, &ZMQClient::commandSent);
+    QObject::connect(worker_, &ZMQClientWorker::errorOccurred, this, &ZMQClient::errorOccurred);
+    QObject::connect(worker_, &ZMQClientWorker::reconnectFailed, this, &ZMQClient::reconnectFailed);
 
     worker_thread_->start();
 }

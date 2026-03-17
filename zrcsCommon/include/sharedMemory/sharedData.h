@@ -3,7 +3,6 @@
 
 #include <atomic>
 #include <array>
-#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -13,22 +12,26 @@
 
 
 
- 
+
 // ===================================================================
 // 1. 定义要在进程间传递的数据结构
 // ===================================================================
 #define  OUTPUTIOSIZE 32
 #define  INPUTIOSIZE  32
 
-constexpr size_t COMMAND_BUFFER_SIZE = 16;
-constexpr size_t STATUS_BUFFER_SIZE = 16;
+constexpr size_t COMMAND_BUFFER_SIZE = 64;   // 扩大：16 -> 64，防止高频场景丢命令
+constexpr size_t STATUS_BUFFER_SIZE = 64;    // 同步扩大
+
+constexpr size_t MAX_CMD_NAME  = 100;        // 命令名最大长度
+constexpr size_t MAX_CMD_ARGS  = 20;         // 参数最大个数：10 -> 20，满足复杂轨迹命令
+
 // 命令的类型
 
 template <typename T, size_t Capacity>
 class SPSCRingBuffer {
 private:
     // 确保缓冲区容量是2的幂，可以简化取模运算为位运算，但这里用%以保证通用性
-    static_assert((Capacity > 0) && ((Capacity & (Capacity - 1)) == 0), 
+    static_assert((Capacity > 0) && ((Capacity & (Capacity - 1)) == 0),
                   "Capacity must be a power of 2");
 
     // head: 由生产者修改，指向下一个可写入的位置
@@ -37,14 +40,14 @@ private:
     // 当 (head + 1) % Capacity == tail 时，缓冲区为满
     alignas(64) std::atomic<size_t> head_{0}; // 64字节对齐避免伪共享
     alignas(64) std::atomic<size_t> tail_{0};
-    
+
     std::array<T, Capacity> buffer_;
 
 public:
     SPSCRingBuffer() = default;
 
     // 由生产者调用
-    bool push(const T& item) 
+    bool push(const T& item)
     {
         const auto current_head = head_.load(std::memory_order_relaxed);
         const auto next_head = (current_head + 1) % Capacity;
@@ -63,7 +66,7 @@ public:
     }
 
     // 由消费者调用
-    bool pop(T& item) 
+    bool pop(T& item)
     {
         const auto current_tail = tail_.load(std::memory_order_relaxed);
 
@@ -79,6 +82,13 @@ public:
         tail_.store((current_tail + 1) % Capacity, std::memory_order_release);
         return true;
     }
+
+    // 返回当前缓冲区中的元素数量（近似值，用于监控）
+    size_t size() const {
+        auto h = head_.load(std::memory_order_acquire);
+        auto t = tail_.load(std::memory_order_acquire);
+        return (h >= t) ? (h - t) : (Capacity - t + h);
+    }
 };
 
 
@@ -89,10 +99,10 @@ struct singleAxisContinueMotion
    bool motion=false;
    bool direction=true;
 };
-struct Command 
+struct Command
 {
-    char   cmd[100];
-    double args[10]={0};
+    char   cmd[MAX_CMD_NAME] = {0};
+    double args[MAX_CMD_ARGS] = {0};
 };
 
 struct SharedBlock {
@@ -100,7 +110,7 @@ struct SharedBlock {
     SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE> commandQueue;
     // RT -> NRT 的状态通道
     SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE> statusQueue;
-    std::atomic<TaskScheduling>  cmd; 
+    std::atomic<TaskScheduling>  cmd;
     std::atomic<uint64_t>  heartBeat; //心跳
     std::atomic<uint8_t>   Multiplied;//倍率
     std::atomic<uint8_t>   axisCount;//轴数量

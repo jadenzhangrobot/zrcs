@@ -1,44 +1,59 @@
 /**
  * @file main.cpp
  * @author zhangyongjing (6499894200@qq.com)
- * @brief 
- * @version 1.0
+ * @brief Real-Time process entry point
+ * @version 1.1
  * @date 2024-11-13
- * 
+ *
  * @copyright Copyright (c) 2024
- * 
+ *
  */
 
 #include "sharedMemory/sharedData.h"
 #include "controller/ControllerInterface.h"
 #include "system/nodeManager.h"
-#include <unistd.h>
-#include <vector>
+#include <thread>
+#include <iostream>
 #include "command/Cmdhead.h"
-int main(int argc, char **argv) 
+
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/mman.h>
+#include <cstring>
+#endif
+
+#ifdef _WIN32
+#define ZRCS_PLATFORM_WINDOWS
+#endif
+
+int main(int argc, char **argv)
 {
- 
-  #ifdef __linux__
-  if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-        // 打印错误信息，这非常重要！
-        fprintf(stderr, "Error: mlockall failed: %s\n", strerror(errno));        
-        // 在生产环境中，通常应该在这里直接退出，因为实时性无法保证
-        // exit(EXIT_FAILURE); 
-    }   
+#ifdef __linux__
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+        fprintf(stderr, "Error: mlockall failed: %s\n", strerror(errno));
+        // 在生产环境中，实时性无法保证时应退出
+        // exit(EXIT_FAILURE);
+    }
     printf("Memory successfully locked.\n");
 #endif
-    try 
+
+#ifdef ZRCS_PLATFORM_WINDOWS
+    // Windows 平台无 mlockall，此处可添加 Windows 特定的内存锁定或优先级设置
+    // 例如 SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    std::cout << "[RT] Running on Windows platform (no memory locking)" << std::endl;
+#endif
+
+    try
     {
-      zrcsSystem::NodeManager nodeManager;
-      nodeManager.run();
-      while(true)
-      {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-    } 
-    catch (const std::runtime_error& e) 
+        zrcsSystem::NodeManager nodeManager;
+        nodeManager.run();
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
+    catch (const std::runtime_error& e)
     {
-        std::cerr << "Exception caught: " << e.what() << std::endl; 
+        std::cerr << "Exception caught: " << e.what() << std::endl;
     }
     return 0;
 }

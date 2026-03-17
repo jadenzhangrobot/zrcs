@@ -196,7 +196,7 @@ void TrajectoryPanel::clearTrajectory()
     trajectoryPoints2D.clear();
 }
 
-void TrajectoryPanel::parseGCode(const QString &filePath)
+void TrajectoryPanel::parseGCode(const QString &/*filePath*/)
 {
     // TODO: 实现 G-code 解析逻辑
 }

@@ -15,7 +15,8 @@ private:
     std::atomic<bool> running_;
     std::thread server_thread_;
     SharedBlock* shared_block_;
-    
+    std::atomic<uint64_t> dropped_count_{0};
+
     static constexpr const char* ENDPOINT = "tcp://*:5555";
     static constexpr int RECV_TIMEOUT = 1000; // ms
 
@@ -31,8 +32,9 @@ public:
         try {
             socket_ = std::make_unique<zmq::socket_t>(context_, zmq::socket_type::rep);
             socket_->set(zmq::sockopt::rcvtimeo, RECV_TIMEOUT);
+            socket_->set(zmq::sockopt::linger, 0);  // 关闭时不等待未发送消息
             socket_->bind(ENDPOINT);
-            
+
             std::cout << "[ZMQServer] Initialized on " << ENDPOINT << std::endl;
             return true;
         } catch (const zmq::error_t& e) {
@@ -49,11 +51,27 @@ public:
     }
 
     void stop() {
-        running_ = false;
+        if (!running_.exchange(false)) {
+            return; // Already stopped
+        }
+        // 等待服务线程退出（recv 超时后会自然退出循环）
         if (server_thread_.joinable()) {
             server_thread_.join();
         }
+        // 显式关闭 socket 和 context，释放端口
+        if (socket_) {
+            socket_->close();
+            socket_.reset();
+        }
+        context_.close();
+
+        if (dropped_count_ > 0) {
+            std::cout << "[ZMQServer] Total dropped commands: " << dropped_count_.load() << std::endl;
+        }
+        std::cout << "[ZMQServer] Stopped" << std::endl;
     }
+
+    uint64_t droppedCount() const { return dropped_count_.load(); }
 
 private:
     void run() {
@@ -61,7 +79,7 @@ private:
             try {
                 zmq::message_t request;
                 auto result = socket_->recv(request, zmq::recv_flags::none);
-                
+
                 if (!result) {
                     continue;
                 }
@@ -75,12 +93,12 @@ private:
                 }
 
                 // 转换为共享内存命令格式
-                Command shm_cmd;
+                Command shm_cmd{};
                 strncpy(shm_cmd.cmd, cmd.command().c_str(), sizeof(shm_cmd.cmd) - 1);
                 shm_cmd.cmd[sizeof(shm_cmd.cmd) - 1] = '\0';
 
-                // 复制参数
-                for (size_t i = 0; i < cmd.args_size() && i < 10; ++i) {
+                // 复制参数（受 MAX_CMD_ARGS 限制）
+                for (size_t i = 0; i < static_cast<size_t>(cmd.args_size()) && i < MAX_CMD_ARGS; ++i) {
                     shm_cmd.args[i] = cmd.args(i);
                 }
 
@@ -89,12 +107,14 @@ private:
                     std::cout << "[ZMQServer] Command received: " << cmd.command() << std::endl;
                     sendReply("OK");
                 } else {
-                    std::cerr << "[ZMQServer] Command queue full" << std::endl;
+                    ++dropped_count_;
+                    std::cerr << "[ZMQServer] Command queue full (dropped: "
+                              << dropped_count_.load() << ")" << std::endl;
                     sendReply("ERROR: Queue full");
                 }
 
             } catch (const zmq::error_t& e) {
-                if (e.num() != EAGAIN) {
+                if (running_ && e.num() != EAGAIN) {
                     std::cerr << "[ZMQServer] Error: " << e.what() << std::endl;
                 }
             }

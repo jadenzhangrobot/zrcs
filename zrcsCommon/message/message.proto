@@ -2,10 +2,67 @@ syntax = "proto3";
 
 package zrcs_message;
 
+// 通用运动命令（保持向后兼容）
 message MotionCommand {
     string command = 1;
     repeated double args = 2;
 }
+
+// ===== 细化的命令消息 =====
+
+message MoveJCommand {
+    repeated double joint_angles = 1;  // 各关节角度
+    double velocity = 2;
+    double acceleration = 3;
+}
+
+message MoveLCommand {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+    double rx = 4;
+    double ry = 5;
+    double rz = 6;
+    double velocity = 7;
+    double acceleration = 8;
+}
+
+message MoveCCommand {
+    // 中间点
+    double mid_x = 1;
+    double mid_y = 2;
+    double mid_z = 3;
+    // 终点
+    double end_x = 4;
+    double end_y = 5;
+    double end_z = 6;
+    double velocity = 7;
+}
+
+message JogCommand {
+    int32 axis_id = 1;
+    int32 direction = 2;  // 1 正方向, -1 反方向
+    double speed = 3;
+}
+
+message IOCommand {
+    int32 port = 1;
+    bool value = 2;
+}
+
+// 类型安全的命令封装
+message TypedCommand {
+    oneof payload {
+        MoveJCommand move_j = 1;
+        MoveLCommand move_l = 2;
+        MoveCCommand move_c = 3;
+        JogCommand jog = 4;
+        IOCommand io = 5;
+        MotionCommand generic = 10;  // 兼容旧版通用格式
+    }
+}
+
+// ===== 状态消息 =====
 
 message AxisStatus {
     int32 axis_id = 1;
@@ -17,4 +74,6 @@ message AxisStatus {
 message SystemStatus {
     repeated AxisStatus axes = 1;
     string system_state = 2;
+    uint64 heartbeat = 3;
+    uint64 dropped_commands = 4;
 }

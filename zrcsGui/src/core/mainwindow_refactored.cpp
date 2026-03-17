@@ -167,15 +167,15 @@ void MainWindowRefactored::createAdvancedModules()
 void MainWindowRefactored::onUpdateTimer() { updateGlobalStatus(); }
 void MainWindowRefactored::updateGlobalStatus() {}
 void MainWindowRefactored::updateCommunicationStatus() {}
-void MainWindowRefactored::onJogPressed(int axis, int direction) {}
-void MainWindowRefactored::onJogReleased(int axis) {}
+void MainWindowRefactored::onJogPressed(int /*axis*/, int /*direction*/) {}
+void MainWindowRefactored::onJogReleased(int /*axis*/) {}
 void MainWindowRefactored::onStepSizeChanged(double size) { currentStepSize = size; }
 void MainWindowRefactored::onOverrideChanged(int percent) { currentOverride = percent; }
-void MainWindowRefactored::onHomeRequested(int axis) {}
+void MainWindowRefactored::onHomeRequested(int /*axis*/) {}
 void MainWindowRefactored::onHomeAllRequested() {}
-void MainWindowRefactored::onOutputToggled(int index, bool state) {}
+void MainWindowRefactored::onOutputToggled(int /*index*/, bool /*state*/) {}
 void MainWindowRefactored::onZMQConnected() { zmqStatusLabel->setText("ZMQ: 已连接"); }
 void MainWindowRefactored::onZMQDisconnected() { zmqStatusLabel->setText("ZMQ: 未连接"); }
-void MainWindowRefactored::onZMQError(const QString &error) {}
-void MainWindowRefactored::sendMotionCommand(const QString &command, const QVector<double> &args) {}
-void MainWindowRefactored::showConfirmDialog(const QString &title, const QString &message, std::function<void()> onConfirm) {}
+void MainWindowRefactored::onZMQError(const QString &/*error*/) {}
+void MainWindowRefactored::sendMotionCommand(const QString &/*command*/, const QVector<double> &/*args*/) {}
+void MainWindowRefactored::showConfirmDialog(const QString &/*title*/, const QString &/*message*/, std::function<void()> /*onConfirm*/) {}
