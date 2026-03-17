@@ -66,8 +66,6 @@ void JogControlPanel::setupUI()
         originBtn->setProperty("kind", "secondary");
         plusBtn->setProperty("compact", true);
         minusBtn->setProperty("compact", true);
-        homeBtn->setProperty("compact", true);
-        originBtn->setProperty("compact", true);
         posLabel->setObjectName("axisPosDisplay");
         connect(plusBtn, &QPushButton::pressed, this, [this, i]() {
             int axis = axisGroupCombo->currentData().toInt() + i;

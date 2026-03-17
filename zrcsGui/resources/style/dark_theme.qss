@@ -322,7 +322,7 @@ QPushButton[compact="true"] {
 
 QPushButton[compact="true"][kind="secondary"] {
     min-width: 86px;
-    max-width: 86px;
+    max-width: 96px;
 }
 
 QPushButton[kind="secondary"] {
