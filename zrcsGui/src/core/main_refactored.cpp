@@ -2,6 +2,7 @@
 #include <QStyleFactory>
 #include <QDir>
 #include "mainwindow_refactored.h"
+#include "bt_editor/bt_editor_base.h"
 
 #ifndef Q_OS_WIN
 #include <unistd.h>
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication app(argc, argv);
+    qRegisterMetaType<AbsBehaviorTree>();
 
     app.setApplicationName("ZRCS 工业运动控制系统");
     app.setApplicationVersion("2.0");

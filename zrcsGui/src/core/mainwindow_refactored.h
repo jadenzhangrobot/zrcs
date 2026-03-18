@@ -25,6 +25,8 @@
 #include "remote/remoteMonitor.h"
 #include "plugin/pluginManager.h"
 
+class BehaviorTreePanel;
+
 class StatusIndicator : public QWidget {
     Q_OBJECT
 public:
@@ -174,6 +176,7 @@ private:
     GCodePanel *gcodePanel;
     RemoteMonitorPanel *remotePanel;
     PluginPanel *pluginPanel;
+    BehaviorTreePanel *behaviorTreePanel;
     
     // Backend
     NRTProcess *nrtProcess;

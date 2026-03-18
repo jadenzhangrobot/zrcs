@@ -120,6 +120,7 @@ void MainWindowRefactored::createAdvancedModules()
     ioMonitorPanel = findChild<IOPanel*>("ioMonitorPanel");
     remotePanel = findChild<RemoteMonitorPanel*>("remotePanel");
     pluginPanel = findChild<PluginPanel*>("pluginPanel");
+    behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
 }
 
 void MainWindowRefactored::onUpdateTimer() { updateGlobalStatus(); }

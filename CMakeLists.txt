@@ -43,6 +43,13 @@ endif()
 aux_source_directory(./src SOURCE_FILES)
 
 # 1. zrcsgui (已经在 subdirectory 中定义，这里不需要重复，但确保它被构建)
+# Groot 行为树编辑器库（需在 zrcsGui 之前构建）
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+add_subdirectory(3rdParty/Groot)
+
 add_subdirectory(zrcsGui)
 
 # 2. zrcsnrt (非实时进程)

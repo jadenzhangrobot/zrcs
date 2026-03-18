@@ -158,6 +158,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="behaviorTreeTab">
+       <attribute name="title">
+        <string>行为树编辑器</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="behaviorTreeLayout">
+        <item>
+         <widget class="BehaviorTreePanel" name="behaviorTreePanel"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -204,6 +214,11 @@
    <class>PluginPanel</class>
    <extends>QWidget</extends>
    <header>plugin/pluginManager.h</header>
+  </customwidget>
+  <customwidget>
+   <class>BehaviorTreePanel</class>
+   <extends>QWidget</extends>
+   <header>behaviortree/behaviorTreePanel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

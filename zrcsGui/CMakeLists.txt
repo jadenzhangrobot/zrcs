@@ -18,7 +18,7 @@ set(CMAKE_PREFIX_PATH "D:/msys2/mingw64")
 set(Qt5_DIR "D:/msys2/mingw64/lib/cmake/Qt5")
 
 # 查找库
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets OpenGL Multimedia)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets OpenGL Multimedia Xml Svg Gui)
 find_package(Protobuf REQUIRED)
 find_package(cppzmq REQUIRED)
 find_package(absl REQUIRED)
@@ -53,6 +53,9 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/zrcsGui/modules
     ${CMAKE_SOURCE_DIR}/zrcsGui/resources/style
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot/QtNodeEditor/include
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP/include
 )
 
 # Protobuf 文件
@@ -73,6 +76,7 @@ set(SOURCES
     modules/gcode/gcodeEditor.cpp
     modules/remote/remoteMonitor.cpp
     modules/plugin/pluginManager.cpp
+    modules/behaviortree/behaviorTreePanel.cpp
     ${GUI_PROTO_SRCS}
 )
 
@@ -88,6 +92,7 @@ set(HEADERS
     modules/remote/remoteMonitor.h
     modules/plugin/pluginInterface.h
     modules/plugin/pluginManager.h
+    modules/behaviortree/behaviorTreePanel.h
 )
 
 # UI文件
@@ -103,10 +108,17 @@ set(UI_FILES
     resources/ui/trajectory_panel.ui
 )
 
+# Groot 资源文件
+set(GROOT_RESOURCE_FILES
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot/bt_editor/resources/icons.qrc
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot/bt_editor/resources/style.qrc
+)
+
 # 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES} ${GROOT_RESOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE NODE_EDITOR_STATIC)
 
 if(OpenCASCADE_FOUND)
     target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_HAS_OPENCASCADE)
@@ -119,12 +131,14 @@ if(OpenCASCADE_FOUND)
 endif()
 
 # 链接库
-target_link_libraries(${PROJECT_NAME} 
-    Qt5::Core 
-    Qt5::Widgets 
+target_link_libraries(${PROJECT_NAME}
+    Qt5::Core
+    Qt5::Widgets
     Qt5::OpenGL
     Qt5::Multimedia
-    atomic 
+    Qt5::Xml
+    Qt5::Svg
+    atomic
     Threads::Threads
     protobuf::libprotobuf
     cppzmq
@@ -132,6 +146,7 @@ target_link_libraries(${PROJECT_NAME}
     absl::log_internal_check_op
     absl::log_globals
     OpenGL::GL
+    behavior_tree_editor
 )
 
 if(OpenCASCADE_FOUND)
