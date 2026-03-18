@@ -50,6 +50,7 @@ void MainWindowRefactored::setupUI()
     globalStatus = findChild<StatusIndicator*>("globalStatusIndicator");
     jogPanel = findChild<JogControlPanel*>("jogPanel");
     createJogControl();
+    createQuickActions();
     createTrajectoryPanel();
     createAlarmPanel();
     createAdvancedModules();
@@ -121,6 +122,55 @@ void MainWindowRefactored::createAdvancedModules()
     remotePanel = findChild<RemoteMonitorPanel*>("remotePanel");
     pluginPanel = findChild<PluginPanel*>("pluginPanel");
     behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
+}
+
+void MainWindowRefactored::createQuickActions()
+{
+    quickActionGroup = findChild<QGroupBox*>("quickActionGroup");
+    quickActionLayout = findChild<QGridLayout*>("quickActionLayout");
+    if (!quickActionGroup || !quickActionLayout) return;
+
+    // 添加默认按钮 - 可根据需要修改
+    auto *btnServo = addQuickAction("伺服使能");
+    btnServo->setCheckable(true);
+    connect(btnServo, &QPushButton::toggled, this, [this](bool on) {
+        servoLabel->setText(on ? "伺服: 开" : "伺服: 关");
+    });
+
+    auto *btnRun = addQuickAction("运行程序");
+    connect(btnRun, &QPushButton::clicked, this, [](){ /* TODO */ });
+
+    auto *btnPause = addQuickAction("暂停");
+    connect(btnPause, &QPushButton::clicked, this, [](){ /* TODO */ });
+
+    auto *btnStop = addQuickAction("停止");
+    btnStop->setProperty("kind", "danger");
+    connect(btnStop, &QPushButton::clicked, this, [](){ /* TODO */ });
+
+    auto *btnEStop = addQuickAction("急停");
+    btnEStop->setProperty("kind", "danger");
+    connect(btnEStop, &QPushButton::clicked, this, [](){ /* TODO */ });
+
+    auto *btnReset = addQuickAction("复位");
+    connect(btnReset, &QPushButton::clicked, this, [](){ /* TODO */ });
+}
+
+QPushButton* MainWindowRefactored::addQuickAction(const QString &text, const QString &iconPath)
+{
+    if (!quickActionLayout) return nullptr;
+
+    auto *btn = new QPushButton(text, quickActionGroup);
+    btn->setMinimumHeight(36);
+    if (!iconPath.isEmpty()) {
+        btn->setIcon(QIcon(iconPath));
+    }
+
+    int count = quickActionLayout->count();
+    int cols = 3;
+    int row = count / cols;
+    int col = count % cols;
+    quickActionLayout->addWidget(btn, row, col);
+    return btn;
 }
 
 void MainWindowRefactored::onUpdateTimer() { updateGlobalStatus(); }

@@ -74,6 +74,30 @@
          <widget class="JogControlPanel" name="jogPanel"/>
         </item>
         <item>
+         <widget class="QGroupBox" name="quickActionGroup">
+          <property name="title">
+           <string>快捷操作</string>
+          </property>
+          <layout class="QGridLayout" name="quickActionLayout">
+           <property name="leftMargin">
+            <number>8</number>
+           </property>
+           <property name="topMargin">
+            <number>8</number>
+           </property>
+           <property name="rightMargin">
+            <number>8</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <spacer name="leftBottomSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>

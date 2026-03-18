@@ -17,6 +17,7 @@
 #include <QTextEdit>
 #include <QStatusBar>
 #include <QTabWidget>
+#include <QGridLayout>
 #include <functional>
 #include "sharedMemory/nrt_process.h"
 #include "communication/zmqClient.h"
@@ -158,6 +159,10 @@ private:
     void createIOPanel();
     void createSettingsPanel();
     void createAdvancedModules();
+    void createQuickActions();
+
+    // Quick action helper
+    QPushButton* addQuickAction(const QString &text, const QString &iconPath = QString());
     
     // UI Components
     StatusIndicator *globalStatus;
@@ -166,6 +171,8 @@ private:
     
     QVector<AxisPositionDisplay*> axisDisplays;
     JogControlPanel *jogPanel;
+    QGroupBox *quickActionGroup;
+    QGridLayout *quickActionLayout;
     IOPanel *ioPanel;
     IOPanel *ioMonitorPanel;
     AlarmPanel *alarmPanel;

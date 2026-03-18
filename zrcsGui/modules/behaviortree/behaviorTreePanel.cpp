@@ -36,8 +36,8 @@ BehaviorTreePanel::BehaviorTreePanel(QWidget *parent)
     setupUI();
     setupConnections();
 
-    createTab("BehaviorTree");
-    _mainTree = "BehaviorTree";
+    createTab(QString::fromUtf8("行为树"));
+    _mainTree = QString::fromUtf8("行为树");
     onSceneChanged();
     _currentState = saveCurrentState();
 }
@@ -82,15 +82,15 @@ void BehaviorTreePanel::setupUI()
     _toolbar = new QToolBar(this);
     _toolbar->setIconSize(QSize(20, 20));
 
-    auto *btnNew = _toolbar->addAction(QIcon(":/icons/svg/new.svg"), "New");
-    auto *btnLoad = _toolbar->addAction(QIcon(":/icons/svg/load.svg"), "Load");
-    auto *btnSave = _toolbar->addAction(QIcon(":/icons/svg/save.svg"), "Save");
+    auto *btnNew = _toolbar->addAction(QIcon(":/icons/svg/new.svg"), QString::fromUtf8("新建"));
+    auto *btnLoad = _toolbar->addAction(QIcon(":/icons/svg/load.svg"), QString::fromUtf8("加载"));
+    auto *btnSave = _toolbar->addAction(QIcon(":/icons/svg/save.svg"), QString::fromUtf8("保存"));
     _toolbar->addSeparator();
-    auto *btnArrange = _toolbar->addAction(QIcon(":/icons/svg/adjust.svg"), "Auto Arrange");
-    auto *btnCenter = _toolbar->addAction(QIcon(":/icons/svg/zoom_100.svg"), "Center View");
-    auto *btnLayout = _toolbar->addAction(QIcon(":/icons/BT-vertical.png"), "Toggle Layout");
+    auto *btnArrange = _toolbar->addAction(QIcon(":/icons/svg/adjust.svg"), QString::fromUtf8("自动排列"));
+    auto *btnCenter = _toolbar->addAction(QIcon(":/icons/svg/zoom_100.svg"), QString::fromUtf8("居中视图"));
+    auto *btnLayout = _toolbar->addAction(QIcon(":/icons/BT-vertical.png"), QString::fromUtf8("切换布局"));
     _toolbar->addSeparator();
-    auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/svg.svg"), "Export SVG");
+    auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/svg.svg"), QString::fromUtf8("导出SVG"));
 
     connect(btnNew, &QAction::triggered, this, &BehaviorTreePanel::onNewTree);
     connect(btnLoad, &QAction::triggered, this, &BehaviorTreePanel::onLoadTree);
@@ -224,9 +224,9 @@ void BehaviorTreePanel::onLoadTree()
     QString directory_path = settings.value("BehaviorTreePanel.lastLoadDirectory",
                                              QDir::homePath()).toString();
 
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Load BehaviorTree from file"),
+    QString fileName = QFileDialog::getOpenFileName(this, tr("从文件加载行为树"),
                                                      directory_path,
-                                                     tr("BehaviorTree files (*.xml)"));
+                                                     tr("行为树文件 (*.xml)"));
     if (!QFileInfo::exists(fileName)) return;
 
     QFile file(fileName);
@@ -248,8 +248,8 @@ void BehaviorTreePanel::onSaveTree()
 {
     for (auto &it : _tabInfo) {
         if (!it.second->containsValidTree()) {
-            QMessageBox::warning(this, tr("Oops!"),
-                                  tr("Malformed behavior tree. File can not be saved"),
+            QMessageBox::warning(this, tr("错误"),
+                                  tr("行为树格式错误，无法保存"),
                                   QMessageBox::Cancel);
             return;
         }
@@ -263,9 +263,9 @@ void BehaviorTreePanel::onSaveTree()
     QString directory_path = settings.value("BehaviorTreePanel.lastSaveDirectory",
                                              QDir::currentPath()).toString();
 
-    auto fileName = QFileDialog::getSaveFileName(this, "Save BehaviorTree to file",
+    auto fileName = QFileDialog::getSaveFileName(this, "保存行为树到文件",
                                                   directory_path,
-                                                  "BehaviorTree files (*.xml)");
+                                                  "行为树文件 (*.xml)");
     if (fileName.isEmpty()) return;
     if (!fileName.endsWith(".xml")) {
         fileName += ".xml";
@@ -291,7 +291,7 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
         int errorLine;
         if (!document.setContent(xml_text, &errorMsg, &errorLine)) {
             throw std::runtime_error(
-                tr("Error parsing XML (line %1): %2")
+                tr("解析XML错误 (第%1行): %2")
                     .arg(errorLine).arg(errorMsg).toStdString());
         }
 
@@ -311,7 +311,7 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
         }
     } catch (std::runtime_error &err) {
         QMessageBox messageBox;
-        messageBox.critical(this, "Error parsing the XML", err.what());
+        messageBox.critical(this, "解析XML错误", err.what());
         messageBox.show();
         return;
     }
@@ -342,7 +342,7 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
              bt_root = bt_root.nextSiblingElement("BehaviorTree"))
         {
             auto tree = BuildTreeFromXML(bt_root, _treenodeModels);
-            QString tree_name("BehaviorTree");
+            QString tree_name(QString::fromUtf8("行为树"));
 
             if (bt_root.hasAttribute("ID")) {
                 tree_name = bt_root.attribute("ID");
@@ -365,8 +365,8 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
         }
 
         if (currentTabInfo() == nullptr) {
-            createTab("BehaviorTree");
-            _mainTree = "BehaviorTree";
+            createTab(QString::fromUtf8("行为树"));
+            _mainTree = QString::fromUtf8("行为树");
         } else {
             currentTabInfo()->nodeReorder();
         }
@@ -383,8 +383,8 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
     if (error) {
         _treenodeModels = prev_tree_model;
         loadSavedStateFromJson(saved_state);
-        QMessageBox::warning(this, tr("Exception!"),
-                              tr("It was not possible to parse the file. Error:\n\n%1").arg(err_message),
+        QMessageBox::warning(this, tr("异常"),
+                              tr("无法解析文件。错误:\n\n%1").arg(err_message),
                               QMessageBox::Ok);
     } else {
         onSceneChanged();
@@ -498,9 +498,9 @@ void BehaviorTreePanel::onSaveSvg()
     QString directory_path = settings.value("BehaviorTreePanel.lastSaveSvgDirectory",
                                              QDir::homePath()).toString();
 
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save BehaviorTree to SVG"),
+    QString fileName = QFileDialog::getSaveFileName(this, tr("保存行为树为SVG"),
                                                      directory_path,
-                                                     tr("SVG files (*.svg)"));
+                                                     tr("SVG文件 (*.svg)"));
     if (fileName.isEmpty()) return;
     currentTabInfo()->saveSvgFile(fileName);
 
@@ -567,25 +567,24 @@ void BehaviorTreePanel::onModelRemoveRequested(QString ID)
 
     if (node_found && node_type != NodeType::SUBTREE) {
         QMessageBox::warning(
-            this, "Can't remove this Model",
-            QString("You are using this model in the Tree called [%1].\n"
-                    "You can't delete this model unless you "
-                    "remove all the instances of [%2].")
+            this, "无法删除此模型",
+            QString("您正在树 [%1] 中使用此模型。\n"
+                    "除非删除所有 [%2] 的实例，否则无法删除此模型。")
                 .arg(tab_containing_node, ID),
             QMessageBox::Ok);
     } else {
         int ret = QMessageBox::Cancel;
         if (node_found->model().type != NodeType::SUBTREE) {
             ret = QMessageBox::warning(
-                this, "Delete TreeNode Model?",
-                "Are you sure? This action can't be undone.",
+                this, "删除树节点模型?",
+                "确定要删除吗？此操作无法撤销。",
                 QMessageBox::Cancel | QMessageBox::Yes, QMessageBox::Cancel);
         } else {
             ret = QMessageBox::warning(
-                this, "Delete Subtree?",
-                "The Model of the Subtrees will be removed."
-                "An expanded version will be added to parent trees.\n"
-                "Are you sure? This action can't be undone.",
+                this, "删除子树?",
+                "子树的模型将被删除。"
+                "展开的版本将添加到父树中。\n"
+                "确定要删除吗？此操作无法撤销。",
                 QMessageBox::Cancel | QMessageBox::Yes, QMessageBox::Cancel);
         }
         if (ret == QMessageBox::Yes) {
@@ -734,7 +733,7 @@ void BehaviorTreePanel::onActionClearTriggered(bool create_new)
     _treeTabWidget->clear();
 
     if (create_new) {
-        createTab("BehaviorTree");
+        createTab(QString::fromUtf8("行为树"));
     }
     _editorWidget->clear();
 }
@@ -771,14 +770,14 @@ QtNodes::Node *BehaviorTreePanel::subTreeExpand(GraphicContainer &container,
     if (option == SUBTREE_EXPAND && !subtree_model->expanded()) {
         auto subtree_container = getTabByName(subtree_name);
         if (!subtree_container) {
-            QMessageBox::warning(this, tr("Oops!"),
-                                  tr("Couldn't find SubTree tab. Can't expand."),
+            QMessageBox::warning(this, tr("错误"),
+                                  tr("找不到子树标签页，无法展开。"),
                                   QMessageBox::Cancel);
             return &node;
         }
         if (!subtree_container->containsValidTree()) {
-            QMessageBox::warning(this, tr("Oops!"),
-                                  tr("Invalid SubTree. Cannot expand."),
+            QMessageBox::warning(this, tr("错误"),
+                                  tr("无效的子树，无法展开。"),
                                   QMessageBox::Cancel);
             return &node;
         }
