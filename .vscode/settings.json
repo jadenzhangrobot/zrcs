@@ -1,5 +1,6 @@
+
 {
     "github.copilot.chat.commitMessageGeneration.instructions": [
-        "zh-cn":"请强制使用简体中文生成 Git Commit Message。遵循常规的 Angular 规范（如 feat:, fix:, docs: 等保留英文前缀，但后面的描述必须是中文）。"
+        "请强制使用简体中文生成 Git Commit Message。遵循常规的 Angular 规范（如 feat:, fix:, docs: 等保留英文前缀，但后面的描述必须是中文）。"
     ]
 }
