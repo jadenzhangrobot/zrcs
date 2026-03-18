@@ -82,15 +82,15 @@ void BehaviorTreePanel::setupUI()
     _toolbar = new QToolBar(this);
     _toolbar->setIconSize(QSize(20, 20));
 
-    auto *btnNew = _toolbar->addAction(QIcon(":/icons/svg/new.svg"), QString::fromUtf8("新建"));
-    auto *btnLoad = _toolbar->addAction(QIcon(":/icons/svg/load.svg"), QString::fromUtf8("加载"));
-    auto *btnSave = _toolbar->addAction(QIcon(":/icons/svg/save.svg"), QString::fromUtf8("保存"));
+    auto *btnNew = _toolbar->addAction(QIcon(":/icons/svg/list_add.svg"), QString::fromUtf8("新建"));
+    auto *btnLoad = _toolbar->addAction(QIcon(":/icons/svg/folder.svg"), QString::fromUtf8("加载"));
+    auto *btnSave = _toolbar->addAction(QIcon(":/icons/svg/save_dark.svg"), QString::fromUtf8("保存"));
     _toolbar->addSeparator();
-    auto *btnArrange = _toolbar->addAction(QIcon(":/icons/svg/adjust.svg"), QString::fromUtf8("自动排列"));
-    auto *btnCenter = _toolbar->addAction(QIcon(":/icons/svg/zoom_100.svg"), QString::fromUtf8("居中视图"));
+    auto *btnArrange = _toolbar->addAction(QIcon(":/icons/svg/magic-wand.svg"), QString::fromUtf8("自动排列"));
+    auto *btnCenter = _toolbar->addAction(QIcon(":/icons/svg/zoom_home.svg"), QString::fromUtf8("居中视图"));
     auto *btnLayout = _toolbar->addAction(QIcon(":/icons/BT-vertical.png"), QString::fromUtf8("切换布局"));
     _toolbar->addSeparator();
-    auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/svg.svg"), QString::fromUtf8("导出SVG"));
+    auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/download.svg"), QString::fromUtf8("导出SVG"));
 
     connect(btnNew, &QAction::triggered, this, &BehaviorTreePanel::onNewTree);
     connect(btnLoad, &QAction::triggered, this, &BehaviorTreePanel::onLoadTree);
