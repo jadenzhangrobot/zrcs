@@ -11,7 +11,6 @@
 #include <array>
 #include <ruckig/ruckig.hpp>
 #include <vector>
-#include "system/nodeCommunication.h"
 #include "system/nodeFactory.h"
 
 using namespace ruckig;

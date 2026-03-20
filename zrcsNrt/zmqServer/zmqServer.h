@@ -3,6 +3,11 @@
 #include <thread>
 #include <atomic>
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "message.pb.h"
 #include "sharedMemory/sharedData.h"
 #include "btEngine.h"
@@ -131,10 +136,75 @@ private:
         }
     }
 
+    /**
+     * @brief 获取可执行文件所在目录
+     */
+    static std::filesystem::path getExeDir() {
+#ifdef _WIN32
+        char buf[MAX_PATH];
+        GetModuleFileNameA(nullptr, buf, MAX_PATH);
+        return std::filesystem::path(buf).parent_path();
+#else
+        return std::filesystem::canonical("/proc/self/exe").parent_path();
+#endif
+    }
+
+    /**
+     * @brief 将 BT XML 保存到 config/bt/ 目录
+     * @return 保存的文件路径，失败返回空字符串
+     */
+    std::string saveBTXml(const std::string& xml_data) {
+        try {
+            auto bt_dir = getExeDir() / "config" / "bt";
+            std::filesystem::create_directories(bt_dir);
+
+            // 用时间戳命名，同时维护一个 current.xml 始终指向最新
+            auto now = std::chrono::system_clock::now();
+            auto t = std::chrono::system_clock::to_time_t(now);
+            std::tm tm_buf{};
+#ifdef _WIN32
+            localtime_s(&tm_buf, &t);
+#else
+            localtime_r(&t, &tm_buf);
+#endif
+            char ts[64];
+            std::strftime(ts, sizeof(ts), "%Y%m%d_%H%M%S", &tm_buf);
+
+            std::string filename = std::string("bt_") + ts + ".xml";
+            auto filepath = bt_dir / filename;
+
+            std::ofstream ofs(filepath, std::ios::out | std::ios::trunc);
+            if (!ofs.is_open()) {
+                std::cerr << "[ZMQServer] Failed to open file: " << filepath << std::endl;
+                return "";
+            }
+            ofs << xml_data;
+            ofs.close();
+
+            // 覆盖写 current.xml，方便下次启动时加载最新树
+            auto current_path = bt_dir / "current.xml";
+            std::ofstream cur(current_path, std::ios::out | std::ios::trunc);
+            if (cur.is_open()) {
+                cur << xml_data;
+                cur.close();
+            }
+
+            std::cout << "[ZMQServer] BT XML saved: " << filepath << std::endl;
+            return filepath.string();
+        } catch (const std::exception& e) {
+            std::cerr << "[ZMQServer] Failed to save BT XML: " << e.what() << std::endl;
+            return "";
+        }
+    }
+
     void handleBTCommand(const zrcs_message::BehaviorTreeCommand& bt_cmd) {
         const std::string& action = bt_cmd.action();
 
         if (action == "LOAD") {
+            // 先保存到本地文件
+            saveBTXml(bt_cmd.xml_data());
+
+            // 再加载到行为树引擎
             std::string err = bt_engine_->loadTree(bt_cmd.xml_data());
             if (err.empty()) {
                 sendReply("OK");
