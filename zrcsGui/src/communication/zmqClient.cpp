@@ -130,6 +130,65 @@ void ZMQClientWorker::sendCommand(const QString& command, const QVector<double>&
     }
 }
 
+void ZMQClientWorker::sendBTCommand(const QString& action, const QString& xmlData)
+{
+    if (!connected_) {
+        emit errorOccurred("Not connected to server");
+        return;
+    }
+
+    try {
+        // 创建 TypedCommand 包含 BehaviorTreeCommand
+        zrcs_message::TypedCommand typed_cmd;
+        auto* bt_cmd = typed_cmd.mutable_bt_command();
+        bt_cmd->set_action(action.toStdString());
+        if (!xmlData.isEmpty()) {
+            bt_cmd->set_xml_data(xmlData.toStdString());
+        }
+
+        std::string serialized;
+        if (!typed_cmd.SerializeToString(&serialized)) {
+            emit errorOccurred("Failed to serialize BT command");
+            return;
+        }
+
+        zmq::message_t request(serialized.size());
+        memcpy(request.data(), serialized.data(), serialized.size());
+        socket_->send(request, zmq::send_flags::none);
+
+        qDebug() << "[ZMQClient] Sent BT command:" << action;
+
+        zmq::message_t reply;
+        auto result = socket_->recv(reply, zmq::recv_flags::none);
+
+        if (result) {
+            std::string response(static_cast<char*>(reply.data()), reply.size());
+            bool success = (response == "OK");
+            qDebug() << "[ZMQClient] BT Response:" << QString::fromStdString(response);
+            emit commandSent(QString("BT_%1").arg(action), success);
+        } else {
+            emit errorOccurred("No response from server (BT command)");
+            connected_ = false;
+            emit disconnected();
+            const auto& commCfg = ZrcsConfig::Config::instance().comm;
+            if (commCfg.zmqAutoReconnect) {
+                startReconnect();
+            }
+        }
+
+    } catch (const zmq::error_t& e) {
+        QString error = QString("[ZMQClient] BT send error: %1").arg(e.what());
+        qDebug() << error;
+        emit errorOccurred(error);
+        connected_ = false;
+        emit disconnected();
+        const auto& commCfg = ZrcsConfig::Config::instance().comm;
+        if (commCfg.zmqAutoReconnect) {
+            startReconnect();
+        }
+    }
+}
+
 void ZMQClientWorker::startReconnect()
 {
     if (reconnectTimer_ && reconnectTimer_->isActive()) {
@@ -310,5 +369,32 @@ void ZMQClient::sendCommand(const QString& command, const QVector<double>& args)
         QMetaObject::invokeMethod(worker_, "sendCommand", Qt::QueuedConnection,
                                 Q_ARG(QString, command),
                                 Q_ARG(QVector<double>, args));
+    }
+}
+
+void ZMQClient::loadBehaviorTree(const QString& xml)
+{
+    if (worker_) {
+        QMetaObject::invokeMethod(worker_, "sendBTCommand", Qt::QueuedConnection,
+                                Q_ARG(QString, QString("LOAD")),
+                                Q_ARG(QString, xml));
+    }
+}
+
+void ZMQClient::startBehaviorTree()
+{
+    if (worker_) {
+        QMetaObject::invokeMethod(worker_, "sendBTCommand", Qt::QueuedConnection,
+                                Q_ARG(QString, QString("START")),
+                                Q_ARG(QString, QString()));
+    }
+}
+
+void ZMQClient::stopBehaviorTree()
+{
+    if (worker_) {
+        QMetaObject::invokeMethod(worker_, "sendBTCommand", Qt::QueuedConnection,
+                                Q_ARG(QString, QString("STOP")),
+                                Q_ARG(QString, QString()));
     }
 }

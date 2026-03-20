@@ -50,6 +50,11 @@ public slots:
     void onToggleLayout();
     void onSaveSvg();
 
+    // 行为树下发控制
+    void onSendToController();
+    void onStartExecution();
+    void onStopExecution();
+
     void onSceneChanged();
     void onPushUndo();
     void onUndoInvoked();
@@ -67,6 +72,12 @@ public slots:
 
     void onRequestSubTreeExpand(GraphicContainer &container,
                                  QtNodes::Node &node);
+
+signals:
+    // 行为树下发信号，由 MainWindow 连接到 ZMQClient
+    void requestBTLoad(const QString &xml);
+    void requestBTStart();
+    void requestBTStop();
 
 private:
     enum SubtreeExpandOption { SUBTREE_EXPAND, SUBTREE_COLLAPSE,

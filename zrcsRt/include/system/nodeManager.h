@@ -103,16 +103,25 @@ public:
               case TaskScheduling::RUN:                         
                     if (cmdNode_ != nullptr)
                     { 
-                      if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) 
+                      if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                       {
+                        // 写回命令完成状态到共享内存，供 NRT BT引擎查询
+                        LastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                        LastCmdResult.store(0, std::memory_order_release);  // 0=成功
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         // 节点已完成或失败，清理资源
                         cmdNode_ = nullptr;
                       } 
-                      else 
+                      else
                       {
                         // 节点仍在运行，继续执行
                         cmdNode_->execute();
+                        // 检查执行后是否失败，写回失败状态
+                        if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
+                        {
+                            LastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                            LastCmdResult.store(1, std::memory_order_release);  // 1=失败
+                        }
                       }                  
                     }
                     else

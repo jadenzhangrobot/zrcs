@@ -15,6 +15,7 @@
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include "sharedMemory/sharedData.h"
 #include "sharedMemory/shmConstants.h"
+#include "btEngine.h"
 #include "zmqServer.h"
 
 namespace ipc = boost::interprocess;
@@ -56,8 +57,12 @@ int main(int argc, char **argv)
 
         std::cout << "[NRT] SharedBlock initialized" << std::endl;
 
+        // 初始化行为树引擎
+        BTEngine bt_engine(shared_block);
+        std::cout << "[NRT] BTEngine initialized" << std::endl;
+
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(shared_block);
+        ZMQServer zmq_server(shared_block, &bt_engine);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {

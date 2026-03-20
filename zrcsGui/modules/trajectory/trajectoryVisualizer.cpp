@@ -694,10 +694,9 @@ QVector<QVector3D> TrajectoryPanel::extractStepMeshOCC(const QString &filePath, 
         }
 
         gp_Trsf trsf = loc.Transformation();
-        const Poly_Array1OfTriangle &triangles = tri->Triangles();
-        for (int t = triangles.Lower(); t <= triangles.Upper(); ++t) {
+        for (int t = 1; t <= tri->NbTriangles(); ++t) {
             int n1 = 0, n2 = 0, n3 = 0;
-            triangles(t).Get(n1, n2, n3);
+            tri->Triangle(t).Get(n1, n2, n3);
             gp_Pnt p1 = tri->Node(n1).Transformed(trsf);
             gp_Pnt p2 = tri->Node(n2).Transformed(trsf);
             gp_Pnt p3 = tri->Node(n3).Transformed(trsf);

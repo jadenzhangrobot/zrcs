@@ -92,6 +92,11 @@ void BehaviorTreePanel::setupUI()
     _toolbar->addSeparator();
     auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/download.svg"), QString::fromUtf8("导出SVG"));
 
+    _toolbar->addSeparator();
+    auto *btnSend = _toolbar->addAction(QIcon(":/icons/svg/save_dark.svg"), QString::fromUtf8("下发到控制器"));
+    auto *btnStart = _toolbar->addAction(QIcon(":/icons/svg/play.svg"), QString::fromUtf8("启动执行"));
+    auto *btnStop = _toolbar->addAction(QIcon(":/icons/svg/stop.svg"), QString::fromUtf8("停止执行"));
+
     connect(btnNew, &QAction::triggered, this, &BehaviorTreePanel::onNewTree);
     connect(btnLoad, &QAction::triggered, this, &BehaviorTreePanel::onLoadTree);
     connect(btnSave, &QAction::triggered, this, &BehaviorTreePanel::onSaveTree);
@@ -99,6 +104,9 @@ void BehaviorTreePanel::setupUI()
     connect(btnCenter, &QAction::triggered, this, &BehaviorTreePanel::onCenterView);
     connect(btnLayout, &QAction::triggered, this, &BehaviorTreePanel::onToggleLayout);
     connect(btnSvg, &QAction::triggered, this, &BehaviorTreePanel::onSaveSvg);
+    connect(btnSend, &QAction::triggered, this, &BehaviorTreePanel::onSendToController);
+    connect(btnStart, &QAction::triggered, this, &BehaviorTreePanel::onStartExecution);
+    connect(btnStop, &QAction::triggered, this, &BehaviorTreePanel::onStopExecution);
 
     _mainLayout->addWidget(_toolbar);
 
@@ -451,6 +459,41 @@ QString BehaviorTreePanel::saveToXML() const
     root.appendChild(doc.createComment(COMMENT_SEPARATOR));
 
     return xmlDocumentToString(doc);
+}
+
+// =========== 行为树下发控制 ===========
+
+void BehaviorTreePanel::onSendToController()
+{
+    for (auto &it : _tabInfo) {
+        if (!it.second->containsValidTree()) {
+            QMessageBox::warning(this, tr("错误"),
+                                  tr("行为树格式错误，无法下发"),
+                                  QMessageBox::Cancel);
+            return;
+        }
+    }
+
+    QString xml = saveToXML();
+    if (xml.isEmpty()) {
+        QMessageBox::warning(this, tr("错误"),
+                              tr("无法生成行为树 XML"),
+                              QMessageBox::Cancel);
+        return;
+    }
+
+    emit requestBTLoad(xml);
+    qDebug() << "[BehaviorTreePanel] Sent BT XML to controller";
+}
+
+void BehaviorTreePanel::onStartExecution()
+{
+    emit requestBTStart();
+}
+
+void BehaviorTreePanel::onStopExecution()
+{
+    emit requestBTStop();
 }
 
 // =========== Toolbar actions ===========

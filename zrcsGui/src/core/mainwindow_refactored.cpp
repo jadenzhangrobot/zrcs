@@ -23,6 +23,16 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     
     nrtProcess = new NRTProcess();
     zmqClient = new ZMQClient();
+
+    // 连接行为树面板信号到 ZMQ 客户端
+    if (behaviorTreePanel && zmqClient) {
+        connect(behaviorTreePanel, &BehaviorTreePanel::requestBTLoad,
+                zmqClient, &ZMQClient::loadBehaviorTree);
+        connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStart,
+                zmqClient, &ZMQClient::startBehaviorTree);
+        connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStop,
+                zmqClient, &ZMQClient::stopBehaviorTree);
+    }
     
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainWindowRefactored::onUpdateTimer);

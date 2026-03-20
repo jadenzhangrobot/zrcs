@@ -7,6 +7,7 @@
 #include <memory>
 #include "message.pb.h"
 #include "sharedMemory/sharedData.h"
+#include "btEngine.h"
 
 class ZMQServer {
 private:
@@ -15,14 +16,16 @@ private:
     std::atomic<bool> running_;
     std::thread server_thread_;
     SharedBlock* shared_block_;
+    BTEngine* bt_engine_;
     std::atomic<uint64_t> dropped_count_{0};
 
     static constexpr const char* ENDPOINT = "tcp://*:5555";
     static constexpr int RECV_TIMEOUT = 1000; // ms
 
 public:
-    explicit ZMQServer(SharedBlock* shared_block)
-        : context_(1), socket_(nullptr), running_(false), shared_block_(shared_block) {}
+    ZMQServer(SharedBlock* shared_block, BTEngine* bt_engine)
+        : context_(1), socket_(nullptr), running_(false),
+          shared_block_(shared_block), bt_engine_(bt_engine) {}
 
     ~ZMQServer() {
         stop();
@@ -84,7 +87,16 @@ private:
                     continue;
                 }
 
-                // 反序列化 Protobuf 消息
+                // 先尝试解析为 TypedCommand（支持 BT 命令）
+                zrcs_message::TypedCommand typed_cmd;
+                if (typed_cmd.ParseFromArray(request.data(), request.size())
+                    && typed_cmd.has_bt_command())
+                {
+                    handleBTCommand(typed_cmd.bt_command());
+                    continue;
+                }
+
+                // 回退：解析为 MotionCommand（兼容现有协议）
                 zrcs_message::MotionCommand cmd;
                 if (!cmd.ParseFromArray(request.data(), request.size())) {
                     std::cerr << "[ZMQServer] Failed to parse protobuf message" << std::endl;
@@ -121,10 +133,52 @@ private:
         }
     }
 
+    void handleBTCommand(const zrcs_message::BehaviorTreeCommand& bt_cmd) {
+        const std::string& action = bt_cmd.action();
+
+        if (action == "LOAD") {
+            std::string err = bt_engine_->loadTree(bt_cmd.xml_data());
+            if (err.empty()) {
+                sendReply("OK");
+            } else {
+                sendReply("ERROR: " + err);
+            }
+        } else if (action == "START") {
+            if (bt_engine_->start()) {
+                sendReply("OK");
+            } else {
+                sendReply("ERROR: Failed to start BT execution");
+            }
+        } else if (action == "STOP") {
+            bt_engine_->stop();
+            sendReply("OK");
+        } else if (action == "STATUS") {
+            // 返回 BehaviorTreeStatus protobuf 序列化
+            zrcs_message::BehaviorTreeStatus status;
+            status.set_tree_state(bt_engine_->getStateString());
+            status.set_current_node(bt_engine_->getCurrentNodeName());
+            std::string serialized;
+            status.SerializeToString(&serialized);
+            sendReplyRaw(serialized);
+        } else {
+            sendReply("ERROR: Unknown BT action: " + action);
+        }
+    }
+
     void sendReply(const std::string& message) {
         try {
             zmq::message_t reply(message.size());
             memcpy(reply.data(), message.data(), message.size());
+            socket_->send(reply, zmq::send_flags::none);
+        } catch (const zmq::error_t& e) {
+            std::cerr << "[ZMQServer] Send reply error: " << e.what() << std::endl;
+        }
+    }
+
+    void sendReplyRaw(const std::string& data) {
+        try {
+            zmq::message_t reply(data.size());
+            memcpy(reply.data(), data.data(), data.size());
             socket_->send(reply, zmq::send_flags::none);
         } catch (const zmq::error_t& e) {
             std::cerr << "[ZMQServer] Send reply error: " << e.what() << std::endl;

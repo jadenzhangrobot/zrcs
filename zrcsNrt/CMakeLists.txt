@@ -9,6 +9,7 @@ find_package(cppzmq REQUIRED)
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcsCommon/include
     ${CMAKE_SOURCE_DIR}/zrcsNrt
+    ${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP/include
     ${CMAKE_BINARY_DIR}
 )
 
@@ -26,13 +27,14 @@ add_executable(zrcsnrt ${SOURCES} ${ZRCSNRT_PROTO_SRCS} ${ZRCSNRT_PROTO_HDRS})
 target_include_directories(zrcsnrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库
-target_link_libraries(zrcsnrt PRIVATE 
+target_link_libraries(zrcsnrt PRIVATE
     Threads::Threads
     ruckig
     tinyxml2
     atomic
     protobuf::libprotobuf
     cppzmq
+    behaviortree_cpp_v3
     ${MOTION_CONTROL_LIBS}
 )
 

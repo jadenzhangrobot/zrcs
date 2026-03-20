@@ -28,6 +28,7 @@ public slots:
     void connect();
     void disconnect();
     void sendCommand(const QString& command, const QVector<double>& args = {});
+    void sendBTCommand(const QString& action, const QString& xmlData = {});
 
 signals:
     void connected();
@@ -84,6 +85,11 @@ public:
 
     // 通用方法
     void sendCommand(const QString& command, const QVector<double>& args = {});
+
+    // 行为树控制方法
+    void loadBehaviorTree(const QString& xml);
+    void startBehaviorTree();
+    void stopBehaviorTree();
 
 signals:
     void connected();

@@ -50,6 +50,19 @@ message IOCommand {
     bool value = 2;
 }
 
+// ===== 行为树命令 =====
+
+message BehaviorTreeCommand {
+    string action = 1;      // "LOAD", "START", "STOP", "STATUS"
+    string xml_data = 2;    // action=LOAD 时携带行为树 XML 文本
+}
+
+message BehaviorTreeStatus {
+    string tree_state = 1;   // "IDLE", "RUNNING", "SUCCESS", "FAILURE", "HALTED"
+    string current_node = 2; // 当前执行节点名称
+    string message = 3;      // 附加信息/错误信息
+}
+
 // 类型安全的命令封装
 message TypedCommand {
     oneof payload {
@@ -59,6 +72,7 @@ message TypedCommand {
         JogCommand jog = 4;
         IOCommand io = 5;
         MotionCommand generic = 10;  // 兼容旧版通用格式
+        BehaviorTreeCommand bt_command = 11;
     }
 }
 

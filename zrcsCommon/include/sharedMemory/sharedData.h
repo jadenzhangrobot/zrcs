@@ -101,8 +101,9 @@ struct singleAxisContinueMotion
 };
 struct Command
 {
-    char   cmd[MAX_CMD_NAME] = {0};
-    double args[MAX_CMD_ARGS] = {0};
+    char     cmd[MAX_CMD_NAME] = {0};
+    double   args[MAX_CMD_ARGS] = {0};
+    uint32_t seq = 0;               // 命令序列号，用于 NRT 跟踪完成状态
 };
 
 struct SharedBlock {
@@ -119,6 +120,10 @@ struct SharedBlock {
 
 
     std::atomic<singleAxisContinueMotion> sacm;
+
+    // RT -> NRT 命令完成反馈
+    std::atomic<uint32_t> lastCmdSeq{0};     // RT 最后完成的命令序列号
+    std::atomic<uint8_t>  lastCmdResult{0};  // 0=成功, 1=失败
 };
 #define taskScheduling rtProcess_->shared_block_->cmd
 #define rtCmdQueue     rtProcess_->shared_block_->commandQueue
@@ -127,6 +132,8 @@ struct SharedBlock {
 #define AxisCount      rtProcess_->shared_block_->axisCount
 #define MultiPlied     rtProcess_->shared_block_->Multiplied
 #define ContinueMotion rtProcess_->shared_block_->sacm
+#define LastCmdSeq     rtProcess_->shared_block_->lastCmdSeq
+#define LastCmdResult  rtProcess_->shared_block_->lastCmdResult
 
 
 #endif // SHARED_DATA_HPP
