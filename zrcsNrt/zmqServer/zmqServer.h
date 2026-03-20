@@ -1,10 +1,8 @@
 #pragma once
-
 #include <zmq.hpp>
 #include <thread>
 #include <atomic>
 #include <iostream>
-#include <memory>
 #include "message.pb.h"
 #include "sharedMemory/sharedData.h"
 #include "btEngine.h"

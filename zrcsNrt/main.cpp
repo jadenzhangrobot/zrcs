@@ -12,13 +12,10 @@
 #include <chrono>
 #include <csignal>
 #include <atomic>
-#include <boost/interprocess/managed_shared_memory.hpp>
-#include "sharedMemory/sharedData.h"
-#include "sharedMemory/shmConstants.h"
 #include "btEngine.h"
-#include "zmqServer.h"
+#include "zmqServer/zmqServer.h"
+#include "sharedMemory/nrt_process.h"
 
-namespace ipc = boost::interprocess;
 
 static std::atomic<bool> g_running{true};
 static ZMQServer* g_zmq_server = nullptr;
@@ -40,29 +37,24 @@ int main(int argc, char **argv)
     std::cout << "ZRCS Non-Real-Time Process Started" << std::endl;
     try
     {
-        // NRT 负责创建共享内存（RT 侧只做 find）
-        ipc::managed_shared_memory shm(
-            ipc::open_or_create,
-            zrcs::SHM_NAME,
-            zrcs::SHM_SIZE
-        );
+      
 
         // 创建 SharedBlock 并零初始化
-        SharedBlock* shared_block = shm.find_or_construct<SharedBlock>(zrcs::SHM_BLOCK_NAME)();
 
-        if (!shared_block) {
-            std::cerr << "[NRT] Failed to create/find SharedBlock" << std::endl;
+        NRTProcess nrt_process;
+        if (!nrt_process.initialize()) {
+            std::cerr << "[NRT] Failed to initialize shared memory" << std::endl;
             return 1;
         }
 
         std::cout << "[NRT] SharedBlock initialized" << std::endl;
 
         // 初始化行为树引擎
-        BTEngine bt_engine(shared_block);
+        BTEngine bt_engine(nrt_process.shared_block_);
         std::cout << "[NRT] BTEngine initialized" << std::endl;
 
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(shared_block, &bt_engine);
+        ZMQServer zmq_server(nrt_process.shared_block_, &bt_engine);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {

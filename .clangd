@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-ID:/msys2/ucrt64/include, --target=x86_64-w64-mingw32]
