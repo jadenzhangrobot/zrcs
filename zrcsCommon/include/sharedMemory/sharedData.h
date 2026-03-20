@@ -29,16 +29,20 @@ constexpr size_t MAX_CMD_ARGS  = 20;         // 参数最大个数：10 -> 20，
 template <typename T, size_t Capacity>
 class SPSCRingBuffer {
 private:
-    // 确保缓冲区容量是2的幂，可以简化取模运算为位运算，但这里用%以保证通用性
+    static constexpr size_t MASK = Capacity - 1;  // 位掩码，替代取模运算
     static_assert((Capacity > 0) && ((Capacity & (Capacity - 1)) == 0),
                   "Capacity must be a power of 2");
 
     // head: 由生产者修改，指向下一个可写入的位置
     // tail: 由消费者修改，指向下一个可读取的位置
     // 当 head == tail 时，缓冲区为空
-    // 当 (head + 1) % Capacity == tail 时，缓冲区为满
+    // 当 (head + 1) & MASK == tail 时，缓冲区为满
     alignas(64) std::atomic<size_t> head_{0}; // 64字节对齐避免伪共享
     alignas(64) std::atomic<size_t> tail_{0};
+
+    // 本地缓存对端游标，减少跨核缓存一致性流量
+    size_t cached_tail_{0};  // 生产者缓存的 tail 值
+    size_t cached_head_{0};  // 消费者缓存的 head 值
 
     std::array<T, Capacity> buffer_;
 
@@ -49,12 +53,14 @@ public:
     bool push(const T& item)
     {
         const auto current_head = head_.load(std::memory_order_relaxed);
-        const auto next_head = (current_head + 1) % Capacity;
+        const auto next_head = (current_head + 1) & MASK;
 
-        // 检查缓冲区是否已满。加载 tail 时使用 acquire 语义，
-        // 确保能看到消费者对 tail 的最新更新。
-        if (next_head == tail_.load(std::memory_order_acquire)) {
-            return false; // 缓冲区已满
+        // 先用本地缓存的 tail 判断，避免每次都读远端原子变量
+        if (next_head == cached_tail_) {
+            cached_tail_ = tail_.load(std::memory_order_acquire);
+            if (next_head == cached_tail_) {
+                return false; // 缓冲区确实已满
+            }
         }
 
         buffer_[current_head] = item;
@@ -69,16 +75,18 @@ public:
     {
         const auto current_tail = tail_.load(std::memory_order_relaxed);
 
-        // 检查缓冲区是否为空。加载 head 时使用 acquire 语义，
-        // 确保能看到生产者写入的数据和对 head 的更新。
-        if (current_tail == head_.load(std::memory_order_acquire)) {
-            return false; // 缓冲区为空
+        // 先用本地缓存的 head 判断，避免每次都读远端原子变量
+        if (current_tail == cached_head_) {
+            cached_head_ = head_.load(std::memory_order_acquire);
+            if (current_tail == cached_head_) {
+                return false; // 缓冲区确实为空
+            }
         }
 
         item = buffer_[current_tail];
 
         // 更新 tail，使用 release 语义，告知生产者一个槽位已空出
-        tail_.store((current_tail + 1) % Capacity, std::memory_order_release);
+        tail_.store((current_tail + 1) & MASK, std::memory_order_release);
         return true;
     }
 
@@ -94,15 +102,23 @@ public:
 
 struct singleAxisContinueMotion
 {
-   int axisId=0;
-   bool motion=false;
-   bool direction=true;
+   std::atomic<int>  axisId{0};
+   std::atomic<bool> motion{false};
+   std::atomic<bool> direction{true};
 };
+static_assert(ATOMIC_INT_LOCK_FREE == 2,
+              "atomic<int> must be lock-free for cross-process safety");
+static_assert(ATOMIC_BOOL_LOCK_FREE == 2,
+              "atomic<bool> must be lock-free for cross-process safety");
+static_assert(ATOMIC_LLONG_LOCK_FREE == 2,
+              "atomic<uint64_t> must be lock-free for cross-process safety");
+static_assert(ATOMIC_CHAR_LOCK_FREE == 2,
+              "atomic<uint8_t> must be lock-free for cross-process safety");
 struct Command
 {
+    double   args[MAX_CMD_ARGS] = {0};  // 8字节对齐，放首位消除 padding
+    uint32_t seq = 0;                   // 命令序列号，用于 NRT 跟踪完成状态
     char     cmd[MAX_CMD_NAME] = {0};
-    double   args[MAX_CMD_ARGS] = {0};
-    uint32_t seq = 0;               // 命令序列号，用于 NRT 跟踪完成状态
 };
 
 struct SharedBlock {
@@ -114,11 +130,8 @@ struct SharedBlock {
     std::atomic<uint64_t>  heartBeat; //心跳
     std::atomic<uint8_t>   Multiplied;//倍率
     std::atomic<uint8_t>   axisCount;//轴数量
-    std::array<double, AXISMAXCOUNT>  axisPosition;
-    std::array<double, AXISMAXCOUNT>  axisVelocity;
 
-
-    std::atomic<singleAxisContinueMotion> sacm;
+    singleAxisContinueMotion sacm;
 
     // RT -> NRT 命令完成反馈
     std::atomic<uint32_t> lastCmdSeq{0};     // RT 最后完成的命令序列号
@@ -136,7 +149,7 @@ public:
     std::atomic<uint64_t>&  heartBeat()       { return blk_->heartBeat; }
     std::atomic<uint8_t>&   axisCount()       { return blk_->axisCount; }
     std::atomic<uint8_t>&   multiPlied()      { return blk_->Multiplied; }
-    std::atomic<singleAxisContinueMotion>& continueMotion() { return blk_->sacm; }
+    singleAxisContinueMotion& continueMotion() { return blk_->sacm; }
     std::atomic<uint32_t>&  lastCmdSeq()      { return blk_->lastCmdSeq; }
     std::atomic<uint8_t>&   lastCmdResult()   { return blk_->lastCmdResult; }
 
