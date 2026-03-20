@@ -9,7 +9,6 @@
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <array>
-#include <iostream>
 
 class DataPub : public zrcsSystem::InputNode
 {
@@ -26,7 +25,7 @@ public:
         {
             axisPosition_[i] = controller_->axiss[i]->actualposCmd(); 
         }
-        rtStatusQueue.push(axisPosition_);         
+        shm().statusQueue().push(axisPosition_);         
     }    
 };
 

@@ -43,11 +43,13 @@ public:
         command_ = command;
     }
     
-    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess) 
+    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess)
     {
         controller_ = ct;
         rtProcess_ = rtProcess;
     }
+
+    ShmAccessor shm() { return ShmAccessor(rtProcess_->sharedBlock()); }
     
     // 获取节点名字
     std::string getNodeName(void) const
@@ -103,7 +105,7 @@ public:
                 break;                  
             case CmdStatus::FAILED:
                 INFO_PRINT("%s 执行失败\n", nodeName_); 
-                taskScheduling.store(TaskScheduling::ERROR_STATE, std::memory_order_release);                    
+                shm().taskScheduling().store(TaskScheduling::ERROR_STATE, std::memory_order_release);
                 break;                
             default:                                     
                 break;

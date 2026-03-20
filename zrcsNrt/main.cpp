@@ -50,11 +50,11 @@ int main(int argc, char **argv)
         std::cout << "[NRT] SharedBlock initialized" << std::endl;
 
         // 初始化行为树引擎
-        BTEngine bt_engine(nrt_process.shared_block_);
+        BTEngine bt_engine(nrt_process.sharedBlock());
         std::cout << "[NRT] BTEngine initialized" << std::endl;
 
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(nrt_process.shared_block_, &bt_engine);
+        ZMQServer zmq_server(nrt_process.sharedBlock(), &bt_engine);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {

@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <sys/types.h>
 #include "config/parameter.h"
 #include "config/cmdArgs.h"
 
@@ -16,8 +15,8 @@
 // ===================================================================
 // 1. 定义要在进程间传递的数据结构
 // ===================================================================
-#define  OUTPUTIOSIZE 32
-#define  INPUTIOSIZE  32
+constexpr size_t OUTPUTIOSIZE = 32;
+constexpr size_t INPUTIOSIZE  = 32;
 
 constexpr size_t COMMAND_BUFFER_SIZE = 64;   // 扩大：16 -> 64，防止高频场景丢命令
 constexpr size_t STATUS_BUFFER_SIZE = 64;    // 同步扩大
@@ -125,15 +124,24 @@ struct SharedBlock {
     std::atomic<uint32_t> lastCmdSeq{0};     // RT 最后完成的命令序列号
     std::atomic<uint8_t>  lastCmdResult{0};  // 0=成功, 1=失败
 };
-#define taskScheduling rtProcess_->shared_block_->cmd
-#define rtCmdQueue     rtProcess_->shared_block_->commandQueue
-#define rtStatusQueue  rtProcess_->shared_block_->statusQueue
-#define HeartBeat      rtProcess_->shared_block_->heartBeat
-#define AxisCount      rtProcess_->shared_block_->axisCount
-#define MultiPlied     rtProcess_->shared_block_->Multiplied
-#define ContinueMotion rtProcess_->shared_block_->sacm
-#define LastCmdSeq     rtProcess_->shared_block_->lastCmdSeq
-#define LastCmdResult  rtProcess_->shared_block_->lastCmdResult
 
+// 类型安全的共享内存访问器，替代原有的 #define 宏
+class ShmAccessor {
+public:
+    explicit ShmAccessor(SharedBlock* blk) : blk_(blk) {}
+
+    std::atomic<TaskScheduling>&  taskScheduling()  { return blk_->cmd; }
+    SPSCRingBuffer<Command, COMMAND_BUFFER_SIZE>& cmdQueue() { return blk_->commandQueue; }
+    SPSCRingBuffer<std::array<double, AXISMAXCOUNT>, STATUS_BUFFER_SIZE>& statusQueue() { return blk_->statusQueue; }
+    std::atomic<uint64_t>&  heartBeat()       { return blk_->heartBeat; }
+    std::atomic<uint8_t>&   axisCount()       { return blk_->axisCount; }
+    std::atomic<uint8_t>&   multiPlied()      { return blk_->Multiplied; }
+    std::atomic<singleAxisContinueMotion>& continueMotion() { return blk_->sacm; }
+    std::atomic<uint32_t>&  lastCmdSeq()      { return blk_->lastCmdSeq; }
+    std::atomic<uint8_t>&   lastCmdResult()   { return blk_->lastCmdResult; }
+
+private:
+    SharedBlock* blk_;
+};
 
 #endif // SHARED_DATA_HPP

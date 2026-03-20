@@ -27,7 +27,7 @@ public:
         // {
         //     axisPosition_[i] = controller_->axiss[i]->actualposCmd(); 
         // }
-        // rtStatusQueue.push(axisPosition_);           
+        // shm().statusQueue().push(axisPosition_);           
     }    
 };
 

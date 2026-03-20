@@ -6,7 +6,6 @@
  * @Description: 电机失能指令
  */
 #pragma once
-#include <iostream>
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 

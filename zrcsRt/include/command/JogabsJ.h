@@ -13,7 +13,6 @@
 #include "system/basenodeInterface.h"
 #include <array>
 #include <ruckig/ruckig.hpp>
-#include <string>
 #include <vector>
 #include "system/nodeFactory.h"
 

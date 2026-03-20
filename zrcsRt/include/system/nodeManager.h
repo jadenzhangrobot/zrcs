@@ -14,6 +14,7 @@
 #include "nodeCommunication.h"
 #include "nodeFactory.h"
 #include <array>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -26,15 +27,19 @@ namespace zrcsSystem {
 class NodeManager {
 private:
   // 成员变量
-  ZrcsHardware::Controller *controller_;         // 硬件控制器指针
+  std::unique_ptr<RTProcess> rtProcess_;               // 实时进程指针
+  std::unique_ptr<ZrcsHardware::Controller> controller_; // 硬件控制器指针
   CmdNode* cmdNode_;                             // 当前命令节点指针
   Command cmd_;                                  // 命令对象
-  
+
+  ShmAccessor shm() { return ShmAccessor(rtProcess_->sharedBlock()); }
+
 public:
-  RTProcess *rtProcess_;                         // 实时进程指针
-  
-  NodeManager() : rtProcess_(new RTProcess("rtMotion")), 
-                  controller_(new ZrcsHardware::Controller()), 
+  // 供外部访问 RTProcess（如 node->registered）
+  RTProcess* rtProcess() const { return rtProcess_.get(); }
+
+  NodeManager() : rtProcess_(std::make_unique<RTProcess>()),
+                  controller_(std::make_unique<ZrcsHardware::Controller>()),
                   cmdNode_(nullptr)
   {
   }
@@ -47,15 +52,11 @@ public:
   /**
    * @brief 析构函数，清理资源
    */
-  ~NodeManager(void) 
-  {
-    delete controller_;
-    delete rtProcess_;
-  }
+  ~NodeManager() = default;
   
   void initData()
   {
-      AxisCount.store(controller_->axiss.size(), std::memory_order_release); 
+      shm().axisCount().store(controller_->axiss.size(), std::memory_order_release); 
   }
   
   /**
@@ -67,11 +68,11 @@ public:
       rtProcess_->initialize();
       for (auto &node : NodeFactory::getInstance().inPutNodes)
       {
-        node->registered(controller_, rtProcess_);
+        node->registered(controller_.get(), rtProcess_.get());
       }
       for (auto &node : NodeFactory::getInstance().outPutNodes)
       {
-        node->registered(controller_, rtProcess_);
+        node->registered(controller_.get(), rtProcess_.get());
       }
 
       initData();
@@ -98,20 +99,20 @@ public:
           }
         }
         
-        switch (taskScheduling.load()) 
-        {       
-              case TaskScheduling::RUN:                         
+        switch (shm().taskScheduling().load())
+        {
+              case TaskScheduling::RUN:
                     if (cmdNode_ != nullptr)
-                    { 
+                    {
                       if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                       {
                         // 写回命令完成状态到共享内存，供 NRT BT引擎查询
-                        LastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                        LastCmdResult.store(0, std::memory_order_release);  // 0=成功
+                        shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
+                        shm().lastCmdResult().store(0, std::memory_order_release);  // 0=成功
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         // 节点已完成或失败，清理资源
                         cmdNode_ = nullptr;
-                      } 
+                      }
                       else
                       {
                         // 节点仍在运行，继续执行
@@ -119,32 +120,32 @@ public:
                         // 检查执行后是否失败，写回失败状态
                         if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                         {
-                            LastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                            LastCmdResult.store(1, std::memory_order_release);  // 1=失败
+                            shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
+                            shm().lastCmdResult().store(1, std::memory_order_release);  // 1=失败
                         }
-                      }                  
+                      }
                     }
                     else
                     {
-                      if (rtCmdQueue.pop(cmd_)) 
+                      if (shm().cmdQueue().pop(cmd_))
                       {
                            std::string_view cmdName(cmd_.cmd);
                            cmdNode_ = NodeFactory::getInstance().getNodePtr(cmdName).get();
-                           cmdNode_->registered(controller_, rtProcess_, &cmd_);
+                           cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                       }
-                    }                            
+                    }
                   break;
               case TaskScheduling::STOP:
                 break;
               case TaskScheduling::RESET:
-                  if (cmdNode_ != nullptr) 
+                  if (cmdNode_ != nullptr)
                   {
                       cmdNode_->setCmdStatus(CmdStatus::INIT);
                       cmdNode_ = nullptr;
                   }
-                  taskScheduling.store(TaskScheduling::RUN, std::memory_order_release);
+                  shm().taskScheduling().store(TaskScheduling::RUN, std::memory_order_release);
                 break;
-              case TaskScheduling::START:            
+              case TaskScheduling::START:
               default:
                 break;
         }

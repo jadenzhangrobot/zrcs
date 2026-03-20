@@ -44,15 +44,15 @@ public:
     {     
         // 从共享内存中加载手动位置数据
         input_.control_interface = ruckig::ControlInterface::Velocity;                     
-        input_.max_acceleration[0] = controller_->axiss[ContinueMotion.load().axisId]->getMaxAcceleration();
-        input_.max_jerk[0] = controller_->axiss[ContinueMotion.load().axisId]->getMaxJerk();
+        input_.max_acceleration[0] = controller_->axiss[shm().continueMotion().load().axisId]->getMaxAcceleration();
+        input_.max_jerk[0] = controller_->axiss[shm().continueMotion().load().axisId]->getMaxJerk();
     }
     
     void accelerate()
     {     
         if (accelerateStart_ == true) 
         {
-            input_.current_position[0] = controller_->axiss[ContinueMotion.load().axisId]->actualPos();       
+            input_.current_position[0] = controller_->axiss[shm().continueMotion().load().axisId]->actualPos();       
             input_.current_velocity[0] = lastVelocity_;
             input_.current_acceleration[0] = lastAcceleration_;
             input_.target_velocity[0] = targetVelocity_;
@@ -66,9 +66,9 @@ public:
             auto& p = output_.new_position;
             auto& v = output_.new_velocity;
             auto& a = output_.new_acceleration;
-            if (controller_ != nullptr && controller_->axiss.size() > ContinueMotion.load().axisId) 
+            if (controller_ != nullptr && controller_->axiss.size() > shm().continueMotion().load().axisId)
             {
-                controller_->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                controller_->axiss[shm().continueMotion().load().axisId]->setAxisPositionCmd(p[0]);
                 lastVelocity_ = v[0];
                 lastAcceleration_ = a[0];
                 output_.pass_to_input(input_);
@@ -86,7 +86,7 @@ public:
         setCurrentPosition_ = setCurrentPosition_ + targetVelocity_ * cycletime * 0.001;
         lastVelocity_ = targetVelocity_;
         lastAcceleration_ = 0;
-        controller_->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(setCurrentPosition_);
+        controller_->axiss[shm().continueMotion().load().axisId]->setAxisPositionCmd(setCurrentPosition_);
     }
     
     void decelerate()
@@ -107,9 +107,9 @@ public:
             auto& p = output_.new_position;
             auto& v = output_.new_velocity;
             auto& a = output_.new_acceleration;
-            if (controller_ != nullptr && controller_->axiss.size() > ContinueMotion.load().axisId) 
+            if (controller_ != nullptr && controller_->axiss.size() > shm().continueMotion().load().axisId)
             {
-                controller_->axiss[ContinueMotion.load().axisId]->setAxisPositionCmd(p[0]);
+                controller_->axiss[shm().continueMotion().load().axisId]->setAxisPositionCmd(p[0]);
                 lastVelocity_ = v[0];
                 lastAcceleration_ = a[0];
                 output_.pass_to_input(input_);                                                                    
@@ -123,18 +123,18 @@ public:
 
     void run(void) override
     {                        
-        targetVelocity_ = double(MultiPlied.load() / 100.0) * controller_->axiss[ContinueMotion.load().axisId]->getMaxVelocity();
-        if (ContinueMotion.load().direction == false) 
+        targetVelocity_ = double(shm().multiPlied().load() / 100.0) * controller_->axiss[shm().continueMotion().load().axisId]->getMaxVelocity();
+        if (shm().continueMotion().load().direction == false) 
         {
             targetVelocity_ = -targetVelocity_;
         }
         
-        if (ContinueMotion.load().motion == true)                                                               
+        if (shm().continueMotion().load().motion == true)                                                               
         { 
             decelerateStart_ = true;
             accelerate();                       
         }
-        else if (ContinueMotion.load().motion == false)
+        else if (shm().continueMotion().load().motion == false)
         {
             accelerateStart_ = true;
             decelerate();
