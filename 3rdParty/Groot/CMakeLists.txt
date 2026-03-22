@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 
 # Update the policy setting to avoid an error when loading the ament_cmake package
 # at the current cmake version level

@@ -28,6 +28,9 @@ option(ENABLE_COROUTINES "Enable boost coroutines" ON)
 
 #---- Include boost to add coroutines ----
 if(ENABLE_COROUTINES)
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 OLD)
+    endif()
     find_package(Boost COMPONENTS coroutine QUIET)
 
     if(Boost_FOUND)
