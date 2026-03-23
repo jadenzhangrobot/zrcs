@@ -13,6 +13,7 @@
 #include <csignal>
 #include <atomic>
 #include <string>
+#include "nrtLogger.h"
 #include "btEngine.h"
 #include "zmqServer/zmqServer.h"
 #include "sharedMemory/nrt_process.h"
@@ -31,12 +32,38 @@ static ZMQServer* g_zmq_server = nullptr;
 
 #ifdef _WIN32
 static HANDLE g_rt_process = nullptr;
+
+// Windows 控制台事件处理（捕获关闭窗口、Ctrl+C 等）
+// 注意：此回调在系统线程中执行，不可调用 spdlog 等可能持锁的函数
+static BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
+    switch (ctrlType) {
+    case CTRL_C_EVENT:
+    case CTRL_BREAK_EVENT:
+    case CTRL_CLOSE_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        g_running = false;
+        if (g_zmq_server) {
+            g_zmq_server->stop();
+        }
+        // 关闭窗口时必须在此处终止 RT，因为之后进程可能被强杀
+        if (g_rt_process) {
+            TerminateProcess(g_rt_process, 0);
+            WaitForSingleObject(g_rt_process, 3000);
+            CloseHandle(g_rt_process);
+            g_rt_process = nullptr;
+        }
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
 #else
 static pid_t g_rt_pid = -1;
 #endif
 
 static void signalHandler(int signum) {
-    std::cout << "\n[NRT] Received signal " << signum << ", shutting down..." << std::endl;
+    spdlog::warn("Received signal {}, shutting down...", signum);
     g_running = false;
     if (g_zmq_server) {
         g_zmq_server->stop();
@@ -68,14 +95,13 @@ static bool launchRTProcess()
             dir.c_str(),      // 工作目录
             &si, &pi))
     {
-        std::cerr << "[NRT] Failed to launch RT process: " << rtPath
-                  << " (error " << GetLastError() << ")" << std::endl;
+        spdlog::error("Failed to launch RT process: {} (error {})", rtPath, GetLastError());
         return false;
     }
 
     CloseHandle(pi.hThread);
     g_rt_process = pi.hProcess;
-    std::cout << "[NRT] RT process launched (PID " << pi.dwProcessId << "): " << rtPath << std::endl;
+    spdlog::info("RT process launched (PID {}): {}", pi.dwProcessId, rtPath);
     return true;
 
 #else
@@ -83,39 +109,70 @@ static bool launchRTProcess()
     std::string rtPath = std::string("./") + zrcs::RT_PROCESS_NAME;
     g_rt_pid = fork();
     if (g_rt_pid < 0) {
-        std::cerr << "[NRT] Failed to fork RT process" << std::endl;
+        spdlog::error("Failed to fork RT process");
         return false;
     }
     if (g_rt_pid == 0) {
         // 子进程
         execl(rtPath.c_str(), zrcs::RT_PROCESS_NAME, nullptr);
         // execl 失败
-        std::cerr << "[NRT-child] Failed to exec RT process: " << rtPath << std::endl;
+        spdlog::error("Failed to exec RT process: {}", rtPath);
         _exit(1);
     }
-    std::cout << "[NRT] RT process launched (PID " << g_rt_pid << ")" << std::endl;
+    spdlog::info("RT process launched (PID {})", g_rt_pid);
     return true;
 #endif
 }
 
 // 终止 RT 子进程
-static void terminateRTProcess()
+// shared_block 非空时先通过共享内存通知 RT 正常退出，超时后强杀
+static void terminateRTProcess(SharedBlock* shared_block = nullptr)
 {
+    // 1. 通过共享内存通知 RT 正常退出
+    if (shared_block) {
+        spdlog::info("Sending SHUTDOWN to RT via shared memory...");
+        shared_block->cmd.store(TaskScheduling::SHUTDOWN, std::memory_order_release);
+    }
+
 #ifdef _WIN32
     if (g_rt_process) {
-        TerminateProcess(g_rt_process, 0);
-        WaitForSingleObject(g_rt_process, 3000);
+        // 2. 等待 RT 自行退出（最多 3 秒）
+        DWORD waitResult = WaitForSingleObject(g_rt_process, 3000);
+        if (waitResult == WAIT_OBJECT_0) {
+            spdlog::info("RT process exited gracefully.");
+        } else {
+            // 3. 超时，强制终止
+            spdlog::warn("RT process did not exit in time, force terminating...");
+            TerminateProcess(g_rt_process, 0);
+            WaitForSingleObject(g_rt_process, 2000);
+            spdlog::info("RT process force terminated.");
+        }
         CloseHandle(g_rt_process);
         g_rt_process = nullptr;
-        std::cout << "[NRT] RT process terminated." << std::endl;
     }
 #else
     if (g_rt_pid > 0) {
-        kill(g_rt_pid, SIGTERM);
+        // 2. 等待 RT 自行退出（最多 3 秒）
         int status;
-        waitpid(g_rt_pid, &status, 0);
+        bool exited = false;
+        for (int i = 0; i < 30; ++i) {
+            pid_t ret = waitpid(g_rt_pid, &status, WNOHANG);
+            if (ret == g_rt_pid) {
+                exited = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        if (exited) {
+            spdlog::info("RT process exited gracefully.");
+        } else {
+            // 3. 超时，强制终止
+            spdlog::warn("RT process did not exit in time, sending SIGKILL...");
+            kill(g_rt_pid, SIGKILL);
+            waitpid(g_rt_pid, &status, 0);
+            spdlog::info("RT process force terminated.");
+        }
         g_rt_pid = -1;
-        std::cout << "[NRT] RT process terminated." << std::endl;
     }
 #endif
 }
@@ -125,42 +182,50 @@ int main(int argc, char **argv)
     // 注册信号处理
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
+#ifdef _WIN32
+    // Windows 下必须用 SetConsoleCtrlHandler 捕获关闭窗口事件
+    SetConsoleCtrlHandler(consoleCtrlHandler, TRUE);
+#endif
 
     std::cout << "ZRCS Non-Real-Time Process Started" << std::endl;
     try
     {
+        // 初始化日志系统
+        NrtLogger::init();
+        spdlog::info("ZRCS Non-Real-Time Process Started");
+
         // 启动 RT 子进程（创建共享内存）
         if (!launchRTProcess()) {
-            std::cerr << "[NRT] Failed to launch RT process, exiting." << std::endl;
+            spdlog::critical("Failed to launch RT process, exiting.");
             return 1;
         }
 
         // 等待 RT 进程创建共享内存并 attach
         NRTProcess nrt_process;
         if (!nrt_process.initialize()) {
-            std::cerr << "[NRT] Failed to initialize shared memory" << std::endl;
+            spdlog::critical("Failed to initialize shared memory");
             terminateRTProcess();
             return 1;
         }
 
-        std::cout << "[NRT] SharedBlock initialized" << std::endl;
+        spdlog::info("SharedBlock initialized");
 
         // 初始化行为树引擎
         BTEngine bt_engine(nrt_process.sharedBlock());
-        std::cout << "[NRT] BTEngine initialized" << std::endl;
+        spdlog::info("BTEngine initialized");
 
         // 初始化 ZMQ 服务器
         ZMQServer zmq_server(nrt_process.sharedBlock(), &bt_engine);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {
-            std::cerr << "[NRT] Failed to initialize ZMQ server" << std::endl;
+            spdlog::critical("Failed to initialize ZMQ server");
             terminateRTProcess();
             return 1;
         }
 
         zmq_server.start();
-        std::cout << "[NRT] ZMQ server started, waiting for commands..." << std::endl;
+        spdlog::info("ZMQ server started, waiting for commands...");
 
         // 主循环：监控共享内存状态
         while (g_running) {
@@ -168,18 +233,18 @@ int main(int argc, char **argv)
         }
 
         // 优雅关闭
-        std::cout << "[NRT] Shutting down ZMQ server..." << std::endl;
+        spdlog::info("Shutting down ZMQ server...");
         zmq_server.stop();
         g_zmq_server = nullptr;
 
-        // 终止 RT 子进程
-        terminateRTProcess();
+        // 终止 RT 子进程（通过共享内存通知正常退出）
+        terminateRTProcess(nrt_process.sharedBlock());
 
-        std::cout << "[NRT] Shutdown complete" << std::endl;
+        spdlog::info("Shutdown complete");
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[NRT] Exception caught: " << e.what() << std::endl;
+        spdlog::critical("Exception caught: {}", e.what());
         terminateRTProcess();
         return 1;
     }

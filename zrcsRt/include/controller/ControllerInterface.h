@@ -435,6 +435,8 @@ public:
 
   virtual void rtos_task_join(void) = 0;
 
+  virtual void rtos_task_stop() { rtos_task_join(); }
+
   virtual void rtos_set_perioic(int perioic) = 0;
 
   virtual std::uint64_t rtos_timer_read(void) {

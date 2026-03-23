@@ -47,8 +47,16 @@ int main(int argc, char **argv)
     {
         zrcsSystem::NodeManager nodeManager;
         nodeManager.run();
+
+        // 检测共享内存中的 SHUTDOWN 信号
+        auto* sharedBlock = nodeManager.rtProcess()->sharedBlock();
         while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            if (sharedBlock->cmd.load(std::memory_order_acquire) == TaskScheduling::SHUTDOWN) {
+                std::cout << "[RT] Received SHUTDOWN from NRT, exiting..." << std::endl;
+                nodeManager.stop();
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
     catch (const std::runtime_error& e)

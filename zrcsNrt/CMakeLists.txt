@@ -10,6 +10,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/zrcsCommon/include
     ${CMAKE_SOURCE_DIR}/zrcsNrt
     ${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP/include
+    ${CMAKE_SOURCE_DIR}/3rdParty/spdlog/include
     ${CMAKE_BINARY_DIR}
 )
 
@@ -35,6 +36,7 @@ target_link_libraries(zrcsnrt PRIVATE
     protobuf::libprotobuf
     cppzmq
     behaviortree_cpp_v3
+    spdlog::spdlog
     ${MOTION_CONTROL_LIBS}
 )
 

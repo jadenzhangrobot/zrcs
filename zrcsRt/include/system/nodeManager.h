@@ -10,7 +10,6 @@
 #include "basenodeInterface.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
-#include "controller/rtos/linux.h"
 #include "nodeCommunication.h"
 #include "nodeFactory.h"
 #include <array>
@@ -53,6 +52,14 @@ public:
    * @brief 析构函数，清理资源
    */
   ~NodeManager() = default;
+
+  /**
+   * @brief 停止实时任务，释放资源
+   */
+  void stop()
+  {
+      controller_->rtos_->rtos_task_stop();
+  }
   
   void initData()
   {

@@ -5,8 +5,7 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
-#include <iostream>
-#include <cstring>
+#include <spdlog/spdlog.h>
 #include "sharedMemory/sharedData.h"
 
 /**
@@ -51,14 +50,14 @@ public:
     BT::NodeStatus onStart() override
     {
         if (!BTGlobal::g_shared_block) {
-            std::cerr << "[BTEngine] SharedBlock not available" << std::endl;
+            spdlog::error("[BTMotionAction] SharedBlock not available");
             return BT::NodeStatus::FAILURE;
         }
 
         // 获取命令名称
         std::string cmd_name;
         if (!getInput("command", cmd_name) || cmd_name.empty()) {
-            std::cerr << "[BTEngine] Missing 'command' port" << std::endl;
+            spdlog::error("[BTMotionAction] Missing 'command' port");
             return BT::NodeStatus::FAILURE;
         }
 
@@ -88,11 +87,11 @@ public:
 
         // 推送到共享内存队列
         if (!BTGlobal::g_shared_block->commandQueue.push(shm_cmd)) {
-            std::cerr << "[BTEngine] Command queue full, dropping: " << cmd_name << std::endl;
+            spdlog::error("[BTMotionAction] Command queue full, dropping: {} (seq={})", cmd_name, my_seq_);
             return BT::NodeStatus::FAILURE;
         }
 
-        std::cout << "[BTEngine] Sent command: " << cmd_name << " (seq=" << my_seq_ << ")" << std::endl;
+        spdlog::info("[BTMotionAction] Sent command: '{}' args='{}' (seq={})", cmd_name, args_str, my_seq_);
         return BT::NodeStatus::RUNNING;
     }
 
@@ -106,9 +105,10 @@ public:
         if (completed_seq == my_seq_) {
             uint8_t result = BTGlobal::g_shared_block->lastCmdResult.load(std::memory_order_acquire);
             if (result == 0) {
+                spdlog::info("[BTMotionAction] Command seq={} completed: SUCCESS", my_seq_);
                 return BT::NodeStatus::SUCCESS;
             } else {
-                std::cerr << "[BTEngine] Command seq=" << my_seq_ << " failed" << std::endl;
+                spdlog::error("[BTMotionAction] Command seq={} completed: FAILED", my_seq_);
                 return BT::NodeStatus::FAILURE;
             }
         }
@@ -117,7 +117,7 @@ public:
 
     void onHalted() override
     {
-        std::cout << "[BTEngine] Action halted (seq=" << my_seq_ << ")" << std::endl;
+        spdlog::warn("[BTMotionAction] Action halted (seq={})", my_seq_);
     }
 
 private:
@@ -198,11 +198,11 @@ public:
             tree_ = factory_.createTreeFromText(xml);
             state_ = State::IDLE;
             current_node_name_.clear();
-            std::cout << "[BTEngine] Tree loaded successfully" << std::endl;
+            spdlog::info("[BTEngine] Tree loaded successfully, xml_size={}", xml.size());
             return "";
         } catch (const std::exception& e) {
             std::string err = std::string("Failed to load tree: ") + e.what();
-            std::cerr << "[BTEngine] " << err << std::endl;
+            spdlog::error("[BTEngine] {}", err);
             return err;
         }
     }
@@ -215,18 +215,18 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (tree_.rootNode() == nullptr) {
-            std::cerr << "[BTEngine] No tree loaded" << std::endl;
+            spdlog::error("[BTEngine] No tree loaded");
             return false;
         }
         if (running_) {
-            std::cerr << "[BTEngine] Already running" << std::endl;
+            spdlog::warn("[BTEngine] Already running");
             return false;
         }
 
         running_ = true;
         state_ = State::RUNNING;
         tick_thread_ = std::thread(&BTEngine::tickLoop, this);
-        std::cout << "[BTEngine] Execution started" << std::endl;
+        spdlog::info("[BTEngine] Execution started");
         return true;
     }
 
@@ -300,6 +300,7 @@ private:
                 // SimpleAction 是同步的，不适合等待 RT 完成
                 // 所以这里只发送命令，不等待完成（fire-and-forget）
                 if (!BTGlobal::g_shared_block) {
+                    spdlog::error("[BTAlias:{}] SharedBlock not available", cmd_name);
                     return BT::NodeStatus::FAILURE;
                 }
 
@@ -319,14 +320,17 @@ private:
                 shm_cmd.seq = BTGlobal::g_cmd_seq.fetch_add(1, std::memory_order_relaxed);
 
                 if (!BTGlobal::g_shared_block->commandQueue.push(shm_cmd)) {
+                    spdlog::error("[BTAlias:{}] Command queue full (seq={})", cmd_name, shm_cmd.seq);
                     return BT::NodeStatus::FAILURE;
                 }
+                spdlog::info("[BTAlias:{}] Pushed to SHM queue, args='{}', seq={}", cmd_name, args_str, shm_cmd.seq);
                 return BT::NodeStatus::SUCCESS;
             }, ports);
     }
 
     void tickLoop()
     {
+        spdlog::info("[BTEngine] Tick loop started");
         while (running_) {
             BT::NodeStatus status = tree_.tickRoot();
 
@@ -345,18 +349,21 @@ private:
             if (status == BT::NodeStatus::SUCCESS) {
                 state_ = State::SUCCESS;
                 running_ = false;
-                std::cout << "[BTEngine] Tree completed: SUCCESS" << std::endl;
+                spdlog::info("[BTEngine] Tree completed: SUCCESS");
                 break;
             } else if (status == BT::NodeStatus::FAILURE) {
                 state_ = State::FAILURE;
                 running_ = false;
-                std::cout << "[BTEngine] Tree completed: FAILURE" << std::endl;
+                spdlog::error("[BTEngine] Tree completed: FAILURE");
                 break;
             }
+
+            spdlog::trace("[BTEngine] Tick: RUNNING, active_node='{}'", current_node_name_);
 
             // RUNNING - 等待一段时间再 tick
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+        spdlog::info("[BTEngine] Tick loop exited");
     }
 
     void stopInternal()
@@ -370,7 +377,7 @@ private:
             tree_.haltTree();
         }
         state_ = State::HALTED;
-        std::cout << "[BTEngine] Execution stopped" << std::endl;
+        spdlog::info("[BTEngine] Execution stopped");
     }
 
     SharedBlock* shared_block_;

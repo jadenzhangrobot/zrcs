@@ -39,11 +39,12 @@ enum
    GO1F,
 };
 
-  enum class TaskScheduling 
+  enum class TaskScheduling
   {
-    RUN, 
+    RUN,
     ERROR_STATE,
-    STOP,            // 停止         
+    STOP,            // 停止
     RESET,           //
-    START 
+    START,
+    SHUTDOWN         // NRT 通知 RT 正常退出
   };

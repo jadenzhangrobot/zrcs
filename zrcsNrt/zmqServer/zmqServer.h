@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <spdlog/spdlog.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -41,10 +42,10 @@ public:
             socket_->set(zmq::sockopt::linger, 0);  // 关闭时不等待未发送消息
             socket_->bind(ENDPOINT);
 
-            std::cout << "[ZMQServer] Initialized on " << ENDPOINT << std::endl;
+            spdlog::info("[ZMQServer] Initialized on {}", ENDPOINT);
             return true;
         } catch (const zmq::error_t& e) {
-            std::cerr << "[ZMQServer] Initialization error: " << e.what() << std::endl;
+            spdlog::error("[ZMQServer] Initialization error: {}", e.what());
             return false;
         }
     }
@@ -72,15 +73,16 @@ public:
         context_.close();
 
         if (dropped_count_ > 0) {
-            std::cout << "[ZMQServer] Total dropped commands: " << dropped_count_.load() << std::endl;
+            spdlog::warn("[ZMQServer] Total dropped commands: {}", dropped_count_.load());
         }
-        std::cout << "[ZMQServer] Stopped" << std::endl;
+        spdlog::info("[ZMQServer] Stopped");
     }
 
     uint64_t droppedCount() const { return dropped_count_.load(); }
 
 private:
     void run() {
+        spdlog::info("[ZMQServer] Server thread started, listening...");
         while (running_) {
             try {
                 zmq::message_t request;
@@ -90,11 +92,15 @@ private:
                     continue;
                 }
 
+                spdlog::debug("[ZMQServer] Received message, size={} bytes", request.size());
+
                 // 先尝试解析为 TypedCommand（支持 BT 命令）
                 zrcs_message::TypedCommand typed_cmd;
                 if (typed_cmd.ParseFromArray(request.data(), request.size())
                     && typed_cmd.has_bt_command())
                 {
+                    spdlog::info("[ZMQServer] Parsed as TypedCommand with BT command, action='{}'",
+                                 typed_cmd.bt_command().action());
                     handleBTCommand(typed_cmd.bt_command());
                     continue;
                 }
@@ -102,9 +108,15 @@ private:
                 // 回退：解析为 MotionCommand（兼容现有协议）
                 zrcs_message::MotionCommand cmd;
                 if (!cmd.ParseFromArray(request.data(), request.size())) {
-                    std::cerr << "[ZMQServer] Failed to parse protobuf message" << std::endl;
+                    spdlog::error("[ZMQServer] Failed to parse protobuf message, size={}", request.size());
                     sendReply("ERROR: Parse failed");
                     continue;
+                }
+
+                spdlog::info("[ZMQServer] MotionCommand: cmd='{}', args_count={}",
+                             cmd.command(), cmd.args_size());
+                for (int i = 0; i < cmd.args_size(); ++i) {
+                    spdlog::debug("[ZMQServer]   arg[{}] = {}", i, cmd.args(i));
                 }
 
                 // 转换为共享内存命令格式
@@ -119,21 +131,22 @@ private:
 
                 // 推送到共享内存队列
                 if (shared_block_->commandQueue.push(shm_cmd)) {
-                    std::cout << "[ZMQServer] Command received: " << cmd.command() << std::endl;
+                    spdlog::info("[ZMQServer] Command '{}' pushed to SHM queue", cmd.command());
                     sendReply("OK");
                 } else {
                     ++dropped_count_;
-                    std::cerr << "[ZMQServer] Command queue full (dropped: "
-                              << dropped_count_.load() << ")" << std::endl;
+                    spdlog::error("[ZMQServer] Command queue full! cmd='{}', dropped_total={}",
+                                  cmd.command(), dropped_count_.load());
                     sendReply("ERROR: Queue full");
                 }
 
             } catch (const zmq::error_t& e) {
                 if (running_ && e.num() != EAGAIN) {
-                    std::cerr << "[ZMQServer] Error: " << e.what() << std::endl;
+                    spdlog::error("[ZMQServer] ZMQ error in run loop: {} (errno={})", e.what(), e.num());
                 }
             }
         }
+        spdlog::info("[ZMQServer] Server thread exiting");
     }
 
     /**
@@ -175,7 +188,7 @@ private:
 
             std::ofstream ofs(filepath, std::ios::out | std::ios::trunc);
             if (!ofs.is_open()) {
-                std::cerr << "[ZMQServer] Failed to open file: " << filepath << std::endl;
+                spdlog::error("[ZMQServer] Failed to open file: {}", filepath.string());
                 return "";
             }
             ofs << xml_data;
@@ -189,16 +202,17 @@ private:
                 cur.close();
             }
 
-            std::cout << "[ZMQServer] BT XML saved: " << filepath << std::endl;
+            spdlog::info("[ZMQServer] BT XML saved: {} ({} bytes)", filepath.string(), xml_data.size());
             return filepath.string();
         } catch (const std::exception& e) {
-            std::cerr << "[ZMQServer] Failed to save BT XML: " << e.what() << std::endl;
+            spdlog::error("[ZMQServer] Failed to save BT XML: {}", e.what());
             return "";
         }
     }
 
     void handleBTCommand(const zrcs_message::BehaviorTreeCommand& bt_cmd) {
         const std::string& action = bt_cmd.action();
+        spdlog::info("[ZMQServer] handleBTCommand: action='{}', xml_size={}", action, bt_cmd.xml_data().size());
 
         if (action == "LOAD") {
             // 先保存到本地文件
@@ -207,18 +221,23 @@ private:
             // 再加载到行为树引擎
             std::string err = bt_engine_->loadTree(bt_cmd.xml_data());
             if (err.empty()) {
+                spdlog::info("[ZMQServer] BT LOAD success");
                 sendReply("OK");
             } else {
+                spdlog::error("[ZMQServer] BT LOAD failed: {}", err);
                 sendReply("ERROR: " + err);
             }
         } else if (action == "START") {
             if (bt_engine_->start()) {
+                spdlog::info("[ZMQServer] BT START success");
                 sendReply("OK");
             } else {
+                spdlog::error("[ZMQServer] BT START failed");
                 sendReply("ERROR: Failed to start BT execution");
             }
         } else if (action == "STOP") {
             bt_engine_->stop();
+            spdlog::info("[ZMQServer] BT STOP");
             sendReply("OK");
         } else if (action == "STATUS") {
             // 返回 BehaviorTreeStatus protobuf 序列化
@@ -227,8 +246,11 @@ private:
             status.set_current_node(bt_engine_->getCurrentNodeName());
             std::string serialized;
             status.SerializeToString(&serialized);
+            spdlog::debug("[ZMQServer] BT STATUS: state='{}', node='{}'",
+                          bt_engine_->getStateString(), bt_engine_->getCurrentNodeName());
             sendReplyRaw(serialized);
         } else {
+            spdlog::warn("[ZMQServer] Unknown BT action: '{}'", action);
             sendReply("ERROR: Unknown BT action: " + action);
         }
     }
@@ -238,8 +260,9 @@ private:
             zmq::message_t reply(message.size());
             memcpy(reply.data(), message.data(), message.size());
             socket_->send(reply, zmq::send_flags::none);
+            spdlog::debug("[ZMQServer] Reply sent: '{}'", message);
         } catch (const zmq::error_t& e) {
-            std::cerr << "[ZMQServer] Send reply error: " << e.what() << std::endl;
+            spdlog::error("[ZMQServer] Send reply error: {}", e.what());
         }
     }
 
@@ -248,8 +271,9 @@ private:
             zmq::message_t reply(data.size());
             memcpy(reply.data(), data.data(), data.size());
             socket_->send(reply, zmq::send_flags::none);
+            spdlog::debug("[ZMQServer] Raw reply sent, size={}", data.size());
         } catch (const zmq::error_t& e) {
-            std::cerr << "[ZMQServer] Send reply error: " << e.what() << std::endl;
+            spdlog::error("[ZMQServer] Send reply error: {}", e.what());
         }
     }
 };

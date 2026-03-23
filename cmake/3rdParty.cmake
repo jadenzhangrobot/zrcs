@@ -13,6 +13,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/tinyxml2)
 #添加ruckig库编译
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/ruckig)
 
+# 添加spdlog日志库
+set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/spdlog)
+
 # 添加boost库
 # 优先使用BoostConfig.cmake，如果不可用则回退到FindBoost.cmake
 find_package(Boost QUIET CONFIG)
