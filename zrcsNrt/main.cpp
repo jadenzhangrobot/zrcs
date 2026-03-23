@@ -16,6 +16,7 @@
 #include "nrtLogger.h"
 #include "btEngine.h"
 #include "zmqServer/zmqServer.h"
+#include "terminal/terminalConsole.h"
 #include "sharedMemory/nrt_process.h"
 #include "sharedMemory/shmConstants.h"
 
@@ -227,12 +228,24 @@ int main(int argc, char **argv)
         zmq_server.start();
         spdlog::info("ZMQ server started, waiting for commands...");
 
+        // 初始化终端控制台
+        TerminalConsole terminal(&bt_engine, g_running);
+        if (terminal.initialize()) {
+            terminal.start();
+            spdlog::info("Terminal console started");
+        } else {
+            spdlog::warn("Terminal console not available, continuing without it");
+        }
+
         // 主循环：监控共享内存状态
         while (g_running) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 
         // 优雅关闭
+        spdlog::info("Shutting down terminal console...");
+        terminal.stop();
+
         spdlog::info("Shutting down ZMQ server...");
         zmq_server.stop();
         g_zmq_server = nullptr;
