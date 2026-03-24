@@ -1,0 +1,113 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug zrcsgui",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/zrcsgui.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PROJECT_ROOT",
+                    "value": "${workspaceFolder}"
+                },
+                {
+                    "name": "PATH",
+                    "value": "D:/msys2/ucrt64/bin;${env:PATH}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:/msys2/ucrt64/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set working directory for .gdbinit",
+                    "text": "-environment-cd ${workspaceFolder}",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Load Qt pretty-printers",
+                    "text": "-interpreter-exec console \"python\\nimport sys, os\\nsys.path.insert(0, os.path.join(r'${workspaceFolder}', 'tool', 'qtdebug'))\\nsys.path.insert(0, os.path.join(r'${workspaceFolder}', 'tool', 'qtdebug', 'printers'))\\nfrom qt import register_qt_printers\\nregister_qt_printers(None)\\nprint('[Qt Pretty-Printers] Loaded successfully')\\n\"",
+                    "ignoreFailures": true
+                }
+            ],
+            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
+        },
+        {
+            "name": "Debug zrcsnrt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/zrcsnrt.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PROJECT_ROOT",
+                    "value": "${workspaceFolder}"
+                },
+                {
+                    "name": "PATH",
+                    "value": "D:/msys2/ucrt64/bin;${env:PATH}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:/msys2/ucrt64/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set working directory for .gdbinit",
+                    "text": "-environment-cd ${workspaceFolder}",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Load Qt pretty-printers",
+                    "text": "-interpreter-exec console \"python\\nimport sys, os\\nsys.path.insert(0, os.path.join(r'${workspaceFolder}', 'tool', 'qtdebug'))\\nsys.path.insert(0, os.path.join(r'${workspaceFolder}', 'tool', 'qtdebug', 'printers'))\\nfrom qt import register_qt_printers\\nregister_qt_printers(None)\\nprint('[Qt Pretty-Printers] Loaded successfully')\\n\"",
+                    "ignoreFailures": true
+                }
+            ],
+            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
+        },
+        {
+            "name": "Attach zrcsrt",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/build/bin/zrcsrt.exe",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:/msys2/ucrt64/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug NRT + RT",
+            "configurations": ["Debug zrcsnrt"],
+            "stopAll": true,
+            "preLaunchTask": "",
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}

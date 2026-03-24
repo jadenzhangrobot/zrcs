@@ -1,5 +1,3 @@
 # Build and Release Folders
 build/
 .cache/
-.vscode/
-.claude/
