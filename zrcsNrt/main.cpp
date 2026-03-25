@@ -17,6 +17,7 @@
 #include "btEngine.h"
 #include "zmqServer/zmqServer.h"
 #include "terminal/terminalConsole.h"
+#include "rtBridge/rtBridge.h"
 #include "sharedMemory/nrt_process.h"
 #include "sharedMemory/shmConstants.h"
 
@@ -126,13 +127,13 @@ static bool launchRTProcess()
 }
 
 // 终止 RT 子进程
-// shared_block 非空时先通过共享内存通知 RT 正常退出，超时后强杀
-static void terminateRTProcess(SharedBlock* shared_block = nullptr)
+// bridge 非空时先通过 RtBridge 通知 RT 正常退出，超时后强杀
+static void terminateRTProcess(RtBridge* bridge = nullptr)
 {
-    // 1. 通过共享内存通知 RT 正常退出
-    if (shared_block) {
-        spdlog::info("Sending SHUTDOWN to RT via shared memory...");
-        shared_block->cmd.store(TaskScheduling::SHUTDOWN, std::memory_order_release);
+    // 1. 通过 RtBridge 通知 RT 正常退出
+    if (bridge) {
+        spdlog::info("Sending SHUTDOWN to RT via RtBridge...");
+        bridge->requestShutdown();
     }
 
 #ifdef _WIN32
@@ -211,12 +212,15 @@ int main(int argc, char **argv)
 
         spdlog::info("SharedBlock initialized");
 
+        // 创建 RtBridge（NRT→RT 共享内存通信的唯一入口）
+        RtBridge bridge(nrt_process.sharedBlock());
+
         // 初始化行为树引擎
-        BTEngine bt_engine(nrt_process.sharedBlock());
+        BTEngine bt_engine(&bridge);
         spdlog::info("BTEngine initialized");
 
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(nrt_process.sharedBlock(), &bt_engine);
+        ZMQServer zmq_server(&bridge, &bt_engine);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {
@@ -229,7 +233,7 @@ int main(int argc, char **argv)
         spdlog::info("ZMQ server started, waiting for commands...");
 
         // 初始化终端控制台
-        TerminalConsole terminal(&bt_engine, g_running);
+        TerminalConsole terminal(&bridge, &bt_engine, g_running);
         if (terminal.initialize()) {
             terminal.start();
             spdlog::info("Terminal console started");
@@ -250,8 +254,8 @@ int main(int argc, char **argv)
         zmq_server.stop();
         g_zmq_server = nullptr;
 
-        // 终止 RT 子进程（通过共享内存通知正常退出）
-        terminateRTProcess(nrt_process.sharedBlock());
+        // 终止 RT 子进程（通过 RtBridge 通知正常退出）
+        terminateRTProcess(&bridge);
 
         spdlog::info("Shutdown complete");
     }

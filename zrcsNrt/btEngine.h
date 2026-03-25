@@ -6,31 +6,30 @@
 #include <atomic>
 #include <mutex>
 #include <spdlog/spdlog.h>
-#include "sharedMemory/sharedData.h"
+#include "rtBridge/rtBridge.h"
 
 /**
  * @brief 行为树执行引擎，运行在 NRT 进程中
  * @details 接收 GUI 下发的行为树 XML，创建并 tick 执行行为树。
- *          Action 节点通过共享内存向 RT 进程发送运动命令。
+ *          Action 节点通过 RtBridge 向 RT 进程发送运动命令。
  */
 
 // ============================================================================
-// 全局指针：供 BT Action 节点访问共享内存
+// 全局指针：供 BT Action 节点访问 RtBridge
 // ============================================================================
 namespace BTGlobal {
-    inline SharedBlock* g_shared_block = nullptr;
-    inline std::atomic<uint32_t> g_cmd_seq{1};  // 全局命令序列号递增器
+    inline RtBridge* g_bridge = nullptr;
 }
 
 // ============================================================================
-// 通用 BT Action 节点：将命令推送到共享内存，等待 RT 完成
+// 通用 BT Action 节点：通过 RtBridge 发送命令，等待 RT 完成
 // ============================================================================
 
 /**
  * @brief 通用运动命令节点，映射到 RT 进程的 CmdNode
  * @details 通过 BT Port "command" 指定命令名，"args" 指定参数
- *          onStart: 构造 Command 并 push 到共享内存队列
- *          onRunning: 轮询 lastCmdSeq 判断命令是否完成
+ *          onStart: 通过 RtBridge 发送命令
+ *          onRunning: 轮询 RtBridge 判断命令是否完成
  */
 class BTMotionAction : public BT::StatefulActionNode
 {
@@ -49,70 +48,49 @@ public:
 
     BT::NodeStatus onStart() override
     {
-        if (!BTGlobal::g_shared_block) {
-            spdlog::error("[BTMotionAction] SharedBlock not available");
+        if (!BTGlobal::g_bridge) {
+            spdlog::error("[BTMotionAction] RtBridge not available");
             return BT::NodeStatus::FAILURE;
         }
 
-        // 获取命令名称
         std::string cmd_name;
         if (!getInput("command", cmd_name) || cmd_name.empty()) {
             spdlog::error("[BTMotionAction] Missing 'command' port");
             return BT::NodeStatus::FAILURE;
         }
 
-        // 构造 Command
-        Command shm_cmd{};
-        strncpy(shm_cmd.cmd, cmd_name.c_str(), sizeof(shm_cmd.cmd) - 1);
-        shm_cmd.cmd[sizeof(shm_cmd.cmd) - 1] = '\0';
-
-        // 解析参数
         std::string args_str;
-        if (getInput("args", args_str) && !args_str.empty()) {
-            size_t idx = 0;
-            std::string token;
-            std::istringstream ss(args_str);
-            while (std::getline(ss, token, ',') && idx < MAX_CMD_ARGS) {
-                try {
-                    shm_cmd.args[idx++] = std::stod(token);
-                } catch (...) {
-                    break;
-                }
-            }
-        }
+        getInput("args", args_str);
 
-        // 分配序列号
-        my_seq_ = BTGlobal::g_cmd_seq.fetch_add(1, std::memory_order_relaxed);
-        shm_cmd.seq = my_seq_;
-
-        // 推送到共享内存队列
-        if (!BTGlobal::g_shared_block->commandQueue.push(shm_cmd)) {
-            spdlog::error("[BTMotionAction] Command queue full, dropping: {} (seq={})", cmd_name, my_seq_);
+        auto [result, seq] = BTGlobal::g_bridge->sendCommand(cmd_name, args_str);
+        if (result != RtBridge::SendResult::OK) {
+            spdlog::error("[BTMotionAction] Failed to send '{}' (seq={})", cmd_name, seq);
             return BT::NodeStatus::FAILURE;
         }
 
+        my_seq_ = seq;
         spdlog::info("[BTMotionAction] Sent command: '{}' args='{}' (seq={})", cmd_name, args_str, my_seq_);
         return BT::NodeStatus::RUNNING;
     }
 
     BT::NodeStatus onRunning() override
     {
-        if (!BTGlobal::g_shared_block) {
+        if (!BTGlobal::g_bridge) {
             return BT::NodeStatus::FAILURE;
         }
 
-        uint32_t completed_seq = BTGlobal::g_shared_block->lastCmdSeq.load(std::memory_order_acquire);
-        if (completed_seq == my_seq_) {
-            uint8_t result = BTGlobal::g_shared_block->lastCmdResult.load(std::memory_order_acquire);
-            if (result == 0) {
-                spdlog::info("[BTMotionAction] Command seq={} completed: SUCCESS", my_seq_);
-                return BT::NodeStatus::SUCCESS;
-            } else {
-                spdlog::error("[BTMotionAction] Command seq={} completed: FAILED", my_seq_);
-                return BT::NodeStatus::FAILURE;
-            }
+        if (!BTGlobal::g_bridge->isCommandCompleted(my_seq_)) {
+            return BT::NodeStatus::RUNNING;
         }
-        return BT::NodeStatus::RUNNING;
+
+        auto completion = BTGlobal::g_bridge->lastCompletion();
+        if (completion.success) {
+            spdlog::info("[BTMotionAction] Command seq={} completed: SUCCESS", my_seq_);
+            return BT::NodeStatus::SUCCESS;
+        } else {
+            spdlog::error("[BTMotionAction] Command seq={} completed: FAILED", my_seq_);
+            return BT::NodeStatus::FAILURE;
+        }
     }
 
     void onHalted() override
@@ -169,10 +147,10 @@ class BTEngine
 public:
     enum class State { IDLE, RUNNING, SUCCESS, FAILURE, HALTED };
 
-    explicit BTEngine(SharedBlock* shared_block)
-        : shared_block_(shared_block), running_(false), state_(State::IDLE)
+    explicit BTEngine(RtBridge* bridge)
+        : bridge_(bridge), running_(false), state_(State::IDLE)
     {
-        BTGlobal::g_shared_block = shared_block;
+        BTGlobal::g_bridge = bridge;
         registerNodes();
     }
 
@@ -297,33 +275,20 @@ private:
         };
         factory_.registerSimpleAction(cmd_name,
             [cmd_name](BT::TreeNode& self) -> BT::NodeStatus {
-                // SimpleAction 是同步的，不适合等待 RT 完成
-                // 所以这里只发送命令，不等待完成（fire-and-forget）
-                if (!BTGlobal::g_shared_block) {
-                    spdlog::error("[BTAlias:{}] SharedBlock not available", cmd_name);
+                if (!BTGlobal::g_bridge) {
+                    spdlog::error("[BTAlias:{}] RtBridge not available", cmd_name);
                     return BT::NodeStatus::FAILURE;
                 }
-
-                Command shm_cmd{};
-                strncpy(shm_cmd.cmd, cmd_name.c_str(), sizeof(shm_cmd.cmd) - 1);
 
                 std::string args_str;
-                if (self.getInput("args", args_str) && !args_str.empty()) {
-                    size_t idx = 0;
-                    std::istringstream ss(args_str);
-                    std::string token;
-                    while (std::getline(ss, token, ',') && idx < MAX_CMD_ARGS) {
-                        try { shm_cmd.args[idx++] = std::stod(token); } catch (...) { break; }
-                    }
-                }
+                self.getInput("args", args_str);
 
-                shm_cmd.seq = BTGlobal::g_cmd_seq.fetch_add(1, std::memory_order_relaxed);
-
-                if (!BTGlobal::g_shared_block->commandQueue.push(shm_cmd)) {
-                    spdlog::error("[BTAlias:{}] Command queue full (seq={})", cmd_name, shm_cmd.seq);
+                auto [result, seq] = BTGlobal::g_bridge->sendCommand(cmd_name, args_str);
+                if (result != RtBridge::SendResult::OK) {
+                    spdlog::error("[BTAlias:{}] Command queue full (seq={})", cmd_name, seq);
                     return BT::NodeStatus::FAILURE;
                 }
-                spdlog::info("[BTAlias:{}] Pushed to SHM queue, args='{}', seq={}", cmd_name, args_str, shm_cmd.seq);
+                spdlog::info("[BTAlias:{}] Sent via RtBridge, args='{}', seq={}", cmd_name, args_str, seq);
                 return BT::NodeStatus::SUCCESS;
             }, ports);
     }
@@ -380,7 +345,7 @@ private:
         spdlog::info("[BTEngine] Execution stopped");
     }
 
-    SharedBlock* shared_block_;
+    RtBridge* bridge_;
     BT::BehaviorTreeFactory factory_;
     BT::Tree tree_;
     std::thread tick_thread_;

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(cmake ..)",
       "Bash(cmake --build . --parallel)",
-      "Bash(find c:/Users/64989/Desktop/zrcs-dev/zrcsGui/modules/behaviortree -type f -name *.cpp -o -name *.h)"
+      "Bash(find c:/Users/64989/Desktop/zrcs-dev/zrcsGui/modules/behaviortree -type f -name *.cpp -o -name *.h)",
+      "WebFetch(domain:gepettoweb.laas.fr)",
+      "WebFetch(domain:orocos.org)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:linuxcnc.org)"
     ]
   }
 }

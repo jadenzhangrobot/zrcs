@@ -12,6 +12,8 @@
 #include "controller/ControllerInterface.h"
 #include "nodeCommunication.h"
 #include "nodeFactory.h"
+#include "model/modelConfig.h"
+#include "model/modelFactory.h"
 #include <array>
 #include <memory>
 #include <mutex>
@@ -28,6 +30,8 @@ private:
   // 成员变量
   std::unique_ptr<RTProcess> rtProcess_;               // 实时进程指针
   std::unique_ptr<ZrcsHardware::Controller> controller_; // 硬件控制器指针
+  std::unique_ptr<ModelConfig> modelConfig_;             // 模型配置
+  ModelRegistry modelRegistry_;                          // 多模型注册表
   CmdNode* cmdNode_;                             // 当前命令节点指针
   Command cmd_;                                  // 命令对象
 
@@ -83,6 +87,15 @@ public:
       }
 
       initData();
+
+      // 加载运动学模型配置 (在 Controller 之后)
+      try {
+          modelConfig_ = std::make_unique<ModelConfig>("model.xml");
+          modelRegistry_.loadFromConfig(*modelConfig_);
+          NodeFactory::getInstance().modelRegistry = &modelRegistry_;
+      } catch (const std::exception& e) {
+          INFO_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
+      }
 
       controller_->rtos_->rtos_task_create();
       // 将实时节点的实时函数放入实时线程

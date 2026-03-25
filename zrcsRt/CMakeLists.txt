@@ -28,12 +28,13 @@ add_executable(zrcsrt ${SOURCES} ${ZRCSRT_PROTO_SRCS} ${ZRCSRT_PROTO_HDRS})
 target_include_directories(zrcsrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库
-target_link_libraries(zrcsrt PRIVATE 
+target_link_libraries(zrcsrt PRIVATE
     Threads::Threads
     ruckig
     tinyxml2
     atomic
     protobuf::libprotobuf
+    Eigen3::Eigen
     ${MOTION_CONTROL_LIBS}
 )
 

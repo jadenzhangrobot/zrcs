@@ -10,7 +10,7 @@
 #include <windows.h>
 #endif
 #include "message.pb.h"
-#include "sharedMemory/sharedData.h"
+#include "rtBridge/rtBridge.h"
 #include "btEngine.h"
 
 class ZMQServer {
@@ -19,17 +19,16 @@ private:
     std::unique_ptr<zmq::socket_t> socket_;
     std::atomic<bool> running_;
     std::thread server_thread_;
-    SharedBlock* shared_block_;
+    RtBridge* bridge_;
     BTEngine* bt_engine_;
-    std::atomic<uint64_t> dropped_count_{0};
 
     static constexpr const char* ENDPOINT = "tcp://*:5555";
     static constexpr int RECV_TIMEOUT = 1000; // ms
 
 public:
-    ZMQServer(SharedBlock* shared_block, BTEngine* bt_engine)
+    ZMQServer(RtBridge* bridge, BTEngine* bt_engine)
         : context_(1), socket_(nullptr), running_(false),
-          shared_block_(shared_block), bt_engine_(bt_engine) {}
+          bridge_(bridge), bt_engine_(bt_engine) {}
 
     ~ZMQServer() {
         stop();
@@ -72,13 +71,11 @@ public:
         }
         context_.close();
 
-        if (dropped_count_ > 0) {
-            spdlog::warn("[ZMQServer] Total dropped commands: {}", dropped_count_.load());
+        if (bridge_->droppedCount() > 0) {
+            spdlog::warn("[ZMQServer] Total dropped commands: {}", bridge_->droppedCount());
         }
         spdlog::info("[ZMQServer] Stopped");
     }
-
-    uint64_t droppedCount() const { return dropped_count_.load(); }
 
 private:
     void run() {
@@ -119,24 +116,14 @@ private:
                     spdlog::debug("[ZMQServer]   arg[{}] = {}", i, cmd.args(i));
                 }
 
-                // 转换为共享内存命令格式
-                Command shm_cmd{};
-                strncpy(shm_cmd.cmd, cmd.command().c_str(), sizeof(shm_cmd.cmd) - 1);
-                shm_cmd.cmd[sizeof(shm_cmd.cmd) - 1] = '\0';
-
-                // 复制参数（受 MAX_CMD_ARGS 限制）
-                for (size_t i = 0; i < static_cast<size_t>(cmd.args_size()) && i < MAX_CMD_ARGS; ++i) {
-                    shm_cmd.args[i] = cmd.args(i);
-                }
-
-                // 推送到共享内存队列
-                if (shared_block_->commandQueue.push(shm_cmd)) {
-                    spdlog::info("[ZMQServer] Command '{}' pushed to SHM queue", cmd.command());
+                // 通过 RtBridge 发送命令到 RT
+                std::vector<double> args(cmd.args().begin(), cmd.args().end());
+                auto [send_result, seq] = bridge_->sendCommand(cmd.command(), args);
+                if (send_result == RtBridge::SendResult::OK) {
+                    spdlog::info("[ZMQServer] Command '{}' sent via RtBridge (seq={})", cmd.command(), seq);
                     sendReply("OK");
                 } else {
-                    ++dropped_count_;
-                    spdlog::error("[ZMQServer] Command queue full! cmd='{}', dropped_total={}",
-                                  cmd.command(), dropped_count_.load());
+                    spdlog::error("[ZMQServer] Command queue full! cmd='{}'", cmd.command());
                     sendReply("ERROR: Queue full");
                 }
 

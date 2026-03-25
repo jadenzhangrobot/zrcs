@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.18.1)
+
+# 默认安装到 build/install，避免需要管理员权限
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path" FORCE)
+endif()
+
 project(zrcs VERSION 1.0.0)
 
 # 设置 C++ 标准为 C++17

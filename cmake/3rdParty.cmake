@@ -39,6 +39,12 @@ if(absl_FOUND)
     message(STATUS "Found Abseil: ${absl_VERSION}")
 endif()
 
+# 添加Eigen3线性代数库
+find_package(Eigen3 REQUIRED)
+if(Eigen3_FOUND)
+    message(STATUS "Found Eigen3: ${Eigen3_VERSION}")
+endif()
+
 
 
 # 添加CoppeliaSim的头文件

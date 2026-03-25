@@ -1,12 +1,12 @@
 
 #ifndef NODE_FACTORY_H_
 #define NODE_FACTORY_H_
-
-#include <functional>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include "basenodeInterface.h"
+
+// 前向声明
+class ModelRegistry;
 
 namespace zrcsSystem {
 
@@ -26,7 +26,8 @@ public:
     std::vector<Output> outPutNodes;
     std::vector<Input> inPutNodes;
     ZrcsHardware::Controller *control=nullptr;
-    RTProcess *rtProcess=nullptr;  
+    RTProcess *rtProcess=nullptr;
+    ModelRegistry *modelRegistry=nullptr;  // 多模型注册表7+
 
     /**
      * @brief 获取工厂单例

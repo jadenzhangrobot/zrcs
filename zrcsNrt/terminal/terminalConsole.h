@@ -3,11 +3,11 @@
 /**
  * @file terminalConsole.h
  * @brief 终端控制台，允许操作员通过 stdin 直接输入命令
- * @details 运动命令通过 ZMQ REQ 回环发送到本地 ZMQ Server（保持 SPSC 队列单生产者）
- *          NRT 本地命令（bt、help、quit）直接在本线程处理
+ * @details 运动命令通过 RtBridge 直接发送到 RT 进程
+ *          BT 命令通过 BTEngine 本地处理
+ *          与 ZMQ 完全解耦，各走各的通道
  */
 
-#include <zmq.hpp>
 #include <thread>
 #include <atomic>
 #include <iostream>
@@ -16,24 +16,20 @@
 #include <string>
 #include <vector>
 #include <spdlog/spdlog.h>
-#include "message.pb.h"
+#include "rtBridge/rtBridge.h"
 #include "btEngine.h"
 
 class TerminalConsole {
 private:
-    zmq::context_t context_;
-    std::unique_ptr<zmq::socket_t> socket_;
     std::thread console_thread_;
     std::atomic<bool> running_;
+    RtBridge* bridge_;
     BTEngine* bt_engine_;
     std::atomic<bool>& app_running_;
 
-    static constexpr const char* ZMQ_ENDPOINT = "tcp://localhost:5555";
-    static constexpr int RECV_TIMEOUT = 5000; // ms
-
 public:
-    TerminalConsole(BTEngine* bt_engine, std::atomic<bool>& app_running)
-        : context_(1), socket_(nullptr), running_(false),
+    TerminalConsole(RtBridge* bridge, BTEngine* bt_engine, std::atomic<bool>& app_running)
+        : running_(false), bridge_(bridge),
           bt_engine_(bt_engine), app_running_(app_running) {}
 
     ~TerminalConsole() {
@@ -41,17 +37,12 @@ public:
     }
 
     bool initialize() {
-        try {
-            socket_ = std::make_unique<zmq::socket_t>(context_, zmq::socket_type::req);
-            socket_->set(zmq::sockopt::rcvtimeo, RECV_TIMEOUT);
-            socket_->set(zmq::sockopt::linger, 0);
-            socket_->connect(ZMQ_ENDPOINT);
-            spdlog::info("[Terminal] Initialized, connected to {}", ZMQ_ENDPOINT);
-            return true;
-        } catch (const zmq::error_t& e) {
-            spdlog::error("[Terminal] Initialization error: {}", e.what());
+        if (!bridge_ || !bridge_->isConnected()) {
+            spdlog::error("[Terminal] RtBridge not available");
             return false;
         }
+        spdlog::info("[Terminal] Initialized (direct RtBridge mode)");
+        return true;
     }
 
     void start() {
@@ -62,19 +53,12 @@ public:
     }
 
     void stop() {
-        if (!running_.exchange(false)) {
-            return;
-        }
+        running_ = false;
         // stdin 的 getline 是阻塞的，进程退出时线程会自然终止
         // 这里 detach 避免 join 死等
         if (console_thread_.joinable()) {
             console_thread_.detach();
         }
-        if (socket_) {
-            socket_->close();
-            socket_.reset();
-        }
-        context_.close();
         spdlog::info("[Terminal] Stopped");
     }
 
@@ -87,12 +71,10 @@ private:
             std::cout << "zrcs> " << std::flush;
 
             if (!std::getline(std::cin, line)) {
-                // EOF 或 stdin 关闭
                 spdlog::info("[Terminal] stdin closed, exiting console");
                 break;
             }
 
-            // 去除首尾空白
             auto trimmed = trim(line);
             if (trimmed.empty()) {
                 continue;
@@ -127,7 +109,7 @@ private:
             return;
         }
 
-        // 运动命令（通过 ZMQ 发送）
+        // 运动命令（通过 RtBridge 直接发送到 RT）
         handleMotionCommand(tokens);
     }
 
@@ -157,7 +139,6 @@ private:
                 std::cout << "Usage: bt load <filepath>" << std::endl;
                 return;
             }
-            // 读取 XML 文件
             std::ifstream ifs(tokens[2]);
             if (!ifs.is_open()) {
                 std::cout << "Error: cannot open file: " << tokens[2] << std::endl;
@@ -183,7 +164,6 @@ private:
         const auto& cmd_name = tokens[0];
         std::vector<double> args;
 
-        // 解析剩余 token 为 double 参数
         for (size_t i = 1; i < tokens.size(); ++i) {
             try {
                 args.push_back(std::stod(tokens[i]));
@@ -194,76 +174,17 @@ private:
             }
         }
 
-        std::string reply = sendMotionCommand(cmd_name, args);
-        if (!reply.empty()) {
-            std::cout << "Reply: " << reply << std::endl;
-        }
-    }
-
-    /**
-     * @brief 通过 ZMQ REQ 发送 MotionCommand 到本地 ZMQ Server
-     * @return 服务器回复字符串，超时返回空
-     */
-    std::string sendMotionCommand(const std::string& cmd,
-                                  const std::vector<double>& args) {
-        if (!socket_) {
-            std::cout << "Error: ZMQ socket not available" << std::endl;
-            return "";
-        }
-
-        try {
-            // 构造 MotionCommand protobuf
-            zrcs_message::MotionCommand motion_cmd;
-            motion_cmd.set_command(cmd);
-            for (double arg : args) {
-                motion_cmd.add_args(arg);
-            }
-
-            // 序列化并发送
-            std::string serialized;
-            motion_cmd.SerializeToString(&serialized);
-
-            zmq::message_t request(serialized.size());
-            memcpy(request.data(), serialized.data(), serialized.size());
-            socket_->send(request, zmq::send_flags::none);
-
-            spdlog::debug("[Terminal] Sent command '{}' with {} args", cmd, args.size());
-
-            // 接收回复
-            zmq::message_t reply;
-            auto result = socket_->recv(reply, zmq::recv_flags::none);
-            if (!result) {
-                std::cout << "Error: reply timeout" << std::endl;
-                reconnect();
-                return "";
-            }
-
-            return std::string(static_cast<char*>(reply.data()), reply.size());
-
-        } catch (const zmq::error_t& e) {
-            std::cout << "ZMQ error: " << e.what() << std::endl;
-            spdlog::error("[Terminal] ZMQ error: {}", e.what());
-            reconnect();
-            return "";
-        }
-    }
-
-    /**
-     * @brief 重建 ZMQ REQ socket（超时或错误后恢复）
-     */
-    void reconnect() {
-        try {
-            if (socket_) {
-                socket_->close();
-            }
-            socket_ = std::make_unique<zmq::socket_t>(context_, zmq::socket_type::req);
-            socket_->set(zmq::sockopt::rcvtimeo, RECV_TIMEOUT);
-            socket_->set(zmq::sockopt::linger, 0);
-            socket_->connect(ZMQ_ENDPOINT);
-            spdlog::info("[Terminal] Reconnected to {}", ZMQ_ENDPOINT);
-        } catch (const zmq::error_t& e) {
-            spdlog::error("[Terminal] Reconnect failed: {}", e.what());
-            socket_.reset();
+        auto [result, seq] = bridge_->sendCommand(cmd_name, args);
+        switch (result) {
+        case RtBridge::SendResult::OK:
+            std::cout << "OK (seq=" << seq << ")" << std::endl;
+            break;
+        case RtBridge::SendResult::QUEUE_FULL:
+            std::cout << "Error: command queue full" << std::endl;
+            break;
+        case RtBridge::SendResult::NOT_CONNECTED:
+            std::cout << "Error: not connected to RT" << std::endl;
+            break;
         }
     }
 
@@ -278,7 +199,7 @@ private:
 
     void printHelp() {
         std::cout << "\n"
-            "Motion Commands (sent to RT via ZMQ):\n"
+            "Motion Commands (sent to RT via RtBridge):\n"
             "  Enable [axisId]                Enable motor\n"
             "  Disable [axisId]               Disable motor\n"
             "  Reset [axisId]                 Reset axis error\n"
