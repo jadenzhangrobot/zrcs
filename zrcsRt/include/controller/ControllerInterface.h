@@ -8,6 +8,7 @@
  */
 #ifndef CONTROLLER_INTERFACE_H
 #define CONTROLLER_INTERFACE_H
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include "axisConfig.h"
@@ -32,14 +33,14 @@ public:
   }
   //virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
   virtual MC_SERVO_CODE setPos(int32_t pos)=0;
-  virtual MC_SERVO_CODE setVel(int32_t vel) { return SERVONOERROR; }
-  virtual MC_SERVO_CODE setTorque(int32_t torque) { return SERVONOERROR; }
-  virtual MC_SERVO_CODE setMode(Cia402Mode mode) { return SERVONOERROR; }
+  virtual MC_SERVO_CODE setVel(int32_t vel) = 0;
+  virtual MC_SERVO_CODE setTorque(int32_t torque) = 0;
+  virtual MC_SERVO_CODE setMode(Cia402Mode mode) = 0;
 
   virtual int32_t pos(void)=0;
   virtual int32_t vel(void)=0;
   virtual int32_t acc(void)=0;
-  virtual int32_t torque(void) { return 0.0; }
+  virtual int32_t torque(void) = 0;
 
   virtual bool readVal(int index, double& value) { return false; }
   virtual bool writeVal(int index, double value) { return false; }
@@ -57,7 +58,7 @@ class Axis {
 private:
 
   AxisPara *config_;
-  std::vector<Servo*> servo_;
+  std::vector<std::unique_ptr<Servo>> servo_;
 
   uint32_t axisId_=0;
   uint32_t slaveId_=0;
@@ -67,17 +68,19 @@ private:
   double axisAcc_=0;
   double axisJerk_=0;
   double axisPosCmd_=0;
+  double lastAxisPosCmd_=0;
   double axisVelCmd_=0;
+  double lastAxisVelCmd_=0;
   double axisTorCmd_=0;
-  double overflowCount_=0;
+  int32_t overflowCount_=0;
   MC_AXIS_STATES axisState_=MC_AXIS_STATES::mcStandstill;
   MC_ERROR_CODE axisError_=MC_ERRORCODE_GOOD;
 
-  bool powerOn_;
-  bool powerStatus_;
-  bool reset_;
-  bool enablePositive_;
-  bool enableNegative_;
+  bool powerOn_=false;
+  bool powerStatus_=false;
+  bool reset_=false;
+  bool enablePositive_=true;
+  bool enableNegative_=true;
 public:
 
   Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): axisId_(axisId),slaveId_(salveId),config_(config)
@@ -86,16 +89,12 @@ public:
   }
   virtual ~Axis()
   {
-          for (auto servo : servo_)
-          {
-              delete servo;
-          }
-          servo_.clear();
-      
+      servo_.clear();
+      delete config_;
   };
-  void pushServo(Servo* servo)
+  void pushServo(std::unique_ptr<Servo> servo)
   {
-    servo_.push_back(servo);
+    servo_.push_back(std::move(servo));
   }
   MC_ERROR_CODE setAxisId(uint32_t id)
   {
@@ -131,12 +130,12 @@ public:
     if (x >= INT32_MAX)
     {
       x -= INT32_MAX * 2.0;
-      overflowCount_ -= 1.0;
+      overflowCount_ -= 1;
     }
     else if (x <= - INT32_MAX)
     {
       x += INT32_MAX * 2.0;
-      overflowCount_ += 1.0;
+      overflowCount_ += 1;
     }
     return x;
   }
@@ -144,9 +143,9 @@ public:
    */
   bool cmdsProcessing(double frequency)
   {
-    // Check motion direction and limits
-    double vel_cmd = (axisPosCmd_ - axisPos_) * frequency;
-    double acc_cmd = (axisVelCmd_ - axisVel_) * frequency;
+    // Check motion direction and limits based on command differences
+    double vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
+    double acc_cmd = (vel_cmd - lastAxisVelCmd_) * frequency;
 
     if(vel_cmd > 0 && !enablePositive_)
     {
@@ -158,29 +157,34 @@ public:
       return false;
     }
 
-    if (config_->maxVel <vel_cmd&&vel_cmd>-config_->maxVel)
+    if (std::abs(vel_cmd) > config_->maxVel)
     {
       axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
       return false;
     }
 
-    // if (config_->sw_acc_limit_ && std::abs(acc_cmd) > config_->acc_limit_)
-    // {
-    //   axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
-    //   return false;
-    // }
+    if (std::abs(acc_cmd) > config_->maxAcc)
+    {
+      axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
+      return false;
+    }
 
-    // if(config_->sw_range_limit_ && axisPosCmd_ > config_->pos_positive_limit_ && vel_cmd > 0)
-    // {
-    //   axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
-    //   return false;
-    // }
+    if(axisPosCmd_ > config_->posPositiveLimit && vel_cmd > 0)
+    {
+      axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
+      return false;
+    }
 
-    // if(config_->sw_range_limit_ && axisPosCmd_ < config_->pos_negative_limit_ && vel_cmd < 0)
-    // {
-    //   axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
-    //   return false;
-    // }
+    if(axisPosCmd_ < config_->posNegativeLimit && vel_cmd < 0)
+    {
+      axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
+      return false;
+    }
+
+    // Update history for next cycle
+    lastAxisPosCmd_ = axisPosCmd_;
+    lastAxisVelCmd_ = vel_cmd;
+
     return true;
   }
 /**
@@ -191,14 +195,14 @@ public:
   {
     if (config_->mode== mcServoControlModePosition)
     {
-      for (auto servo : servo_)
+      for (auto& servo : servo_)
       {
         servo->setPos(toEncoderUnit(axisPosCmd_));
       }
     }
     if (config_->mode == mcServoControlModeVelocity)
     {
-      for (auto servo : servo_)
+      for (auto& servo : servo_)
       {
         servo->setVel(toEncoderUnit(axisVelCmd_));
       }
@@ -210,7 +214,7 @@ public:
    */
   void statusSync()
   {
-    double lastAxisPos_;
+    double lastAxisPos_ = 0.0;
     for (int i=0;i<servo_.size();i++)
     {
      
@@ -221,7 +225,7 @@ public:
       if (i!=0) 
       {
           double posDiff = axisPos_ - lastAxisPos_;
-          if (posDiff>config_->maxPosDiff) 
+          if (std::abs(posDiff) > config_->maxPosDiff) 
           {
              axisError_=MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
           }
@@ -333,7 +337,7 @@ public:
 
   MC_ERROR_CODE cyclerun()
   {
-    for (auto servo : servo_)
+    for (auto& servo : servo_)
     {
       servo->runCycle();
     }
@@ -342,7 +346,7 @@ public:
   }
   bool resetError(void)
   {
-     for (auto servo : servo_)
+     for (auto& servo : servo_)
      {
        if(!servo->resetError())
        {
@@ -354,7 +358,7 @@ public:
 
   bool powerOn()
   {
-    for (auto servo : servo_)
+    for (auto& servo : servo_)
     {
       if(servo->enable())
       {
@@ -367,7 +371,7 @@ public:
 
   bool powerOff() 
   {
-    for (auto servo : servo_)
+    for (auto& servo : servo_)
     {
       if (!servo->disable())
       {
@@ -378,7 +382,7 @@ public:
   }
   void setModeOfOperation()
   {
-    for (auto servo : servo_)
+    for (auto& servo : servo_)
     {
       servo->setMode(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION);
     }
@@ -440,9 +444,16 @@ public:
   virtual void rtos_set_perioic(int perioic) = 0;
 
   virtual std::uint64_t rtos_timer_read(void) {
-    uint64_t time;
+    uint64_t time = 0;
     return time;
   }
+};
+
+class HardwareBus {
+public:
+    virtual ~HardwareBus() = default;
+    virtual void send() = 0;
+    virtual void receive() = 0;
 };
 } 
 #endif

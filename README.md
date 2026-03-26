@@ -9,6 +9,7 @@ pacman -S mingw-w64-ucrt-x86_64-zeromq
 pacman -S mingw-w64-ucrt-x86_64-cppzmq
 pacman -S mingw-w64-ucrt-x86_64-protobuf
 pacman -S mingw-w64-ucrt-x86_64-opencascade
+pacman -S mingw-w64-ucrt-x86_64-eigen3
 
 编译器要求gcc 9.3
 需要库ruckig

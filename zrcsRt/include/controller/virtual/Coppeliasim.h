@@ -264,6 +264,11 @@ namespace ZrcsHardware
             return acceleration_;
         }
         
+        virtual int32_t torque(void) override
+        {
+            return 0; // TODO: Implement torque reading
+        }
+        
     };
 }
 #endif

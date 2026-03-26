@@ -32,12 +32,9 @@ class EthercatMotor:public Servo
 				ActualPos=findNumberInputKey("ActualPosition");
 				StatusWord=findNumberInputKey("StatusWord");			
         }
-		~EthercatMotor()
-		{
-			delete ethercatMaster;
-		}
+		~EthercatMotor() = default;
 		
-		int findNumberOutputKey(std::string key)
+		int findNumberOutputKey(const std::string& key)
 		{
 			auto it = ethercatMaster->OutputPdoInfoAndOffset[slaveId].find(key);
 			if (it !=  ethercatMaster->OutputPdoInfoAndOffset[slaveId].end()) {
@@ -47,7 +44,7 @@ class EthercatMotor:public Servo
 			}
 			
 		}
-		int findNumberInputKey(std::string key)
+		int findNumberInputKey(const std::string& key)
 		{
 			auto it = ethercatMaster->InputPdoInfoAndOffset[slaveId].find(key);
 			if (it != ethercatMaster->InputPdoInfoAndOffset[slaveId].end()){
@@ -61,6 +58,18 @@ class EthercatMotor:public Servo
 			EC_WRITE_S8(ethercatMaster->DomainWrite+ethercatMaster->OutputOffset[slaveId][ModeOffset],mode);
 			return SERVONOERROR;
 		}
+        MC_SERVO_CODE setVel(int32_t vel) override 
+        {
+            // TODO: Implement velocity mode for EtherCAT
+            return SERVONOERROR;
+        }
+
+        MC_SERVO_CODE setTorque(int32_t torque) override 
+        {
+            // TODO: Implement torque mode for EtherCAT
+            return SERVONOERROR;
+        }
+
         MC_SERVO_CODE setPos(int32_t pos) override
         {	  lastPosition_=position_;
               position_ = pos;
@@ -87,6 +96,10 @@ class EthercatMotor:public Servo
             // CoppeliaSim 中通常不直接提供加速度读取
              acceleration_=(velocity_-lastVelocity_)*1000/cycletime;
             return acceleration_;
+        }
+		int32_t torque(void) override 
+        {
+            return 0; // TODO: Implement torque reading
         }
         
 		bool resetError(void) override

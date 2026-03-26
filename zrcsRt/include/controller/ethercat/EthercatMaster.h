@@ -11,10 +11,11 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <controller/ControllerInterface.h>
 namespace ZrcsHardware {
 #define  SMOUT 2 //ethercat第二个同步管理器
 #define  SMIN 3 //ethercat第三个同步管理器
-class EthercatMaster
+class EthercatMaster : public HardwareBus
 {
 private:
   static inline ec_master_t *master = NULL;

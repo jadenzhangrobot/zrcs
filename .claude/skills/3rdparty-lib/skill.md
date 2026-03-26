@@ -76,7 +76,21 @@ target_link_libraries(<target> PRIVATE
 )
 ```
 
-### 步骤 4：网络问题处理
+### 步骤 4：更新 README 下载指令
+
+在 `README.md` 中添加对应的安装/下载指令，保持与现有格式一致：
+
+- **MSYS2 pacman 安装的库**：在 `#windos系统msys2系统安装` 段落下追加 `pacman -S mingw-w64-ucrt-x86_64-<库名>`
+- **Linux apt 安装的库**：在 Linux 段落下追加 `sudo apt install <包名>`
+- **git clone 到 `3rdParty/` 的库**：在 README 中追加 clone 命令，例如：
+  ```
+  cd 3rdParty
+  git clone --depth 1 --branch <版本tag> https://github.com/<repo>.git <库名>
+  ```
+
+> **必须**：每次添加或更新第三方库后，同步更新 `README.md` 中的下载指令，确保新开发者能一键搭建环境。
+
+### 步骤 5：网络问题处理
 
 如果 `git clone` 因网络问题失败，按顺序尝试：
 

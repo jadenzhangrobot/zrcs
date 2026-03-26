@@ -14,6 +14,7 @@
 #include "nodeFactory.h"
 #include "model/modelConfig.h"
 #include "model/modelFactory.h"
+#include "controller/HardwareFactory.h"
 #include <array>
 #include <memory>
 #include <mutex>
@@ -42,7 +43,7 @@ public:
   RTProcess* rtProcess() const { return rtProcess_.get(); }
 
   NodeManager() : rtProcess_(std::make_unique<RTProcess>()),
-                  controller_(std::make_unique<ZrcsHardware::Controller>()),
+                  controller_(ZrcsHardware::HardwareFactory::createController()),
                   cmdNode_(nullptr)
   {
   }

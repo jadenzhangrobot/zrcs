@@ -1,5 +1,4 @@
 {
-    "version": "0.2.0",
     "configurations": [
         {
             "name": "Debug zrcsgui",
@@ -97,17 +96,6 @@
                 }
             ],
             "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
-        }
-    ],
-    "compounds": [
-        {
-            "name": "Debug NRT + RT",
-            "configurations": ["Debug zrcsnrt"],
-            "stopAll": true,
-            "preLaunchTask": "",
-            "presentation": {
-                "order": 1
-            }
         }
     ]
 }
