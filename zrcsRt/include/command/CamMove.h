@@ -9,7 +9,7 @@
 #include <vector>
 #include <algorithm>
 
-class CamMove : public zrcsSystem::OutputNode
+class CamMove : public zrcsSystem::CmdNode
 {
 private:
     int mainAxisId_;
@@ -50,4 +50,5 @@ public:
 
     void init() override;
     void run(void) override;
+    void exit(void) override {}
 };

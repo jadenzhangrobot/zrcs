@@ -13,7 +13,7 @@ void CamMove::init()
     if (mainAxisId_ < 0 || mainAxisId_ >= static_cast<int>(controller_->axiss.size()) ||
         slaveAxisId_ < 0 || slaveAxisId_ >= static_cast<int>(controller_->axiss.size()))
     {
-        setNodeStatus(zrcsSystem::NodeStatus::FAILED);
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
 
@@ -30,4 +30,4 @@ void CamMove::run(void)
     controller_->axiss[slaveAxisId_]->setAxisPositionCmd(slaveCmd);
 }
 
-REGISTEROUTPUT(CamMove);
+REGISTERCMD(CamMove);

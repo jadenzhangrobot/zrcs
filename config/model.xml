@@ -1,21 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<modelConfig>
-    <!-- 串联6轴机械臂 (UR5 DH参数), 使用轴0-4 -->
+<model>
     <model-1>
-        <attribute name="ur5" type="serial" dof="6"/>
-        <baseFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
-        <toolFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
-        <joint-0 axisId="0" type="revolute" offset="0"
-                 dh_a="0"      dh_alpha="1.5708" dh_d="0.0892" dh_theta="0"/>
-        <joint-1 axisId="1" type="revolute" offset="0"
-                 dh_a="-0.425" dh_alpha="0"      dh_d="0"      dh_theta="0"/>
-        <joint-2 axisId="2" type="revolute" offset="0"
-                 dh_a="-0.392" dh_alpha="0"      dh_d="0"      dh_theta="0"/>
-        <joint-3 axisId="3" type="revolute" offset="0"
-                 dh_a="0"      dh_alpha="1.5708" dh_d="0.1093" dh_theta="0"/>
-        <joint-4 axisId="4" type="revolute" offset="0"
-                 dh_a="0"      dh_alpha="-1.5708" dh_d="0.0947" dh_theta="0"/>
-        <joint-5 axisId="5" type="revolute" offset="0"
-                 dh_a="0"      dh_alpha="0"       dh_d="0.0823" dh_theta="0"/>
+        <attribute dof="6" name="ur5" type="serial"/>
+        <baseFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
+        <joint-0 axisId="0" dh_a="0" dh_alpha="1.5708" dh_d="0.0892" dh_theta="0" offset="0" type="revolute"/>
+        <joint-1 axisId="1" dh_a="-0.425" dh_alpha="0" dh_d="0" dh_theta="0" offset="0" type="revolute"/>
+        <joint-2 axisId="2" dh_a="-0.392" dh_alpha="0" dh_d="0" dh_theta="0" offset="0" type="revolute"/>
+        <joint-3 axisId="3" dh_a="0" dh_alpha="1.5708" dh_d="0.1093" dh_theta="0" offset="0" type="revolute"/>
+        <joint-4 axisId="4" dh_a="0" dh_alpha="-1.5708" dh_d="0.0947" dh_theta="0" offset="0" type="revolute"/>
+        <joint-5 axisId="5" dh_a="0" dh_alpha="0" dh_d="0.0823" dh_theta="0" offset="0" type="revolute"/>
+        <toolFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
     </model-1>
-</modelConfig>
+</model>

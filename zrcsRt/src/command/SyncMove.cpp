@@ -13,7 +13,7 @@ void SyncMove::init()
     if (mainAxisId_ < 0 || mainAxisId_ >= static_cast<int>(controller_->axiss.size()) ||
         slaveAxisId_ < 0 || slaveAxisId_ >= static_cast<int>(controller_->axiss.size()))
     {
-        setNodeStatus(zrcsSystem::NodeStatus::FAILED);
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
 }
@@ -24,4 +24,4 @@ void SyncMove::run(void)
     controller_->axiss[slaveAxisId_]->setAxisPositionCmd(masterPos * ratio_);
 }
 
-REGISTEROUTPUT(SyncMove);
+REGISTERCMD(SyncMove);

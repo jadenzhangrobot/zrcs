@@ -7,7 +7,7 @@
 #include "system/basenodeInterface.h"
 #include "system/nodeFactory.h"
 
-class SyncMove : public zrcsSystem::OutputNode
+class SyncMove : public zrcsSystem::CmdNode
 {
 private:
     int mainAxisId_;
@@ -22,4 +22,5 @@ public:
 
     void init() override;
     void run(void) override;
+    void exit(void) override {}
 };
