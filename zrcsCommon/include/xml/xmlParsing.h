@@ -27,7 +27,7 @@
      public:
          XmlParsing(std::string xmlName):doc(new tinyxml2::XMLDocument())
          {
-            xmlFileName=xmlName.substr(0,xmlName.find(".xml"));
+                     xmlFileName = std::filesystem::path(xmlName).stem().string();
             std::string currentExePath = std::filesystem::current_path().string();
             std::string target = "build";
             std::string projectPath ;
@@ -215,7 +215,8 @@
                 std::cerr << "Failed to create XML Declaration." << std::endl;
                 // 处理错误，可能退出或记录
             }
-            tinyxml2::XMLElement* rootElement = doc->NewElement(xmlFileName.c_str());
+                const std::string& rootName = tree->root->data.empty() ? xmlFileName : tree->root->data;
+                tinyxml2::XMLElement* rootElement = doc->NewElement(rootName.c_str());
              doc->InsertEndChild(rootElement);
             saveParaToXml(doc->RootElement(), tree->root);
     }

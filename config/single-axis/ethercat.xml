@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ethercat>
-    <slave-1 ID="0" PID="0x000c010d" VID="0x00100000" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
+    <slave-1 ID="0" PID="0x00000005" VID="0x00000083" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
         <syncManager-1 dir="1" idx="0" watchDog="0"/>
         <syncManager-2 dir="2" idx="1" watchDog="0"/>
         <syncManager-3 dir="1" idx="2" watchDog="1">
