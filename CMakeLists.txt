@@ -25,7 +25,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
 
 # 查找 Protobuf 和 Abseil
 find_package(Protobuf REQUIRED)
-find_package(absl REQUIRED)
+if(NOT TARGET absl::base)
+    message(FATAL_ERROR "Abseil targets not found. Please ensure 3rdParty/abseil-cpp is available.")
+endif()
 
 set(MOTION_CONTROL_LIBS
     Threads::Threads

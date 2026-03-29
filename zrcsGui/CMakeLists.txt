@@ -20,9 +20,11 @@ set(Qt5_DIR "D:/msys2/mingw64/lib/cmake/Qt5")
 # 查找库
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets OpenGL Multimedia Xml Svg Gui)
 find_package(Protobuf REQUIRED)
-find_package(cppzmq REQUIRED)
-find_package(absl REQUIRED)
 find_package(OpenGL REQUIRED)
+
+if(NOT TARGET absl::base)
+    message(FATAL_ERROR "Abseil targets not found. Please ensure 3rdParty/abseil-cpp is added before zrcsgui.")
+endif()
 
 set(OPENCASCADE_ROOT "${CMAKE_SOURCE_DIR}/3rdParty/OpenCASCADE")
 if(EXISTS "${OPENCASCADE_ROOT}")
