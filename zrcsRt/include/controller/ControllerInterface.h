@@ -124,116 +124,20 @@ public:
     return (int32_t)fixOverFlow(x * config_->encoderCountPerUnit);
   }
 
-  double fixOverFlow(double x)
-  {
-    x += overflowCount_ * INT32_MAX * 2.0;
-    if (x >= INT32_MAX)
-    {
-      x -= INT32_MAX * 2.0;
-      overflowCount_ -= 1;
-    }
-    else if (x <= - INT32_MAX)
-    {
-      x += INT32_MAX * 2.0;
-      overflowCount_ += 1;
-    }
-    return x;
-  }
+  double fixOverFlow(double x);
   /** 对给到轴的位置，速度进行检查
    */
-  bool cmdsProcessing(double frequency)
-  {
-    // Check motion direction and limits based on command differences
-    double vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
-    double acc_cmd = (vel_cmd - lastAxisVelCmd_) * frequency;
-
-    if(vel_cmd > 0 && !enablePositive_)
-    {
-      axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE;
-      return false;
-    } else if(vel_cmd < 0 && !enableNegative_)
-    {
-      axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_NEGATIVE;
-      return false;
-    }
-
-    if (std::abs(vel_cmd) > config_->maxVel)
-    {
-      axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
-      return false;
-    }
-
-    if (std::abs(acc_cmd) > config_->maxAcc)
-    {
-      axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
-      return false;
-    }
-
-    if(axisPosCmd_ > config_->posPositiveLimit && vel_cmd > 0)
-    {
-      axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
-      return false;
-    }
-
-    if(axisPosCmd_ < config_->posNegativeLimit && vel_cmd < 0)
-    {
-      axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
-      return false;
-    }
-
-    // Update history for next cycle
-    lastAxisPosCmd_ = axisPosCmd_;
-    lastAxisVelCmd_ = vel_cmd;
-
-    return true;
-  }
+  bool cmdsProcessing(double frequency);
 /**
  * @brief 把轴的数据更新给具体的伺服电机
- * 
+ *
  */
-  void updateMotionCmdsToServo()
-  {
-    if (config_->mode== mcServoControlModePosition)
-    {
-      for (auto& servo : servo_)
-      {
-        servo->setPos(toEncoderUnit(axisPosCmd_));
-      }
-    }
-    if (config_->mode == mcServoControlModeVelocity)
-    {
-      for (auto& servo : servo_)
-      {
-        servo->setVel(toEncoderUnit(axisVelCmd_));
-      }
-    }
-  }
+  void updateMotionCmdsToServo();
   /**
    * @brief 将伺服电机的数据更新给轴，更新轴的位置和速度
-   * 
+   *
    */
-  void statusSync()
-  {
-    double lastAxisPos_ = 0.0;
-    for (int i=0;i<servo_.size();i++)
-    {
-     
-       axisPos_ = toUserUnit(servo_[i]->pos() - overflowCount_ * INT32_MAX * 2.0);
-       axisVel_ = toUserUnit(servo_[i]->vel());
-       axisAcc_ = toUserUnit(servo_[i]->acc());
-      // 计算位置差值     
-      if (i!=0) 
-      {
-          double posDiff = axisPos_ - lastAxisPos_;
-          if (std::abs(posDiff) > config_->maxPosDiff) 
-          {
-             axisError_=MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
-          }
-      }
-      lastAxisPos_=axisPos_;
-    }
-    
-  }
+  void statusSync();
   
   auto actualPos()->double 
   {
@@ -259,134 +163,15 @@ public:
   {
     return axisState_;
   }
-  MC_ERROR_CODE setAxisState(MC_AXIS_STATES setState)
-  {
-    switch (axisState_)
-    {
-    case mcStandstill:
-    case mcHoming:
-    case mcDiscreteMotion:
-    case mcContinuousMotion:
-      switch (setState)
-      {
-      case mcDisabled:
-      case mcErrorStop:
-        {
-          axisState_ = setState;
-          return MC_ERRORCODE_GOOD;
-        }
-        break;
-      default:
-        break;
-      }
-      break;
-    case mcStopping:
-      switch (setState)
-      {
-        case mcStopping:
-        case mcDisabled:
-        case mcErrorStop:
-        case mcStandstill:
-          {
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-          }
-          break;
-        default:
-          return MC_ERRORCODE_INVALIDSTATESTIPPING;
-          break;
-      }
-      break;
-    case mcErrorStop:
-      switch (setState)
-      {
-        case mcErrorStop:
-        case mcDisabled:
-        case mcStandstill:
-          {
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-          }
-          break;
-        default:
-          return MC_ERRORCODE_INVALIDSATATESTOP;
-          break;
-      }
-      break;
-    case mcDisabled:
-      switch (setState)
-      {
-        case mcDisabled:
-        case mcErrorStop:
-        case mcStandstill:
-          {
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-          }
-          break;
-        default:
-          return MC_ERRORCODE_INVALIDSTATEDISABLE;
-          break;
-      }
-      break;    
-    default:
-      break;
-    }
-    return MC_ERRORCODE_GOOD;
-  }
+  MC_ERROR_CODE setAxisState(MC_AXIS_STATES setState);
 
-  MC_ERROR_CODE cyclerun()
-  {
-    for (auto& servo : servo_)
-    {
-      servo->runCycle();
-    }
-    return MC_ERRORCODE_GOOD;
-    
-  }
-  bool resetError(void)
-  {
-     for (auto& servo : servo_)
-     {
-       if(!servo->resetError())
-       {
-         return false;
-       }  
-     }
-     return true;
-  }
+  MC_ERROR_CODE cyclerun();
+  bool resetError(void);
 
-  bool powerOn()
-  {
-    for (auto& servo : servo_)
-    {
-      if(servo->enable())
-      {
-        return true;
-      }
+  bool powerOn();
 
-    }
-    return false;
-  }
-
-  bool powerOff() 
-  {
-    for (auto& servo : servo_)
-    {
-      if (!servo->disable())
-      {
-         return false;
-      }
-    }
-    return true;
-  }
-  void setModeOfOperation()
-  {
-    for (auto& servo : servo_)
-    {
-      servo->setMode(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION);
-    }
-  }
+  bool powerOff();
+  void setModeOfOperation();
   MC_ERROR_CODE getAxisError()
   {
     return axisError_;
@@ -409,7 +194,29 @@ public:
   {
     return config_->maxJerk;
   }
-  
+
+  // --- 零点偏移 ---
+  void setZeroOffset(double offset) { zeroOffset_ = offset; }
+  double getZeroOffset() const { return zeroOffset_; }
+
+  // --- 动态限位修改 ---
+  void setPosLimits(double posLimit, double negLimit)
+  {
+    config_->posPositiveLimit = posLimit;
+    config_->posNegativeLimit = negLimit;
+  }
+
+  void setVelLimits(double maxVel, double maxAcc, double maxJerk)
+  {
+    config_->maxVel = maxVel;
+    config_->maxAcc = maxAcc;
+    config_->maxJerk = maxJerk;
+  }
+
+  void setModeOfOperation(Cia402Mode mode);
+
+private:
+  double zeroOffset_ = 0;  // 用户零点偏移
 };
 class Io {
 public:

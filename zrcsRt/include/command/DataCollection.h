@@ -15,20 +15,7 @@ class DataCollection : public zrcsSystem::InputNode
 {
 public:
     std::array<double, AXISMAXCOUNT> axisPosition_;
-    
-    void init() override
-    {
-    }
-    
-    void run() override
-    {
-        // 数据采集功能待实现
-        // for(int i = 0; i < controller_->axiss.size(); i++)
-        // {
-        //     axisPosition_[i] = controller_->axiss[i]->actualposCmd(); 
-        // }
-        // shm().statusQueue().push(axisPosition_);           
-    }    
-};
 
-REGISTERINPUT(DataCollection);
+    void init() override;
+    void run() override;
+};

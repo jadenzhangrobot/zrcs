@@ -1,45 +1,34 @@
 /*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-15 14:49:54
- * @LastEditTime: 2023-06-16 09:54:19
- * @Description: 直线运动指令
+ * @Description: 笛卡尔直线运动（ABB MoveL）— 经IK解算
  */
-#ifndef MOVEL_H
-#define MOVEL_H
-
+#pragma once
+#include "config/cmdArgs.h"
 #include "system/basenodeInterface.h"
-#include "model/modeinterface.h"
-#include <array>
-#include <ruckig/ruckig.hpp>
-#include <string>
-#include <vector>
 #include "system/nodeFactory.h"
-#include <cmath>
+#include "model/modelFactory.h"
+#include "model/robotModel.h"
+#include <memory>
+#include <Eigen/Dense>
+#include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
-class MoveL : public zrcsSystem::CmdNode 
+
+class MoveL : public zrcsSystem::CmdNode
 {
+private:
+    std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
+    std::unique_ptr<InputParameter<DynamicDOFs>> input_;
+    std::unique_ptr<OutputParameter<DynamicDOFs>> output_;
+    int dof_;
+    std::vector<int> axisIds_;
+
 public:
-  MoveL()
-  {
-     std::strcpy(nodeName,"MoveL");
-  }
-  
-  void init() override
-  {  
-     
-  }
+    MoveL() : dof_(0)
+    {
+        std::strcpy(nodeName_, "MoveL");
+    }
 
-   void run(void) override
-  {
-      
-  }
-  void exit(void) override 
-  { 
-     
-  }
+    void init() override;
+    void run(void) override;
+    void exit(void) override;
 };
-REGISTERCMD(MoveL)
-
-#endif

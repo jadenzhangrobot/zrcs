@@ -86,31 +86,7 @@ public:
     // 非实时退出
     virtual void exit() = 0;
     
-    void execute()
-    {
-        switch (cmdStatus_.load())
-        {              
-            case CmdStatus::INIT:
-                init();
-                INFO_PRINT("%s 初始化成功\n", nodeName_);
-                cmdStatus_.store(CmdStatus::EXECUTING, std::memory_order_release);             
-                break;
-            case CmdStatus::EXECUTING:
-                run();
-                break;                
-            case CmdStatus::EXIT:
-                exit();
-                INFO_PRINT("%s 执行成功\n", nodeName_);
-                cmdStatus_.store(CmdStatus::COMPLETED, std::memory_order_release);                
-                break;                  
-            case CmdStatus::FAILED:
-                INFO_PRINT("%s 执行失败\n", nodeName_); 
-                shm().taskScheduling().store(TaskScheduling::ERROR_STATE, std::memory_order_release);
-                break;                
-            default:                                     
-                break;
-        }
-    } 
+    void execute(); 
     
     // 获取命令节点状态
     CmdStatus getCmdStatus() const noexcept {
@@ -142,25 +118,7 @@ public:
     virtual void init() = 0;
     virtual void run() = 0;
    
-    void execute()
-    {
-        switch (nodeStatus_.load())
-        {              
-            case NodeStatus::RTINIT:
-                init();
-                INFO_PRINT("%s 初始化成功\n", nodeName_);
-                nodeStatus_.store(NodeStatus::EXECUTING, std::memory_order_release);             
-                break;
-            case NodeStatus::EXECUTING:
-                run();
-                break;                          
-            case NodeStatus::FAILED: 
-                INFO_PRINT("%s 执行失败\n", nodeName_);  
-                break;                
-            default:                                     
-                break;
-        }
-    }
+    void execute();
     
     NodeStatus getNodeStatus() const
     {
@@ -173,6 +131,7 @@ public:
     }
 };
 
+
 class InputNode : public Basenode {
 public:
     std::atomic<NodeStatus> nodeStatus_;
@@ -181,33 +140,15 @@ public:
     virtual ~InputNode() = default;
     virtual void init() = 0;
     virtual void run() = 0;
-    
-    virtual void execute()
-    {
-        switch (nodeStatus_.load())
-        {              
-            case NodeStatus::RTINIT:
-                init();
-                INFO_PRINT("%s 初始化成功\n", nodeName_);
-                nodeStatus_.store(NodeStatus::EXECUTING, std::memory_order_release);             
-                break;
-            case NodeStatus::EXECUTING:
-                run();
-                break;                          
-            case NodeStatus::FAILED: 
-                INFO_PRINT("%s 执行失败\n", nodeName_);  
-                break;                
-            default:                                     
-                break;
-        }
-    }
-    
+
+    virtual void execute();
+
     NodeStatus getNodeStatus() const
     {
         return nodeStatus_.load(std::memory_order_acquire);
     }
-    
-    void setNodeStatus(NodeStatus status) 
+
+    void setNodeStatus(NodeStatus status)
     {
         nodeStatus_.store(status, std::memory_order_release);
     }

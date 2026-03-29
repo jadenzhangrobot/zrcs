@@ -1,16 +1,23 @@
+/*
+ * @Description: 受控停止命令
+ */
 #pragma once
-#include "Cmdhead.h"
-#include "../controller/ControllerInterface.h"
+#include "config/cmdArgs.h"
+#include "system/basenodeInterface.h"
+#include "system/nodeFactory.h"
 
-class Stop : public Command {
+class Stop : public zrcsSystem::CmdNode
+{
+private:
+    int axisId_;
+
 public:
-    explicit Stop(Motor& motor) : motor_(motor) {}
-    
-    void execute() override {
-        motor_.disable();
-        motor_.setTargetToq(0.0);  // 确保力矩归零
+    Stop()
+    {
+        std::strcpy(nodeName_, "Stop");
     }
 
-private:
-    Motor& motor_;
+    void init() override;
+    void run(void) override;
+    void exit(void) override;
 };

@@ -35,28 +35,9 @@ public:
         axiss.push_back(std::move(axis));
     }
     
-    void sendData()
-    {             
-        for(auto& it : axiss)
-        {
-            it->updateMotionCmdsToServo();
-        }
-        if (hardwareBus_) {
-            hardwareBus_->send();
-        }
-    }
-    
-    void receiveData()
-    {      
-        if (hardwareBus_) {
-            hardwareBus_->receive();
-        }
-        for(auto& it : axiss)
-        {
-            it->statusSync();
-            it->cyclerun();
-        }
-    }
+    void sendData();
+
+    void receiveData();
     
     void readIo()
     {

@@ -72,32 +72,20 @@ public:
      * @brief 正运动学 (委托给模型)
      */
     bool forwardKinematics(const Eigen::VectorXd& jointPos,
-                            Eigen::Matrix4d& toolPose) const
-    {
-        if (!model_) return false;
-        return model_->forwardKinematics(jointPos, toolPose);
-    }
+                            Eigen::Matrix4d& toolPose) const;
 
     /**
      * @brief 逆运动学 (委托给模型)
      */
     bool inverseKinematics(const Eigen::Matrix4d& toolPose,
                             const Eigen::VectorXd& currentJointPos,
-                            Eigen::VectorXd& targetJointPos) const
-    {
-        if (!model_) return false;
-        return model_->inverseKinematics(toolPose, currentJointPos, targetJointPos);
-    }
+                            Eigen::VectorXd& targetJointPos) const;
 
     /**
      * @brief Jacobian (委托给模型)
      */
     bool jacobian(const Eigen::VectorXd& jointPos,
-                   Eigen::MatrixXd& J) const
-    {
-        if (!model_) return false;
-        return model_->jacobian(jointPos, J);
-    }
+                   Eigen::MatrixXd& J) const;
 
     int getDof() const { return dof_; }
     const std::string& getModeName() const { return modeName_; }

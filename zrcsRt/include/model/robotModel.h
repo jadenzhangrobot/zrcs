@@ -13,7 +13,6 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
-#include <cmath>
 
 /**
  * @brief 关节类型
@@ -64,6 +63,7 @@ protected:
     std::vector<ModelJoint> joints_;
     Eigen::Matrix4d baseTf_  = Eigen::Matrix4d::Identity();  // 基坐标系偏移
     Eigen::Matrix4d toolTf_  = Eigen::Matrix4d::Identity();  // 工具坐标系(TCP)偏移
+    double payloadMass_ = 0;  // 末端负载质量(kg)
 
 public:
     RobotModel(const std::string& name, const std::string& type, int dof)
@@ -114,44 +114,7 @@ public:
      */
     virtual bool jacobian(
         const Eigen::VectorXd& jointPos,
-        Eigen::MatrixXd& J) const
-    {
-        const double delta = 1e-6;
-        J.resize(6, dof_);
-
-        Eigen::Matrix4d T0;
-        if (!forwardKinematics(jointPos, T0))
-        {
-            return false;
-        }
-
-        Eigen::Vector3d p0 = T0.block<3,1>(0,3);
-        Eigen::Matrix3d R0 = T0.block<3,3>(0,0);
-
-        for (int i = 0; i < dof_; i++)
-        {
-            Eigen::VectorXd qd = jointPos;
-            qd(i) += delta;
-
-            Eigen::Matrix4d Td;
-            if (!forwardKinematics(qd, Td))
-            {
-                return false;
-            }
-
-            // 线速度部分: dp/dq
-            Eigen::Vector3d dp = (Td.block<3,1>(0,3) - p0) / delta;
-            J.block<3,1>(0, i) = dp;
-
-            // 角速度部分: 从旋转矩阵差分提取
-            Eigen::Matrix3d dR = (Td.block<3,3>(0,0) - R0) / delta;
-            Eigen::Matrix3d skew = dR * R0.transpose();
-            J(3, i) = skew(2, 1);  // wx
-            J(4, i) = skew(0, 2);  // wy
-            J(5, i) = skew(1, 0);  // wz
-        }
-        return true;
-    }
+        Eigen::MatrixXd& J) const;
 
     /**
      * @brief 可操作度（manipulability）
@@ -161,16 +124,7 @@ public:
      *
      * @return 可操作度值，越大越灵活，接近0表示接近奇异
      */
-    virtual double manipulability(const Eigen::VectorXd& jointPos) const
-    {
-        Eigen::MatrixXd J;
-        if (!jacobian(jointPos, J))
-        {
-            return 0.0;
-        }
-        Eigen::MatrixXd JJt = J * J.transpose();
-        return std::sqrt(std::abs(JJt.determinant()));
-    }
+    virtual double manipulability(const Eigen::VectorXd& jointPos) const;
 
     /**
      * @brief 检测是否接近奇异构型
@@ -187,17 +141,12 @@ public:
     const Eigen::Matrix4d& getBaseFrame() const { return baseTf_; }
     const Eigen::Matrix4d& getToolFrame() const { return toolTf_; }
 
+    // --- 负载管理 ---
+    void setPayload(double mass) { payloadMass_ = mass; }
+    double getPayload() const { return payloadMass_; }
+
     // --- 属性访问 ---
-    std::vector<int> getAxisIds() const
-    {
-        std::vector<int> ids;
-        ids.reserve(joints_.size());
-        for (const auto& j : joints_)
-        {
-            ids.push_back(j.axisId);
-        }
-        return ids;
-    }
+    std::vector<int> getAxisIds() const;
 
     int getDof() const { return dof_; }
     const std::string& getName() const { return name_; }
@@ -208,18 +157,7 @@ public:
      * @brief 从平移+RPY构建4x4齐次变换矩阵
      */
     static Eigen::Matrix4d poseFromXYZRPY(double x, double y, double z,
-                                           double rx, double ry, double rz)
-    {
-        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-        T.block<3,1>(0,3) = Eigen::Vector3d(x, y, z);
-
-        Eigen::Matrix3d R;
-        R = Eigen::AngleAxisd(rz, Eigen::Vector3d::UnitZ())
-          * Eigen::AngleAxisd(ry, Eigen::Vector3d::UnitY())
-          * Eigen::AngleAxisd(rx, Eigen::Vector3d::UnitX());
-        T.block<3,3>(0,0) = R;
-        return T;
-    }
+                                           double rx, double ry, double rz);
 };
 
 #endif // ROBOT_MODEL_H

@@ -13,10 +13,10 @@ include_directories(
 
 # 源文件 (暂时假设使用 zrcsRt/main.cpp)
 # 之前的目录结构显示 zrcsRt 下有 main.cpp
-file(GLOB_RECURSE SOURCES 
+file(GLOB_RECURSE SOURCES
     "main.cpp"
     "Trajectory_planning/*.cpp"
-    # 如果还有其他源文件，添加在这里
+    "src/*.cpp"
 )
 
 set(PROTO_FILES

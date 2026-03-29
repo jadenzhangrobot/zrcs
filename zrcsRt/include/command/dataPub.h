@@ -15,18 +15,6 @@ class DataPub : public zrcsSystem::InputNode
 public:
     std::array<double, AXISMAXCOUNT> axisPosition_;
 
-    void init() override
-    {
-    }
-    
-    void run() override
-    {
-        for (int i = 0; i < controller_->axiss.size(); i++)
-        {
-            axisPosition_[i] = controller_->axiss[i]->actualposCmd(); 
-        }
-        shm().statusQueue().push(axisPosition_);         
-    }    
+    void init() override;
+    void run() override;
 };
-
-REGISTERINPUT(DataPub);

@@ -46,7 +46,7 @@
              if(status==XML_SUCCESS)
              {
                  // XML file loaded successfully
-                  std::cout << "Successfully loaded " << xmlName << " file" << std::endl;
+                  std::cout << "[XML] Successfully loaded " << xmlName << std::endl;
              
              }
              else if(status==XML_ERROR_FILE_NOT_FOUND)

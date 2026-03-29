@@ -23,109 +23,27 @@ namespace ZrcsHardware
     public:
         virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
         {
-                
+
         }
-        
+
         virtual ~virtualServo() {}
-        
-     
-        virtual MC_SERVO_CODE setPos(int32_t pos) override
-        {
-            lastPosition_=position_;
-            position_ = pos;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
-        virtual MC_SERVO_CODE setVel(int32_t vel) override 
-        {
-            velocity_ = vel;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
-        virtual MC_SERVO_CODE setTorque(int32_t torque) override 
-        {
-            torque_ = torque;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
-        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override
-        {
-            mode_ = mode;
-            return MC_SERVO_CODE::SERVONOERROR;
-        }
-        
-        virtual int32_t pos(void) override 
-        {
-            return position_;
-        }
-        
-        virtual int32_t vel(void) override
-        {
-            lastVelocity_=velocity_;
-            velocity_=(position_-lastPosition_)*1000;           
-            return velocity_;
-        }
-        
-        virtual int32_t acc(void) override
-        {
-            acceleration_=(velocity_-lastVelocity_)*1000;
-            return acceleration_;
-        }
-        
-        virtual int32_t torque(void) override
-        {
-            return torque_;
-        }
-        
-        virtual bool readVal(int index, double& value) override 
-        {
-            // 虚拟实现：根据索引返回相应的值
-            switch(index) 
-            {
-                case 0: value = position_; return true;
-                case 1: value = velocity_; return true;
-                case 2: value = acceleration_; return true;
-                case 3: value = torque_; return true;
-                default: return false;
-            }
-        }
-        
-        virtual bool writeVal(int index, double value) override 
-        {
-            // 虚拟实现：根据索引设置相应的值
-            switch(index)
-            {
-                case 0: position_ = value; return true;
-                case 1: velocity_ = value; return true;
-                case 2: acceleration_ = value; return true;
-                case 3: torque_ = value; return true;
-                default: return false;
-            }
-        }
-        virtual bool enable(void) override
-        {
-            return true;
-        }
-        virtual bool disable(void) override
-        {
-            return true;
-        }
-        virtual bool resetError(void) override
-        {
-            return true;
-        }
-        virtual void runCycle(void) override
-        {
-            // 虚拟实现：运行周期
-        }
-        
-        
-        virtual void emergStop(void) override
-        {
-            // 虚拟实现：紧急停止
-            velocity_ = 0.0;
-            acceleration_ = 0.0;
-        }
+
+
+        virtual MC_SERVO_CODE setPos(int32_t pos) override;
+        virtual MC_SERVO_CODE setVel(int32_t vel) override;
+        virtual MC_SERVO_CODE setTorque(int32_t torque) override;
+        virtual MC_SERVO_CODE setMode(Cia402Mode mode) override;
+        virtual int32_t pos(void) override;
+        virtual int32_t vel(void) override;
+        virtual int32_t acc(void) override;
+        virtual int32_t torque(void) override;
+        virtual bool readVal(int index, double& value) override;
+        virtual bool writeVal(int index, double value) override;
+        virtual bool enable(void) override;
+        virtual bool disable(void) override;
+        virtual bool resetError(void) override;
+        virtual void runCycle(void) override;
+        virtual void emergStop(void) override;
     };
 }
 #endif

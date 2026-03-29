@@ -9,9 +9,6 @@
 #define MODEL_FACTORY_H
 
 #include "robotModel.h"
-#include "serialRobot.h"
-#include "cartesianRobot.h"
-#include "parallelRobot.h"
 #include "modelConfig.h"
 #include <memory>
 #include <unordered_map>
@@ -23,33 +20,7 @@
 class ModelFactory
 {
 public:
-    static std::unique_ptr<RobotModel> create(const ModelParam& param)
-    {
-        if (param.type == "serial")
-        {
-            return std::make_unique<SerialRobot>(
-                param.name, param.dof, param.joints,
-                param.baseTf, param.toolTf);
-        }
-        else if (param.type == "delta")
-        {
-            return std::make_unique<DeltaRobot>(
-                param.name, param.joints,
-                param.basePlatformRadius,
-                param.mobilePlatformRadius,
-                param.upperArmLength,
-                param.lowerArmLength,
-                param.baseTf, param.toolTf);
-        }
-        else if (param.type == "cartesian")
-        {
-            return std::make_unique<CartesianRobot>(
-                param.name, param.dof, param.joints,
-                param.baseTf, param.toolTf);
-        }
-
-        return nullptr;
-    }
+    static std::unique_ptr<RobotModel> create(const ModelParam& param);
 };
 
 /**
@@ -72,18 +43,7 @@ public:
     /**
      * @brief 从配置批量创建所有模型
      */
-    void loadFromConfig(const ModelConfig& config)
-    {
-        for (const auto& param : config.modelParams)
-        {
-            auto model = ModelFactory::create(param);
-            if (model)
-            {
-                nameMap_[model->getName()] = model.get();
-                models_.push_back(std::move(model));
-            }
-        }
-    }
+    void loadFromConfig(const ModelConfig& config);
 
     /**
      * @brief 按名称查找模型

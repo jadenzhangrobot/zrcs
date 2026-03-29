@@ -136,6 +136,33 @@ struct SharedBlock {
     // RT -> NRT 命令完成反馈
     std::atomic<uint32_t> lastCmdSeq{0};     // RT 最后完成的命令序列号
     std::atomic<uint8_t>  lastCmdResult{0};  // 0=成功, 1=失败
+
+    // 全局速度倍率 (0.0 ~ 1.0)
+    std::atomic<double> overrideRatio{1.0};
+
+    // FK 查询结果 (X,Y,Z,RX,RY,RZ)
+    double fkResult[6] = {0};
+
+    // 关节位置查询结果
+    double jointPosResult[AXISMAXCOUNT] = {0};
+
+    // IO 读取结果
+    std::atomic<uint32_t> ioReadResult{0};
+
+    // 探针/搜索运动触发位置
+    double probeResult[6] = {0};
+    std::atomic<bool> probeTriggered{false};
+
+    // 位置锁存结果
+    double capturedPos[AXISMAXCOUNT] = {0};
+    std::atomic<bool> captureTriggered{false};
+
+    // 配置监控开关
+    std::atomic<bool> confJEnabled{true};
+    std::atomic<bool> confLEnabled{true};
+
+    // 奇异区域处理模式 (0=Off, 1=Wrist, 2=LockAxis)
+    std::atomic<uint8_t> singAreaMode{0};
 };
 
 // 类型安全的共享内存访问器，替代原有的 #define 宏
@@ -152,6 +179,17 @@ public:
     singleAxisContinueMotion& continueMotion() { return blk_->sacm; }
     std::atomic<uint32_t>&  lastCmdSeq()      { return blk_->lastCmdSeq; }
     std::atomic<uint8_t>&   lastCmdResult()   { return blk_->lastCmdResult; }
+    std::atomic<double>&    overrideRatio()   { return blk_->overrideRatio; }
+    double*                 fkResult()        { return blk_->fkResult; }
+    double*                 jointPosResult()  { return blk_->jointPosResult; }
+    std::atomic<uint32_t>&  ioReadResult()    { return blk_->ioReadResult; }
+    double*                 probeResult()     { return blk_->probeResult; }
+    std::atomic<bool>&      probeTriggered()  { return blk_->probeTriggered; }
+    double*                 capturedPos()     { return blk_->capturedPos; }
+    std::atomic<bool>&      captureTriggered(){ return blk_->captureTriggered; }
+    std::atomic<bool>&      confJEnabled()    { return blk_->confJEnabled; }
+    std::atomic<bool>&      confLEnabled()    { return blk_->confLEnabled; }
+    std::atomic<uint8_t>&   singAreaMode()    { return blk_->singAreaMode; }
 
 private:
     SharedBlock* blk_;

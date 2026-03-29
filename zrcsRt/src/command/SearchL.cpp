@@ -1,0 +1,131 @@
+/*
+ * @Description: 直线搜索运动（ABB SearchL）— 运动中检测IO后停止记录位置
+ */
+#include "command/SearchL.h"
+
+void SearchL::init()
+{
+    shm().probeTriggered().store(false, std::memory_order_release);
+
+    ioModule_ = static_cast<int>(command_->args[SearchLIOModule]);
+    ioBit_ = static_cast<int>(command_->args[SearchLIOBit]);
+
+    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    if (!registry)
+    {
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return;
+    }
+    RobotModel* model = registry->getModel(0);
+    if (!model)
+    {
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return;
+    }
+
+    dof_ = model->getDof();
+    axisIds_ = model->getAxisIds();
+
+    Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
+        command_->args[SearchLX], command_->args[SearchLY], command_->args[SearchLZ],
+        command_->args[SearchLRX], command_->args[SearchLRY], command_->args[SearchLRZ]);
+
+    Eigen::VectorXd currentJoint(dof_);
+    for (int i = 0; i < dof_; i++)
+    {
+        currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
+    }
+
+    Eigen::VectorXd targetJoint(dof_);
+    if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
+    {
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return;
+    }
+
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+
+    double override = shm().overrideRatio().load(std::memory_order_acquire);
+    double velScale = command_->args[SearchLVel];
+    if (velScale <= 0) velScale = 0.1;  // 搜索运动默认低速
+
+    for (int i = 0; i < dof_; i++)
+    {
+        int axisId = axisIds_[i];
+        input_->current_position[i] = currentJoint(i);
+        input_->current_velocity[i] = 0;
+        input_->current_acceleration[i] = 0;
+        input_->target_position[i] = targetJoint(i);
+        input_->target_velocity[i] = 0;
+        input_->target_acceleration[i] = 0;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
+        input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+    }
+}
+
+void SearchL::run(void)
+{
+    // 每周期检查IO信号
+    if (ioModule_ >= 0 &&
+        ioModule_ < static_cast<int>(controller_->ios_.size()))
+    {
+        if (controller_->ios_[ioModule_]->ioRead32(ioModule_, ioBit_))
+        {
+            // IO触发：记录当前位置到共享内存
+            auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+            RobotModel* model = registry->getModel(0);
+
+            Eigen::VectorXd jointPos(dof_);
+            for (int i = 0; i < dof_; i++)
+            {
+                jointPos(i) = controller_->axiss[axisIds_[i]]->actualPos();
+            }
+
+            Eigen::Matrix4d toolPose;
+            if (model->forwardKinematics(jointPos, toolPose))
+            {
+                double* result = shm().probeResult();
+                result[0] = toolPose(0, 3);  // X
+                result[1] = toolPose(1, 3);  // Y
+                result[2] = toolPose(2, 3);  // Z
+            }
+            shm().probeTriggered().store(true, std::memory_order_release);
+
+            // 停在当前位置
+            for (int i = 0; i < dof_; i++)
+            {
+                controller_->axiss[axisIds_[i]]->setAxisPositionCmd(
+                    controller_->axiss[axisIds_[i]]->actualPos());
+            }
+            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+            return;
+        }
+    }
+
+    // 继续运动
+    auto result = otg_->update(*input_, *output_);
+    if (result == Result::Working)
+    {
+        for (int i = 0; i < dof_; i++)
+        {
+            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
+        }
+        output_->pass_to_input(*input_);
+    }
+    else if (result == Result::Finished)
+    {
+        // 到达终点但未触发IO
+        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+    }
+    else
+    {
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+    }
+}
+
+void SearchL::exit(void) {}
+
+REGISTERCMD(SearchL);
