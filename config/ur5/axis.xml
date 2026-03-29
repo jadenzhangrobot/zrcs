@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<axis>
+    <axis-1>
+        <attribute id="0" mode="position" name="shoulder_pan" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-1>
+    <axis-2>
+        <attribute id="1" mode="position" name="shoulder_lift" slaveId="1"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-2>
+    <axis-3>
+        <attribute id="2" mode="position" name="elbow" slaveId="2"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-3>
+    <axis-4>
+        <attribute id="3" mode="position" name="wrist_1" slaveId="3"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-4>
+    <axis-5>
+        <attribute id="4" mode="position" name="wrist_2" slaveId="4"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-5>
+    <axis-6>
+        <attribute id="5" mode="position" name="wrist_3" slaveId="5"/>
+        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="20" maxJerk="30" maxPos="6.2832" maxPosDiff="0" maxVel="3.14" minPos="-6.2832"/>
+    </axis-6>
+</axis>

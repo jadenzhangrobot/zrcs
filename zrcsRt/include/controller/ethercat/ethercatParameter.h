@@ -35,10 +35,10 @@ public:
   };
   std::vector<Slave> Slaves;
 
-  SlaveConfig()
+  SlaveConfig(const std::string& ethercatFile = "ethercat.xml")
   {
-        
-          XmlParsing xmlParsing("ethercat.xml");
+
+          XmlParsing xmlParsing(ethercatFile);
 
           for (auto child : xmlParsing.getRootNode()->children)
           {

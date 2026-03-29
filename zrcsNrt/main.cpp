@@ -20,6 +20,7 @@
 #include "rtBridge/rtBridge.h"
 #include "sharedMemory/nrt_process.h"
 #include "sharedMemory/shmConstants.h"
+#include "config/projectConfig.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -195,6 +196,12 @@ int main(int argc, char **argv)
         // 初始化日志系统
         NrtLogger::init();
         spdlog::info("ZRCS Non-Real-Time Process Started");
+
+        // 解析项目配置
+        std::string projectName = zrcs::ProjectConfig::resolve();
+        if (!projectName.empty()) {
+            spdlog::info("Active project: {}", projectName);
+        }
 
         // 启动 RT 子进程（创建共享内存）
         if (!launchRTProcess()) {

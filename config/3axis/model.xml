@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model>
+    <model-1>
+        <attribute dof="3" name="cartesian" type="cartesian"/>
+        <baseFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
+        <joint-0 axisId="0" offset="0" type="prismatic"/>
+        <joint-1 axisId="1" offset="0" type="prismatic"/>
+        <joint-2 axisId="2" offset="0" type="prismatic"/>
+        <toolFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
+    </model-1>
+</model>

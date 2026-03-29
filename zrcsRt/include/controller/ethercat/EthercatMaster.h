@@ -48,7 +48,8 @@ public:
   std::vector<std::map<std::string, int>> InputPdoInfoAndOffset;
   std::vector<std::map<std::string, int>> OutputPdoInfoAndOffset;
 
-  EthercatMaster() : slaveConfig(new SlaveConfig()) 
+  EthercatMaster(const std::string& ethercatFile = "ethercat.xml")
+      : slaveConfig(new SlaveConfig(ethercatFile))
   {
     EthercatInit();
   }

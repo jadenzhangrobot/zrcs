@@ -15,6 +15,7 @@
 #include "model/modelConfig.h"
 #include "model/modelFactory.h"
 #include "controller/HardwareFactory.h"
+#include "config/projectConfig.h"
 #include <array>
 #include <memory>
 #include <mutex>
@@ -29,6 +30,7 @@ namespace zrcsSystem {
 class NodeManager {
 private:
   // 成员变量
+  std::string projectName_;                                // 项目配置名称
   std::unique_ptr<RTProcess> rtProcess_;               // 实时进程指针
   std::unique_ptr<ZrcsHardware::Controller> controller_; // 硬件控制器指针
   std::unique_ptr<ModelConfig> modelConfig_;             // 模型配置
@@ -42,9 +44,11 @@ public:
   // 供外部访问 RTProcess（如 node->registered）
   RTProcess* rtProcess() const { return rtProcess_.get(); }
 
-  NodeManager() : rtProcess_(std::make_unique<RTProcess>()),
-                  controller_(ZrcsHardware::HardwareFactory::createController()),
-                  cmdNode_(nullptr)
+  NodeManager(const std::string& projectName = "")
+              : projectName_(projectName),
+                rtProcess_(std::make_unique<RTProcess>()),
+                controller_(ZrcsHardware::HardwareFactory::createController(projectName)),
+                cmdNode_(nullptr)
   {
   }
 

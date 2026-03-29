@@ -1,4 +1,5 @@
 #include "system/nodeManager.h"
+#include "config/projectConfig.h"
 #include "command/Cmdhead.h"
 
 namespace zrcsSystem {
@@ -19,7 +20,8 @@ void NodeManager::run()
 
     // 加载运动学模型配置 (在 Controller 之后)
     try {
-        modelConfig_ = std::make_unique<ModelConfig>("model.xml");
+        modelConfig_ = std::make_unique<ModelConfig>(
+            zrcs::ProjectConfig::prefixedFilename(projectName_, "model.xml"));
         modelRegistry_.loadFromConfig(*modelConfig_);
         NodeFactory::getInstance().modelRegistry = &modelRegistry_;
     } catch (const std::exception& e) {

@@ -12,6 +12,7 @@
 #include "sharedMemory/sharedData.h"
 #include "controller/ControllerInterface.h"
 #include "system/nodeManager.h"
+#include "config/projectConfig.h"
 #include <thread>
 #include <iostream>
 #include "command/Cmdhead.h"
@@ -45,7 +46,12 @@ int main(int argc, char **argv)
 
     try
     {
-        zrcsSystem::NodeManager nodeManager;
+        std::string projectName = zrcs::ProjectConfig::resolve();
+        if (!projectName.empty()) {
+            std::cout << "[RT] Active project: " << projectName << std::endl;
+        }
+
+        zrcsSystem::NodeManager nodeManager(projectName);
         nodeManager.run();
 
         // 检测共享内存中的 SHUTDOWN 信号

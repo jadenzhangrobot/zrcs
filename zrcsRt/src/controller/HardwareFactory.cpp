@@ -2,6 +2,7 @@
  * @Description: HardwareFactory class method implementations
  */
 #include "controller/HardwareFactory.h"
+#include "config/projectConfig.h"
 
 #ifdef REALTIME
 #include "controller/ethercat/EthercatMaster.h"
@@ -23,14 +24,14 @@
 
 namespace ZrcsHardware {
 
-std::unique_ptr<Controller> HardwareFactory::createController() {
-    auto config = std::make_unique<AxisConfig>("axis.xml");
+std::unique_ptr<Controller> HardwareFactory::createController(const std::string& projectName) {
+    auto config = std::make_unique<AxisConfig>(zrcs::ProjectConfig::prefixedFilename(projectName, "axis.xml"));
     std::shared_ptr<Rtos> rtos;
     std::unique_ptr<HardwareBus> bus = nullptr;
 
 #ifdef REALTIME
     rtos = std::make_shared<xenomai>();
-    auto ethercatMaster = std::make_unique<EthercatMaster>();
+    auto ethercatMaster = std::make_unique<EthercatMaster>(zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
     void* masterPtr = ethercatMaster.get();
     bus = std::move(ethercatMaster);
 #else

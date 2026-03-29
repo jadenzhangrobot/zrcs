@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ethercat>
+    <slave-1 ID="0" PID="0x000c010d" VID="0x00100000" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
+        <syncManager-1 dir="1" idx="0" watchDog="0"/>
+        <syncManager-2 dir="2" idx="1" watchDog="0"/>
+        <syncManager-3 dir="1" idx="2" watchDog="1">
+            <pdo idx="1600">
+                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
+                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
+                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
+            </pdo>
+        </syncManager-3>
+        <syncManager-4 dir="2" idx="3" watchDog="0">
+            <pdo idx="1a00">
+                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
+                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
+                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
+            </pdo>
+        </syncManager-4>
+    </slave-1>
+</ethercat>
