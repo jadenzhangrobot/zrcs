@@ -18,6 +18,15 @@ set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/spdlog)
 
+# 添加 cppzmq 头文件封装库
+set(CPPZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/cppzmq)
+
+# 添加 Abseil 库（供 Protobuf 等依赖使用）
+set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+set(ABSL_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/abseil-cpp)
+
 # 添加boost库
 # 优先使用BoostConfig.cmake，如果不可用则回退到FindBoost.cmake
 find_package(Boost QUIET CONFIG)
@@ -33,10 +42,8 @@ if(Protobuf_FOUND)
     include_directories(${Protobuf_INCLUDE_DIRS})
 endif()
 
-# Protobuf 现代版本通常依赖于 Abseil
-find_package(absl QUIET)
-if(absl_FOUND)
-    message(STATUS "Found Abseil: ${absl_VERSION}")
+if(TARGET absl::base)
+    message(STATUS "Using bundled Abseil from 3rdParty/abseil-cpp")
 endif()
 
 # 添加Eigen3线性代数库

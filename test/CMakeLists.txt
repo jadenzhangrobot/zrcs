@@ -25,7 +25,6 @@ target_link_libraries(test_command PRIVATE atomic)
 
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）
 find_package(Protobuf REQUIRED)
-find_package(cppzmq REQUIRED)
 
 set(ZMQ_TEST_PROTO ${DEVEL_INCLUDE_DIRS}/zrcsCommon/message/message.proto)
 protobuf_generate_cpp(ZMQ_TEST_PROTO_SRCS ZMQ_TEST_PROTO_HDRS ${ZMQ_TEST_PROTO})

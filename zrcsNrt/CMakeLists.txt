@@ -3,7 +3,6 @@ project(zrcsnrt)
 # 查找依赖库
 find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package(cppzmq REQUIRED)
 
 # 包含目录
 include_directories(
