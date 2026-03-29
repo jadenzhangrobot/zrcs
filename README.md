@@ -7,6 +7,7 @@ sudo apt install libabsl-dev
 sudo apt install qtmultimedia5-dev libqt5multimedia5-plugins
 sudo apt install libqt5svg5-dev qtbase5-dev
 sudo apt install libzmq3-dev libcppzmq-dev
+sudo apt install libncurses-dev libncursesw5-dev
 
 #windos系统msys2系统安装
 pacman -S mingw-w64-ucrt-x86_64-nlohmann-json
