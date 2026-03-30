@@ -24,6 +24,18 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     nrtProcess = new NRTProcess();
     zmqClient = new ZMQClient();
 
+    // ZMQ 状态信号连接
+    connect(zmqClient, &ZMQClient::connected, this, &MainWindowRefactored::onZMQConnected);
+    connect(zmqClient, &ZMQClient::disconnected, this, &MainWindowRefactored::onZMQDisconnected);
+    connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
+    zmqClient->connectToServer();
+
+    // 连接命令面板信号
+    if (commandPanel) {
+        connect(commandPanel, &CommandPanel::commandRequested,
+                this, &MainWindowRefactored::sendMotionCommand);
+    }
+
     // 连接行为树面板信号到 ZMQ 客户端
     if (behaviorTreePanel && zmqClient) {
         QObject::connect(behaviorTreePanel, &BehaviorTreePanel::requestBTLoad,
@@ -87,6 +99,10 @@ void MainWindowRefactored::setupConnections()
     if (jogPanel) {
         connect(jogPanel, &JogControlPanel::jogPressed, this, &MainWindowRefactored::onJogPressed);
         connect(jogPanel, &JogControlPanel::jogReleased, this, &MainWindowRefactored::onJogReleased);
+        connect(jogPanel, &JogControlPanel::stepSizeChanged, this, &MainWindowRefactored::onStepSizeChanged);
+        connect(jogPanel, &JogControlPanel::overrideChanged, this, &MainWindowRefactored::onOverrideChanged);
+        connect(jogPanel, &JogControlPanel::homeRequested, this, &MainWindowRefactored::onHomeRequested);
+        connect(jogPanel, &JogControlPanel::homeAllRequested, this, &MainWindowRefactored::onHomeAllRequested);
         connect(jogPanel, &JogControlPanel::setCurrentAsOriginRequested, this, &MainWindowRefactored::onSetCurrentAsOriginRequested);
     }
     if (ioMonitorPanel) {
@@ -138,6 +154,7 @@ void MainWindowRefactored::createAdvancedModules()
     remotePanel = findChild<RemoteMonitorPanel*>("remotePanel");
     pluginPanel = findChild<PluginPanel*>("pluginPanel");
     behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
+    commandPanel = findChild<CommandPanel*>("commandPanel");
 }
 
 void MainWindowRefactored::createQuickActions()
@@ -146,29 +163,51 @@ void MainWindowRefactored::createQuickActions()
     quickActionLayout = findChild<QGridLayout*>("quickActionLayout");
     if (!quickActionGroup || !quickActionLayout) return;
 
-    // 添加默认按钮 - 可根据需要修改
+    // 添加默认按钮
     auto *btnServo = addQuickAction("伺服使能");
     btnServo->setCheckable(true);
     connect(btnServo, &QPushButton::toggled, this, [this](bool on) {
         servoLabel->setText(on ? "伺服: 开" : "伺服: 关");
+        int axisCount = ZrcsConfig::Config::instance().ui.axisCount;
+        if (on) {
+            sendMotionCommand("SYS_RUN");
+            sendMotionCommand("Enable", {static_cast<double>(axisCount)});
+        } else {
+            sendMotionCommand("Disable", {static_cast<double>(axisCount)});
+        }
     });
 
     auto *btnRun = addQuickAction("运行程序");
-    connect(btnRun, &QPushButton::clicked, this, [](){ /* TODO */ });
+    connect(btnRun, &QPushButton::clicked, this, [this]() {
+        sendMotionCommand("SYS_RUN");
+    });
 
     auto *btnPause = addQuickAction("暂停");
-    connect(btnPause, &QPushButton::clicked, this, [](){ /* TODO */ });
+    connect(btnPause, &QPushButton::clicked, this, [this]() {
+        sendMotionCommand("SYS_STOP");
+    });
 
     auto *btnStop = addQuickAction("停止");
     btnStop->setProperty("kind", "danger");
-    connect(btnStop, &QPushButton::clicked, this, [](){ /* TODO */ });
+    connect(btnStop, &QPushButton::clicked, this, [this]() {
+        sendMotionCommand("SYS_JOG_STOP");
+        sendMotionCommand("SYS_STOP");
+    });
 
     auto *btnEStop = addQuickAction("急停");
     btnEStop->setProperty("kind", "danger");
-    connect(btnEStop, &QPushButton::clicked, this, [](){ /* TODO */ });
+    connect(btnEStop, &QPushButton::clicked, this, [this]() {
+        sendMotionCommand("SYS_ESTOP");
+        // 同步伺服按钮状态
+        for (auto *btn : quickActionGroup->findChildren<QPushButton*>()) {
+            if (btn->isCheckable()) { btn->setChecked(false); break; }
+        }
+    });
 
     auto *btnReset = addQuickAction("复位");
-    connect(btnReset, &QPushButton::clicked, this, [](){ /* TODO */ });
+    connect(btnReset, &QPushButton::clicked, this, [this]() {
+        sendMotionCommand("SYS_RESET");
+    });
 }
 
 QPushButton* MainWindowRefactored::addQuickAction(const QString &text, const QString &iconPath)
@@ -192,16 +231,73 @@ QPushButton* MainWindowRefactored::addQuickAction(const QString &text, const QSt
 void MainWindowRefactored::onUpdateTimer() { updateGlobalStatus(); }
 void MainWindowRefactored::updateGlobalStatus() {}
 void MainWindowRefactored::updateCommunicationStatus() {}
-void MainWindowRefactored::onJogPressed(int /*axis*/, int /*direction*/) {}
-void MainWindowRefactored::onJogReleased(int /*axis*/) {}
+void MainWindowRefactored::onJogPressed(int axis, int direction)
+{
+    if (currentStepSize == 0.0) {
+        double dirFlag = (direction > 0) ? 1.0 : 0.0;
+        sendMotionCommand("SYS_JOG_START", {static_cast<double>(axis), dirFlag});
+    } else {
+        double distance = currentStepSize * direction;
+        sendMotionCommand("JogJ", {static_cast<double>(axis), distance});
+    }
+}
+
+void MainWindowRefactored::onJogReleased(int axis)
+{
+    Q_UNUSED(axis);
+    if (currentStepSize == 0.0) {
+        sendMotionCommand("SYS_JOG_STOP");
+    }
+}
 void MainWindowRefactored::onStepSizeChanged(double size) { currentStepSize = size; }
-void MainWindowRefactored::onOverrideChanged(int percent) { currentOverride = percent; }
-void MainWindowRefactored::onHomeRequested(int /*axis*/) {}
-void MainWindowRefactored::onHomeAllRequested() {}
-void MainWindowRefactored::onSetCurrentAsOriginRequested(int /*axis*/) {}
-void MainWindowRefactored::onOutputToggled(int /*index*/, bool /*state*/) {}
+void MainWindowRefactored::onOverrideChanged(int percent)
+{
+    currentOverride = percent;
+    sendMotionCommand("SYS_SET_MULTIPLIER", {static_cast<double>(percent)});
+}
+
+void MainWindowRefactored::onHomeRequested(int axis)
+{
+    sendMotionCommand("JogabsJ", {static_cast<double>(axis), 0.0});
+}
+
+void MainWindowRefactored::onHomeAllRequested()
+{
+    sendMotionCommand("Movehome");
+}
+
+void MainWindowRefactored::onSetCurrentAsOriginRequested(int axis)
+{
+    sendMotionCommand("SetZero", {static_cast<double>(axis)});
+}
+
+void MainWindowRefactored::onOutputToggled(int index, bool state)
+{
+    sendMotionCommand("SetDO", {0.0, static_cast<double>(index), state ? 1.0 : 0.0});
+}
 void MainWindowRefactored::onZMQConnected() { zmqStatusLabel->setText("ZMQ: 已连接"); }
 void MainWindowRefactored::onZMQDisconnected() { zmqStatusLabel->setText("ZMQ: 未连接"); }
-void MainWindowRefactored::onZMQError(const QString &/*error*/) {}
-void MainWindowRefactored::sendMotionCommand(const QString &/*command*/, const QVector<double> &/*args*/) {}
-void MainWindowRefactored::showConfirmDialog(const QString &/*title*/, const QString &/*message*/, std::function<void()> /*onConfirm*/) {}
+void MainWindowRefactored::onZMQError(const QString &error)
+{
+    qDebug() << "[GUI] ZMQ error:" << error;
+    zmqStatusLabel->setText("ZMQ: 错误");
+}
+
+void MainWindowRefactored::sendMotionCommand(const QString &command, const QVector<double> &args)
+{
+    if (!zmqClient || !zmqClient->isConnected()) {
+        qDebug() << "[GUI] ZMQ not connected, cannot send:" << command;
+        return;
+    }
+    zmqClient->sendCommand(command, args);
+}
+
+void MainWindowRefactored::showConfirmDialog(const QString &title, const QString &message, std::function<void()> onConfirm)
+{
+    auto result = QMessageBox::question(this, title, message,
+                                         QMessageBox::Yes | QMessageBox::No,
+                                         QMessageBox::No);
+    if (result == QMessageBox::Yes && onConfirm) {
+        onConfirm();
+    }
+}

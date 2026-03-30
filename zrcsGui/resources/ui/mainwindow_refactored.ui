@@ -182,6 +182,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="commandTab">
+       <attribute name="title">
+        <string>命令面板</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="commandLayout">
+        <item>
+         <widget class="CommandPanel" name="commandPanel"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="behaviorTreeTab">
        <attribute name="title">
         <string>行为树编辑器</string>
@@ -238,6 +248,11 @@
    <class>PluginPanel</class>
    <extends>QWidget</extends>
    <header>plugin/pluginManager.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CommandPanel</class>
+   <extends>QWidget</extends>
+   <header>command/commandPanel.h</header>
   </customwidget>
   <customwidget>
    <class>BehaviorTreePanel</class>

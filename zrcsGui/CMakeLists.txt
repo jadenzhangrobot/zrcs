@@ -79,6 +79,7 @@ set(SOURCES
     modules/remote/remoteMonitor.cpp
     modules/plugin/pluginManager.cpp
     modules/behaviortree/behaviorTreePanel.cpp
+    modules/command/commandPanel.cpp
     ${GUI_PROTO_SRCS}
 )
 
@@ -95,6 +96,7 @@ set(HEADERS
     modules/plugin/pluginInterface.h
     modules/plugin/pluginManager.h
     modules/behaviortree/behaviorTreePanel.h
+    modules/command/commandPanel.h
 )
 
 # UI文件

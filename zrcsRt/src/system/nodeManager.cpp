@@ -81,8 +81,15 @@ void NodeManager::run()
                     if (shm().cmdQueue().pop(cmd_))
                     {
                          std::string_view cmdName(cmd_.cmd);
-                         cmdNode_ = NodeFactory::getInstance().getNodePtr(cmdName).get();
-                         cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
+                         auto nodePtr = NodeFactory::getInstance().getNodePtr(cmdName);
+                         if (nodePtr) {
+                             cmdNode_ = nodePtr.get();
+                             cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
+                         } else {
+                             INFO_PRINT("未注册的命令: %s, 已忽略\n", cmd_.cmd);
+                             shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
+                             shm().lastCmdResult().store(1, std::memory_order_release);  // 1=失败
+                         }
                     }
                   }
                 break;

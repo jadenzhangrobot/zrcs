@@ -25,6 +25,7 @@
 #include "gcode/gcodeEditor.h"
 #include "remote/remoteMonitor.h"
 #include "plugin/pluginManager.h"
+#include "command/commandPanel.h"
 
 class BehaviorTreePanel;
 
@@ -184,6 +185,7 @@ private:
     RemoteMonitorPanel *remotePanel;
     PluginPanel *pluginPanel;
     BehaviorTreePanel *behaviorTreePanel;
+    CommandPanel *commandPanel;
     
     // Backend
     NRTProcess *nrtProcess;

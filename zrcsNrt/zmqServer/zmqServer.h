@@ -116,16 +116,8 @@ private:
                     spdlog::debug("[ZMQServer]   arg[{}] = {}", i, cmd.args(i));
                 }
 
-                // 通过 RtBridge 发送命令到 RT
-                std::vector<double> args(cmd.args().begin(), cmd.args().end());
-                auto [send_result, seq] = bridge_->sendCommand(cmd.command(), args);
-                if (send_result == RtBridge::SendResult::OK) {
-                    spdlog::info("[ZMQServer] Command '{}' sent via RtBridge (seq={})", cmd.command(), seq);
-                    sendReply("OK");
-                } else {
-                    spdlog::error("[ZMQServer] Command queue full! cmd='{}'", cmd.command());
-                    sendReply("ERROR: Queue full");
-                }
+                // 通过路由层分发命令
+                handleMotionCommand(cmd);
 
             } catch (const zmq::error_t& e) {
                 if (running_ && e.num() != EAGAIN) {
@@ -194,6 +186,61 @@ private:
         } catch (const std::exception& e) {
             spdlog::error("[ZMQServer] Failed to save BT XML: {}", e.what());
             return "";
+        }
+    }
+
+    void handleMotionCommand(const zrcs_message::MotionCommand& cmd) {
+        const std::string& name = cmd.command();
+        std::vector<double> args(cmd.args().begin(), cmd.args().end());
+
+        if (name == "SYS_RUN") {
+            bridge_->requestRun();
+            spdlog::info("[ZMQServer] SYS_RUN: TaskScheduling -> RUN");
+            sendReply("OK");
+        } else if (name == "SYS_STOP") {
+            bridge_->requestStop();
+            spdlog::info("[ZMQServer] SYS_STOP: TaskScheduling -> STOP");
+            sendReply("OK");
+        } else if (name == "SYS_RESET") {
+            bridge_->requestReset();
+            spdlog::info("[ZMQServer] SYS_RESET: TaskScheduling -> RESET");
+            sendReply("OK");
+        } else if (name == "SYS_ESTOP") {
+            bridge_->sendCommand("EmergStop");
+            bridge_->requestStop();
+            spdlog::warn("[ZMQServer] SYS_ESTOP: EmergStop + STOP");
+            sendReply("OK");
+        } else if (name == "SYS_JOG_START") {
+            if (args.size() >= 2) {
+                int axisId = static_cast<int>(args[0]);
+                bool direction = args[1] > 0.0;
+                bridge_->startContinuousMotion(axisId, direction);
+                spdlog::info("[ZMQServer] SYS_JOG_START: axis={}, dir={}", axisId, direction);
+                sendReply("OK");
+            } else {
+                sendReply("ERROR: SYS_JOG_START requires 2 args (axisId, direction)");
+            }
+        } else if (name == "SYS_JOG_STOP") {
+            bridge_->stopContinuousMotion();
+            spdlog::info("[ZMQServer] SYS_JOG_STOP");
+            sendReply("OK");
+        } else if (name == "SYS_SET_MULTIPLIER") {
+            if (args.size() >= 1) {
+                bridge_->setSpeedMultiplier(static_cast<uint8_t>(args[0]));
+                spdlog::info("[ZMQServer] SYS_SET_MULTIPLIER: {}%", static_cast<int>(args[0]));
+                sendReply("OK");
+            } else {
+                sendReply("ERROR: SYS_SET_MULTIPLIER requires 1 arg (percent)");
+            }
+        } else {
+            auto [send_result, seq] = bridge_->sendCommand(name, args);
+            if (send_result == RtBridge::SendResult::OK) {
+                spdlog::info("[ZMQServer] Command '{}' sent via RtBridge (seq={})", name, seq);
+                sendReply("OK");
+            } else {
+                spdlog::error("[ZMQServer] Command queue full! cmd='{}'", name);
+                sendReply("ERROR: Queue full");
+            }
         }
     }
 
