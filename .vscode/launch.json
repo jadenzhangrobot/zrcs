@@ -81,7 +81,7 @@
             "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
         },
         {
-            "name": "Attach zrcsrt",
+            "name": "Attach zrcsrt (Windows)",
             "type": "cppdbg",
             "request": "attach",
             "program": "${workspaceFolder}/build/bin/zrcsrt.exe",
@@ -94,8 +94,23 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ],
-            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
+            ]
+        },
+        {
+            "name": "Attach zrcsrt (Linux)",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/build/bin/zrcsrt",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

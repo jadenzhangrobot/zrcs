@@ -87,7 +87,28 @@ void MainWindowRefactored::setupUI()
     etherCATStatusLabel = new QLabel("EtherCAT: 未连接");
     homedLabel = new QLabel("归零: 否");
     servoLabel = new QLabel("伺服: 关");
+
+    // 连接控件
+    const auto& commCfg = ZrcsConfig::Config::instance().comm;
+    ipInput = new QLineEdit(commCfg.zmqHost);
+    ipInput->setPlaceholderText("192.168.x.x");
+    ipInput->setFixedWidth(140);
+
+    portInput = new QSpinBox();
+    portInput->setRange(1, 65535);
+    portInput->setValue(commCfg.zmqPort);
+    portInput->setFixedWidth(70);
+
+    connectBtn = new QPushButton("连接");
+    connectBtn->setFixedWidth(60);
+    connect(connectBtn, &QPushButton::clicked, this, &MainWindowRefactored::onConnectClicked);
+
     statusBar()->setSizeGripEnabled(false);
+    statusBar()->addWidget(new QLabel("IP:"));
+    statusBar()->addWidget(ipInput);
+    statusBar()->addWidget(new QLabel("Port:"));
+    statusBar()->addWidget(portInput);
+    statusBar()->addWidget(connectBtn);
     statusBar()->addPermanentWidget(zmqStatusLabel);
     statusBar()->addPermanentWidget(etherCATStatusLabel);
     statusBar()->addPermanentWidget(homedLabel);
@@ -275,8 +296,20 @@ void MainWindowRefactored::onOutputToggled(int index, bool state)
 {
     sendMotionCommand("SetDO", {0.0, static_cast<double>(index), state ? 1.0 : 0.0});
 }
-void MainWindowRefactored::onZMQConnected() { zmqStatusLabel->setText("ZMQ: 已连接"); }
-void MainWindowRefactored::onZMQDisconnected() { zmqStatusLabel->setText("ZMQ: 未连接"); }
+void MainWindowRefactored::onZMQConnected()
+{
+    zmqStatusLabel->setText("ZMQ: 已连接");
+    connectBtn->setText("断开");
+    ipInput->setEnabled(false);
+    portInput->setEnabled(false);
+}
+void MainWindowRefactored::onZMQDisconnected()
+{
+    zmqStatusLabel->setText("ZMQ: 未连接");
+    connectBtn->setText("连接");
+    ipInput->setEnabled(true);
+    portInput->setEnabled(true);
+}
 void MainWindowRefactored::onZMQError(const QString &error)
 {
     qDebug() << "[GUI] ZMQ error:" << error;
@@ -300,4 +333,45 @@ void MainWindowRefactored::showConfirmDialog(const QString &title, const QString
     if (result == QMessageBox::Yes && onConfirm) {
         onConfirm();
     }
+}
+
+void MainWindowRefactored::onConnectClicked()
+{
+    if (zmqClient && zmqClient->isConnected()) {
+        // 断开
+        zmqClient->disconnectFromServer();
+        return;
+    }
+
+    QString host = ipInput->text().trimmed();
+    int port = portInput->value();
+    if (host.isEmpty()) {
+        host = "localhost";
+        ipInput->setText(host);
+    }
+
+    // 保存到配置
+    auto& commCfg = ZrcsConfig::Config::instance().comm;
+    commCfg.zmqHost = host;
+    commCfg.zmqPort = port;
+
+    // 重建 ZMQClient
+    if (zmqClient) {
+        zmqClient->disconnectFromServer();
+        delete zmqClient;
+    }
+
+    zmqClient = new ZMQClient(host, port);
+    connect(zmqClient, &ZMQClient::connected, this, &MainWindowRefactored::onZMQConnected);
+    connect(zmqClient, &ZMQClient::disconnected, this, &MainWindowRefactored::onZMQDisconnected);
+    connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
+
+    // 重连命令面板
+    if (commandPanel) {
+        connect(commandPanel, &CommandPanel::commandRequested,
+                this, &MainWindowRefactored::sendMotionCommand);
+    }
+
+    zmqClient->connectToServer();
+    zmqStatusLabel->setText(QString("ZMQ: 连接中 %1:%2").arg(host).arg(port));
 }

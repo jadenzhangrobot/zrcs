@@ -18,6 +18,7 @@
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QGridLayout>
+#include <QLineEdit>
 #include <functional>
 #include "sharedMemory/nrt_process.h"
 #include "communication/zmqClient.h"
@@ -147,6 +148,7 @@ private slots:
     void onZMQConnected();
     void onZMQDisconnected();
     void onZMQError(const QString &error);
+    void onConnectClicked();
 
 private:
     void setupUI();
@@ -169,6 +171,9 @@ private:
     StatusIndicator *globalStatus;
     QLabel *zmqStatusLabel, *etherCATStatusLabel;
     QLabel *homedLabel, *servoLabel;
+    QLineEdit *ipInput;
+    QSpinBox *portInput;
+    QPushButton *connectBtn;
     
     QVector<AxisPositionDisplay*> axisDisplays;
     JogControlPanel *jogPanel;
