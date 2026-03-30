@@ -93,6 +93,29 @@ void NodeManager::run()
                     }
                   }
                 break;
+            case TaskScheduling::ERROR_STATE:
+                  // 错误状态：清理失败的命令节点，继续消费队列中的恢复性命令
+                  if (cmdNode_ != nullptr)
+                  {
+                    cmdNode_->setCmdStatus(CmdStatus::INIT);
+                    cmdNode_ = nullptr;
+                  }
+                  if (shm().cmdQueue().pop(cmd_))
+                  {
+                       std::string_view cmdName(cmd_.cmd);
+                       auto nodePtr = NodeFactory::getInstance().getNodePtr(cmdName);
+                       if (nodePtr) {
+                           cmdNode_ = nodePtr.get();
+                           cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
+                           // 恢复到 RUN 状态以执行该命令
+                           shm().taskScheduling().store(TaskScheduling::RUN, std::memory_order_release);
+                       } else {
+                           INFO_PRINT("未注册的命令: %s, 已忽略\n", cmd_.cmd);
+                           shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
+                           shm().lastCmdResult().store(1, std::memory_order_release);
+                       }
+                  }
+                break;
             case TaskScheduling::STOP:
               break;
             case TaskScheduling::RESET:
