@@ -54,13 +54,14 @@ bool Axis::cmdsProcessing(double frequency)
       return false;
     }
 
-    if(axisPosCmd_ > config_->posPositiveLimit && vel_cmd > 0)
+    double rawPosCmd = axisPosCmd_ + zeroOffset_;
+    if(rawPosCmd > config_->posPositiveLimit && vel_cmd > 0)
     {
       axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
       return false;
     }
 
-    if(axisPosCmd_ < config_->posNegativeLimit && vel_cmd < 0)
+    if(rawPosCmd < config_->posNegativeLimit && vel_cmd < 0)
     {
       axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
       return false;
@@ -79,7 +80,7 @@ void Axis::updateMotionCmdsToServo()
     {
       for (auto& servo : servo_)
       {
-        auto ret = servo->setPos(toEncoderUnit(axisPosCmd_));
+        auto ret = servo->setPos(toEncoderUnit(axisPosCmd_ + zeroOffset_));
         if (ret != SERVONOERROR) {
             WARN_PRINT("Axis::setPos 伺服错误: code=%d\n", static_cast<int>(ret));
         }

@@ -366,8 +366,10 @@ void MainWindowRefactored::onConnectClicked()
     connect(zmqClient, &ZMQClient::disconnected, this, &MainWindowRefactored::onZMQDisconnected);
     connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
 
-    // 重连命令面板
+    // 重连命令面板（先断开旧连接避免重复）
     if (commandPanel) {
+        disconnect(commandPanel, &CommandPanel::commandRequested,
+                   this, &MainWindowRefactored::sendMotionCommand);
         connect(commandPanel, &CommandPanel::commandRequested,
                 this, &MainWindowRefactored::sendMotionCommand);
     }

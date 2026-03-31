@@ -8,7 +8,10 @@
       "WebFetch(domain:orocos.org)",
       "WebFetch(domain:en.wikipedia.org)",
       "WebFetch(domain:linuxcnc.org)",
-      "Bash(ldd build_qt6/bin/zrcsgui.exe)"
+      "Bash(ldd build_qt6/bin/zrcsgui.exe)",
+      "Bash(find /c/Users/64989/Desktop/zrcs-dev -maxdepth 3 -type f -name *.cfg -o -name *.conf -o -name *.xml -o -name *.json)",
+      "Bash(ls -la /c/Users/64989/Desktop/zrcs-dev/*.md)",
+      "Bash(ldd /c/Users/64989/Desktop/zrcs-dev/build/bin/zrcsnrt.exe)"
     ]
   }
 }

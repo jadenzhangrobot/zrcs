@@ -139,9 +139,9 @@ public:
    */
   void statusSync();
   
-  auto actualPos()->double 
+  auto actualPos()->double
   {
-    return axisPos_;
+    return axisPos_ - zeroOffset_;
   }
   auto actualVel()->double
   {
