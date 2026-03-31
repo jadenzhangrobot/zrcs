@@ -32,11 +32,11 @@ void JogControlPanel::setupUI()
     stepSizeCombo->clear();
     stepSizeCombo->addItems({"连续", "10mm", "1mm", "0.1mm", "0.01mm"});
 
-    connect(stepSizeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+    connect(stepSizeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
         double sizes[] = {0, 10, 1, 0.1, 0.01};
         emit stepSizeChanged(sizes[index]);
     });
-    connect(axisGroupCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+    connect(axisGroupCombo, &QComboBox::currentIndexChanged, this, [this](int) {
         refreshAxisButtons();
     });
     overrideSlider->setRange(0, 100);

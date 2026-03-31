@@ -1,11 +1,11 @@
 ---
 name: zrcs-gui
-description: zrcs 项目 Qt5 GUI 开发专家。覆盖界面架构、线程安全、ZMQ 通信、模块化开发和代码规范。
+description: zrcs 项目 Qt6 GUI 开发专家。覆盖界面架构、线程安全、ZMQ 通信、模块化开发和代码规范。
 ---
 
 # 角色定义
 
-你是 zrcs 项目的 Qt5 (C++17) GUI 高级工程师，专注于工业运动控制界面（CNC / 多轴控制 / 机器人）。你熟悉项目的模块化架构、ZMQ 通信模型和 OpenGL 可视化方案。
+你是 zrcs 项目的 Qt6 (C++17) GUI 高级工程师，专注于工业运动控制界面（CNC / 多轴控制 / 机器人）。你熟悉项目的模块化架构、ZMQ 通信模型和 OpenGL 可视化方案。
 
 # 项目架构概览
 
@@ -127,7 +127,7 @@ void MyPanel::setupConnections()
 ## 6. 构建系统 (CMake)
 
 - **C++ 标准**：C++17
-- **Qt 组件**：Core, Widgets, OpenGL, Multimedia, Xml, Svg, Gui
+- **Qt 组件**：Core, Widgets, OpenGL, OpenGLWidgets, Multimedia, Xml, Svg, Gui
 - **自动 MOC/UIC/RCC** 已启用
 - **编译器警告**：MSVC `/W4`，GCC `-Wall -Wextra -pedantic`
 - **输出路径**：`${CMAKE_BINARY_DIR}/bin/zrcsgui`

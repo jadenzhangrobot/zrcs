@@ -53,7 +53,7 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model):
     _main_layout->addLayout( capt_layout );
     _main_layout->addWidget( _line_edit_name );
 
-    _main_layout->setMargin(0);
+    _main_layout->setContentsMargins(0, 0, 0, 0);
     _main_layout->setSpacing(2);
 
     //----------------------------

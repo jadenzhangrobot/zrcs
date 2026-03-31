@@ -7,7 +7,8 @@
       "WebFetch(domain:gepettoweb.laas.fr)",
       "WebFetch(domain:orocos.org)",
       "WebFetch(domain:en.wikipedia.org)",
-      "WebFetch(domain:linuxcnc.org)"
+      "WebFetch(domain:linuxcnc.org)",
+      "Bash(ldd build_qt6/bin/zrcsgui.exe)"
     ]
   }
 }

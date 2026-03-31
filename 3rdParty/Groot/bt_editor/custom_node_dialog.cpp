@@ -3,7 +3,7 @@
 
 #include <QTreeWidgetItem>
 #include <QPushButton>
-#include <QRegExpValidator>
+#include <QRegularExpressionValidator>
 #include <QSettings>
 #include <QModelIndexList>
 
@@ -27,8 +27,8 @@ CustomNodeDialog::CustomNodeDialog(const NodeModels &models,
     restoreGeometry(settings.value("CustomNodeDialog/geometry").toByteArray());
     ui->tableWidget->horizontalHeader()->restoreState( settings.value("CustomNodeDialog/header").toByteArray() );
 
-    QRegExp rx("\\w+");
-    _validator = new QRegExpValidator(rx, this);
+    QRegularExpression rx("^\\w+$");
+    _validator = new QRegularExpressionValidator(rx, this);
 
     if( to_edit.isEmpty() == false)
     {

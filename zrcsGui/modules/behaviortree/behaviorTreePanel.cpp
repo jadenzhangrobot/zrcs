@@ -159,10 +159,10 @@ void BehaviorTreePanel::setupConnections()
             });
 
     // Keyboard shortcuts
-    auto *undoShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this);
+    auto *undoShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z), this);
     connect(undoShortcut, &QShortcut::activated, this, &BehaviorTreePanel::onUndoInvoked);
 
-    auto *redoShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this);
+    auto *redoShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), this);
     connect(redoShortcut, &QShortcut::activated, this, &BehaviorTreePanel::onRedoInvoked);
 
     auto *saveShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);

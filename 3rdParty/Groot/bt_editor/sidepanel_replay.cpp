@@ -103,10 +103,10 @@ void SidepanelReplay::updateTableModel(const AbsBehaviorTree& locaded_tree)
             auto node  = locaded_tree.node( trans.index );
 
             QString timestamp;
-            timestamp.sprintf("%.3f", trans.timestamp - first_timestamp);
+            timestamp = QString::asprintf("%.3f", trans.timestamp - first_timestamp);
 
             auto timestamp_item = new QStandardItem( timestamp );
-            timestamp.sprintf("absolute time: %.3f", trans.timestamp);
+            timestamp = QString::asprintf("absolute time: %.3f", trans.timestamp);
             timestamp_item->setToolTip( timestamp );
 
             if(  (trans.timestamp - previous_timestamp) >= 0.001 || row == transitions_count-1)

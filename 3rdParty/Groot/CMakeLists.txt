@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 # Update the policy setting to avoid an error when loading the ament_cmake package
 # at the current cmake version level
@@ -8,7 +8,7 @@ endif()
 
 project(groot)
 
-find_package(Qt5 COMPONENTS  Core Widgets Gui OpenGL Xml Svg)
+find_package(Qt6 COMPONENTS  Core Widgets Gui OpenGL Xml Svg SvgWidgets)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1)
@@ -59,8 +59,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-add_definitions(${Qt5Widgets_DEFINITIONS} -DNODE_EDITOR_STATIC )
-set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+add_definitions(-DNODE_EDITOR_STATIC )
 
 #set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 #set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
@@ -156,14 +155,14 @@ else()
     message(WARNING "ZeroMQ NOT found. Real-time monitoring disabled.")
 endif()
 
-QT5_WRAP_UI(FORMS_HEADERS ${FORMS_UI})
+qt6_wrap_ui(FORMS_HEADERS ${FORMS_UI})
 
 add_library(behavior_tree_editor STATIC
     ${APP_CPPS}
     ${FORMS_HEADERS}
 )
 
-SET(GROOT_DEPENDENCIES QtNodeEditor)
+SET(GROOT_DEPENDENCIES QtNodeEditor Qt6::SvgWidgets)
 if(UNIX AND NOT APPLE)
     list(APPEND GROOT_DEPENDENCIES ncurses ncursesw tinfo)
 endif()

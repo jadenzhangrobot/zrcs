@@ -22,7 +22,7 @@ zrcs 项目的第三方库统一放置在 `3rdParty/` 目录下，通过 `cmake/
 | Protobuf | `find_package(Protobuf)` | MSYS2 UCRT64 系统安装 |
 | Abseil | `find_package(absl)` | MSYS2 UCRT64 系统安装（Protobuf 依赖） |
 | ZeroMQ + cppzmq | `find_package(cppzmq)` | MSYS2 UCRT64 系统安装 |
-| Qt5 | `find_package(Qt5)` | MSYS2 UCRT64 系统安装 |
+| Qt6 | `find_package(Qt6)` | MSYS2 UCRT64 系统安装 |
 
 ## 添加新第三方库的流程
 

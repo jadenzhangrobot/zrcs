@@ -308,7 +308,7 @@ void SidepanelEditor::on_buttonUpload_clicked()
     QFile file(fileName);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
-        stream << doc.toString(4) << endl;
+        stream << doc.toString(4) << Qt::endl;
     }
 
     directory_path = QFileInfo(fileName).absolutePath();

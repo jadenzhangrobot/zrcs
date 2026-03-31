@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(zrcsgui VERSION 2.0.0)
 
 # 设置C++标准为C++17
@@ -13,12 +13,12 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 endif()
 
-# 设置Qt5路径为MinGW版本
-set(CMAKE_PREFIX_PATH "D:/msys2/mingw64")
-set(Qt5_DIR "D:/msys2/mingw64/lib/cmake/Qt5")
+# 设置Qt6路径为UCRT64版本
+set(CMAKE_PREFIX_PATH "D:/msys2/ucrt64")
+set(Qt6_DIR "D:/msys2/ucrt64/lib/cmake/Qt6")
 
 # 查找库
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets OpenGL Multimedia Xml Svg Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL OpenGLWidgets Multimedia Xml Svg Gui)
 find_package(Protobuf REQUIRED)
 find_package(OpenGL REQUIRED)
 
@@ -43,7 +43,7 @@ find_package(VTK QUIET COMPONENTS
 )
 find_package(OpenCASCADE QUIET)
 
-# 启用Qt5的自动MOC、UIC和RCC
+# 启用Qt6的自动MOC、UIC和RCC
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -136,12 +136,13 @@ endif()
 
 # 链接库
 target_link_libraries(${PROJECT_NAME}
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::OpenGL
-    Qt5::Multimedia
-    Qt5::Xml
-    Qt5::Svg
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::OpenGL
+    Qt6::OpenGLWidgets
+    Qt6::Multimedia
+    Qt6::Xml
+    Qt6::Svg
     atomic
     Threads::Threads
     protobuf::libprotobuf

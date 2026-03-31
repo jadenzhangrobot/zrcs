@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 # version 3.4 is required as other do not work with C++14 and clang
 
 project(QtNodeEditor CXX)
@@ -8,14 +8,14 @@ set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
 
 
 # Find the QtWidgets library
-find_package(Qt5 COMPONENTS
+find_package(Qt6 COMPONENTS
              Core
              Widgets
              Xml
              Gui
              Svg)
 
-qt5_add_resources(RESOURCES ./resources/resources.qrc)
+qt6_add_resources(RESOURCES ./resources/resources.qrc)
 
 # Unfortunately, as we have a split include/src, AUTOMOC doesn't work.
 # We'll have to manually specify some files
@@ -61,16 +61,14 @@ target_include_directories(QtNodeEditor
 
 target_link_libraries(QtNodeEditor
   PUBLIC
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::Gui
-    Qt5::Svg
-    Qt5::Xml
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Svg
+    Qt6::Xml
 )
 
 target_compile_definitions(QtNodeEditor
-  PUBLIC
-    ${Qt5Widgets_DEFINITIONS}
   PRIVATE
     NODE_EDITOR_EXPORTS
     #NODE_DEBUG_DRAWING
@@ -79,8 +77,8 @@ target_compile_definitions(QtNodeEditor
 target_compile_options(QtNodeEditor
   PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4127 /EHsc>
-    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -std=c++11>
-    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -std=c++11>
+    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
+    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra>
 )
 
 set_target_properties(QtNodeEditor
@@ -96,7 +94,7 @@ set_target_properties(QtNodeEditor
 
 file(GLOB_RECURSE HEADERS_TO_MOC include/nodes/internal/*.hpp)
 
-qt5_wrap_cpp(nodes_moc
+qt6_wrap_cpp(nodes_moc
     ${HEADERS_TO_MOC}
   TARGET QtNodeEditor
   OPTIONS --no-notes # Don't display a note for the headers which don't produce a moc_*.cpp
