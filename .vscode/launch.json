@@ -94,7 +94,8 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
         },
         {
             "name": "Attach zrcsrt (Linux)",
@@ -110,7 +111,8 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "visualizerFile": "c:\\Users\\64989\\AppData\\Roaming\\Code\\User\\workspaceStorage\\aa9cac86d97a598721a619aaebfcb653\\tonka3000.qtvsctools\\qt.natvis.xml"
         }
     ]
 }
