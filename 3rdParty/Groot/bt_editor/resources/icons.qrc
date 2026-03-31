@@ -59,6 +59,8 @@
         <file>svg/letter_o.svg</file>
         <file>svg/fallback_reactive.svg</file>
         <file>svg/sequence_reactive.svg</file>
+        <file>svg/play.svg</file>
+        <file>svg/stop.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
