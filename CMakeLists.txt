@@ -52,13 +52,14 @@ aux_source_directory(./src SOURCE_FILES)
 
 # 1. zrcsgui (已经在 subdirectory 中定义，这里不需要重复，但确保它被构建)
 # Groot 行为树编辑器库（需在 zrcsGui 之前构建）
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
-set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-add_subdirectory(3rdParty/Groot)
-
-add_subdirectory(zrcsGui)
+if(NOT BUILD_MODE STREQUAL "realtime")
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+    set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    add_subdirectory(3rdParty/Groot)
+    add_subdirectory(zrcsGui)
+endif()
 
 # 2. zrcsnrt (非实时进程)
 add_subdirectory(zrcsNrt)
@@ -72,6 +73,12 @@ add_subdirectory(zrcsRt)
 # 或者在这里引用子目录中的目标（但如果在子目录 install 了，这里可以简化）
 # install(TARGETS zrcsnrt zrcsrt ...) # 已经在子目录处理
 
-set_target_properties(zrcsgui zrcsnrt zrcsrt PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+if(NOT BUILD_MODE STREQUAL "realtime")
+    set_target_properties(zrcsgui zrcsnrt zrcsrt PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+else()
+    set_target_properties(zrcsnrt zrcsrt PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+endif()
