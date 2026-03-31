@@ -98,7 +98,9 @@ if(NOT catkin_FOUND AND NOT ament_cmake_FOUND)
 
     # look for BehaviorTree.CPP as submodule
     # use git submodule only if you are not compiling with catkin
-    add_subdirectory( depend/BehaviorTree.CPP )
+    if(NOT TARGET behaviortree_cpp_v3)
+        add_subdirectory( depend/BehaviorTree.CPP )
+    endif()
     include_directories( depend/BehaviorTree.CPP/include )
 
     message(STATUS "----------------------------------")

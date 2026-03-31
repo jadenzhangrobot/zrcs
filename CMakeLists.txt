@@ -50,13 +50,15 @@ endif()
 # 源文件
 aux_source_directory(./src SOURCE_FILES)
 
-# 1. zrcsgui (已经在 subdirectory 中定义，这里不需要重复，但确保它被构建)
-# Groot 行为树编辑器库（需在 zrcsGui 之前构建）
+# BehaviorTree.CPP（zrcsnrt 核心依赖，所有模式都需要）
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+add_subdirectory(3rdParty/Groot/depend/BehaviorTree.CPP)
+
+# Groot 行为树编辑器 + zrcsGui（realtime 模式不编译）
 if(NOT BUILD_MODE STREQUAL "realtime")
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
-    set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
     add_subdirectory(3rdParty/Groot)
     add_subdirectory(zrcsGui)
 endif()
