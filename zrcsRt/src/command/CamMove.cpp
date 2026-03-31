@@ -13,6 +13,7 @@ void CamMove::init()
     if (mainAxisId_ < 0 || mainAxisId_ >= static_cast<int>(controller_->axiss.size()) ||
         slaveAxisId_ < 0 || slaveAxisId_ >= static_cast<int>(controller_->axiss.size()))
     {
+        ERROR_PRINT("CamMove: 轴索引 %d 超出范围\n", mainAxisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }

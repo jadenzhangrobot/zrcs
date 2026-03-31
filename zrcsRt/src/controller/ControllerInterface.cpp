@@ -4,6 +4,7 @@
  * @Description: Axis class method implementations
  */
 #include "controller/ControllerInterface.h"
+#include "system/rtLog.h"
 #include <cmath>
 #include <cstdint>
 
@@ -78,14 +79,20 @@ void Axis::updateMotionCmdsToServo()
     {
       for (auto& servo : servo_)
       {
-        servo->setPos(toEncoderUnit(axisPosCmd_));
+        auto ret = servo->setPos(toEncoderUnit(axisPosCmd_));
+        if (ret != SERVONOERROR) {
+            WARN_PRINT("Axis::setPos 伺服错误: code=%d\n", static_cast<int>(ret));
+        }
       }
     }
     if (config_->mode == mcServoControlModeVelocity)
     {
       for (auto& servo : servo_)
       {
-        servo->setVel(toEncoderUnit(axisVelCmd_));
+        auto ret = servo->setVel(toEncoderUnit(axisVelCmd_));
+        if (ret != SERVONOERROR) {
+            WARN_PRINT("Axis::setVel 伺服错误: code=%d\n", static_cast<int>(ret));
+        }
       }
     }
 }
@@ -105,6 +112,7 @@ void Axis::statusSync()
           double posDiff = axisPos_ - lastAxisPos_;
           if (std::abs(posDiff) > config_->maxPosDiff)
           {
+             ERROR_PRINT("Axis: 多驱同步误差过大, posDiff=%.4f, limit=%.4f\n", posDiff, config_->maxPosDiff);
              axisError_=MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
           }
       }
@@ -213,23 +221,24 @@ bool Axis::resetError(void)
 
 bool Axis::powerOn()
 {
-    for (auto& servo : servo_)
+    for (size_t i = 0; i < servo_.size(); i++)
     {
-      if(servo->enable())
+      if(!servo_[i]->enable())
       {
-        return true;
+        ERROR_PRINT("Axis::powerOn: 伺服 %zu 使能失败\n", i);
+        return false;
       }
-
     }
-    return false;
+    return true;
 }
 
 bool Axis::powerOff()
 {
-    for (auto& servo : servo_)
+    for (size_t i = 0; i < servo_.size(); i++)
     {
-      if (!servo->disable())
+      if (!servo_[i]->disable())
       {
+         ERROR_PRINT("Axis::powerOff: 伺服 %zu 失能失败\n", i);
          return false;
       }
     }

@@ -11,6 +11,7 @@ void SetPosLimit::init()
 
     if (axisId < 0 || axisId >= static_cast<int>(controller_->axiss.size()))
     {
+        ERROR_PRINT("SetPosLimit: 轴索引 %d 超出范围\n", axisId);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }

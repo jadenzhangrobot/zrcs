@@ -31,6 +31,7 @@ void WaitDI::run(void)
         double elapsedMs = (nodeCount_ - startCount_) * cycletime;
         if (elapsedMs >= timeoutMs_)
         {
+            ERROR_PRINT("WaitDI: IO模块索引 %d 超出范围(max=%zu)\n", moduleIndex_, controller_->ios_.size());
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             return;
         }

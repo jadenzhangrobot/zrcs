@@ -13,12 +13,14 @@ void SearchL::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("SearchL: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("SearchL: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -39,6 +41,7 @@ void SearchL::init()
     Eigen::VectorXd targetJoint(dof_);
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
     {
+        ERROR_PRINT("SearchL: IK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -122,6 +125,7 @@ void SearchL::run(void)
     }
     else
     {
+        ERROR_PRINT("SearchL: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

@@ -8,12 +8,14 @@ void GetFK::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("GetFK: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("GetFK: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -30,6 +32,7 @@ void GetFK::init()
     Eigen::Matrix4d toolPose;
     if (!model->forwardKinematics(jointPos, toolPose))
     {
+        ERROR_PRINT("GetFK: FK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }

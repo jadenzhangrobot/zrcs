@@ -23,6 +23,7 @@ constexpr size_t STATUS_BUFFER_SIZE = 64;    // 同步扩大
 
 constexpr size_t MAX_CMD_NAME  = 100;        // 命令名最大长度
 constexpr size_t MAX_CMD_ARGS  = 20;         // 参数最大个数：10 -> 20，满足复杂轨迹命令
+constexpr size_t LOG_BUFFER_SIZE = 256;      // RT日志环形队列容量 (必须为2的幂)
 
 // 命令的类型
 
@@ -100,6 +101,16 @@ public:
 
 
 
+// RT -> NRT 日志传输条目 (固定大小, 无动态分配)
+struct RtLogEntry {
+    uint64_t timestamp_us;        // 微秒级单调时钟时间戳
+    uint8_t  level;               // 0=INFO, 1=WARN, 2=ERROR
+    uint8_t  padding[1];          // 对齐填充
+    uint16_t line;                // 源文件行号
+    char     file[60];            // 源文件名 (截断)
+    char     message[192];        // 格式化消息 (截断)
+};
+
 struct singleAxisContinueMotion
 {
    std::atomic<int>  axisId{0};
@@ -163,6 +174,9 @@ struct SharedBlock {
 
     // 奇异区域处理模式 (0=Off, 1=Wrist, 2=LockAxis)
     std::atomic<uint8_t> singAreaMode{0};
+
+    // RT -> NRT 日志通道
+    SPSCRingBuffer<RtLogEntry, LOG_BUFFER_SIZE> logQueue;
 };
 
 // 类型安全的共享内存访问器，替代原有的 #define 宏
@@ -190,6 +204,7 @@ public:
     std::atomic<bool>&      confJEnabled()    { return blk_->confJEnabled; }
     std::atomic<bool>&      confLEnabled()    { return blk_->confLEnabled; }
     std::atomic<uint8_t>&   singAreaMode()    { return blk_->singAreaMode; }
+    SPSCRingBuffer<RtLogEntry, LOG_BUFFER_SIZE>& logQueue() { return blk_->logQueue; }
 
 private:
     SharedBlock* blk_;

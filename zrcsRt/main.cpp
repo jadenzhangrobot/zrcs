@@ -12,6 +12,7 @@
 #include "sharedMemory/sharedData.h"
 #include "controller/ControllerInterface.h"
 #include "system/nodeManager.h"
+#include "system/rtLog.h"
 #include "config/projectConfig.h"
 #include <thread>
 #include <iostream>
@@ -24,6 +25,9 @@
 #endif
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
 #define ZRCS_PLATFORM_WINDOWS
 #endif
 
@@ -39,8 +43,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef ZRCS_PLATFORM_WINDOWS
-    // Windows 平台无 mlockall，此处可添加 Windows 特定的内存锁定或优先级设置
-    // 例如 SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    SetConsoleOutputCP(CP_UTF8);
     std::cout << "[RT] Running on Windows platform (no memory locking)" << std::endl;
 #endif
 
@@ -58,6 +61,7 @@ int main(int argc, char **argv)
         auto* sharedBlock = nodeManager.rtProcess()->sharedBlock();
         while (true) {
             if (sharedBlock->cmd.load(std::memory_order_acquire) == TaskScheduling::SHUTDOWN) {
+                INFO_PRINT("[RT] 收到 SHUTDOWN 信号, 正在退出...\n");
                 std::cout << "[RT] Received SHUTDOWN from NRT, exiting..." << std::endl;
                 nodeManager.stop();
                 break;
@@ -65,9 +69,10 @@ int main(int argc, char **argv)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
-    catch (const std::runtime_error& e)
+    catch (const std::exception& e)
     {
-        std::cerr << "Exception caught: " << e.what() << std::endl;
+        ERROR_PRINT("[RT] 致命异常: %s\n", e.what());
+        std::cerr << "[RT] Exception caught: " << e.what() << std::endl;
     }
     return 0;
 }

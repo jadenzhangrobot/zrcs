@@ -28,6 +28,7 @@ void Setmode::run(void)
     }
     else
     {
+        ERROR_PRINT("Setmode: 轴索引 %d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

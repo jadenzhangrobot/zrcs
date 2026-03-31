@@ -17,6 +17,7 @@
 #include <boost/interprocess/shared_memory_object.hpp>
 #include "nrtLogger.h"
 #include "btEngine.h"
+#include "rtLogConsumer.h"
 #include "zmqServer/zmqServer.h"
 #include "terminal/terminalConsole.h"
 #include "rtBridge/rtBridge.h"
@@ -213,6 +214,8 @@ int main(int argc, char **argv)
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 #ifdef _WIN32
+    // Windows 控制台设置为 UTF-8 输出，避免中文日志乱码
+    SetConsoleOutputCP(CP_UTF8);
     // Windows 下必须用 SetConsoleCtrlHandler 捕获关闭窗口事件
     SetConsoleCtrlHandler(consoleCtrlHandler, TRUE);
 #endif
@@ -249,6 +252,11 @@ int main(int argc, char **argv)
         // 创建 RtBridge（NRT→RT 共享内存通信的唯一入口）
         RtBridge bridge(nrt_process.sharedBlock());
 
+        // 启动 RT 日志消费者（从共享内存读取 RT 日志并写入 spdlog）
+        RtLogConsumer rtLogConsumer(nrt_process.sharedBlock());
+        rtLogConsumer.start();
+        spdlog::info("RT log consumer started");
+
         // 初始化行为树引擎
         BTEngine bt_engine(&bridge);
         spdlog::info("BTEngine initialized");
@@ -281,6 +289,9 @@ int main(int argc, char **argv)
         }
 
         // 优雅关闭
+        spdlog::info("Stopping RT log consumer...");
+        rtLogConsumer.stop();
+
         spdlog::info("Shutting down terminal console...");
         terminal.stop();
 

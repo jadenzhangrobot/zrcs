@@ -8,6 +8,7 @@ void Movehome::init()
     dof_ = static_cast<int>(controller_->axiss.size());
     if (dof_ <= 0)
     {
+        ERROR_PRINT("Movehome: 自由度无效(dof=%d)\n", dof_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -51,6 +52,7 @@ void Movehome::run(void)
     }
     else
     {
+        ERROR_PRINT("Movehome: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

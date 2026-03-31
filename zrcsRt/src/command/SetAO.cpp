@@ -23,6 +23,7 @@ void SetAO::run(void)
     }
     else
     {
+        ERROR_PRINT("SetAO: IO模块索引 %d 超出范围(max=%zu)\n", moduleIndex_, controller_->ios_.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

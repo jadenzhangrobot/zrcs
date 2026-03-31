@@ -41,6 +41,7 @@ void JogJ::run(void)
     }
     else
     {
+        ERROR_PRINT("JogJ: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

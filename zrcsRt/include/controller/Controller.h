@@ -5,7 +5,7 @@
 #include <vector>
 #include "axisConfig.h"
 #include "ControllerInterface.h"
-#include "log/rtLog.h"
+#include "system/rtLog.h"
 #include "sharedMemory/sharedData.h"
 
 namespace ZrcsHardware {

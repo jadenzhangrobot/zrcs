@@ -18,6 +18,7 @@ void Disable::run(void)
     {
         if(!controller_->axiss[axisId_]->powerOff())
         {
+            ERROR_PRINT("Disable: 轴 %d 操作失败\n", axisId_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         }
         else
@@ -31,6 +32,7 @@ void Disable::run(void)
         {
             if(!controller_->axiss[i]->powerOff())
             {
+                ERROR_PRINT("Disable: 轴 %d 操作失败\n", i);
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }
@@ -38,6 +40,7 @@ void Disable::run(void)
     }
     else
     {
+        ERROR_PRINT("Disable: 轴索引 %d 超出范围(max=%zu)\n", axisId_, controller_->axiss.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

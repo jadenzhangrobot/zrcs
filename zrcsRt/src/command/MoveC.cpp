@@ -8,12 +8,14 @@ void MoveC::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("MoveC: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("MoveC: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -31,6 +33,7 @@ void MoveC::init()
     Eigen::Matrix4d startPose;
     if (!model->forwardKinematics(currentJoint, startPose))
     {
+        ERROR_PRINT("MoveC: FK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -46,6 +49,7 @@ void MoveC::init()
     double N2 = N.squaredNorm();
     if (N2 < 1e-12)
     {
+        ERROR_PRINT("MoveC: 三点共线, 无法确定圆弧\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -58,6 +62,7 @@ void MoveC::init()
     double denom = 2.0 * (dd * ee - de * de);
     if (std::abs(denom) < 1e-12)
     {
+        ERROR_PRINT("MoveC: 三点共线, 无法确定圆弧\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -137,6 +142,7 @@ void MoveC::run(void)
         Eigen::VectorXd targetJoint(dof_);
         if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
         {
+            ERROR_PRINT("MoveC: IK 求解失败\n");
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             return;
         }
@@ -157,6 +163,7 @@ void MoveC::run(void)
     }
     else
     {
+        ERROR_PRINT("MoveC: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

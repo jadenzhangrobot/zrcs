@@ -41,6 +41,7 @@ void JogabsJ::run(void)
     }
     else
     {
+        ERROR_PRINT("JogabsJ: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

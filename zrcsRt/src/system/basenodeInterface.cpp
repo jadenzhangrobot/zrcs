@@ -23,7 +23,7 @@ void CmdNode::execute()
             cmdStatus_.store(CmdStatus::COMPLETED, std::memory_order_release);
             break;
         case CmdStatus::FAILED:
-            INFO_PRINT("%s 执行失败\n", nodeName_);
+            ERROR_PRINT("%s(seq=%u) 执行失败\n", nodeName_, command_ ? command_->seq : 0);
             shm().taskScheduling().store(TaskScheduling::ERROR_STATE, std::memory_order_release);
             break;
         default:
@@ -44,7 +44,7 @@ void OutputNode::execute()
             run();
             break;
         case NodeStatus::FAILED:
-            INFO_PRINT("%s 执行失败\n", nodeName_);
+            ERROR_PRINT("%s 执行失败\n", nodeName_);
             break;
         default:
             break;
@@ -64,7 +64,7 @@ void InputNode::execute()
             run();
             break;
         case NodeStatus::FAILED:
-            INFO_PRINT("%s 执行失败\n", nodeName_);
+            ERROR_PRINT("%s 执行失败\n", nodeName_);
             break;
         default:
             break;

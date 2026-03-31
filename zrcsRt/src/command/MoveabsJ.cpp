@@ -8,12 +8,14 @@ void MoveAbsJ::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("MoveAbsJ: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("MoveAbsJ: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -64,6 +66,7 @@ void MoveAbsJ::run(void)
     }
     else
     {
+        ERROR_PRINT("MoveAbsJ: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

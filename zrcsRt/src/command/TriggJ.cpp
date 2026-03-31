@@ -14,12 +14,14 @@ void TriggJ::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("TriggJ: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("TriggJ: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -40,6 +42,7 @@ void TriggJ::init()
     targetJoint_.resize(dof_);
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint_))
     {
+        ERROR_PRINT("TriggJ: IK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -109,6 +112,7 @@ void TriggJ::run(void)
     }
     else
     {
+        ERROR_PRINT("TriggJ: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

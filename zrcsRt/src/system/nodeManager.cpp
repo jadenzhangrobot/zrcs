@@ -7,6 +7,10 @@ namespace zrcsSystem {
 void NodeManager::run()
 {
     rtProcess_->initialize();
+
+    // 初始化 RT 日志队列，后续 INFO_PRINT/WARN_PRINT/ERROR_PRINT 将写入共享内存
+    zrcs::rtlog::setLogQueue(&(rtProcess_->sharedBlock()->logQueue));
+
     for (auto &node : NodeFactory::getInstance().inPutNodes)
     {
       node->registered(controller_.get(), rtProcess_.get());
@@ -25,7 +29,7 @@ void NodeManager::run()
         modelRegistry_.loadFromConfig(*modelConfig_);
         NodeFactory::getInstance().modelRegistry = &modelRegistry_;
     } catch (const std::exception& e) {
-        INFO_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
+        WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
     controller_->rtos_->rtos_task_create();
@@ -46,7 +50,7 @@ void NodeManager::run()
         }
         else
         {
-           INFO_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+           ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
         }
       }
 
@@ -60,6 +64,7 @@ void NodeManager::run()
                       // 写回命令完成状态到共享内存，供 NRT BT引擎查询
                       shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
                       shm().lastCmdResult().store(0, std::memory_order_release);  // 0=成功
+                      INFO_PRINT("命令完成: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
                       cmdNode_->setCmdStatus(CmdStatus::INIT);
                       // 节点已完成或失败，清理资源
                       cmdNode_ = nullptr;
@@ -71,6 +76,7 @@ void NodeManager::run()
                       // 检查执行后是否失败，写回失败状态
                       if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                       {
+                          WARN_PRINT("命令失败: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
                           shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
                           shm().lastCmdResult().store(1, std::memory_order_release);  // 1=失败
                       }
@@ -83,10 +89,11 @@ void NodeManager::run()
                          std::string_view cmdName(cmd_.cmd);
                          auto nodePtr = NodeFactory::getInstance().getNodePtr(cmdName);
                          if (nodePtr) {
+                             INFO_PRINT("调度命令: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
                              cmdNode_ = nodePtr.get();
                              cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                          } else {
-                             INFO_PRINT("未注册的命令: %s, 已忽略\n", cmd_.cmd);
+                             WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n", cmd_.cmd, cmd_.seq);
                              shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
                              shm().lastCmdResult().store(1, std::memory_order_release);  // 1=失败
                          }
@@ -97,6 +104,7 @@ void NodeManager::run()
                   // 错误状态：清理失败的命令节点，继续消费队列中的恢复性命令
                   if (cmdNode_ != nullptr)
                   {
+                    WARN_PRINT("错误状态: 清理命令节点 %s\n", cmdNode_->getNodeName().c_str());
                     cmdNode_->setCmdStatus(CmdStatus::INIT);
                     cmdNode_ = nullptr;
                   }
@@ -105,6 +113,7 @@ void NodeManager::run()
                        std::string_view cmdName(cmd_.cmd);
                        auto nodePtr = NodeFactory::getInstance().getNodePtr(cmdName);
                        if (nodePtr) {
+                           INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
                            cmdNode_ = nodePtr.get();
                            cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                            // 恢复到 RUN 状态以执行该命令
@@ -144,7 +153,7 @@ void NodeManager::run()
         }
         else
         {
-           INFO_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+           ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
         }
       }
 

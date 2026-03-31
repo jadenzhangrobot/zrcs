@@ -14,6 +14,7 @@ void PosCapture::init()
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()) ||
         ioIndex_ < 0 || ioIndex_ >= static_cast<int>(controller_->ios_.size()))
     {
+        ERROR_PRINT("PosCapture: 轴索引 %d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }

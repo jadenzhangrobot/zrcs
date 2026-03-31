@@ -16,7 +16,7 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
-#include "log/rtLog.h" 
+#include "system/rtLog.h"
 #include "config/parameter.h"
 
 namespace zrcsSystem {

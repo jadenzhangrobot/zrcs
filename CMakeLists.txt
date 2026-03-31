@@ -19,7 +19,7 @@ option(test "Build test programs" ON)
 # 包含模块文件
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/controller.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
+#include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
 

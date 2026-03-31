@@ -39,6 +39,7 @@ void WaitUntil::run(void)
             break;
         }
         default:
+            ERROR_PRINT("WaitUntil: 未知条件类型 %d\n", condType_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             return;
     }
@@ -54,6 +55,7 @@ void WaitUntil::run(void)
         double elapsedMs = (nodeCount_ - startCount_) * cycletime;
         if (elapsedMs >= timeoutMs_)
         {
+            ERROR_PRINT("WaitUntil: 等待超时\n");
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             return;
         }

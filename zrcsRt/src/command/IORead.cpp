@@ -21,6 +21,7 @@ void IORead::run(void)
     }
     else
     {
+        ERROR_PRINT("IORead: IO模块索引 %d 超出范围(max=%zu)\n", moduleIndex_, controller_->ios_.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

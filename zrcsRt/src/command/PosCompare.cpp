@@ -15,6 +15,7 @@ void PosCompare::init()
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
+        ERROR_PRINT("PosCompare: 轴索引 %d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }

@@ -9,12 +9,14 @@ void SplineMove::init()
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
+        ERROR_PRINT("SplineMove: 模型注册表未初始化\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
+        ERROR_PRINT("SplineMove: 未找到模型(id=0)\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -37,6 +39,7 @@ void SplineMove::init()
     Eigen::Matrix4d curPose;
     if (!model->forwardKinematics(currentJoint, curPose))
     {
+        ERROR_PRINT("SplineMove: FK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -49,6 +52,7 @@ void SplineMove::init()
     Eigen::VectorXd targetJoint(dof_);
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
     {
+        ERROR_PRINT("SplineMove: IK 求解失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -97,6 +101,7 @@ void SplineMove::run(void)
     }
     else
     {
+        ERROR_PRINT("SplineMove: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

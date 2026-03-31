@@ -18,11 +18,13 @@ void DeactUnit::run(void)
         }
         else
         {
+            ERROR_PRINT("DeactUnit: 轴 %d 操作失败\n", unitId_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         }
     }
     else
     {
+        ERROR_PRINT("DeactUnit: 轴索引 %d 超出范围(max=%zu)\n", unitId_, controller_->axiss.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

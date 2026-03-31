@@ -27,6 +27,7 @@ void SetZero::run(void)
     }
     else
     {
+        ERROR_PRINT("SetZero: 轴索引 %d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

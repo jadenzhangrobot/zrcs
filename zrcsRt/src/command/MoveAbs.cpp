@@ -13,6 +13,7 @@ void MoveAbs::init()
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
+        ERROR_PRINT("MoveAbs: 轴索引 %d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -46,6 +47,7 @@ void MoveAbs::run(void)
     }
     else
     {
+        ERROR_PRINT("MoveAbs: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

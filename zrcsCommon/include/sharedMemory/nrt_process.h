@@ -37,10 +37,10 @@ public:
                 }
                 std::cerr << "[NRT Process] SharedBlock not found, retrying ("
                           << retry + 1 << "/" << zrcs::SHM_WAIT_RETRY_COUNT << ")..." << std::endl;
-            } catch (const ipc::interprocess_exception& e) {
+            } catch (const ipc::interprocess_exception&) {
                 std::cerr << "[NRT Process] Waiting for RT process ("
                           << retry + 1 << "/" << zrcs::SHM_WAIT_RETRY_COUNT << "): "
-                          << e.what() << std::endl;
+                          << "shared memory not ready" << std::endl;
             }
             shm_.reset();
             std::this_thread::sleep_for(std::chrono::milliseconds(zrcs::SHM_WAIT_RETRY_MS));

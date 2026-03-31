@@ -78,6 +78,7 @@ void BufMove::run(void)
 {
     if (!otg_)
     {
+        ERROR_PRINT("BufMove: 段数据为空\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
@@ -109,6 +110,7 @@ void BufMove::run(void)
     }
     else
     {
+        ERROR_PRINT("BufMove: 轨迹规划失败\n");
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

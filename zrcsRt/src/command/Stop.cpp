@@ -29,6 +29,7 @@ void Stop::run(void)
     }
     else
     {
+        ERROR_PRINT("Stop: 轴索引 %d 超出范围(max=%zu)\n", axisId_, controller_->axiss.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

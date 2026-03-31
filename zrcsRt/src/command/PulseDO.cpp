@@ -18,6 +18,7 @@ void PulseDO::init()
     }
     else
     {
+        ERROR_PRINT("PulseDO: IO模块索引 %d 超出范围(max=%zu)\n", moduleIndex_, controller_->ios_.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
