@@ -19,6 +19,7 @@
 #include "btEngine.h"
 #include "rtLogConsumer.h"
 #include "zmqServer/zmqServer.h"
+#include "statusPublisher/statusPublisher.h"
 #include "terminal/terminalConsole.h"
 #include "rtBridge/rtBridge.h"
 #include "sharedMemory/nrt_process.h"
@@ -274,6 +275,15 @@ int main(int argc, char **argv)
         zmq_server.start();
         spdlog::info("ZMQ server started, waiting for commands...");
 
+        // 初始化状态发布器 (ZMQ PUB on port 5556)
+        StatusPublisher status_publisher(&bridge);
+        if (status_publisher.initialize()) {
+            status_publisher.start();
+            spdlog::info("Status publisher started (PUB on port 5556)");
+        } else {
+            spdlog::warn("Status publisher failed to initialize, continuing without it");
+        }
+
         // 初始化终端控制台
         TerminalConsole terminal(&bridge, &bt_engine, g_running);
         if (terminal.initialize()) {
@@ -289,6 +299,9 @@ int main(int argc, char **argv)
         }
 
         // 优雅关闭
+        spdlog::info("Stopping status publisher...");
+        status_publisher.stop();
+
         spdlog::info("Stopping RT log consumer...");
         rtLogConsumer.stop();
 

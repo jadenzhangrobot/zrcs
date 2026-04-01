@@ -22,6 +22,7 @@
 #include <functional>
 #include "sharedMemory/nrt_process.h"
 #include "communication/zmqClient.h"
+#include "communication/zmqStatusSubscriber.h"
 #include "trajectory/trajectoryVisualizer.h"
 #include "gcode/gcodeEditor.h"
 #include "remote/remoteMonitor.h"
@@ -150,6 +151,9 @@ private slots:
     void onZMQError(const QString &error);
     void onConnectClicked();
 
+    // Status
+    void onAxisPositionsUpdated(QVector<double> positions);
+
 private:
     void setupUI();
     void setupConnections();
@@ -172,7 +176,6 @@ private:
     QLabel *zmqStatusLabel, *etherCATStatusLabel;
     QLabel *homedLabel, *servoLabel;
     QLineEdit *ipInput;
-    QSpinBox *portInput;
     QPushButton *connectBtn;
     
     QVector<AxisPositionDisplay*> axisDisplays;
@@ -195,6 +198,7 @@ private:
     // Backend
     NRTProcess *nrtProcess;
     ZMQClient *zmqClient;
+    ZMQStatusSubscriber *statusSubscriber;
     QTimer *updateTimer;
     
     // State

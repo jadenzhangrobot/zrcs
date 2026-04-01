@@ -15,7 +15,7 @@ void DataPub::run()
 {
     for (int i = 0; i < controller_->axiss.size(); i++)
     {
-        axisPosition_[i] = controller_->axiss[i]->actualposCmd();
+        axisPosition_[i] = controller_->axiss[i]->actualPos();
     }
     shm().statusQueue().push(axisPosition_);
 }

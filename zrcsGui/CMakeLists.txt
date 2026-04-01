@@ -75,6 +75,7 @@ set(SOURCES
     src/components/jogAndIOPanel.cpp
     src/components/alarmPanel.cpp
     src/communication/zmqClient.cpp
+    src/communication/zmqStatusSubscriber.cpp
     modules/trajectory/trajectoryVisualizer.cpp
     modules/gcode/gcodeEditor.cpp
     modules/remote/remoteMonitor.cpp
@@ -88,6 +89,7 @@ set(SOURCES
 set(HEADERS
     src/core/mainwindow_refactored.h
     src/communication/zmqClient.h
+    src/communication/zmqStatusSubscriber.h
     src/config/zrcsStyles.h
     src/config/zrcsConfig.h
     resources/style/styleLoader.h

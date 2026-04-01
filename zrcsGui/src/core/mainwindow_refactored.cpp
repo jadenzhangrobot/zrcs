@@ -30,6 +30,13 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
     zmqClient->connectToServer();
 
+    // 状态订阅器 (ZMQ SUB port 5556)
+    const auto& commCfg2 = ZrcsConfig::Config::instance().comm;
+    statusSubscriber = new ZMQStatusSubscriber(commCfg2.zmqHost, 5556, this);
+    connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
+            this, &MainWindowRefactored::onAxisPositionsUpdated);
+    statusSubscriber->start();
+
     // 连接命令面板信号
     if (commandPanel) {
         connect(commandPanel, &CommandPanel::commandRequested,
@@ -62,6 +69,7 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
 MainWindowRefactored::~MainWindowRefactored()
 {
     if (updateTimer) updateTimer->stop();
+    if (statusSubscriber) statusSubscriber->stop();
 }
 
 void MainWindowRefactored::setupUI()
@@ -94,11 +102,6 @@ void MainWindowRefactored::setupUI()
     ipInput->setPlaceholderText("192.168.x.x");
     ipInput->setFixedWidth(140);
 
-    portInput = new QSpinBox();
-    portInput->setRange(1, 65535);
-    portInput->setValue(commCfg.zmqPort);
-    portInput->setFixedWidth(70);
-
     connectBtn = new QPushButton("连接");
     connectBtn->setFixedWidth(60);
     connect(connectBtn, &QPushButton::clicked, this, &MainWindowRefactored::onConnectClicked);
@@ -106,8 +109,6 @@ void MainWindowRefactored::setupUI()
     statusBar()->setSizeGripEnabled(false);
     statusBar()->addWidget(new QLabel("IP:"));
     statusBar()->addWidget(ipInput);
-    statusBar()->addWidget(new QLabel("Port:"));
-    statusBar()->addWidget(portInput);
     statusBar()->addWidget(connectBtn);
     statusBar()->addPermanentWidget(zmqStatusLabel);
     statusBar()->addPermanentWidget(etherCATStatusLabel);
@@ -301,14 +302,12 @@ void MainWindowRefactored::onZMQConnected()
     zmqStatusLabel->setText("ZMQ: 已连接");
     connectBtn->setText("断开");
     ipInput->setEnabled(false);
-    portInput->setEnabled(false);
 }
 void MainWindowRefactored::onZMQDisconnected()
 {
     zmqStatusLabel->setText("ZMQ: 未连接");
     connectBtn->setText("连接");
     ipInput->setEnabled(true);
-    portInput->setEnabled(true);
 }
 void MainWindowRefactored::onZMQError(const QString &error)
 {
@@ -335,16 +334,23 @@ void MainWindowRefactored::showConfirmDialog(const QString &title, const QString
     }
 }
 
+void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
+{
+    if (!jogPanel) return;
+    for (int i = 0; i < positions.size(); ++i) {
+        jogPanel->setAxisPosition(i, positions[i]);
+    }
+}
+
 void MainWindowRefactored::onConnectClicked()
 {
     if (zmqClient && zmqClient->isConnected()) {
-        // 断开
         zmqClient->disconnectFromServer();
+        if (statusSubscriber) statusSubscriber->stop();
         return;
     }
 
     QString host = ipInput->text().trimmed();
-    int port = portInput->value();
     if (host.isEmpty()) {
         host = "localhost";
         ipInput->setText(host);
@@ -353,20 +359,19 @@ void MainWindowRefactored::onConnectClicked()
     // 保存到配置
     auto& commCfg = ZrcsConfig::Config::instance().comm;
     commCfg.zmqHost = host;
-    commCfg.zmqPort = port;
 
-    // 重建 ZMQClient
+    // 重建 ZMQClient (固定端口 5555)
     if (zmqClient) {
         zmqClient->disconnectFromServer();
         delete zmqClient;
     }
 
-    zmqClient = new ZMQClient(host, port);
+    zmqClient = new ZMQClient(host, 5555);
     connect(zmqClient, &ZMQClient::connected, this, &MainWindowRefactored::onZMQConnected);
     connect(zmqClient, &ZMQClient::disconnected, this, &MainWindowRefactored::onZMQDisconnected);
     connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
 
-    // 重连命令面板（先断开旧连接避免重复）
+    // 重连命令面板
     if (commandPanel) {
         disconnect(commandPanel, &CommandPanel::commandRequested,
                    this, &MainWindowRefactored::sendMotionCommand);
@@ -375,5 +380,15 @@ void MainWindowRefactored::onConnectClicked()
     }
 
     zmqClient->connectToServer();
-    zmqStatusLabel->setText(QString("ZMQ: 连接中 %1:%2").arg(host).arg(port));
+    zmqStatusLabel->setText(QString("ZMQ: 连接中 %1:5555").arg(host));
+
+    // 重建 StatusSubscriber (固定端口 5556)
+    if (statusSubscriber) {
+        statusSubscriber->stop();
+        delete statusSubscriber;
+    }
+    statusSubscriber = new ZMQStatusSubscriber(host, 5556, this);
+    connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
+            this, &MainWindowRefactored::onAxisPositionsUpdated);
+    statusSubscriber->start();
 }
