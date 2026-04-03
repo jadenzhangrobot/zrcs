@@ -87,7 +87,7 @@ class EthercatMotor:public Servo
         int32_t vel(void) override
         {
 		   
-           lastVelocity_=velocity_;
+            lastVelocity_=velocity_;
             velocity_=(position_-lastPosition_)*1000/cycletime;           
             return velocity_;
         }
