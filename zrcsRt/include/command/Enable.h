@@ -9,7 +9,7 @@
 #define ENABLE_H_
 #include "config/cmdArgs.h"
 #include "sharedMemory/sharedData.h"
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/nodeFactory.h"
 
 class Enable : public zrcsSystem::CmdNode

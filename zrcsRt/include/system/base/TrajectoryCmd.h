@@ -6,7 +6,7 @@
  * runStandard() 代替手写 run()。
  */
 #pragma once
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "config/parameter.h"
 #include <ruckig/ruckig.hpp>
 

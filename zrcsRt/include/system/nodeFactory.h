@@ -3,7 +3,7 @@
 #define NODE_FACTORY_H_
 #include <memory>
 #include <unordered_map>
-#include "basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 
 // 前向声明
 class ModelRegistry;

@@ -8,7 +8,7 @@
 #ifndef  PID_H
 #define PID_H
 
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include <cstdint>
 #include <ruckig/ruckig.hpp>
 #include <string>

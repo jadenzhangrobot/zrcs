@@ -7,7 +7,7 @@
  */
 #ifndef RESET_H_
 #define RESET_H_
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <iostream>
 

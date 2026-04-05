@@ -6,7 +6,7 @@
  * @Description: 数据发布节点
  */
 #pragma once
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <array>
 

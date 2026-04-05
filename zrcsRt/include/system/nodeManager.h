@@ -7,7 +7,7 @@
  */
 #ifndef NODEMANAGER_H_
 #define NODEMANAGER_H_
-#include "basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include "nodeCommunication.h"

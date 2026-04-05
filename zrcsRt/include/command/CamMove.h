@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/nodeFactory.h"
 #include <vector>
 #include <algorithm>

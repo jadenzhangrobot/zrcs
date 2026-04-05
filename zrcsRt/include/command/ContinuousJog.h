@@ -7,7 +7,7 @@
  */
 #ifndef CONTINUOUSJOG_H
 #define CONTINUOUSJOG_H
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include <array>
 #include <ruckig/ruckig.hpp>
 #include <vector>

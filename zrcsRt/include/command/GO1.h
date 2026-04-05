@@ -8,7 +8,7 @@
 #ifndef GO1_H
 #define GO1_H
 
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "model/modeinterface.h"
 #include <array>
 #include <ruckig/ruckig.hpp>

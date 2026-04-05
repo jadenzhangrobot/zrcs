@@ -7,7 +7,7 @@
  */
 #ifndef MOVESINE_H
 #define MOVESINE_H
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/centre.h"
 #include "system/classfactory.h"
 #include <cmath>

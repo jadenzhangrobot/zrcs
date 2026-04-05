@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "command/TrajectoryCmd.h"
+#include "system/base/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include "model/modelFactory.h"
 #include "model/robotModel.h"

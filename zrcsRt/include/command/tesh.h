@@ -8,7 +8,7 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include <ruckig/ruckig.hpp>
 #include <string>
 #include <unistd.h>

@@ -1,7 +1,7 @@
 
 #ifndef IO_H
 #define IO_H
-#include "system/basenodeInterface.h"
+#include "system/base/basenodeInterface.h"
 #include "system/centre.h"
 #include <cstdint>
 #include <iostream>
