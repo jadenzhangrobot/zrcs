@@ -13,7 +13,7 @@
 #include "ui_mainwindow_refactored.h"
 
 MainWindowRefactored::MainWindowRefactored(QWidget *parent)
-    : QMainWindow(parent), useZMQ(true), currentOverride(100.0), currentStepSize(0.1)
+    : QMainWindow(parent), useZMQ(true), currentOverride(100.0), currentStepSize(0.0)
 {
     setWindowTitle("ZRCS 机器人控制系统 v2.0");
     

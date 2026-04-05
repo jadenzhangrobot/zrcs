@@ -27,15 +27,17 @@ private:
     double lastAcceleration_;
     bool accelerateStart_;
     bool decelerateStart_;
+    bool stopped_;          // 减速完成后进入停止状态，不再写位置指令
     
 public:
-    ContinuousJog() : otg_(cycletime * 0.001), 
-                      targetVelocity_(0), 
+    ContinuousJog() : otg_(cycletime * 0.001),
+                      targetVelocity_(0),
                       setCurrentPosition_(0),
-                      lastVelocity_(0), 
+                      lastVelocity_(0),
                       lastAcceleration_(0),
-                      accelerateStart_(true), 
-                      decelerateStart_(true)
+                      accelerateStart_(true),
+                      decelerateStart_(true),
+                      stopped_(true)
     {
     }
 

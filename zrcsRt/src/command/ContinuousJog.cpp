@@ -85,6 +85,7 @@ void ContinuousJog::decelerate()
     if (status == Result::Finished)
     {
         decelerateStart_ = true;
+        stopped_ = true;
     }
 }
 
@@ -98,11 +99,24 @@ void ContinuousJog::run(void)
 
     if (shm().continueMotion().motion.load() == true)
     {
+        if (stopped_)
+        {
+            // 从停止状态恢复：用当前实际位置初始化，避免位置跳变
+            setCurrentPosition_ = controller_->axiss[shm().continueMotion().axisId.load()]->actualPos();
+            lastVelocity_ = 0;
+            lastAcceleration_ = 0;
+            stopped_ = false;
+        }
         decelerateStart_ = true;
         accelerate();
     }
     else if (shm().continueMotion().motion.load() == false)
     {
+        if (stopped_)
+        {
+            // 已完全停止，不写位置指令，避免覆盖其他命令
+            return;
+        }
         accelerateStart_ = true;
         decelerate();
     }
