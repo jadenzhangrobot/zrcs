@@ -3,6 +3,11 @@
  */
 #include "command/MoveabsJ.h"
 
+MoveAbsJ::MoveAbsJ() : dof_(0) { std::strcpy(nodeName_, "MoveAbsJ"); }
+Result MoveAbsJ::updateTrajectory() { return otg_->update(*input_, *output_); }
+void MoveAbsJ::passOutputToInput() { output_->pass_to_input(*input_); }
+void MoveAbsJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool MoveAbsJ::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;

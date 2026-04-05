@@ -3,6 +3,11 @@
  */
 #include "command/SearchL.h"
 
+SearchL::SearchL() : dof_(0), ioModule_(0), ioBit_(0) { std::strcpy(nodeName_, "SearchL"); }
+Result SearchL::updateTrajectory() { return otg_->update(*input_, *output_); }
+void SearchL::passOutputToInput() { output_->pass_to_input(*input_); }
+void SearchL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool SearchL::initTrajectory()
 {
     shm().probeTriggered().store(false, std::memory_order_release);

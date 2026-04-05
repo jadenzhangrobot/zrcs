@@ -3,6 +3,16 @@
  */
 #include "command/Probe.h"
 
+Probe::Probe() : axisId_(0), ioIndex_(0), bitPos_(0)
+{
+    std::strcpy(nodeName_, "Probe");
+}
+
+Result Probe::updateTrajectory() { return otg_->update(input_, output_); }
+void Probe::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+void Probe::passOutputToInput() { output_.pass_to_input(input_); }
+void Probe::applyDeltaTime(double dt) { if (otg_) otg_->delta_time = dt; }
+
 bool Probe::initTrajectory()
 {
     shm().probeTriggered().store(false, std::memory_order_release);

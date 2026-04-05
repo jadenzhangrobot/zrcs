@@ -3,6 +3,16 @@
  */
 #include "command/JogabsJ.h"
 
+JogabsJ::JogabsJ() : otg_(cycletime * 0.001)
+{
+    std::strcpy(nodeName_, "JogabsJ");
+}
+
+Result JogabsJ::updateTrajectory() { return otg_.update(input_, output_); }
+void JogabsJ::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+void JogabsJ::passOutputToInput() { output_.pass_to_input(input_); }
+void JogabsJ::applyDeltaTime(double dt) { otg_.delta_time = dt; }
+
 bool JogabsJ::initTrajectory()
 {
     axisId_ = static_cast<int>(command_->args[JogabsjAxisId]);

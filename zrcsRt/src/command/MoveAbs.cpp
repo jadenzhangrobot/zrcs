@@ -3,6 +3,16 @@
  */
 #include "command/MoveAbs.h"
 
+MoveAbs::MoveAbs() : otg_(cycletime * 0.001)
+{
+    std::strcpy(nodeName_, "MoveAbs");
+}
+
+Result MoveAbs::updateTrajectory() { return otg_.update(input_, output_); }
+void MoveAbs::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+void MoveAbs::passOutputToInput() { output_.pass_to_input(input_); }
+void MoveAbs::applyDeltaTime(double dt) { otg_.delta_time = dt; }
+
 bool MoveAbs::initTrajectory()
 {
     axisId_ = static_cast<int>(command_->args[MoveAbsAxisId]);
@@ -24,7 +34,6 @@ bool MoveAbs::initTrajectory()
     input_.target_velocity[0] = 0;
     input_.target_acceleration[0] = 0;
 
-    // 倍率不再缩放 max_velocity，由 delta_time 时间缩放统一处理
     input_.max_velocity[0] = vel > 0 ? vel : controller_->axiss[axisId_]->getMaxVelocity();
     input_.max_acceleration[0] = acc > 0 ? acc : controller_->axiss[axisId_]->getMaxAcceleration();
     input_.max_jerk[0] = jerk > 0 ? jerk : controller_->axiss[axisId_]->getMaxJerk();

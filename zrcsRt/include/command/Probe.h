@@ -22,16 +22,12 @@ private:
 
 protected:
     bool initTrajectory() override;
-    Result updateTrajectory() override { return otg_->update(input_, output_); }
-    void applyOutput() override { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
-    void passOutputToInput() override { output_.pass_to_input(input_); }
-    void applyDeltaTime(double dt) override { if (otg_) otg_->delta_time = dt; }
+    Result updateTrajectory() override;
+    void applyOutput() override;
+    void passOutputToInput() override;
+    void applyDeltaTime(double dt) override;
 
 public:
-    Probe() : axisId_(0), ioIndex_(0), bitPos_(0)
-    {
-        std::strcpy(nodeName_, "Probe");
-    }
-
+    Probe();
     void run() override;
 };

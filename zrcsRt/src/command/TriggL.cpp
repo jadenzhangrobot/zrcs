@@ -3,6 +3,11 @@
  */
 #include "command/TriggL.h"
 
+TriggL::TriggL() : dof_(0), trigDist_(0), ioModule_(0), ioBit_(0), ioVal_(false), triggered_(false) { std::strcpy(nodeName_, "TriggL"); }
+Result TriggL::updateTrajectory() { return otg_->update(*input_, *output_); }
+void TriggL::passOutputToInput() { output_->pass_to_input(*input_); }
+void TriggL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool TriggL::initTrajectory()
 {
     trigDist_ = command_->args[TriggLTrigDist];

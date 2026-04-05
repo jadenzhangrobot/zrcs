@@ -31,17 +31,12 @@ private:
 
 protected:
     bool initTrajectory() override;
-    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    Result updateTrajectory() override;
     void applyOutput() override;
-    void passOutputToInput() override { output_->pass_to_input(*input_); }
-    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+    void passOutputToInput() override;
+    void applyDeltaTime(double dt) override;
 
 public:
-    TriggJ() : dof_(0), trigDist_(0), ioModule_(0), ioBit_(0),
-               ioVal_(false), triggered_(false)
-    {
-        std::strcpy(nodeName_, "TriggJ");
-    }
-
+    TriggJ();
     void run() override;
 };

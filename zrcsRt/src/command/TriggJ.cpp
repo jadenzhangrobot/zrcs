@@ -3,6 +3,11 @@
  */
 #include "command/TriggJ.h"
 
+TriggJ::TriggJ() : dof_(0), trigDist_(0), ioModule_(0), ioBit_(0), ioVal_(false), triggered_(false) { std::strcpy(nodeName_, "TriggJ"); }
+Result TriggJ::updateTrajectory() { return otg_->update(*input_, *output_); }
+void TriggJ::passOutputToInput() { output_->pass_to_input(*input_); }
+void TriggJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool TriggJ::initTrajectory()
 {
     trigDist_ = command_->args[TriggJTrigDist];

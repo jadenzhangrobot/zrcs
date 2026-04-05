@@ -3,6 +3,16 @@
  */
 #include "command/MoveRel.h"
 
+MoveRel::MoveRel() : otg_(cycletime * 0.001)
+{
+    std::strcpy(nodeName_, "MoveRel");
+}
+
+Result MoveRel::updateTrajectory() { return otg_.update(input_, output_); }
+void MoveRel::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+void MoveRel::passOutputToInput() { output_.pass_to_input(input_); }
+void MoveRel::applyDeltaTime(double dt) { otg_.delta_time = dt; }
+
 bool MoveRel::initTrajectory()
 {
     axisId_ = static_cast<int>(command_->args[MoveRelAxisId]);

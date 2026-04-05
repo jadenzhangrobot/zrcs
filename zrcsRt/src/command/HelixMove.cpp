@@ -4,6 +4,12 @@
  */
 #include "command/HelixMove.h"
 
+HelixMove::HelixMove() : dof_(0), radius_(0), startAngle_(0), totalAngle_(0), zStart_(0), zEnd_(0) { std::strcpy(nodeName_, "HelixMove"); }
+Result HelixMove::updateTrajectory() { return otg_->update(*input_, *output_); }
+void HelixMove::applyOutput() {}
+void HelixMove::passOutputToInput() { output_->pass_to_input(*input_); }
+void HelixMove::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool HelixMove::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;

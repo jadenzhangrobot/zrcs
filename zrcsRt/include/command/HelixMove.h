@@ -33,17 +33,12 @@ private:
 
 protected:
     bool initTrajectory() override;
-    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
-    void applyOutput() override {}
-    void passOutputToInput() override { output_->pass_to_input(*input_); }
-    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+    Result updateTrajectory() override;
+    void applyOutput() override;
+    void passOutputToInput() override;
+    void applyDeltaTime(double dt) override;
 
 public:
-    HelixMove() : dof_(0), radius_(0), startAngle_(0), totalAngle_(0),
-                  zStart_(0), zEnd_(0)
-    {
-        std::strcpy(nodeName_, "HelixMove");
-    }
-
+    HelixMove();
     void run() override;
 };

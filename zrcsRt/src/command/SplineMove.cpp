@@ -4,6 +4,11 @@
  */
 #include "command/SplineMove.h"
 
+SplineMove::SplineMove() : dof_(0) { std::strcpy(nodeName_, "SplineMove"); }
+Result SplineMove::updateTrajectory() { return otg_->update(*input_, *output_); }
+void SplineMove::passOutputToInput() { output_->pass_to_input(*input_); }
+void SplineMove::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool SplineMove::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;

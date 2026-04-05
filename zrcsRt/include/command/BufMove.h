@@ -34,17 +34,13 @@ private:
 
 protected:
     bool initTrajectory() override;
-    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    Result updateTrajectory() override;
     void applyOutput() override;
-    void passOutputToInput() override { output_->pass_to_input(*input_); }
-    void applyDeltaTime(double dt) override { if (otg_) otg_->delta_time = dt; }
+    void passOutputToInput() override;
+    void applyDeltaTime(double dt) override;
 
 public:
-    BufMove() : dof_(0), segIdx_(0)
-    {
-        std::strcpy(nodeName_, "BufMove");
-    }
-
+    BufMove();
     void init() override;
     void run() override;
 };

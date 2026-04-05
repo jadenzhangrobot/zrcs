@@ -3,6 +3,11 @@
  */
 #include "command/MoveL.h"
 
+MoveL::MoveL() : dof_(0) { std::strcpy(nodeName_, "MoveL"); }
+Result MoveL::updateTrajectory() { return otg_->update(*input_, *output_); }
+void MoveL::passOutputToInput() { output_->pass_to_input(*input_); }
+void MoveL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool MoveL::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;

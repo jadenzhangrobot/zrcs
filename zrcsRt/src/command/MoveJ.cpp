@@ -3,6 +3,11 @@
  */
 #include "command/MoveJ.h"
 
+MoveJ::MoveJ() : dof_(0) { std::strcpy(nodeName_, "MoveJ"); }
+Result MoveJ::updateTrajectory() { return otg_->update(*input_, *output_); }
+void MoveJ::passOutputToInput() { output_->pass_to_input(*input_); }
+void MoveJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool MoveJ::initTrajectory()
 {
     // 获取运动学模型

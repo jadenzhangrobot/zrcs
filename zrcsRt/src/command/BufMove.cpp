@@ -4,6 +4,11 @@
  */
 #include "command/BufMove.h"
 
+BufMove::BufMove() : dof_(0), segIdx_(0) { std::strcpy(nodeName_, "BufMove"); }
+Result BufMove::updateTrajectory() { return otg_->update(*input_, *output_); }
+void BufMove::passOutputToInput() { output_->pass_to_input(*input_); }
+void BufMove::applyDeltaTime(double dt) { if (otg_) otg_->delta_time = dt; }
+
 bool BufMove::initTrajectory()
 {
     // Not used — BufMove has custom init()

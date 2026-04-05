@@ -3,6 +3,11 @@
  */
 #include "command/Movehome.h"
 
+Movehome::Movehome() : dof_(0) { std::strcpy(nodeName_, "Movehome"); }
+Result Movehome::updateTrajectory() { return otg_->update(*input_, *output_); }
+void Movehome::passOutputToInput() { output_->pass_to_input(*input_); }
+void Movehome::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+
 bool Movehome::initTrajectory()
 {
     dof_ = static_cast<int>(controller_->axiss.size());

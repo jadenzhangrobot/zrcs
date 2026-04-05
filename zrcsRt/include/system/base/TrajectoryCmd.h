@@ -37,54 +37,15 @@ protected:
     // --- 基类提供的辅助方法 ---
 
     /// 读取 overrideRatio 并更新 delta_time，每个 run() 周期调用
-    void updateOverride()
-    {
-        double override = shm().overrideRatio().load(std::memory_order_acquire);
-        applyDeltaTime(baseDeltaTime_ * override);
-    }
+    void updateOverride();
 
     /// 标准 run() 流程：updateOverride → updateTrajectory → applyOutput
-    /// 适用于不需要额外逻辑的简单运动命令
-    void runStandard()
-    {
-        updateOverride();
-
-        auto result = updateTrajectory();
-        if (result == Result::Working)
-        {
-            applyOutput();
-            passOutputToInput();
-        }
-        else if (result == Result::Finished)
-        {
-            applyOutput();
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-        }
-        else
-        {
-            ERROR_PRINT("%s: 轨迹规划失败\n", nodeName_);
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        }
-    }
+    void runStandard();
 
 public:
-    TrajectoryCmd() : baseDeltaTime_(cycletime * 0.001) {}
+    TrajectoryCmd();
 
-    void init() override
-    {
-        if (!initTrajectory())
-        {
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-            return;
-        }
-        // 应用初始倍率
-        updateOverride();
-    }
-
-    void run() override
-    {
-        runStandard();
-    }
-
-    void exit() override {}
+    void init() override;
+    void run() override;
+    void exit() override;
 };
