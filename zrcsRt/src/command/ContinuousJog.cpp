@@ -15,11 +15,11 @@ void ContinuousJog::init()
     input_.max_jerk[0] = controller_->axiss[shm().continueMotion().axisId.load()]->getMaxJerk();
 }
 
-void ContinuousJog::accelerate()
+void ContinuousJog::accelerate(int axisId)
 {
     if (accelerateStart_ == true)
     {
-        input_.current_position[0] = controller_->axiss[shm().continueMotion().axisId.load()]->actualPos();
+        input_.current_position[0] = controller_->axiss[axisId]->actualPos();
         input_.current_velocity[0] = lastVelocity_;
         input_.current_acceleration[0] = lastAcceleration_;
         input_.target_velocity[0] = targetVelocity_;
@@ -27,36 +27,30 @@ void ContinuousJog::accelerate()
         accelerateStart_ = false;
     }
 
+    // 倍率变化时平滑过渡到新速度
+    if (input_.target_velocity[0] != targetVelocity_)
+    {
+        input_.target_velocity[0] = targetVelocity_;
+    }
+
     auto status = otg_.update(input_, output_);
-    if(status == Result::Working)
+    if(status == Result::Working || status == Result::Finished)
     {
         auto& p = output_.new_position;
         auto& v = output_.new_velocity;
         auto& a = output_.new_acceleration;
-        if (controller_ != nullptr && controller_->axiss.size() > shm().continueMotion().axisId.load())
+        if (controller_ != nullptr && controller_->axiss.size() > static_cast<size_t>(axisId))
         {
-            controller_->axiss[shm().continueMotion().axisId.load()]->setAxisPositionCmd(p[0]);
+            controller_->axiss[axisId]->setAxisPositionCmd(p[0]);
             lastVelocity_ = v[0];
             lastAcceleration_ = a[0];
             output_.pass_to_input(input_);
             setCurrentPosition_ = p[0];
         }
     }
-    else if(status == Result::Finished)
-    {
-        uniformSpeed();
-    }
 }
 
-void ContinuousJog::uniformSpeed()
-{
-    setCurrentPosition_ = setCurrentPosition_ + targetVelocity_ * cycletime * 0.001;
-    lastVelocity_ = targetVelocity_;
-    lastAcceleration_ = 0;
-    controller_->axiss[shm().continueMotion().axisId.load()]->setAxisPositionCmd(setCurrentPosition_);
-}
-
-void ContinuousJog::decelerate()
+void ContinuousJog::decelerate(int axisId)
 {
     if (decelerateStart_ == true)
     {
@@ -74,9 +68,9 @@ void ContinuousJog::decelerate()
         auto& p = output_.new_position;
         auto& v = output_.new_velocity;
         auto& a = output_.new_acceleration;
-        if (controller_ != nullptr && controller_->axiss.size() > shm().continueMotion().axisId.load())
+        if (controller_ != nullptr && controller_->axiss.size() > static_cast<size_t>(axisId))
         {
-            controller_->axiss[shm().continueMotion().axisId.load()]->setAxisPositionCmd(p[0]);
+            controller_->axiss[axisId]->setAxisPositionCmd(p[0]);
             lastVelocity_ = v[0];
             lastAcceleration_ = a[0];
             output_.pass_to_input(input_);
@@ -91,7 +85,9 @@ void ContinuousJog::decelerate()
 
 void ContinuousJog::run(void)
 {
-    targetVelocity_ = shm().overrideRatio().load(std::memory_order_acquire) * controller_->axiss[shm().continueMotion().axisId.load()]->getMaxVelocity();
+    int axisId = shm().continueMotion().axisId.load(std::memory_order_acquire);
+
+    targetVelocity_ = shm().overrideRatio().load(std::memory_order_acquire) * controller_->axiss[axisId]->getMaxVelocity();
     if (shm().continueMotion().direction.load() == false)
     {
         targetVelocity_ = -targetVelocity_;
@@ -101,24 +97,25 @@ void ContinuousJog::run(void)
     {
         if (stopped_)
         {
-            // 从停止状态恢复：用当前实际位置初始化，避免位置跳变
-            setCurrentPosition_ = controller_->axiss[shm().continueMotion().axisId.load()]->actualPos();
+            setCurrentPosition_ = controller_->axiss[axisId]->actualPos();
             lastVelocity_ = 0;
             lastAcceleration_ = 0;
             stopped_ = false;
+
+            input_.max_acceleration[0] = controller_->axiss[axisId]->getMaxAcceleration();
+            input_.max_jerk[0] = controller_->axiss[axisId]->getMaxJerk();
         }
         decelerateStart_ = true;
-        accelerate();
+        accelerate(axisId);
     }
     else if (shm().continueMotion().motion.load() == false)
     {
         if (stopped_)
         {
-            // 已完全停止，不写位置指令，避免覆盖其他命令
             return;
         }
         accelerateStart_ = true;
-        decelerate();
+        decelerate(axisId);
     }
 }
 

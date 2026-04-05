@@ -42,9 +42,8 @@ public:
     }
 
     void init() override;
-    void accelerate();
-    void uniformSpeed();
-    void decelerate();
+    void accelerate(int axisId);
+    void decelerate(int axisId);
     void run(void) override;
 };
 
