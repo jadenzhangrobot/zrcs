@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include "model/modelFactory.h"
 #include "model/robotModel.h"
@@ -15,7 +15,7 @@
 
 using namespace ruckig;
 
-class HelixMove : public zrcsSystem::CmdNode
+class HelixMove : public TrajectoryCmd
 {
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
@@ -31,6 +31,13 @@ private:
     double zStart_;
     double zEnd_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    void applyOutput() override {}
+    void passOutputToInput() override { output_->pass_to_input(*input_); }
+    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+
 public:
     HelixMove() : dof_(0), radius_(0), startAngle_(0), totalAngle_(0),
                   zStart_(0), zEnd_(0)
@@ -38,7 +45,5 @@ public:
         std::strcpy(nodeName_, "HelixMove");
     }
 
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

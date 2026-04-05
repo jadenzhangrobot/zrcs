@@ -4,27 +4,24 @@
  */
 #include "command/HelixMove.h"
 
-void HelixMove::init()
+bool HelixMove::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
         ERROR_PRINT("HelixMove: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("HelixMove: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
     axisIds_ = model->getAxisIds();
 
-    // get current position via FK
     Eigen::VectorXd currentJoint(dof_);
     for (int i = 0; i < dof_; i++)
     {
@@ -35,8 +32,7 @@ void HelixMove::init()
     if (!model->forwardKinematics(currentJoint, curPose))
     {
         ERROR_PRINT("HelixMove: FK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     double startX = curPose(0, 3);
@@ -58,12 +54,10 @@ void HelixMove::init()
     totalAngle_ = endAngle - startAngle_;
     if (totalAngle_ <= 0) totalAngle_ += 2.0 * M_PI;
 
-    // Ruckig for angle parameter [0, totalAngle_]
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[HelixMoveVel];
     if (velScale <= 0) velScale = 1.0;
 
@@ -73,13 +67,16 @@ void HelixMove::init()
     input_->target_position[0] = totalAngle_;
     input_->target_velocity[0] = 0;
     input_->target_acceleration[0] = 0;
-    input_->max_velocity[0] = 2.0 * override * velScale;
+    input_->max_velocity[0] = 2.0 * velScale;
     input_->max_acceleration[0] = 4.0;
     input_->max_jerk[0] = 20.0;
+    return true;
 }
 
 void HelixMove::run(void)
 {
+    updateOverride();
+
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     RobotModel* model = registry->getModel(0);
 
@@ -93,7 +90,6 @@ void HelixMove::run(void)
         double y = center_.y() + radius_ * std::sin(startAngle_ + theta);
         double z = zStart_ + t * (zEnd_ - zStart_);
 
-        // IK
         Eigen::VectorXd currentJoint(dof_);
         for (int i = 0; i < dof_; i++)
         {
@@ -135,7 +131,5 @@ void HelixMove::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void HelixMove::exit(void) {}
 
 REGISTERCMD(HelixMove);

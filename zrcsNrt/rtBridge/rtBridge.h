@@ -183,11 +183,16 @@ public:
     }
 
     // =================================================================
-    // 5. 倍率控制 (0-100%)
+    // 5. 倍率控制 (0-100% → 0.0-1.0)
     // =================================================================
 
     void setSpeedMultiplier(uint8_t percent) {
-        if (block_) block_->Multiplied.store(percent, std::memory_order_release);
+        if (!block_) return;
+        double ratio = percent / 100.0;
+        if (ratio < 0.0) ratio = 0.0;
+        if (ratio > 1.0) ratio = 1.0;
+        block_->overrideRatio.store(ratio, std::memory_order_release);
+        block_->Multiplied.store(percent, std::memory_order_release); // 向后兼容
     }
 
     uint8_t speedMultiplier() const {

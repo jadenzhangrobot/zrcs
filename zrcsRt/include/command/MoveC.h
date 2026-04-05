@@ -3,7 +3,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include "model/modelFactory.h"
 #include "model/robotModel.h"
@@ -14,7 +14,7 @@
 
 using namespace ruckig;
 
-class MoveC : public zrcsSystem::CmdNode
+class MoveC : public TrajectoryCmd
 {
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
@@ -33,13 +33,18 @@ private:
     double zStart_;
     double zEnd_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    void applyOutput() override {}  // 不使用，MoveC 在 run() 中自行处理
+    void passOutputToInput() override { output_->pass_to_input(*input_); }
+    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+
 public:
     MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0)
     {
         std::strcpy(nodeName_, "MoveC");
     }
 
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

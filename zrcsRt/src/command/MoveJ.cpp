@@ -3,26 +3,24 @@
  */
 #include "command/MoveJ.h"
 
-void MoveJ::init()
+bool MoveJ::initTrajectory()
 {
     // 获取运动学模型
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
         ERROR_PRINT("MoveJ: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("MoveJ: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
-    auto axisIds = model->getAxisIds();
+    axisIds_ = model->getAxisIds();
 
     // 构建目标位姿
     Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
@@ -33,7 +31,7 @@ void MoveJ::init()
     Eigen::VectorXd currentJoint(dof_);
     for (int i = 0; i < dof_; i++)
     {
-        currentJoint(i) = controller_->axiss[axisIds[i]]->actualPos();
+        currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
     }
 
     // 逆运动学求解
@@ -41,8 +39,7 @@ void MoveJ::init()
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
     {
         ERROR_PRINT("MoveJ: IK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     // 设置 Ruckig 轨迹规划
@@ -50,55 +47,31 @@ void MoveJ::init()
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[MoveJVel];
     if (velScale <= 0) velScale = 1.0;
 
     for (int i = 0; i < dof_; i++)
     {
-        int axisId = axisIds[i];
+        int axisId = axisIds_[i];
         input_->current_position[i] = currentJoint(i);
         input_->current_velocity[i] = 0;
         input_->current_acceleration[i] = 0;
         input_->target_position[i] = targetJoint(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
     }
+    return true;
 }
 
-void MoveJ::run(void)
+void MoveJ::applyOutput()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
-    RobotModel* model = registry->getModel(0);
-    auto axisIds = model->getAxisIds();
-
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working)
+    for (int i = 0; i < dof_; i++)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        output_->pass_to_input(*input_);
-    }
-    else if (result == Result::Finished)
-    {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-    }
-    else
-    {
-        ERROR_PRINT("MoveJ: 轨迹规划失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
-
-void MoveJ::exit(void) {}
 
 REGISTERCMD(MoveJ);

@@ -3,14 +3,13 @@
  */
 #include "command/Movehome.h"
 
-void Movehome::init()
+bool Movehome::initTrajectory()
 {
     dof_ = static_cast<int>(controller_->axiss.size());
     if (dof_ <= 0)
     {
         ERROR_PRINT("Movehome: 自由度无效(dof=%d)\n", dof_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
@@ -29,34 +28,15 @@ void Movehome::init()
         input_->max_acceleration[i] = controller_->axiss[i]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[i]->getMaxJerk();
     }
+    return true;
 }
 
-void Movehome::run(void)
+void Movehome::applyOutput()
 {
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working)
+    for (int i = 0; i < dof_; i++)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        output_->pass_to_input(*input_);
-    }
-    else if (result == Result::Finished)
-    {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-    }
-    else
-    {
-        ERROR_PRINT("Movehome: 轨迹规划失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
-
-void Movehome::exit(void) {}
 
 REGISTERCMD(Movehome);

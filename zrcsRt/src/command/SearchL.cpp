@@ -3,7 +3,7 @@
  */
 #include "command/SearchL.h"
 
-void SearchL::init()
+bool SearchL::initTrajectory()
 {
     shm().probeTriggered().store(false, std::memory_order_release);
 
@@ -14,15 +14,13 @@ void SearchL::init()
     if (!registry)
     {
         ERROR_PRINT("SearchL: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("SearchL: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
@@ -42,15 +40,13 @@ void SearchL::init()
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
     {
         ERROR_PRINT("SearchL: IK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[SearchLVel];
     if (velScale <= 0) velScale = 0.1;  // 搜索运动默认低速
 
@@ -63,9 +59,18 @@ void SearchL::init()
         input_->target_position[i] = targetJoint(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+    }
+    return true;
+}
+
+void SearchL::applyOutput()
+{
+    for (int i = 0; i < dof_; i++)
+    {
+        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 
@@ -108,14 +113,13 @@ void SearchL::run(void)
         }
     }
 
+    updateOverride();
+
     // 继续运动
     auto result = otg_->update(*input_, *output_);
     if (result == Result::Working)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         output_->pass_to_input(*input_);
     }
     else if (result == Result::Finished)
@@ -129,7 +133,5 @@ void SearchL::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void SearchL::exit(void) {}
 
 REGISTERCMD(SearchL);

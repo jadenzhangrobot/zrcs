@@ -90,7 +90,7 @@ void ContinuousJog::decelerate()
 
 void ContinuousJog::run(void)
 {
-    targetVelocity_ = double(shm().multiPlied().load() / 100.0) * controller_->axiss[shm().continueMotion().axisId.load()]->getMaxVelocity();
+    targetVelocity_ = shm().overrideRatio().load(std::memory_order_acquire) * controller_->axiss[shm().continueMotion().axisId.load()]->getMaxVelocity();
     if (shm().continueMotion().direction.load() == false)
     {
         targetVelocity_ = -targetVelocity_;

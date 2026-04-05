@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include <memory>
 #include <vector>
@@ -12,7 +12,7 @@
 
 using namespace ruckig;
 
-class BufMove : public zrcsSystem::CmdNode
+class BufMove : public TrajectoryCmd
 {
 private:
     struct Segment
@@ -32,6 +32,13 @@ private:
 
     void setupSegment(int idx);
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    void applyOutput() override;
+    void passOutputToInput() override { output_->pass_to_input(*input_); }
+    void applyDeltaTime(double dt) override { if (otg_) otg_->delta_time = dt; }
+
 public:
     BufMove() : dof_(0), segIdx_(0)
     {
@@ -39,6 +46,5 @@ public:
     }
 
     void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

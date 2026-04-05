@@ -3,7 +3,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include "model/modelFactory.h"
 #include "model/robotModel.h"
@@ -13,7 +13,7 @@
 
 using namespace ruckig;
 
-class SearchL : public zrcsSystem::CmdNode
+class SearchL : public TrajectoryCmd
 {
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
@@ -24,13 +24,18 @@ private:
     int ioModule_;
     int ioBit_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    void applyOutput() override;
+    void passOutputToInput() override { output_->pass_to_input(*input_); }
+    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+
 public:
     SearchL() : dof_(0), ioModule_(0), ioBit_(0)
     {
         std::strcpy(nodeName_, "SearchL");
     }
 
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

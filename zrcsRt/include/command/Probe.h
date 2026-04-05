@@ -3,14 +3,14 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include <memory>
 #include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
 
-class Probe : public zrcsSystem::CmdNode
+class Probe : public TrajectoryCmd
 {
 private:
     std::unique_ptr<Ruckig<1>> otg_;
@@ -20,13 +20,18 @@ private:
     int ioIndex_;
     int bitPos_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(input_, output_); }
+    void applyOutput() override { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+    void passOutputToInput() override { output_.pass_to_input(input_); }
+    void applyDeltaTime(double dt) override { if (otg_) otg_->delta_time = dt; }
+
 public:
     Probe() : axisId_(0), ioIndex_(0), bitPos_(0)
     {
         std::strcpy(nodeName_, "Probe");
     }
 
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

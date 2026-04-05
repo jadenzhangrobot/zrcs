@@ -3,7 +3,7 @@
  */
 #include "command/TriggL.h"
 
-void TriggL::init()
+bool TriggL::initTrajectory()
 {
     trigDist_ = command_->args[TriggLTrigDist];
     ioModule_ = static_cast<int>(command_->args[TriggLIOModule]);
@@ -15,15 +15,13 @@ void TriggL::init()
     if (!registry)
     {
         ERROR_PRINT("TriggL: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("TriggL: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
@@ -43,15 +41,13 @@ void TriggL::init()
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint_))
     {
         ERROR_PRINT("TriggL: IK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[TriggLVel];
     if (velScale <= 0) velScale = 1.0;
 
@@ -64,9 +60,18 @@ void TriggL::init()
         input_->target_position[i] = targetJoint_(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+    }
+    return true;
+}
+
+void TriggL::applyOutput()
+{
+    for (int i = 0; i < dof_; i++)
+    {
+        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 
@@ -91,21 +96,17 @@ void TriggL::run(void)
         }
     }
 
+    updateOverride();
+
     auto result = otg_->update(*input_, *output_);
     if (result == Result::Working)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         output_->pass_to_input(*input_);
     }
     else if (result == Result::Finished)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
     else
@@ -114,7 +115,5 @@ void TriggL::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void TriggL::exit(void) {}
 
 REGISTERCMD(TriggL);

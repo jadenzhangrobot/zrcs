@@ -1,41 +1,33 @@
 /*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-15 14:49:54
- * @LastEditTime: 2023-08-03 06:50:30
  * @Description: 关节运动绝对位置指令
  */
-#ifndef JOGABSJ_H
-#define JOGABSJ_H
-
+#pragma once
 #include "config/cmdArgs.h"
-#include "sharedMemory/sharedData.h"
-#include "system/basenodeInterface.h"
-#include <array>
-#include <ruckig/ruckig.hpp>
-#include <vector>
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
+#include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
 
-class JogabsJ : public zrcsSystem::CmdNode
+class JogabsJ : public TrajectoryCmd
 {
 private:
     Ruckig<1> otg_;
     InputParameter<1> input_;
-    OutputParameter<1> output_;            
+    OutputParameter<1> output_;
     int axisId_;
     double position_;
-    
+
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_.update(input_, output_); }
+    void applyOutput() override { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+    void passOutputToInput() override { output_.pass_to_input(input_); }
+    void applyDeltaTime(double dt) override { otg_.delta_time = dt; }
+
 public:
     JogabsJ() : otg_(cycletime * 0.001)
     {
         std::strcpy(nodeName_, "JogabsJ");
     }
-
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
 };
-
-#endif

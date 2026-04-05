@@ -3,7 +3,7 @@
  */
 #include "command/Probe.h"
 
-void Probe::init()
+bool Probe::initTrajectory()
 {
     shm().probeTriggered().store(false, std::memory_order_release);
 
@@ -16,14 +16,11 @@ void Probe::init()
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
         ERROR_PRINT("Probe: 轴索引 %d 超出范围\n", axisId_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     if (vel <= 0) vel = 0.1;
     double maxTravel = (direction >= 0) ? 1000.0 : -1000.0;
-
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
 
     otg_ = std::make_unique<Ruckig<1>>(cycletime * 0.001);
     input_.current_position[0] = controller_->axiss[axisId_]->actualPos();
@@ -32,9 +29,10 @@ void Probe::init()
     input_.target_position[0] = input_.current_position[0] + maxTravel;
     input_.target_velocity[0] = 0;
     input_.target_acceleration[0] = 0;
-    input_.max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity() * override * vel;
+    input_.max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity() * vel;
     input_.max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
     input_.max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
+    return true;
 }
 
 void Probe::run(void)
@@ -55,6 +53,8 @@ void Probe::run(void)
         }
     }
 
+    updateOverride();
+
     auto result = otg_->update(input_, output_);
     if (result == Result::Working)
     {
@@ -71,7 +71,5 @@ void Probe::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void Probe::exit(void) {}
 
 REGISTERCMD(Probe);

@@ -3,13 +3,13 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
 
-class MoveAbs : public zrcsSystem::CmdNode
+class MoveAbs : public TrajectoryCmd
 {
 private:
     Ruckig<1> otg_;
@@ -17,13 +17,16 @@ private:
     OutputParameter<1> output_;
     int axisId_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_.update(input_, output_); }
+    void applyOutput() override { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+    void passOutputToInput() override { output_.pass_to_input(input_); }
+    void applyDeltaTime(double dt) override { otg_.delta_time = dt; }
+
 public:
     MoveAbs() : otg_(cycletime * 0.001)
     {
         std::strcpy(nodeName_, "MoveAbs");
     }
-
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
 };

@@ -4,6 +4,12 @@
  */
 #include "command/BufMove.h"
 
+bool BufMove::initTrajectory()
+{
+    // Not used — BufMove has custom init()
+    return true;
+}
+
 void BufMove::init()
 {
     int type = static_cast<int>(command_->args[BufMoveType]);
@@ -52,11 +58,11 @@ void BufMove::setupSegment(int idx)
         dof_ = static_cast<int>(controller_->axiss.size());
     }
 
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
+    baseDeltaTime_ = cycletime * 0.001;
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, baseDeltaTime_);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = segments_[idx].vel;
     if (velScale <= 0) velScale = 1.0;
 
@@ -68,9 +74,19 @@ void BufMove::setupSegment(int idx)
         input_->target_position[i] = segments_[idx].params[i];
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[i]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[i]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[i]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[i]->getMaxJerk();
+    }
+
+    updateOverride();
+}
+
+void BufMove::applyOutput()
+{
+    for (int i = 0; i < dof_; i++)
+    {
+        controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 
@@ -82,21 +98,18 @@ void BufMove::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         return;
     }
+
+    updateOverride();
+
     auto result = otg_->update(*input_, *output_);
     if (result == Result::Working)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         output_->pass_to_input(*input_);
     }
     else if (result == Result::Finished)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[i]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
 
         segIdx_++;
         if (segIdx_ < static_cast<int>(segments_.size()))
@@ -114,7 +127,5 @@ void BufMove::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void BufMove::exit(void) {}
 
 REGISTERCMD(BufMove);

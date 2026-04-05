@@ -3,7 +3,7 @@
  */
 #pragma once
 #include "config/cmdArgs.h"
-#include "system/basenodeInterface.h"
+#include "command/TrajectoryCmd.h"
 #include "system/nodeFactory.h"
 #include "model/modelFactory.h"
 #include "model/robotModel.h"
@@ -14,7 +14,7 @@
 
 using namespace ruckig;
 
-class TriggL : public zrcsSystem::CmdNode
+class TriggL : public TrajectoryCmd
 {
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
@@ -29,6 +29,13 @@ private:
     bool triggered_;
     Eigen::VectorXd targetJoint_;
 
+protected:
+    bool initTrajectory() override;
+    Result updateTrajectory() override { return otg_->update(*input_, *output_); }
+    void applyOutput() override;
+    void passOutputToInput() override { output_->pass_to_input(*input_); }
+    void applyDeltaTime(double dt) override { otg_->delta_time = dt; }
+
 public:
     TriggL() : dof_(0), trigDist_(0), ioModule_(0), ioBit_(0),
                ioVal_(false), triggered_(false)
@@ -36,7 +43,5 @@ public:
         std::strcpy(nodeName_, "TriggL");
     }
 
-    void init() override;
-    void run(void) override;
-    void exit(void) override;
+    void run() override;
 };

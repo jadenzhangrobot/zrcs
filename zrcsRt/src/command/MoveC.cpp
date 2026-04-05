@@ -3,21 +3,19 @@
  */
 #include "command/MoveC.h"
 
-void MoveC::init()
+bool MoveC::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
         ERROR_PRINT("MoveC: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("MoveC: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
@@ -34,8 +32,7 @@ void MoveC::init()
     if (!model->forwardKinematics(currentJoint, startPose))
     {
         ERROR_PRINT("MoveC: FK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     Eigen::Vector3d P0 = startPose.block<3,1>(0,3);
@@ -50,8 +47,7 @@ void MoveC::init()
     if (N2 < 1e-12)
     {
         ERROR_PRINT("MoveC: 三点共线, 无法确定圆弧\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     Eigen::Vector3d d = P1 - P0;
@@ -63,8 +59,7 @@ void MoveC::init()
     if (std::abs(denom) < 1e-12)
     {
         ERROR_PRINT("MoveC: 三点共线, 无法确定圆弧\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     double s = (dd * ee - ee * de) / denom;
     double t = (ee * dd - dd * de) / denom;
@@ -91,12 +86,10 @@ void MoveC::init()
     zEnd_ = P2.z();
 
     // Use Ruckig for 1-DOF angle parameter [0, totalAngle_]
-    // then IK each cycle for joint commands
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[MoveCVel];
     if (velScale <= 0) velScale = 1.0;
 
@@ -106,13 +99,16 @@ void MoveC::init()
     input_->target_position[0] = totalAngle_;
     input_->target_velocity[0] = 0;
     input_->target_acceleration[0] = 0;
-    input_->max_velocity[0] = 2.0 * override * velScale;
+    input_->max_velocity[0] = 2.0 * velScale;
     input_->max_acceleration[0] = 4.0;
     input_->max_jerk[0] = 20.0;
+    return true;
 }
 
 void MoveC::run(void)
 {
+    updateOverride();
+
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     RobotModel* model = registry->getModel(0);
 
@@ -167,7 +163,5 @@ void MoveC::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void MoveC::exit(void) {}
 
 REGISTERCMD(MoveC);

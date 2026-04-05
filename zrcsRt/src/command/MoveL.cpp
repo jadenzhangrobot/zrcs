@@ -3,21 +3,19 @@
  */
 #include "command/MoveL.h"
 
-void MoveL::init()
+bool MoveL::initTrajectory()
 {
     auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
     if (!registry)
     {
         ERROR_PRINT("MoveL: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("MoveL: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
@@ -37,15 +35,13 @@ void MoveL::init()
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
     {
         ERROR_PRINT("MoveL: IK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[MoveLVel];
     if (velScale <= 0) velScale = 1.0;
 
@@ -58,38 +54,19 @@ void MoveL::init()
         input_->target_position[i] = targetJoint(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
     }
+    return true;
 }
 
-void MoveL::run(void)
+void MoveL::applyOutput()
 {
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working)
+    for (int i = 0; i < dof_; i++)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        output_->pass_to_input(*input_);
-    }
-    else if (result == Result::Finished)
-    {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-    }
-    else
-    {
-        ERROR_PRINT("MoveL: 轨迹规划失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
-
-void MoveL::exit(void) {}
 
 REGISTERCMD(MoveL);

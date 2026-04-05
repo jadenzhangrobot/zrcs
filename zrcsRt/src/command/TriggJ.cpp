@@ -3,7 +3,7 @@
  */
 #include "command/TriggJ.h"
 
-void TriggJ::init()
+bool TriggJ::initTrajectory()
 {
     trigDist_ = command_->args[TriggJTrigDist];
     ioModule_ = static_cast<int>(command_->args[TriggJIOModule]);
@@ -15,15 +15,13 @@ void TriggJ::init()
     if (!registry)
     {
         ERROR_PRINT("TriggJ: 模型注册表未初始化\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
         ERROR_PRINT("TriggJ: 未找到模型(id=0)\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     dof_ = model->getDof();
@@ -43,15 +41,13 @@ void TriggJ::init()
     if (!model->inverseKinematics(targetPose, currentJoint, targetJoint_))
     {
         ERROR_PRINT("TriggJ: IK 求解失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
 
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
     double velScale = command_->args[TriggJVel];
     if (velScale <= 0) velScale = 1.0;
 
@@ -64,9 +60,18 @@ void TriggJ::init()
         input_->target_position[i] = targetJoint_(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * override * velScale;
+        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+    }
+    return true;
+}
+
+void TriggJ::applyOutput()
+{
+    for (int i = 0; i < dof_; i++)
+    {
+        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 
@@ -83,7 +88,6 @@ void TriggJ::run(void)
         }
         if (std::sqrt(distSq) <= trigDist_)
         {
-            // 触发IO
             if (ioModule_ >= 0 &&
                 ioModule_ < static_cast<int>(controller_->ios_.size()))
             {
@@ -93,21 +97,17 @@ void TriggJ::run(void)
         }
     }
 
+    updateOverride();
+
     auto result = otg_->update(*input_, *output_);
     if (result == Result::Working)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         output_->pass_to_input(*input_);
     }
     else if (result == Result::Finished)
     {
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
-        }
+        applyOutput();
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
     else
@@ -116,7 +116,5 @@ void TriggJ::run(void)
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
-
-void TriggJ::exit(void) {}
 
 REGISTERCMD(TriggJ);
