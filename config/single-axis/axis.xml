@@ -4,6 +4,6 @@
         <attribute id="0" mode="position" name="motor" slaveId="0"/>
         <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="0" maxVel="10" minPos="-100000"/>
+        <motion maxAcc="400" maxJerk="3000" maxPos="100" maxPosDiff="0" maxVel="100" minPos="-100"/>
     </axis-1>
 </axis>
