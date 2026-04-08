@@ -7,32 +7,29 @@ namespace ZrcsHardware {
 
 void Controller::sendData()
 {
-    try {
-        for(auto& it : axiss)
+    for(auto& it : axiss)
+    {
+        if (!it->cmdsProcessing(1000.0 / cycletime))
         {
-            it->updateMotionCmdsToServo();
+            it->setAxisState(mcErrorStop);
+            continue;
         }
-        if (hardwareBus_) {
-            hardwareBus_->send();
-        }
-    } catch (const std::exception& e) {
-        ERROR_PRINT("Controller::sendData 异常: %s\n", e.what());
+        it->updateMotionCmdsToServo();
+    }
+    if (hardwareBus_) {
+        hardwareBus_->send();
     }
 }
 
 void Controller::receiveData()
 {
-    try {
-        if (hardwareBus_) {
-            hardwareBus_->receive();
-        }
-        for(auto& it : axiss)
-        {
-            it->statusSync();
-            it->cyclerun();
-        }
-    } catch (const std::exception& e) {
-        ERROR_PRINT("Controller::receiveData 异常: %s\n", e.what());
+    if (hardwareBus_) {
+        hardwareBus_->receive();
+    }
+    for(auto& it : axiss)
+    {
+        it->statusSync();
+        it->cyclerun();
     }
 }
 
