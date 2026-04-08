@@ -2,36 +2,36 @@
 <axisConfig>
     <axis-1>
         <attribute id="0" mode="position" name="xAxis" slaveId="0"/>
-        <encoder homePos="0.0" posFactor="131027" posOffset="0.0" velFactor="1.0"/>
+        <encoder homePos="0.0" posFactor="8388608" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
         <motion maxAcc="4" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
     </axis-1>
 
     <axis-2>
         <attribute id="1" mode="position" name="xAxis1" slaveId="1"/>
-        <encoder homePos="0.0" posFactor="131027" posOffset="0.0" velFactor="1.0"/>
+        <encoder homePos="0.0" posFactor="8388608" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
         <motion maxAcc="4" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
     </axis-2>
 
     <axis-3>
         <attribute id="2" mode="position" name="xAxis2" slaveId="2"/>
-        <encoder homePos="0.0" posFactor="131027" posOffset="0.0" velFactor="1.0"/>
+        <encoder homePos="0.0" posFactor="8388608" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
         <motion maxAcc="4" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
     </axis-3>
 
     <axis-4>
         <attribute id="3" mode="position" name="xAxis3" slaveId="3"/>
-        <encoder homePos="0.0" posFactor="131027" posOffset="0.0" velFactor="1.0"/>
+        <encoder homePos="0.0" posFactor="8388608" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
         <motion maxAcc="4" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
     </axis-4>
 
     <axis-5>
         <attribute id="4" mode="position" name="xAxis4" slaveId="4"/>
-        <encoder homePos="0.0" posFactor="131027" posOffset="0.0" velFactor="1.0"/>
+        <encoder homePos="0.0" posFactor="8388608" posOffset="0.0" velFactor="1.0"/>
         <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="4" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
+        <motion maxAcc="40" maxPos="1000000000" maxPosDiff="00" maxVel="10" minPos="-1000000000" maxJerk="1"/>
     </axis-5>
 </axisConfig>
