@@ -6,6 +6,7 @@
  * @Description: 连续点动指令
  */
 #include "command/ContinuousJog.h"
+#include <limits>
 
 void ContinuousJog::init()
 {
@@ -59,6 +60,9 @@ void ContinuousJog::decelerate(int axisId)
         input_.current_acceleration[0] = lastAcceleration_;
         input_.target_velocity[0] = 0;
         input_.target_acceleration[0] = 0;
+        // 使用最大加速度减速，并设置极大jerk以近似无jerk限制
+        input_.max_acceleration[0] = controller_->axiss[axisId]->getMaxAcceleration();
+        input_.max_jerk[0] = std::numeric_limits<double>::max();
         decelerateStart_ = false;
     }
 
@@ -78,6 +82,9 @@ void ContinuousJog::decelerate(int axisId)
     }
     if (status == Result::Finished)
     {
+        // 恢复正常的加速度和jerk限制，供下次加速使用
+        input_.max_acceleration[0] = controller_->axiss[axisId]->getMaxAcceleration();
+        input_.max_jerk[0] = controller_->axiss[axisId]->getMaxJerk();
         decelerateStart_ = true;
         stopped_ = true;
     }
