@@ -35,22 +35,26 @@ bool Axis::cmdsProcessing(double frequency)
     if(vel_cmd > 0 && !enablePositive_)
     {
       axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE;
+      ERROR_PRINT("轴%d: 正方向禁止运动\n", axisId_);
       return false;
     } else if(vel_cmd < 0 && !enableNegative_)
     {
       axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_NEGATIVE;
+      ERROR_PRINT("轴%d: 负方向禁止运动\n", axisId_);
       return false;
     }
 
     if (std::abs(vel_cmd) > config_->maxVel)
     {
       axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
+      ERROR_PRINT("轴%d: 速度超限 vel=%.4f, max=%.4f\n", axisId_, vel_cmd, config_->maxVel);
       return false;
     }
 
     if (std::abs(acc_cmd) > config_->maxAcc)
     {
       axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
+      ERROR_PRINT("轴%d: 加速度超限 acc=%.4f, max=%.4f\n", axisId_, acc_cmd, config_->maxAcc);
       return false;
     }
 
@@ -58,12 +62,14 @@ bool Axis::cmdsProcessing(double frequency)
     if(rawPosCmd > config_->posPositiveLimit && vel_cmd > 0)
     {
       axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
+      ERROR_PRINT("轴%d: 正限位超限 pos=%.4f, limit=%.4f\n", axisId_, rawPosCmd, config_->posPositiveLimit);
       return false;
     }
 
     if(rawPosCmd < config_->posNegativeLimit && vel_cmd < 0)
     {
       axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
+      ERROR_PRINT("轴%d: 负限位超限 pos=%.4f, limit=%.4f\n", axisId_, rawPosCmd, config_->posNegativeLimit);
       return false;
     }
 
@@ -82,7 +88,7 @@ void Axis::updateMotionCmdsToServo()
       {
         auto ret = servo->setPos(toEncoderUnit(axisPosCmd_ + zeroOffset_));
         if (ret != SERVONOERROR) {
-            WARN_PRINT("Axis::setPos 伺服错误: code=%d\n", static_cast<int>(ret));
+            WARN_PRINT("轴%d: setPos 伺服错误 code=%d\n", axisId_, static_cast<int>(ret));
         }
       }
     }
@@ -92,7 +98,7 @@ void Axis::updateMotionCmdsToServo()
       {
         auto ret = servo->setVel(toEncoderUnit(axisVelCmd_));
         if (ret != SERVONOERROR) {
-            WARN_PRINT("Axis::setVel 伺服错误: code=%d\n", static_cast<int>(ret));
+            WARN_PRINT("轴%d: setVel 伺服错误 code=%d\n", axisId_, static_cast<int>(ret));
         }
       }
     }
@@ -113,7 +119,7 @@ void Axis::statusSync()
           double posDiff = axisPos_ - lastAxisPos_;
           if (std::abs(posDiff) > config_->maxPosDiff)
           {
-             ERROR_PRINT("Axis: 多驱同步误差过大, posDiff=%.4f, limit=%.4f\n", posDiff, config_->maxPosDiff);
+             ERROR_PRINT("轴%d: 多驱同步误差过大 posDiff=%.4f, limit=%.4f\n", axisId_, posDiff, config_->maxPosDiff);
              axisError_=MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
           }
       }
@@ -156,6 +162,7 @@ MC_ERROR_CODE Axis::setAxisState(MC_AXIS_STATES setState)
           }
           break;
         default:
+          ERROR_PRINT("轴%d: 状态转换非法 Stopping->%d\n", axisId_, setState);
           return MC_ERRORCODE_INVALIDSTATESTIPPING;
           break;
       }
@@ -172,6 +179,7 @@ MC_ERROR_CODE Axis::setAxisState(MC_AXIS_STATES setState)
           }
           break;
         default:
+          ERROR_PRINT("轴%d: 状态转换非法 ErrorStop->%d\n", axisId_, setState);
           return MC_ERRORCODE_INVALIDSATATESTOP;
           break;
       }
@@ -188,6 +196,7 @@ MC_ERROR_CODE Axis::setAxisState(MC_AXIS_STATES setState)
           }
           break;
         default:
+          ERROR_PRINT("轴%d: 状态转换非法 Disabled->%d\n", axisId_, setState);
           return MC_ERRORCODE_INVALIDSTATEDISABLE;
           break;
       }
@@ -214,6 +223,7 @@ bool Axis::resetError(void)
      {
        if(!servo->resetError())
        {
+         ERROR_PRINT("轴%d: 伺服复位失败\n", axisId_);
          return false;
        }
      }
@@ -226,7 +236,7 @@ bool Axis::powerOn()
     {
       if(!servo_[i]->enable())
       {
-        ERROR_PRINT("Axis::powerOn: 伺服 %zu 使能失败\n", i);
+        ERROR_PRINT("轴%d: 伺服%zu 使能失败\n", axisId_, i);
         return false;
       }
     }
@@ -239,7 +249,7 @@ bool Axis::powerOff()
     {
       if (!servo_[i]->disable())
       {
-         ERROR_PRINT("Axis::powerOff: 伺服 %zu 失能失败\n", i);
+         ERROR_PRINT("轴%d: 伺服%zu 失能失败\n", axisId_, i);
          return false;
       }
     }

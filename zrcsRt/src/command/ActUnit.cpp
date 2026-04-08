@@ -16,6 +16,7 @@ void ActUnit::run(void)
         controller_->axiss[unitId_]->setModeOfOperation();
         controller_->axiss[unitId_]->setAxisPositionCmd(
             controller_->axiss[unitId_]->actualPos());
+        controller_->axiss[unitId_]->syncCmdHistory();
         if (controller_->axiss[unitId_]->powerOn())
         {
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);

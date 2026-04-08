@@ -23,6 +23,8 @@ void Reset::run(void)
         }
         else
         {
+            controller_->axiss[axisId_]->setAxisPositionCmd(controller_->axiss[axisId_]->actualPos());
+            controller_->axiss[axisId_]->syncCmdHistory();
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);
         }
     }
@@ -34,6 +36,11 @@ void Reset::run(void)
             {
                 ERROR_PRINT("Reset: 轴 %d 操作失败\n", i);
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+            }
+            else
+            {
+                controller_->axiss[i]->setAxisPositionCmd(controller_->axiss[i]->actualPos());
+                controller_->axiss[i]->syncCmdHistory();
             }
         }
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);

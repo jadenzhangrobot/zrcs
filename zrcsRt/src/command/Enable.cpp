@@ -19,6 +19,7 @@ void Enable::run(void)
         controller_->axiss[axisId_]->setModeOfOperation();
         double p = controller_->axiss[axisId_]->actualPos();
         controller_->axiss[axisId_]->setAxisPositionCmd(controller_->axiss[axisId_]->actualPos());
+        controller_->axiss[axisId_]->syncCmdHistory();
         if(!controller_->axiss[axisId_]->powerOn())
         {
             ERROR_PRINT("轴 %d 使能失败\n", axisId_);
@@ -36,6 +37,7 @@ void Enable::run(void)
             controller_->axiss[i]->setModeOfOperation();
             double p = controller_->axiss[i]->actualPos();
             controller_->axiss[i]->setAxisPositionCmd(controller_->axiss[i]->actualPos());
+            controller_->axiss[i]->syncCmdHistory();
             if(!controller_->axiss[i]->powerOn())
             {
                 ERROR_PRINT("轴 %d 使能失败\n", i);

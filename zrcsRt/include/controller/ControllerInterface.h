@@ -110,7 +110,13 @@ public:
 
    void setAxisPositionCmd(double axisPosCmd)
    {
-         axisPosCmd_=axisPosCmd;  
+         axisPosCmd_=axisPosCmd;
+   }
+
+   void syncCmdHistory()
+   {
+         lastAxisPosCmd_ = axisPosCmd_;
+         lastAxisVelCmd_ = 0.0;
    }
 
 
