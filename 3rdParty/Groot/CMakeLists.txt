@@ -83,9 +83,11 @@ set(CATKIN_ENABLE_TESTING OFF CACHE BOOL "")
 
 if(NOT catkin_FOUND AND NOT ament_cmake_FOUND)
 
-    if(NOT EXISTS depend/BehaviorTree.CPP)
-      message("Can't find the submodule BehaviorTree.CPP")
-      message("Run [git submodule update --init --recursive]")
+    set(GROOT_BTCPP_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/depend/BehaviorTree.CPP")
+    if(NOT EXISTS "${GROOT_BTCPP_SUBMODULE_DIR}/CMakeLists.txt")
+      message(FATAL_ERROR
+        "Can't find the submodule BehaviorTree.CPP at ${GROOT_BTCPP_SUBMODULE_DIR}\n"
+        "Run [git submodule update --init --recursive]")
     endif()
 
     SET(BUILD_EXAMPLES OFF CACHE BOOL "Build tutorials and examples" FORCE)
@@ -99,13 +101,13 @@ if(NOT catkin_FOUND AND NOT ament_cmake_FOUND)
     # look for BehaviorTree.CPP as submodule
     # use git submodule only if you are not compiling with catkin
     if(NOT TARGET behaviortree_cpp_v3)
-        add_subdirectory( depend/BehaviorTree.CPP )
+        add_subdirectory("${GROOT_BTCPP_SUBMODULE_DIR}")
     endif()
-    include_directories( depend/BehaviorTree.CPP/include )
+    include_directories("${GROOT_BTCPP_SUBMODULE_DIR}/include")
 
-    message(STATUS "----------------------------------")
+
     message(STATUS "BehaviourTree.CPP submodule found.")
-    message(STATUS "----------------------------------")
+   
 endif()
 
 ##########################################

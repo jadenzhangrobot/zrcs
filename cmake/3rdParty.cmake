@@ -4,7 +4,7 @@ if(POLICY CMP0167)
 endif()
 
 # 强制所有第三方库生成静态库
-set(BUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
 #添加tinyxml2库编译
 # 检查 tinyxml2 目录是否存在
