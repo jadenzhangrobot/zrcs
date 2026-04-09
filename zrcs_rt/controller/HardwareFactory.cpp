@@ -7,6 +7,8 @@
 #ifdef REALTIME
 #include "controller/ethercat/EthercatMaster.h"
 #include "controller/ethercat/EthercatMotor.h"
+#include "controller/ethercat/EthercatIo.h"
+#include "controller/ethercat/EthercatParameter.h"
 #include "controller/rtos/Xenomai.h"
 #endif
 
@@ -65,6 +67,21 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
     for (auto& axis : axes) {
         controller->addAxis(std::move(axis));
     }
+
+#ifdef REALTIME
+    // 为 AIO/DIO/LASER 类型从站创建 IO 对象
+    if (masterPtr) {
+        auto* ecMaster = static_cast<EthercatMaster*>(masterPtr);
+        SlaveConfig slaveConfig(zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
+        for (const auto& slave : slaveConfig.Slaves) {
+            if (slave.slaveType == SlaveConfig::SlaveType::AIO ||
+                slave.slaveType == SlaveConfig::SlaveType::DIO ||
+                slave.slaveType == SlaveConfig::SlaveType::LASER) {
+                controller->addIo(std::make_unique<EthercatIo>(slave.SlaveId, ecMaster));
+            }
+        }
+    }
+#endif
 
     return controller;
 }

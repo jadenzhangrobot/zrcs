@@ -237,6 +237,11 @@ public:
   virtual void ioWrite32(int index, int bitPos, bool value) = 0;            // 32位IO写
   virtual void ioWrite16(int index, int bitPos, bool value) = 0;            // 16位IO写
   virtual void ioWrite8(int index, int bitPos, bool value) = 0;              // 8位IO写
+
+  /// 模拟量输出: 写入指定通道的模拟值 (如 DAC 电压)
+  virtual void aoWriteValue(int index, double value) {}
+  /// 模拟量输入: 读取指定通道的模拟值 (如 ADC 电压)
+  virtual double aoReadValue(int index) { return 0; }
   virtual ~Io(){};
 };
 class Sensor 

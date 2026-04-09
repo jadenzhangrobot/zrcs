@@ -68,6 +68,18 @@ namespace ZrcsHardware {
             return GET_BIT(result, bitPos);
         }
 
+        void aoWriteValue(int index, double value) override
+        {
+            auto raw = static_cast<int16_t>(value);
+            EC_WRITE_S16(ethercatMaster->DomainWrite + ethercatMaster->OutputOffset[SlaveId][index], raw);
+        }
+
+        double aoReadValue(int index) override
+        {
+            auto raw = EC_READ_S16(ethercatMaster->DomainRead + ethercatMaster->InputOffset[SlaveId][index]);
+            return static_cast<double>(raw);
+        }
+
          ~EthercatIo(){} ;
     };
 

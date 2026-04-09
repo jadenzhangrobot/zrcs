@@ -9,11 +9,14 @@
 #include "shared_memory/SharedData.h"
 
 namespace ZrcsHardware {
-   
-class Controller {  
-private:        
+
+class LaserController;  // 前向声明
+
+class Controller {
+private:
     std::unique_ptr<AxisConfig> axisConfig_;
     std::unique_ptr<HardwareBus> hardwareBus_;
+    std::unique_ptr<LaserController> laser_;
     
 public:
     // 禁用拷贝构造和赋值
@@ -34,6 +37,18 @@ public:
     {
         axiss.push_back(std::move(axis));
     }
+
+    void addIo(std::unique_ptr<Io> io)
+    {
+        ios_.push_back(std::move(io));
+    }
+
+    void setLaser(std::unique_ptr<LaserController> laser)
+    {
+        laser_ = std::move(laser);
+    }
+
+    LaserController* laser() const { return laser_.get(); }
     
     void sendData();
 

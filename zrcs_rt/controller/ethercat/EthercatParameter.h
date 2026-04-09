@@ -13,11 +13,12 @@ class SlaveConfig {
 public:
  std::vector<ec_pdo_entry_info_t>* entries;  
  std::vector<ec_pdo_info_t>* pdos;
- enum SlaveType 
+ enum SlaveType
  {
     MOTOR,
     AIO,
     DIO,
+    LASER,
  };
   using Slave = struct 
   {
@@ -58,6 +59,10 @@ public:
             else if (child.second->attribute["type"]=="dio")
             {
                 slave.slaveType=SlaveType::DIO;
+            }
+            else if (child.second->attribute["type"]=="laser")
+            {
+                slave.slaveType=SlaveType::LASER;
             }
             else
             {

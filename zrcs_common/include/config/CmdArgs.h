@@ -80,6 +80,24 @@ enum { HelixMoveEndX, HelixMoveEndY, HelixMoveCenterX, HelixMoveCenterY,
 enum { BufMoveType, BufMoveP1, BufMoveP2, BufMoveP3, BufMoveP4, BufMoveP5, BufMoveVel };
 enum { SplineMoveX, SplineMoveY, SplineMoveZ, SplineMoveVel };
 
+// === 激光参数设置 ===
+
+enum { LaserSetPower, LaserSetFreq, LaserSetPulseWidth, LaserSetGate };
+
+// === 振镜-平台联动标刻 (全局坐标, 单插补器+后置滤波分解) ===
+
+enum { GalvoMarkLX, GalvoMarkLY, GalvoMarkLVel,
+       GalvoMarkLPower, GalvoMarkLFreq, GalvoMarkLLaserOn,
+       GalvoMarkLPlatXId, GalvoMarkLPlatYId, GalvoMarkLGalvoXId, GalvoMarkLGalvoYId,
+       GalvoMarkLCutoffHz };
+
+// === 缓冲连续联动标刻 ===
+
+enum { GalvoBufMarkType, GalvoBufMarkX, GalvoBufMarkY,
+       GalvoBufMarkVel, GalvoBufMarkPower, GalvoBufMarkFreq,
+       GalvoBufMarkPlatXId, GalvoBufMarkPlatYId, GalvoBufMarkGalvoXId, GalvoBufMarkGalvoYId,
+       GalvoBufMarkCutoffHz };
+
 // ============================================================
 // 任务调度状态
 // ============================================================

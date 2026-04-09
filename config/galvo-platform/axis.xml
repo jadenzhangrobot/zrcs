@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<axis>
+    <!-- 平台 X 轴: 大行程低速伺服 -->
+    <axis-1>
+        <attribute id="0" mode="position" name="platformX" slaveId="0"/>
+        <encoder homePos="0.0" posFactor="131072" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxJerk="50000" maxPos="500" maxPosDiff="1" maxVel="500" minPos="-500"/>
+    </axis-1>
+
+    <!-- 平台 Y 轴: 大行程低速伺服 -->
+    <axis-2>
+        <attribute id="1" mode="position" name="platformY" slaveId="1"/>
+        <encoder homePos="0.0" posFactor="131072" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0.01" direction="1" ratio="1" value=""/>
+        <motion maxAcc="5000" maxJerk="50000" maxPos="500" maxPosDiff="1" maxVel="500" minPos="-500"/>
+    </axis-2>
+
+    <!-- 振镜 X 轴: 小行程高速，XY2-100 桥接卡 -->
+    <axis-3>
+        <attribute id="2" mode="position" name="galvoX" slaveId="2"/>
+        <encoder homePos="0.0" posFactor="65535" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0" direction="1" ratio="1" value=""/>
+        <motion maxAcc="500000" maxJerk="10000000" maxPos="50" maxPosDiff="5" maxVel="10000" minPos="-50"/>
+    </axis-3>
+
+    <!-- 振镜 Y 轴: 小行程高速，XY2-100 桥接卡 -->
+    <axis-4>
+        <attribute id="3" mode="position" name="galvoY" slaveId="3"/>
+        <encoder homePos="0.0" posFactor="65535" posOffset="0.0" velFactor="1.0"/>
+        <machine backlash="0" direction="1" ratio="1" value=""/>
+        <motion maxAcc="500000" maxJerk="10000000" maxPos="50" maxPosDiff="5" maxVel="10000" minPos="-50"/>
+    </axis-4>
+</axis>
