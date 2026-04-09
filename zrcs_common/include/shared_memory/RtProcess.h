@@ -1,5 +1,5 @@
-#ifndef RT_PROCESS_H_
-#define RT_PROCESS_H_
+#pragma once
+
 #include <iostream>
 #include <memory>
 #include <boost/interprocess/managed_shared_memory.hpp>
@@ -48,4 +48,3 @@ public:
     RTProcess(const RTProcess&) = delete;
     RTProcess& operator=(const RTProcess&) = delete;
 };
-#endif

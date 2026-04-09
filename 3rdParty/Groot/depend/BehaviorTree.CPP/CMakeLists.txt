@@ -177,6 +177,12 @@ if(BUILD_MANUAL_SELECTOR)
             src/controls/manual_node.cpp
             )
         list(APPEND BEHAVIOR_TREE_PUBLIC_LIBRARIES ${CURSES_LIBRARIES})
+        find_path(NCURSES_HEADER_DIR ncurses.h
+            HINTS ${CURSES_INCLUDE_PATH} ${CURSES_INCLUDE_DIRS}
+            PATH_SUFFIXES ncursesw ncurses)
+        if(NCURSES_HEADER_DIR)
+            include_directories(${NCURSES_HEADER_DIR})
+        endif()
         add_definitions(-DNCURSES_FOUND)
     else()
         message(WARNING "NCurses NOT found. Skipping the build of manual selector node.")

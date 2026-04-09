@@ -1,7 +1,28 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Read(//d/msys2/ucrt64/include/**)",
+      "Read(//d/msys2/ucrt64/include/ncursesw/**)",
+      "Read(//d/msys2/ucrt64/include/ncurses/**)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:google.github.io)",
+      "WebFetch(domain:cheatography.com)",
+      "WebFetch(domain:lefticus.gitbooks.io)",
+      "WebFetch(domain:doc.qt.io)",
+      "WebFetch(domain:docs.ros.org)",
+      "WebFetch(domain:www.geeksforgeeks.org)",
+      "WebFetch(domain:llvm.org)",
+      "Bash(rm -rf build)",
+      "Bash(cmake -B build -G Ninja -DCMAKE_C_COMPILER=D:/msys2/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=D:/msys2/ucrt64/bin/g++.exe -DCMAKE_PREFIX_PATH=D:/msys2/ucrt64 -DCMAKE_BUILD_TYPE=Release)",
+      "Bash(xargs sed:*)",
+      "Read(//c/Users/64989/Desktop/**)",
+      "Bash(grep -E \"\\\\.h$|\\\\.hpp$\")",
+      "Bash(cd \"c:/Users/64989/Desktop/zrcs-dev\" grep -rl \"^#ifndef\" zrcs_common/)",
+      "Bash(wc -l /c/Users/64989/Desktop/zrcs-dev/zrcs_rt/include/**/*.h /c/Users/64989/Desktop/zrcs-dev/zrcs_rt/src/**/*.cpp)",
+      "Bash(ls -d zrcs_rt/*/)",
+      "Bash(cmake -B build -G Ninja -DCMAKE_C_COMPILER=D:/msys2/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=D:/msys2/ucrt64/bin/g++.exe -DCMAKE_PREFIX_PATH=D:/msys2/ucrt64 -DCMAKE_BUILD_TYPE=Debug)"
     ]
   }
 }

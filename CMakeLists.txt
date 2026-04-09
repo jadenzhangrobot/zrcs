@@ -59,6 +59,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_MANUAL_SELECTOR OFF CACHE BOOL "" FORCE)
 add_subdirectory(3rdParty/Groot/depend/BehaviorTree.CPP)
 
 # Groot 行为树编辑器 + zrcs_gui（realtime 模式不编译）

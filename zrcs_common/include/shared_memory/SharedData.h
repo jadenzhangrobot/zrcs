@@ -1,5 +1,4 @@
-#ifndef SHARED_DATA_HPP
-#define SHARED_DATA_HPP
+#pragma once
 
 #include <atomic>
 #include <array>
@@ -210,4 +209,3 @@ private:
     SharedBlock* blk_;
 };
 
-#endif // SHARED_DATA_HPP

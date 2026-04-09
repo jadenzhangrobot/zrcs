@@ -6,17 +6,19 @@ find_package(Protobuf REQUIRED)
 
 # 包含目录
 include_directories(
-    ${CMAKE_SOURCE_DIR}/zrcs_common/include # Added for common/sharedMemory headers
-    ${CMAKE_SOURCE_DIR}/zrcs_rt/include
-    ${CMAKE_BINARY_DIR} # For generated proto headers
+    ${CMAKE_SOURCE_DIR}/zrcs_common/include
+    ${CMAKE_SOURCE_DIR}/zrcs_rt
+    ${CMAKE_BINARY_DIR}
 )
 
 # 源文件 (暂时假设使用 zrcs_rt/main.cpp)
 # 之前的目录结构显示 zrcs_rt 下有 main.cpp
 file(GLOB_RECURSE SOURCES
     "main.cpp"
-    "Trajectory_planning/*.cpp"
-    "src/*.cpp"
+    "command/*.cpp"
+    "controller/*.cpp"
+    "model/*.cpp"
+    "system/*.cpp"
 )
 
 set(PROTO_FILES

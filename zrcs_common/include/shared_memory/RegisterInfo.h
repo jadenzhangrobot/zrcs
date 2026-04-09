@@ -1,5 +1,4 @@
-#ifndef REGISTERINFO_H_
-#define REGISTERINFO_H_
+#pragma once
 
 // 寄存器类型枚举，值对应 systemRegister::boolRegisters 数组的索引
 enum class RegisterType : int
@@ -14,4 +13,3 @@ enum class RegisterType : int
     REGISTER_COUNT = 32
 };
 
-#endif

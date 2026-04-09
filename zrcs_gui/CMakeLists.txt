@@ -52,7 +52,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS resources/ui)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcs_common/include
-    ${CMAKE_SOURCE_DIR}/zrcs_gui/src
+    ${CMAKE_SOURCE_DIR}/zrcs_gui
     ${CMAKE_SOURCE_DIR}/zrcs_gui/modules
     ${CMAKE_SOURCE_DIR}/zrcs_gui/resources/style
     ${CMAKE_BINARY_DIR}
@@ -69,37 +69,37 @@ protobuf_generate_cpp(GUI_PROTO_SRCS GUI_PROTO_HDRS ${PROTO_FILES})
 
 # 源文件
 set(SOURCES
-    src/core/main.cpp
-    src/core/MainWindow.cpp
-    src/components/statusIndicator.cpp
-    src/components/jogAndIOPanel.cpp
-    src/components/alarmPanel.cpp
-    src/communication/zmqClient.cpp
-    src/communication/zmqStatusSubscriber.cpp
-    modules/trajectory/trajectoryVisualizer.cpp
-    modules/gcode/gcodeEditor.cpp
-    modules/remote/remoteMonitor.cpp
-    modules/plugin/pluginManager.cpp
-    modules/behavior_tree/behaviorTreePanel.cpp
-    modules/command/commandPanel.cpp
+    core/main.cpp
+    core/MainWindow.cpp
+    components/StatusIndicator.cpp
+    components/JogAndIOPanel.cpp
+    components/AlarmPanel.cpp
+    communication/ZmqClient.cpp
+    communication/ZmqStatusSubscriber.cpp
+    modules/trajectory/TrajectoryVisualizer.cpp
+    modules/gcode/GcodeEditor.cpp
+    modules/remote/RemoteMonitor.cpp
+    modules/plugin/PluginManager.cpp
+    modules/behavior_tree/BehaviorTreePanel.cpp
+    modules/command/CommandPanel.cpp
     ${GUI_PROTO_SRCS}
 )
 
 # 头文件
 set(HEADERS
-    src/core/MainWindow.h
-    src/communication/zmqClient.h
-    src/communication/zmqStatusSubscriber.h
-    src/config/zrcsStyles.h
-    src/config/zrcsConfig.h
-    resources/style/styleLoader.h
-    modules/trajectory/trajectoryVisualizer.h
-    modules/gcode/gcodeEditor.h
-    modules/remote/remoteMonitor.h
-    modules/plugin/pluginInterface.h
-    modules/plugin/pluginManager.h
-    modules/behavior_tree/behaviorTreePanel.h
-    modules/command/commandPanel.h
+    core/MainWindow.h
+    communication/ZmqClient.h
+    communication/ZmqStatusSubscriber.h
+    config/ZrcsStyles.h
+    config/ZrcsConfig.h
+    resources/style/StyleLoader.h
+    modules/trajectory/TrajectoryVisualizer.h
+    modules/gcode/GcodeEditor.h
+    modules/remote/RemoteMonitor.h
+    modules/plugin/PluginInterface.h
+    modules/plugin/PluginManager.h
+    modules/behavior_tree/BehaviorTreePanel.h
+    modules/command/CommandPanel.h
 )
 
 # UI文件

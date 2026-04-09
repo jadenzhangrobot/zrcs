@@ -11,8 +11,8 @@
 
 #include "shared_memory/SharedData.h"
 #include "controller/ControllerInterface.h"
-#include "system/nodeManager.h"
-#include "system/rtLog.h"
+#include "system/NodeManager.h"
+#include "system/RtLog.h"
 #include "config/ProjectConfig.h"
 #include <thread>
 #include <iostream>
