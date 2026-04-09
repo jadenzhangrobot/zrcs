@@ -46,16 +46,16 @@ bool Axis::cmdsProcessing(double frequency)
 
     if (std::abs(vel_cmd) > config_->maxVel)
     {
-      axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
-      ERROR_PRINT("轴%d: 速度超限 vel=%.4f, max=%.4f\n", axisId_, vel_cmd, config_->maxVel);
-      return false;
+      //axisError_ = MC_ERRORCODE_CMDVELOVERLIMIT;
+      //ERROR_PRINT("轴%d: 速度超限 vel=%.4f, max=%.4f\n", axisId_, vel_cmd, config_->maxVel);
+     // return false;
     }
 
     if (std::abs(acc_cmd) > config_->maxAcc)
     {
-      axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
-      ERROR_PRINT("轴%d: 加速度超限 acc=%.4f, max=%.4f\n", axisId_, acc_cmd, config_->maxAcc);
-      return false;
+      //axisError_ = MC_ERRORCODE_CMDACCOVERLIMIT;
+      //ERROR_PRINT("轴%d: 加速度超限 acc=%.4f, max=%.4f\n", axisId_, acc_cmd, config_->maxAcc);
+      //return false;
     }
 
     double rawPosCmd = axisPosCmd_ + zeroOffset_;
