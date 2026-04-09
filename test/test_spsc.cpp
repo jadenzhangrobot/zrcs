@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
-#include "sharedMemory/sharedData.h"
+#include "shared_memory/SharedData.h"
 
 // ===== 基础功能测试 =====
 

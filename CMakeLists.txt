@@ -61,17 +61,17 @@ set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 add_subdirectory(3rdParty/Groot/depend/BehaviorTree.CPP)
 
-# Groot 行为树编辑器 + zrcsGui（realtime 模式不编译）
+# Groot 行为树编辑器 + zrcs_gui（realtime 模式不编译）
 if(NOT BUILD_MODE STREQUAL "realtime")
     add_subdirectory(3rdParty/Groot)
-    add_subdirectory(zrcsGui)
+    add_subdirectory(zrcs_gui)
 endif()
 
 # 2. zrcsnrt (非实时进程)
-add_subdirectory(zrcsNrt)
+add_subdirectory(zrcs_nrt)
 
 # 3. zrcsrt (实时进程)
-add_subdirectory(zrcsRt)
+add_subdirectory(zrcs_rt)
 
 
 # 安装配置

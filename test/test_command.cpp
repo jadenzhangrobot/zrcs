@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iostream>
 #include <cstring>
-#include "sharedMemory/sharedData.h"
+#include "shared_memory/SharedData.h"
 
 static void test_command_zero_init() {
     Command cmd{};

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(DEVEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 include_directories(
-    ${DEVEL_INCLUDE_DIRS}/zrcsCommon/include
+    ${DEVEL_INCLUDE_DIRS}/zrcs_common/include
     ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
 )
 
@@ -26,7 +26,7 @@ target_link_libraries(test_command PRIVATE atomic)
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）
 find_package(Protobuf REQUIRED)
 
-set(ZMQ_TEST_PROTO ${DEVEL_INCLUDE_DIRS}/zrcsCommon/message/message.proto)
+set(ZMQ_TEST_PROTO ${DEVEL_INCLUDE_DIRS}/zrcs_common/message/message.proto)
 protobuf_generate_cpp(ZMQ_TEST_PROTO_SRCS ZMQ_TEST_PROTO_HDRS ${ZMQ_TEST_PROTO})
 
 add_executable(test_zmq_comm test_zmq_comm.cpp ${ZMQ_TEST_PROTO_SRCS} ${ZMQ_TEST_PROTO_HDRS})

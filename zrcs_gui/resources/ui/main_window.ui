@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindowRefactored</class>
+ <widget class="QMainWindow" name="MainWindowRefactored">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1600</width>
+    <height>1000</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ZRCS 工业运动控制系统</string>
+  </property>
+  <widget class="QWidget" name="centralRoot">
+   <layout class="QHBoxLayout" name="mainLayout">
+    <property name="leftMargin">
+     <number>14</number>
+    </property>
+    <property name="topMargin">
+     <number>14</number>
+    </property>
+    <property name="rightMargin">
+     <number>14</number>
+    </property>
+    <property name="bottomMargin">
+     <number>10</number>
+    </property>
+    <property name="spacing">
+     <number>14</number>
+    </property>
+    <item>
+     <widget class="QScrollArea" name="leftScrollArea">
+      <property name="minimumSize">
+       <size>
+        <width>480</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>620</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <widget class="QWidget" name="leftPanelContainer">
+       <layout class="QVBoxLayout" name="leftPanelLayout">
+        <property name="leftMargin">
+         <number>8</number>
+        </property>
+        <property name="topMargin">
+         <number>8</number>
+        </property>
+        <property name="rightMargin">
+         <number>8</number>
+        </property>
+        <property name="bottomMargin">
+         <number>8</number>
+        </property>
+        <property name="spacing">
+         <number>12</number>
+        </property>
+        <item>
+         <widget class="StatusIndicator" name="globalStatusIndicator"/>
+        </item>
+        <item>
+         <widget class="JogControlPanel" name="jogPanel"/>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="quickActionGroup">
+          <property name="title">
+           <string>快捷操作</string>
+          </property>
+          <layout class="QGridLayout" name="quickActionLayout">
+           <property name="leftMargin">
+            <number>8</number>
+           </property>
+           <property name="topMargin">
+            <number>8</number>
+           </property>
+           <property name="rightMargin">
+            <number>8</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="leftBottomSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="mainTabs">
+      <property name="documentMode">
+       <bool>true</bool>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="trajectoryTab">
+       <attribute name="title">
+        <string>轨迹可视化</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="trajectoryLayout">
+        <item>
+         <widget class="TrajectoryPanel" name="trajectoryPanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="alarmTab">
+       <attribute name="title">
+        <string>告警日志</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="alarmLayout">
+        <item>
+         <widget class="AlarmPanel" name="alarmPanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="gcodeTab">
+       <attribute name="title">
+        <string>G-code 编辑器</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="gcodeLayout">
+        <item>
+         <widget class="GCodePanel" name="gcodePanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="ioMonitorTab">
+       <attribute name="title">
+        <string>IO监控</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="ioMonitorLayout">
+        <item>
+         <widget class="IOPanel" name="ioMonitorPanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="remoteTab">
+       <attribute name="title">
+        <string>远程监控</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="remoteLayout">
+        <item>
+         <widget class="RemoteMonitorPanel" name="remotePanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="pluginTab">
+       <attribute name="title">
+        <string>插件管理</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="pluginLayout">
+        <item>
+         <widget class="PluginPanel" name="pluginPanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="commandTab">
+       <attribute name="title">
+        <string>命令面板</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="commandLayout">
+        <item>
+         <widget class="CommandPanel" name="commandPanel"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="behaviorTreeTab">
+       <attribute name="title">
+        <string>行为树编辑器</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="behaviorTreeLayout">
+        <item>
+         <widget class="BehaviorTreePanel" name="behaviorTreePanel"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>StatusIndicator</class>
+   <extends>QWidget</extends>
+   <header>core/MainWindow.h</header>
+  </customwidget>
+  <customwidget>
+   <class>JogControlPanel</class>
+   <extends>QWidget</extends>
+   <header>core/MainWindow.h</header>
+  </customwidget>
+  <customwidget>
+   <class>TrajectoryPanel</class>
+   <extends>QWidget</extends>
+   <header>trajectory/trajectoryVisualizer.h</header>
+  </customwidget>
+  <customwidget>
+   <class>AlarmPanel</class>
+   <extends>QWidget</extends>
+   <header>core/MainWindow.h</header>
+  </customwidget>
+  <customwidget>
+   <class>GCodePanel</class>
+   <extends>QWidget</extends>
+   <header>gcode/gcodeEditor.h</header>
+  </customwidget>
+  <customwidget>
+   <class>IOPanel</class>
+   <extends>QWidget</extends>
+   <header>core/MainWindow.h</header>
+  </customwidget>
+  <customwidget>
+   <class>RemoteMonitorPanel</class>
+   <extends>QWidget</extends>
+   <header>remote/remoteMonitor.h</header>
+  </customwidget>
+  <customwidget>
+   <class>PluginPanel</class>
+   <extends>QWidget</extends>
+   <header>plugin/pluginManager.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CommandPanel</class>
+   <extends>QWidget</extends>
+   <header>command/commandPanel.h</header>
+  </customwidget>
+  <customwidget>
+   <class>BehaviorTreePanel</class>
+   <extends>QWidget</extends>
+   <header>behavior_tree/behaviorTreePanel.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

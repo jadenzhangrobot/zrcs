@@ -1,0 +1,21 @@
+/*
+ * @Author: zhangyongjing
+ * @email: 649894200@qq.com
+ * @Date: 2023-03-28 15:25:04
+ * @LastEditTime: 2023-06-10 15:12:05
+ * @Description: 数据采集节点
+ */
+#pragma once
+#include "system/base/BaseNodeInterface.h"
+#include "system/nodeFactory.h"
+#include <array>
+#include <iostream>
+
+class DataCollection : public zrcsSystem::InputNode
+{
+public:
+    std::array<double, AXISMAXCOUNT> axisPosition_;
+
+    void init() override;
+    void run() override;
+};

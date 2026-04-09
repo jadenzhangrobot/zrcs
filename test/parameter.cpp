@@ -1,5 +1,5 @@
-#include "xml/xmlParsing.h"
-#include "config/parameter.h"
+#include "xml/XmlParsing.h"
+#include "config/Parameter.h"
 #include <filesystem>
 
 
