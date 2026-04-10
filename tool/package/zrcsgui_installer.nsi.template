@@ -9,6 +9,8 @@ CRCCheck on
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
+!include "LogicLib.nsh"
+!include "WinMessages.nsh"
 
 ; ---------------------------------------------------------------------------
 ; Product info
@@ -25,13 +27,43 @@ OutFile "${OUTPUT_DIR}\${PRODUCT_NAME}-${PRODUCT_VERSION}-Setup.exe"
 InstallDir "D:\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\${PRODUCT_NAME}" "InstallDir"
 RequestExecutionLevel admin
+BrandingText "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+
+; ---------------------------------------------------------------------------
+; Version resource info (shown in file Properties dialog)
+; ---------------------------------------------------------------------------
+VIProductVersion "@ZRCS_VERSION_QUAD@"
+VIAddVersionKey /LANG=2052 "ProductName"     "${PRODUCT_NAME}"
+VIAddVersionKey /LANG=2052 "CompanyName"     "${PRODUCT_PUBLISHER}"
+VIAddVersionKey /LANG=2052 "FileDescription" "${PRODUCT_NAME} 安装程序"
+VIAddVersionKey /LANG=2052 "FileVersion"     "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=2052 "LegalCopyright"  "Copyright (C) ${PRODUCT_PUBLISHER}"
+VIAddVersionKey /LANG=2052 "ProductVersion"  "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=1033 "ProductName"     "${PRODUCT_NAME}"
+VIAddVersionKey /LANG=1033 "CompanyName"     "${PRODUCT_PUBLISHER}"
+VIAddVersionKey /LANG=1033 "FileDescription" "${PRODUCT_NAME} Installer"
+VIAddVersionKey /LANG=1033 "FileVersion"     "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=1033 "LegalCopyright"  "Copyright (C) ${PRODUCT_PUBLISHER}"
+VIAddVersionKey /LANG=1033 "ProductVersion"  "${PRODUCT_VERSION}"
 
 ; ---------------------------------------------------------------------------
 ; MUI Settings
 ; ---------------------------------------------------------------------------
 !define MUI_ABORTWARNING
 
+; Installer / Uninstaller icon (use custom icon if provided, else NSIS default)
+@ICON_DEFINES@
+
+; Finish page: offer to launch the application
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE_NAME}"
+!define MUI_FINISHPAGE_RUN_TEXT "启动 ${PRODUCT_NAME} / Launch ${PRODUCT_NAME}"
+
+; ---------------------------------------------------------------------------
+; Pages
+; ---------------------------------------------------------------------------
 !insertmacro MUI_PAGE_WELCOME
+@LICENSE_PAGE@
+!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -43,16 +75,41 @@ RequestExecutionLevel admin
 !insertmacro MUI_LANGUAGE "English"
 
 ; ---------------------------------------------------------------------------
-; Install
+; Installer callbacks
 ; ---------------------------------------------------------------------------
-Section "Main" SecMain
+Function .onInit
+    ; Prevent multiple installer instances
+    System::Call 'kernel32::CreateMutex(p 0, i 0, t "${PRODUCT_NAME}_Installer_Mutex") p .r1 ?e'
+    Pop $R0
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONEXCLAMATION "安装程序已在运行。$\n$\nThe installer is already running."
+        Abort
+    ${EndIf}
+
+    ; Kill running instance if detected
+    nsExec::ExecToLog 'taskkill /F /IM ${EXE_NAME}'
+FunctionEnd
+
+Function un.onInit
+    ; Kill running instance before uninstall
+    nsExec::ExecToLog 'taskkill /F /IM ${EXE_NAME}'
+FunctionEnd
+
+; ---------------------------------------------------------------------------
+; Section: Core files (required)
+; ---------------------------------------------------------------------------
+Section "核心文件 / Core Files" SecMain
+    SectionIn RO  ; required, cannot be unchecked
+
     SetOutPath "$INSTDIR"
 
-    ; exe + dll
+    ; --- executables ---
     File "${STAGING_DIR}\*.exe"
+
+    ; --- DLLs ---
     File /nonfatal "${STAGING_DIR}\*.dll"
 
-    ; Qt plugins
+    ; --- Qt plugins ---
     SetOutPath "$INSTDIR\platforms"
     File /nonfatal "${STAGING_DIR}\platforms\*.dll"
 
@@ -77,17 +134,21 @@ Section "Main" SecMain
     SetOutPath "$INSTDIR\multimedia"
     File /nonfatal "${STAGING_DIR}\multimedia\*.dll"
 
+    ; --- Style / Theme resources ---
+    SetOutPath "$INSTDIR\style"
+    File /nonfatal "${STAGING_DIR}\style\*.*"
+
     SetOutPath "$INSTDIR"
 
-    ; Uninstaller
+    ; --- Uninstaller ---
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    ; Start Menu
+    ; --- Start Menu shortcuts ---
     CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
     CreateShortcut  "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXE_NAME}"
-    CreateShortcut  "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk"       "$INSTDIR\Uninstall.exe"
+    CreateShortcut  "$SMPROGRAMS\${PRODUCT_NAME}\卸载 ${PRODUCT_NAME}.lnk" "$INSTDIR\Uninstall.exe"
 
-    ; Registry - Add/Remove Programs
+    ; --- Registry: Add/Remove Programs ---
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
         "DisplayName"    "${PRODUCT_NAME} ${PRODUCT_VERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
@@ -98,6 +159,7 @@ Section "Main" SecMain
         "Publisher"      "${PRODUCT_PUBLISHER}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
         "InstallLocation" "$INSTDIR"
+    @ICON_REG@
     WriteRegStr HKLM "Software\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
 
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
@@ -107,9 +169,35 @@ Section "Main" SecMain
 SectionEnd
 
 ; ---------------------------------------------------------------------------
+; Section: Configuration files (optional)
+; ---------------------------------------------------------------------------
+Section "配置文件 / Configuration Files" SecConfig
+    SetOutPath "$INSTDIR\config"
+    File /nonfatal /r "${STAGING_DIR}\config\*.*"
+    SetOutPath "$INSTDIR"
+SectionEnd
+
+; ---------------------------------------------------------------------------
+; Section: Desktop shortcut (optional)
+; ---------------------------------------------------------------------------
+Section "桌面快捷方式 / Desktop Shortcut" SecDesktop
+    CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXE_NAME}"
+SectionEnd
+
+; ---------------------------------------------------------------------------
+; Component descriptions
+; ---------------------------------------------------------------------------
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecMain}    "安装 ${PRODUCT_NAME} 核心程序和运行库 / Install core program and runtime libraries"
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecConfig}  "安装机器配置文件 (axis, ethercat, model) / Install machine configuration files"
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop} "在桌面创建快捷方式 / Create a desktop shortcut"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+; ---------------------------------------------------------------------------
 ; Uninstall
 ; ---------------------------------------------------------------------------
 Section "Uninstall"
+    ; Qt plugin directories
     RMDir /r "$INSTDIR\platforms"
     RMDir /r "$INSTDIR\styles"
     RMDir /r "$INSTDIR\iconengines"
@@ -119,13 +207,23 @@ Section "Uninstall"
     RMDir /r "$INSTDIR\tls"
     RMDir /r "$INSTDIR\multimedia"
 
+    ; Config and style directories
+    RMDir /r "$INSTDIR\config"
+    RMDir /r "$INSTDIR\style"
+
+    ; Executables, DLLs, uninstaller
     Delete "$INSTDIR\*.dll"
     Delete "$INSTDIR\*.exe"
     Delete "$INSTDIR\Uninstall.exe"
     RMDir  "$INSTDIR"
 
+    ; Start Menu
     RMDir /r "$SMPROGRAMS\${PRODUCT_NAME}"
 
+    ; Desktop shortcut
+    Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
+
+    ; Registry
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
     DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
 SectionEnd
