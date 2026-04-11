@@ -54,6 +54,9 @@ endif()
 # 源文件
 aux_source_directory(./src SOURCE_FILES)
 
+# 1. zrcs_common 公共库
+add_subdirectory(zrcs_common)
+
 # BehaviorTree.CPP（zrcsnrt 核心依赖，所有模式都需要）
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)

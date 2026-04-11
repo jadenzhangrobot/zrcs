@@ -51,7 +51,6 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS resources/ui)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/zrcs_common/include
     ${CMAKE_SOURCE_DIR}/zrcs_gui
     ${CMAKE_SOURCE_DIR}/zrcs_gui/modules
     ${CMAKE_SOURCE_DIR}/zrcs_gui/resources/style
@@ -139,6 +138,7 @@ endif()
 
 # 链接库
 target_link_libraries(${PROJECT_NAME}
+    zrcscommon
     Qt6::Core
     Qt6::Widgets
     Qt6::OpenGL

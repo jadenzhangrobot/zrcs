@@ -12,4 +12,3 @@ enum class RegisterType : int
     // 寄存器总数（用于边界检查）
     REGISTER_COUNT = 32
 };
-

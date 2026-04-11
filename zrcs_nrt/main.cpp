@@ -22,7 +22,7 @@
 #include "status_publisher/StatusPublisher.h"
 #include "terminal/TerminalConsole.h"
 #include "rt_bridge/RtBridge.h"
-#include "shared_memory/NRtProcess.h"
+#include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmConstants.h"
 #include "config/ProjectConfig.h"
 

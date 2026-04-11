@@ -6,7 +6,6 @@ find_package(Protobuf REQUIRED)
 
 # 包含目录
 include_directories(
-    ${CMAKE_SOURCE_DIR}/zrcs_common/include
     ${CMAKE_SOURCE_DIR}/zrcs_rt
     ${CMAKE_BINARY_DIR}
 )
@@ -31,6 +30,7 @@ target_include_directories(zrcsrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库
 target_link_libraries(zrcsrt PRIVATE
+    zrcscommon
     Threads::Threads
     ruckig
     tinyxml2

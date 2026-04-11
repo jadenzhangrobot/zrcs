@@ -11,6 +11,9 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 #include "AxisConfig.h"
 #include "Global.h"
 #include "config/Parameter.h"

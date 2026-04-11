@@ -5,12 +5,11 @@
 #include <vector>
 #include "AxisConfig.h"
 #include "ControllerInterface.h"
+#include "laser/LaserController.h"
 #include "system/RtLog.h"
 #include "shared_memory/SharedData.h"
 
 namespace ZrcsHardware {
-
-class LaserController;  // 前向声明
 
 class Controller {
 private:

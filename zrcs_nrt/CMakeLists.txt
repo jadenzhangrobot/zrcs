@@ -6,7 +6,6 @@ find_package(Protobuf REQUIRED)
 
 # 包含目录
 include_directories(
-    ${CMAKE_SOURCE_DIR}/zrcs_common/include
     ${CMAKE_SOURCE_DIR}/zrcs_nrt
     ${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP/include
     ${CMAKE_SOURCE_DIR}/3rdParty/spdlog/include
@@ -28,6 +27,7 @@ target_include_directories(zrcsnrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库
 target_link_libraries(zrcsnrt PRIVATE
+    zrcscommon
     Threads::Threads
     ruckig
     tinyxml2

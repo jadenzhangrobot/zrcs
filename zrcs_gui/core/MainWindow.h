@@ -19,7 +19,7 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <functional>
-#include "shared_memory/NRtProcess.h"
+#include "shared_memory/NrtProcess.h"
 #include "communication/ZmqClient.h"
 #include "communication/ZmqStatusSubscriber.h"
 #include "trajectory/TrajectoryVisualizer.h"
