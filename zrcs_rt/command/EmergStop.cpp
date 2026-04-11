@@ -11,7 +11,7 @@ void EmergStop::run(void)
     {
         controller_->axiss[i]->powerOff();
     }
-    shm().taskScheduling().store(TaskScheduling::STOP, std::memory_order_release);
+    shm()->taskSched.store(zrcs::TaskScheduling::STOP, std::memory_order_release);
     setCmdStatus(zrcsSystem::CmdStatus::EXIT);
 }
 

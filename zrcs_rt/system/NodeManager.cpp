@@ -1,6 +1,6 @@
 #include "system/NodeManager.h"
 #include "config/ProjectConfig.h"
-#include "command/CmdHead.h"
+#include "command/CmdHead.h"  // IWYU pragma: keep — triggers REGISTERCMD static initialisers
 
 namespace zrcsSystem {
 
@@ -8,16 +8,20 @@ void NodeManager::run()
 {
     rtProcess_->initialize();
 
-    zrcs::rtlog::setLogQueue(&(rtProcess_->sharedBlock()->logQueue));
+    auto* block = shm();
 
-    for (auto &node : factory_.inPutNodes)
-    {
+    // 在实时循环外创建进程本地 SPSC 包装器（非共享内存，不触及 RT 路径分配）
+    zrcs::ShmSPSCConsumer<zrcs::Command,    zrcs::kCmdQueueCap> cmdConsumer(block->cmdQueue);
+    zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap> logProducer(block->logQueue);
+
+    // 注册日志生产者（RT 循环内 INFO_PRINT 等宏通过此指针写共享内存）
+    zrcs::rtlog::setLogQueue(&logProducer);
+
+    for (auto& node : factory_.inPutNodes)
         node->registered(controller_.get(), rtProcess_.get());
-    }
-    for (auto &node : factory_.outPutNodes)
-    {
+
+    for (auto& node : factory_.outPutNodes)
         node->registered(controller_.get(), rtProcess_.get());
-    }
 
     initData();
 
@@ -26,135 +30,119 @@ void NodeManager::run()
             zrcs::ProjectConfig::prefixedFilename(projectName_, "model.xml"));
         modelRegistry_.loadFromConfig(*modelConfig_);
         factory_.modelRegistry = &modelRegistry_;
-        for (auto &node : factory_.inPutNodes)
+        for (auto& node : factory_.inPutNodes)
             node->modelRegistry_ = &modelRegistry_;
-        for (auto &node : factory_.outPutNodes)
+        for (auto& node : factory_.outPutNodes)
             node->modelRegistry_ = &modelRegistry_;
     } catch (const std::exception& e) {
         WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
     controller_->rtos_->rtos_task_create();
-    controller_->rtos_->real_task([this]()
+    controller_->rtos_->real_task([this, &cmdConsumer]()
     {
         controller_->receiveData();
 
-        for (auto &node : factory_.inPutNodes)
-        {
-            if (node->getNodeStatus() == NodeStatus::RTINIT)
-            {
+        for (auto& node : factory_.inPutNodes) {
+            if (node->getNodeStatus() == NodeStatus::RTINIT) {
                 node->init();
                 node->setNodeStatus(NodeStatus::EXECUTING);
-            }
-            else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-            {
+            } else if (node->getNodeStatus() == NodeStatus::EXECUTING) {
                 node->execute();
-            }
-            else
-            {
+            } else {
                 ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
             }
         }
 
-        switch (shm().taskScheduling().load())
+        switch (shm()->taskSched.load(std::memory_order_acquire))
         {
-            case TaskScheduling::RUN:
-                if (cmdNode_ != nullptr)
-                {
-                    if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
-                    {
-                        shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
-                        shm().lastCmdResult().store(0, std::memory_order_release);
-                        INFO_PRINT("命令完成: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
+            case zrcs::TaskScheduling::RUN:
+                if (cmdNode_ != nullptr) {
+                    if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) {
+                        shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                        shm()->lastCmdResult.store(0, std::memory_order_release);
+                        INFO_PRINT("命令完成: id=%u(seq=%u)\n",
+                                   static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         cmdNode_ = nullptr;
-                    }
-                    else
-                    {
+                    } else {
                         cmdNode_->execute();
-                        if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
-                        {
-                            WARN_PRINT("命令失败: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
-                            shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
-                            shm().lastCmdResult().store(1, std::memory_order_release);
+                        if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) {
+                            WARN_PRINT("命令失败: id=%u(seq=%u)\n",
+                                       static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                            shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
                     }
-                }
-                else
-                {
-                    if (shm().cmdQueue().pop(cmd_))
-                    {
-                        std::string_view cmdName(cmd_.cmd);
+                } else {
+                    if (cmdConsumer.pop(cmd_)) {
+                        // cmdId → 字符串名称（NodeFactory 仍按名称索引）
+                        // 通过查 CmdId 枚举名作为字符串键
+                        const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
                         auto nodePtr = factory_.getNodePtr(cmdName);
                         if (nodePtr) {
-                            INFO_PRINT("调度命令: %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
+                            INFO_PRINT("调度命令: %s(seq=%u)\n", cmdName, cmd_.seq);
                             cmdNode_ = nodePtr.get();
                             cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                             cmdNode_->modelRegistry_ = &modelRegistry_;
                         } else {
-                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n", cmd_.cmd, cmd_.seq);
-                            shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
-                            shm().lastCmdResult().store(1, std::memory_order_release);
+                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n", cmdName, cmd_.seq);
+                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                            shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
                     }
                 }
                 break;
 
-            case TaskScheduling::ERROR_STATE:
-                if (cmdNode_ != nullptr)
-                {
-                    WARN_PRINT("错误状态: 清理命令节点 %s\n", cmdNode_->getNodeName().c_str());
+            case zrcs::TaskScheduling::ERROR_STATE:
+                if (cmdNode_ != nullptr) {
+                    WARN_PRINT("错误状态: 清理命令节点 id=%u\n",
+                               static_cast<unsigned>(cmd_.cmdId));
                     cmdNode_->setCmdStatus(CmdStatus::INIT);
                     cmdNode_ = nullptr;
                 }
-                if (shm().cmdQueue().pop(cmd_))
-                {
-                    std::string_view cmdName(cmd_.cmd);
+                if (cmdConsumer.pop(cmd_)) {
+                    const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
                     auto nodePtr = factory_.getNodePtr(cmdName);
                     if (nodePtr) {
-                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n", cmd_.cmd, cmd_.seq);
+                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n", cmdName, cmd_.seq);
                         cmdNode_ = nodePtr.get();
                         cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                         cmdNode_->modelRegistry_ = &modelRegistry_;
-                        shm().taskScheduling().store(TaskScheduling::RUN, std::memory_order_release);
+                        shm()->taskSched.store(zrcs::TaskScheduling::RUN,
+                                               std::memory_order_release);
                     } else {
-                        INFO_PRINT("未注册的命令: %s, 已忽略\n", cmd_.cmd);
-                        shm().lastCmdSeq().store(cmd_.seq, std::memory_order_release);
-                        shm().lastCmdResult().store(1, std::memory_order_release);
+                        INFO_PRINT("未注册的命令: %s, 已忽略\n", cmdName);
+                        shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                        shm()->lastCmdResult.store(1, std::memory_order_release);
                     }
                 }
                 break;
 
-            case TaskScheduling::STOP:
+            case zrcs::TaskScheduling::STOP:
                 break;
 
-            case TaskScheduling::RESET:
-                if (cmdNode_ != nullptr)
-                {
+            case zrcs::TaskScheduling::RESET:
+                if (cmdNode_ != nullptr) {
                     cmdNode_->setCmdStatus(CmdStatus::INIT);
                     cmdNode_ = nullptr;
                 }
-                shm().taskScheduling().store(TaskScheduling::RUN, std::memory_order_release);
+                shm()->taskSched.store(zrcs::TaskScheduling::RUN,
+                                       std::memory_order_release);
                 break;
 
-            case TaskScheduling::START:
+            case zrcs::TaskScheduling::START:
             default:
                 break;
         }
 
-        for (auto &node : factory_.outPutNodes)
-        {
-            if (node->getNodeStatus() == NodeStatus::RTINIT)
-            {
+        for (auto& node : factory_.outPutNodes) {
+            if (node->getNodeStatus() == NodeStatus::RTINIT) {
                 node->init();
                 node->setNodeStatus(NodeStatus::EXECUTING);
-            }
-            else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-            {
+            } else if (node->getNodeStatus() == NodeStatus::EXECUTING) {
                 node->execute();
-            }
-            else
-            {
+            } else {
                 ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
             }
         }

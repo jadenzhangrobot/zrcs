@@ -20,7 +20,7 @@ void PosCapture::init()
     }
 
     lastIoState_ = controller_->ios_[ioIndex_]->ioRead32(ioIndex_, bitPos_);
-    shm().captureTriggered().store(false, std::memory_order_release);
+    shm()->captureTriggered.store(false, std::memory_order_release);
 }
 
 void PosCapture::run(void)
@@ -40,8 +40,10 @@ void PosCapture::run(void)
     if (triggered)
     {
         double pos = controller_->axiss[axisId_]->actualPos();
-        shm().capturedPos()[axisId_] = pos;
-        shm().captureTriggered().store(true, std::memory_order_release);
+        zrcs::CaptureData cap{};
+        cap.pos[axisId_] = pos;
+        zrcs::lfl_write(shm()->captureResult, cap);
+        shm()->captureTriggered.store(true, std::memory_order_release);
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
         return;
     }

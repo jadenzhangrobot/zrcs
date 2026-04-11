@@ -1,7 +1,5 @@
 project(zrcscommon)
 
-find_package(Boost REQUIRED COMPONENTS system)
-
 file(GLOB_RECURSE SOURCES
     "config/*.cpp"
     "shared_memory/*.cpp"
@@ -21,8 +19,12 @@ target_include_directories(zrcscommon
 )
 
 target_link_libraries(zrcscommon
-    PUBLIC
-        Boost::system
     PRIVATE
         tinyxml2
 )
+
+# Linux/macOS: shm_open / shm_unlink 在 librt 中
+if(UNIX)
+    target_link_libraries(zrcscommon PUBLIC rt)
+endif()
+# Windows: CreateFileMapping 在 kernel32 中（CMake 默认已链接，无需显式添加）

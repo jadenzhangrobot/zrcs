@@ -23,11 +23,12 @@ void GetJointPos::init()
     int dof = model->getDof();
     auto axisIds = model->getAxisIds();
 
-    double* result = shm().jointPosResult();
+    zrcs::JointPosData jp{};
     for (int i = 0; i < dof; i++)
     {
-        result[i] = controller_->axiss[axisIds[i]]->actualPos();
+        jp.pos[i] = controller_->axiss[axisIds[i]]->actualPos();
     }
+    zrcs::lfl_write(shm()->jointPosResult, jp);
 
     setCmdStatus(zrcsSystem::CmdStatus::EXIT);
 }

@@ -18,7 +18,7 @@
 #include <string>
 #include <memory>
 #include "config/Parameter.h"
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 
 using namespace ruckig;
 using namespace ZrcsHardware;

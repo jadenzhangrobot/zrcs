@@ -12,7 +12,7 @@ void SetOverride::init()
 
 void SetOverride::run(void)
 {
-    shm().overrideRatio().store(value_, std::memory_order_release);
+    shm()->overrideRatio.store(value_, std::memory_order_release);
     setCmdStatus(zrcsSystem::CmdStatus::EXIT);
 }
 

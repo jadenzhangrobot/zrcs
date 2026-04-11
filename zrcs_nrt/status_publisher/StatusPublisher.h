@@ -3,7 +3,6 @@
 #include <zmq.hpp>
 #include <thread>
 #include <atomic>
-#include <array>
 #include <spdlog/spdlog.h>
 #include "message.pb.h"
 #include "rt_bridge/RtBridge.h"
@@ -64,7 +63,7 @@ private:
     std::atomic<bool> running_;
 
     void run() {
-        std::array<double, AXISMAXCOUNT> positions{};
+        zrcs::JointPosData positions{};
 
         while (running_) {
             if (bridge_->readLatestAxisPositions(positions)) {
@@ -75,10 +74,10 @@ private:
                 for (uint8_t i = 0; i < count; ++i) {
                     auto* axis = status.add_axes();
                     axis->set_axis_id(i);
-                    axis->set_position(positions[i]);
+                    axis->set_position(positions.pos[i]);
                 }
 
-                status.set_heartbeat(bridge_->heartBeat());
+                status.set_heartbeat(bridge_->heartbeat());
                 status.set_dropped_commands(bridge_->droppedCount());
 
                 std::string serialized;

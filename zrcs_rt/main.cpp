@@ -9,7 +9,7 @@
  *
  */
 
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 #include "controller/ControllerInterface.h"
 #include "system/NodeManager.h"
 #include "system/RtLog.h"
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         // 检测共享内存中的 SHUTDOWN 信号
         auto* sharedBlock = nodeManager.rtProcess()->sharedBlock();
         while (true) {
-            if (sharedBlock->cmd.load(std::memory_order_acquire) == TaskScheduling::SHUTDOWN) {
+            if (sharedBlock->taskSched.load(std::memory_order_acquire) == zrcs::TaskScheduling::SHUTDOWN) {
                 INFO_PRINT("[RT] 收到 SHUTDOWN 信号, 正在退出...\n");
                 std::cout << "[RT] Received SHUTDOWN from NRT, exiting..." << std::endl;
                 nodeManager.stop();

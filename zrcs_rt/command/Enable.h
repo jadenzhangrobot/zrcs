@@ -8,7 +8,7 @@
 #pragma once
 
 #include "config/CmdArgs.h"
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
 

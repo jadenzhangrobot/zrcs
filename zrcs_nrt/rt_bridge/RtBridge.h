@@ -1,246 +1,245 @@
 #pragma once
 
+// RtBridge.h — NRT 侧共享内存统一访问层
+//
+// 所有 NRT 代码（ZMQ 线程、BT 引擎、终端）对 SharedBlock 的访问都应通过本类完成。
+// 线程安全：多个调用方可并发调用任意方法。
+//   - cmdQueue 的单生产者语义由内部 push_mutex_ 保证（SPSC 要求单写者）。
+//   - logQueue 的单消费者语义由 RtLogConsumer 独占保证。
+
 #include <atomic>
-#include <array>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <cstring>
 #include <chrono>
 #include <mutex>
 #include <thread>
-#include <sstream>
+#include <algorithm>
 #include <spdlog/spdlog.h>
-#include "shared_memory/SharedData.h"
-#include "config/Parameter.h"
-
-/**
- * @brief NRT→RT 共享内存通信的统一封装层
- *
- * 所有 NRT 侧对 SharedBlock 的访问都应通过本类完成。
- * 线程安全：多个调用方（ZMQ 线程、BT 线程、终端线程）可并发调用任意方法。
- * commandQueue 的单生产者语义由内部 push_mutex_ 保证。
- */
+#include "shared_memory/ShmLayout.h"
+#include "config/CmdArgs.h"
 class RtBridge {
 public:
-    enum class SendResult {
-        OK,
-        QUEUE_FULL,
-        NOT_CONNECTED
-    };
+    enum class SendResult { OK, QUEUE_FULL, NOT_CONNECTED, UNKNOWN_CMD };
 
     struct CmdCompletion {
         uint32_t seq;
-        bool     success;  // true = result==0
+        bool     success;
     };
 
-    explicit RtBridge(SharedBlock* block)
-        : block_(block) {}
+    explicit RtBridge(zrcs::SharedBlock* block)
+        : block_(block),
+          cmdProducer_(block->cmdQueue)
+    {}
 
     RtBridge(const RtBridge&) = delete;
     RtBridge& operator=(const RtBridge&) = delete;
 
-    bool isConnected() const { return block_ != nullptr; }
+    bool isConnected() const noexcept { return block_ != nullptr; }
 
-    // =================================================================
-    // 1. 命令发送 (NRT → RT commandQueue)
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 1. 命令发送（NRT → RT cmdQueue）
+    // ─────────────────────────────────────────────────────────────────
 
-    /**
-     * @brief 发送命名命令（核心重载）
-     * @param name  命令名（如 "MoveJ"、"Enable"），截断到 MAX_CMD_NAME-1
-     * @param args  参数数组指针（count==0 时可为 nullptr）
-     * @param count 参数个数（上限 MAX_CMD_ARGS）
-     * @return {SendResult, 分配的序列号}，失败时 seq 为 0
-     */
     std::pair<SendResult, uint32_t> sendCommand(
         const std::string& name,
         const double* args = nullptr,
-        size_t count = 0)
+        size_t count       = 0)
     {
         if (!block_) return {SendResult::NOT_CONNECTED, 0};
 
-        Command shm_cmd{};
-        std::strncpy(shm_cmd.cmd, name.c_str(), MAX_CMD_NAME - 1);
-        shm_cmd.cmd[MAX_CMD_NAME - 1] = '\0';
-
-        size_t n = std::min(count, static_cast<size_t>(MAX_CMD_ARGS));
-        if (args && n > 0) {
-            std::memcpy(shm_cmd.args, args, n * sizeof(double));
+        auto it = kCmdNameToId.find(name);
+        if (it == kCmdNameToId.end()) {
+            spdlog::error("[RtBridge] Unknown command '{}', not registered in kCmdNameToId", name);
+            return {SendResult::UNKNOWN_CMD, 0};
         }
 
-        uint32_t seq = seq_counter_.fetch_add(1, std::memory_order_relaxed);
-        shm_cmd.seq = seq;
+        zrcs::Command cmd{};
+        cmd.cmdId = static_cast<uint16_t>(it->second);
+        cmd.seq   = seq_counter_.fetch_add(1, std::memory_order_relaxed);
+
+        const size_t n = std::min(count, zrcs::kCmdArgsMax);
+        if (args && n > 0) std::memcpy(cmd.args, args, n * sizeof(double));
 
         {
-            std::lock_guard<std::mutex> lock(push_mutex_);
-            if (!block_->commandQueue.push(shm_cmd)) {
+            std::lock_guard<std::mutex> lk(push_mutex_);
+            if (!cmdProducer_.push(cmd)) {
                 ++dropped_count_;
-                spdlog::error("[RtBridge] Queue full, dropped '{}' (seq={})", name, seq);
+                spdlog::error("[RtBridge] Queue full, dropped '{}' (seq={})", name, cmd.seq);
                 return {SendResult::QUEUE_FULL, 0};
             }
         }
 
-        spdlog::debug("[RtBridge] Sent '{}' seq={} args_count={}", name, seq, n);
-        return {SendResult::OK, seq};
+        spdlog::debug("[RtBridge] Sent '{}' seq={} args={}", name, cmd.seq, n);
+        return {SendResult::OK, cmd.seq};
     }
 
     std::pair<SendResult, uint32_t> sendCommand(
-        const std::string& name,
-        const std::vector<double>& args)
+        const std::string& name, const std::vector<double>& args)
     {
         return sendCommand(name, args.data(), args.size());
     }
 
-    /**
-     * @brief 逗号分隔参数字符串的便捷重载（BT 节点使用）
-     */
+    // CSV 参数字符串便捷重载（BT 节点使用）
     std::pair<SendResult, uint32_t> sendCommand(
-        const std::string& name,
-        const std::string& csv_args)
+        const std::string& name, const std::string& csv_args)
     {
-        if (csv_args.empty()) {
-            return sendCommand(name, nullptr, 0);
-        }
+        if (csv_args.empty()) return sendCommand(name, nullptr, 0);
 
-        double buf[MAX_CMD_ARGS]{};
+        double buf[zrcs::kCmdArgsMax]{};
         size_t idx = 0;
-        std::istringstream ss(csv_args);
-        std::string token;
-        while (std::getline(ss, token, ',') && idx < MAX_CMD_ARGS) {
-            try {
-                buf[idx++] = std::stod(token);
-            } catch (...) {
-                break;
-            }
+        size_t pos = 0;
+        while (idx < zrcs::kCmdArgsMax) {
+            size_t comma = csv_args.find(',', pos);
+            const std::string token = csv_args.substr(pos, comma - pos);
+            try { buf[idx++] = std::stod(token); } catch (...) { break; }
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
         }
         return sendCommand(name, buf, idx);
     }
 
-    // =================================================================
-    // 2. 状态读取 (RT → NRT statusQueue)
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 2. 轴位置读取（RT → NRT，高频，LockFreeLatest）
+    // ─────────────────────────────────────────────────────────────────
 
-    bool readAxisPositions(std::array<double, AXISMAXCOUNT>& out) {
+    bool readLatestAxisPositions(zrcs::JointPosData& out) const noexcept {
         if (!block_) return false;
-        return block_->statusQueue.pop(out);
+        return zrcs::lfl_read(block_->axisPositions, out);
     }
 
-    /**
-     * @brief 排空状态队列，只保留最新一帧（消费者较慢时使用）
-     */
-    bool readLatestAxisPositions(std::array<double, AXISMAXCOUNT>& out) {
-        if (!block_) return false;
-        bool got_any = false;
-        std::array<double, AXISMAXCOUNT> temp{};
-        while (block_->statusQueue.pop(temp)) {
-            out = temp;
-            got_any = true;
-        }
-        return got_any;
-    }
-
-    uint8_t axisCount() const {
+    uint8_t axisCount() const noexcept {
         if (!block_) return 0;
         return block_->axisCount.load(std::memory_order_acquire);
     }
 
-    // =================================================================
-    // 3. 任务调度控制
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 3. 查询命令结果读取（修复旧版裸数组数据竞争）
+    // ───���─────────────────────────────────────────────────────────────
 
-    void setTaskScheduling(TaskScheduling ts) {
-        if (block_) block_->cmd.store(ts, std::memory_order_release);
+    bool readFkResult(zrcs::FkResultData& out) const noexcept {
+        if (!block_) return false;
+        return zrcs::lfl_read(block_->fkResult, out);
     }
 
-    TaskScheduling getTaskScheduling() const {
-        if (!block_) return TaskScheduling::STOP;
-        return block_->cmd.load(std::memory_order_acquire);
+    bool readJointPosResult(zrcs::JointPosData& out) const noexcept {
+        if (!block_) return false;
+        return zrcs::lfl_read(block_->jointPosResult, out);
     }
 
-    void requestRun()      { setTaskScheduling(TaskScheduling::RUN); }
-    void requestStop()     { setTaskScheduling(TaskScheduling::STOP); }
-    void requestReset()    { setTaskScheduling(TaskScheduling::RESET); }
-    void requestStart()    { setTaskScheduling(TaskScheduling::START); }
-    void requestShutdown() { setTaskScheduling(TaskScheduling::SHUTDOWN); }
+    bool readProbeResult(zrcs::ProbeResultData& out) const noexcept {
+        if (!block_) return false;
+        return zrcs::lfl_read(block_->probeResult, out);
+    }
 
-    // =================================================================
-    // 4. 心跳监控
-    // =================================================================
+    bool readCaptureResult(zrcs::CaptureData& out) const noexcept {
+        if (!block_) return false;
+        return zrcs::lfl_read(block_->captureResult, out);
+    }
 
-    uint64_t heartBeat() const {
+    bool probeTriggered() const noexcept {
+        if (!block_) return false;
+        return block_->probeTriggered.load(std::memory_order_acquire);
+    }
+
+    bool captureTriggered() const noexcept {
+        if (!block_) return false;
+        return block_->captureTriggered.load(std::memory_order_acquire);
+    }
+
+    uint32_t ioReadResult() const noexcept {
         if (!block_) return 0;
-        return block_->heartBeat.load(std::memory_order_acquire);
+        return block_->ioReadResult.load(std::memory_order_acquire);
     }
 
-    /**
-     * @brief 检查 RT 心跳是否比上次调用时有推进（RT 可能冻结时返回 false）
-     */
-    bool isRtAlive() {
-        uint64_t current = heartBeat();
-        bool alive = (current != prev_heartbeat_);
-        prev_heartbeat_ = current;
+    // ─────────────────────────────────────────────────────────────────
+    // 4. 任务调度控制
+    // ─────────────────────────────────────────────────────────────────
+
+    void setTaskScheduling(zrcs::TaskScheduling ts) noexcept {
+        if (block_) block_->taskSched.store(ts, std::memory_order_release);
+    }
+
+    zrcs::TaskScheduling getTaskScheduling() const noexcept {
+        if (!block_) return zrcs::TaskScheduling::STOP;
+        return block_->taskSched.load(std::memory_order_acquire);
+    }
+
+    void requestRun()      { setTaskScheduling(zrcs::TaskScheduling::RUN); }
+    void requestStop()     { setTaskScheduling(zrcs::TaskScheduling::STOP); }
+    void requestReset()    { setTaskScheduling(zrcs::TaskScheduling::RESET); }
+    void requestStart()    { setTaskScheduling(zrcs::TaskScheduling::START); }
+    void requestShutdown() { setTaskScheduling(zrcs::TaskScheduling::SHUTDOWN); }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 5. 心跳监控
+    // ─────────────────────────────────────────────────────────────────
+
+    uint64_t heartbeat() const noexcept {
+        if (!block_) return 0;
+        return block_->heartbeat.load(std::memory_order_acquire);
+    }
+
+    bool isRtAlive() noexcept {
+        const uint64_t cur = heartbeat();
+        const bool alive = (cur != prev_heartbeat_);
+        prev_heartbeat_ = cur;
         return alive;
     }
 
-    // =================================================================
-    // 5. 倍率控制 (0-100% → 0.0-1.0)
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 6. 速度倍率（0~100% → 0.0~1.0）
+    // ─────────────────────────────────────���───────────────────────────
 
-    void setSpeedMultiplier(uint8_t percent) {
+    void setSpeedMultiplier(uint8_t percent) noexcept {
         if (!block_) return;
-        double ratio = percent / 100.0;
-        if (ratio < 0.0) ratio = 0.0;
-        if (ratio > 1.0) ratio = 1.0;
-        block_->overrideRatio.store(ratio, std::memory_order_release);
-        block_->Multiplied.store(percent, std::memory_order_release); // 向后兼容
+        block_->overrideRatio.store(
+            std::clamp(percent / 100.0, 0.0, 1.0), std::memory_order_release);
     }
 
-    uint8_t speedMultiplier() const {
+    uint8_t speedMultiplier() const noexcept {
         if (!block_) return 0;
-        return block_->Multiplied.load(std::memory_order_acquire);
+        return static_cast<uint8_t>(
+            block_->overrideRatio.load(std::memory_order_acquire) * 100.0);
     }
 
-    // =================================================================
-    // 6. 单轴连续运动控制
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 7. 连续点动控制
+    // ─────────────────────────────────────────────────────────────────
 
-    void startContinuousMotion(int axisId, bool direction) {
+    void startContinuousMotion(int axisId, bool direction) noexcept {
         if (!block_) return;
-        block_->sacm.axisId.store(axisId, std::memory_order_relaxed);
-        block_->sacm.direction.store(direction, std::memory_order_relaxed);
-        block_->sacm.motion.store(true, std::memory_order_release);
+        block_->jogCtrl.axisId.store(axisId, std::memory_order_relaxed);
+        block_->jogCtrl.direction.store(direction, std::memory_order_relaxed);
+        block_->jogCtrl.active.store(true, std::memory_order_release);
     }
 
-    void stopContinuousMotion() {
-        if (!block_) return;
-        block_->sacm.motion.store(false, std::memory_order_release);
+    void stopContinuousMotion() noexcept {
+        if (block_) block_->jogCtrl.active.store(false, std::memory_order_release);
     }
 
-    // =================================================================
-    // 7. 命令完成跟踪
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 8. 命令完成跟踪
+    // ─────────────────────────────────────────────────────────────────
 
-    CmdCompletion lastCompletion() const {
+    CmdCompletion lastCompletion() const noexcept {
         if (!block_) return {0, false};
-        uint32_t seq = block_->lastCmdSeq.load(std::memory_order_acquire);
-        uint8_t  res = block_->lastCmdResult.load(std::memory_order_acquire);
+        const uint32_t seq = block_->lastCmdSeq.load(std::memory_order_acquire);
+        const uint8_t  res = block_->lastCmdResult.load(std::memory_order_acquire);
         return {seq, res == 0};
     }
 
-    bool isCommandCompleted(uint32_t seq) const {
+    bool isCommandCompleted(uint32_t seq) const noexcept {
         if (!block_) return false;
         return block_->lastCmdSeq.load(std::memory_order_acquire) >= seq;
     }
 
-    /**
-     * @brief 阻塞等待指定序列号命令完成
-     * @return true 如果在超时内完成
-     */
     bool waitForCompletion(
         uint32_t seq,
-        std::chrono::milliseconds timeout = std::chrono::milliseconds(10000))
+        std::chrono::milliseconds timeout = std::chrono::milliseconds(10000)) noexcept
     {
-        auto deadline = std::chrono::steady_clock::now() + timeout;
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
         while (std::chrono::steady_clock::now() < deadline) {
             if (isCommandCompleted(seq)) return true;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -248,16 +247,90 @@ public:
         return false;
     }
 
-    // =================================================================
-    // 8. 诊断
-    // =================================================================
+    // ─────────────────────────────────────────────────────────────────
+    // 9. 配置标志
+    // ─────────────────────────────────────────────────────────────────
 
-    uint64_t droppedCount() const { return dropped_count_.load(std::memory_order_relaxed); }
+    void setConfJ(bool enabled) noexcept {
+        if (block_) block_->confJEnabled.store(enabled, std::memory_order_release);
+    }
+    void setConfL(bool enabled) noexcept {
+        if (block_) block_->confLEnabled.store(enabled, std::memory_order_release);
+    }
+    void setSingAreaMode(uint8_t mode) noexcept {
+        if (block_) block_->singAreaMode.store(mode, std::memory_order_release);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 10. 诊断
+    // ─────────────────────────────────────────────────────────────────
+
+    uint64_t droppedCount() const noexcept {
+        return dropped_count_.load(std::memory_order_relaxed);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 命令名称 → CmdId 映射表（NRT 侧静态查表，不进入共享内存）
+    // ─────────────────────────────────────────────────────────────────
+    static inline const std::unordered_map<std::string, CmdId> kCmdNameToId = {
+        {"Enable",       CmdId::Enable},
+        {"Disable",      CmdId::Disable},
+        {"Reset",        CmdId::Reset},
+        {"Stop",         CmdId::Stop},
+        {"EmergStop",    CmdId::EmergStop},
+        {"Setmode",      CmdId::Setmode},
+        {"SetOverride",  CmdId::SetOverride},
+        {"ActUnit",      CmdId::ActUnit},
+        {"DeactUnit",    CmdId::DeactUnit},
+        {"SetZero",      CmdId::SetZero},
+        {"SetDO",        CmdId::SetDO},
+        {"SetGO",        CmdId::SetGO},
+        {"SetAO",        CmdId::SetAO},
+        {"PulseDO",      CmdId::PulseDO},
+        {"IORead",       CmdId::IORead},
+        {"Wait",         CmdId::Wait},
+        {"WaitDI",       CmdId::WaitDI},
+        {"WaitUntil",    CmdId::WaitUntil},
+        {"JogabsJ",      CmdId::JogabsJ},
+        {"JogJ",         CmdId::JogJ},
+        {"MoveAbs",      CmdId::MoveAbs},
+        {"MoveRel",      CmdId::MoveRel},
+        {"MoveAbsJ",     CmdId::MoveAbsJ},
+        {"MoveJ",        CmdId::MoveJ},
+        {"MoveL",        CmdId::MoveL},
+        {"MoveC",        CmdId::MoveC},
+        {"SearchL",      CmdId::SearchL},
+        {"TriggJ",       CmdId::TriggJ},
+        {"TriggL",       CmdId::TriggL},
+        {"Movehome",     CmdId::Movehome},
+        {"SetTCP",       CmdId::SetTCP},
+        {"SetBase",      CmdId::SetBase},
+        {"SetPayload",   CmdId::SetPayload},
+        {"ConfJ",        CmdId::ConfJ},
+        {"ConfL",        CmdId::ConfL},
+        {"SingArea",     CmdId::SingArea},
+        {"SetPosLimit",  CmdId::SetPosLimit},
+        {"SetVelLimit",  CmdId::SetVelLimit},
+        {"GetFK",        CmdId::GetFK},
+        {"GetJointPos",  CmdId::GetJointPos},
+        {"SyncMove",     CmdId::SyncMove},
+        {"CamMove",      CmdId::CamMove},
+        {"Probe",        CmdId::Probe},
+        {"PosCapture",   CmdId::PosCapture},
+        {"PosCompare",   CmdId::PosCompare},
+        {"HelixMove",    CmdId::HelixMove},
+        {"BufMove",      CmdId::BufMove},
+        {"SplineMove",   CmdId::SplineMove},
+        {"LaserSet",     CmdId::LaserSet},
+        {"GalvoMarkL",   CmdId::GalvoMarkL},
+        {"GalvoBufMark", CmdId::GalvoBufMark},
+    };
 
 private:
-    SharedBlock*          block_;
-    std::atomic<uint32_t> seq_counter_{1};
-    std::atomic<uint64_t> dropped_count_{0};
-    uint64_t              prev_heartbeat_{0};
-    std::mutex            push_mutex_;
+    zrcs::SharedBlock*                                           block_;
+    zrcs::ShmSPSCProducer<zrcs::Command, zrcs::kCmdQueueCap>   cmdProducer_;
+    std::mutex                                                   push_mutex_;
+    std::atomic<uint32_t>                                        seq_counter_{1};
+    std::atomic<uint64_t>                                        dropped_count_{0};
+    uint64_t                                                     prev_heartbeat_{0};
 };

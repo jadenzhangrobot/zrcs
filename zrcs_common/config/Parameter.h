@@ -5,5 +5,3 @@
 #else
   #define cycletime 10
 #endif
-
-#define AXISMAXCOUNT 50

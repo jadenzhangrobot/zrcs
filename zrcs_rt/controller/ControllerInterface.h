@@ -17,7 +17,7 @@
 #include "AxisConfig.h"
 #include "Global.h"
 #include "config/Parameter.h"
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 namespace ZrcsHardware {
 class Servo
 {

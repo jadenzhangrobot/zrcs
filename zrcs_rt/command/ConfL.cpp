@@ -6,7 +6,7 @@
 void ConfL::init()
 {
     bool enabled = static_cast<bool>(command_->args[ConfLOnOff]);
-    shm().confLEnabled().store(enabled, std::memory_order_release);
+    shm()->confLEnabled.store(enabled, std::memory_order_release);
     setCmdStatus(zrcsSystem::CmdStatus::EXIT);
 }
 

@@ -1,41 +1,74 @@
 #include "NrtProcess.h"
+#include "ShmPlatform.h"
 
-#include <iostream>
+#include <cstdio>
 #include <thread>
 #include <chrono>
 
-NRTProcess::NRTProcess(const char* shm_name)
-    : shm_name_(shm_name), shm_(nullptr), initialized_(false), shared_block_(nullptr)
+namespace zrcs {
+
+NrtProcess::NrtProcess(const char* name) noexcept
+    : name_(name)
 {
 }
 
-bool NRTProcess::initialize()
+NrtProcess::~NrtProcess()
 {
-    for (int retry = 0; retry < zrcs::SHM_WAIT_RETRY_COUNT; ++retry) {
-        try {
-            shm_ = std::make_unique<ipc::managed_shared_memory>(ipc::open_only, shm_name_);
-            shared_block_ = shm_->find<SharedBlock>(zrcs::SHM_BLOCK_NAME).first;
-            if (shared_block_) {
-                std::cout << "[NRT Process] Attached to shared memory." << std::endl;
-                initialized_ = true;
-                return true;
-            }
-            std::cerr << "[NRT Process] SharedBlock not found, retrying ("
-                      << retry + 1 << "/" << zrcs::SHM_WAIT_RETRY_COUNT << ")..." << std::endl;
-        } catch (const ipc::interprocess_exception&) {
-            std::cerr << "[NRT Process] Waiting for RT process ("
-                      << retry + 1 << "/" << zrcs::SHM_WAIT_RETRY_COUNT << "): "
-                      << "shared memory not ready" << std::endl;
-        }
-        shm_.reset();
-        std::this_thread::sleep_for(std::chrono::milliseconds(zrcs::SHM_WAIT_RETRY_MS));
+    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/false);
+    mapping_ = nullptr;
+    block_   = nullptr;
+}
+
+bool NrtProcess::tryAttach() noexcept
+{
+    void* addr = platformShmOpen(name_, kShmTotalSize, /*create=*/false);
+    if (!addr) return false;  // 段尚未创建，调用方重试
+
+    const auto* hdr = static_cast<const ShmHeader*>(addr);
+
+    // acquire 读 magic：若 RT 尚未完成 SharedBlock 构造，magic 仍为 0
+    if (hdr->magic.load(std::memory_order_acquire) != kShmMagic) {
+        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
+        return false;
     }
-    std::cerr << "[NRT Process] Failed to attach after "
-              << zrcs::SHM_WAIT_RETRY_COUNT << " retries." << std::endl;
+
+    // 版本校验
+    if (hdr->version != kShmVersion) {
+        std::fprintf(stderr,
+            "[NrtProcess] ABI version mismatch: expected %u, got %u. "
+            "Please rebuild both RT and NRT from the same source.\n",
+            kShmVersion, hdr->version);
+        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
+        return false;
+    }
+
+    // 布局大小校验
+    if (hdr->sizeof_block != static_cast<uint32_t>(sizeof(SharedBlock))) {
+        std::fprintf(stderr,
+            "[NrtProcess] SharedBlock size mismatch: expected %u, got %u.\n",
+            static_cast<unsigned>(sizeof(SharedBlock)), hdr->sizeof_block);
+        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
+        return false;
+    }
+
+    mapping_ = addr;
+    block_   = reinterpret_cast<SharedBlock*>(static_cast<char*>(addr) + kSharedBlockOffset);
+    return true;
+}
+
+bool NrtProcess::initialize() noexcept
+{
+    for (int retry = 0; retry < kAttachRetries; ++retry) {
+        if (tryAttach()) {
+            std::fprintf(stdout, "[NrtProcess] Attached to shared memory '%s'\n", name_);
+            return true;
+        }
+        std::fprintf(stdout, "[NrtProcess] Waiting for RT process (%d/%d)...\n",
+                     retry + 1, kAttachRetries);
+        std::this_thread::sleep_for(std::chrono::milliseconds(kAttachRetryMs));
+    }
+    std::fprintf(stderr, "[NrtProcess] Failed to attach after %d retries.\n", kAttachRetries);
     return false;
 }
 
-SharedBlock* NRTProcess::sharedBlock() const
-{
-    return shared_block_;
-}
+}  // namespace zrcs

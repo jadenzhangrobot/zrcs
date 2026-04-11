@@ -10,7 +10,7 @@ void SearchL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool SearchL::initTrajectory()
 {
-    shm().probeTriggered().store(false, std::memory_order_release);
+    shm()->probeTriggered.store(false, std::memory_order_release);
 
     ioModule_ = static_cast<int>(command_->args[SearchLIOModule]);
     ioBit_ = static_cast<int>(command_->args[SearchLIOBit]);
@@ -100,12 +100,13 @@ void SearchL::run(void)
             Eigen::Matrix4d toolPose;
             if (model->forwardKinematics(jointPos, toolPose))
             {
-                double* result = shm().probeResult();
-                result[0] = toolPose(0, 3);  // X
-                result[1] = toolPose(1, 3);  // Y
-                result[2] = toolPose(2, 3);  // Z
+                zrcs::ProbeResultData pr{};
+                pr.pose[0] = toolPose(0, 3);  // X
+                pr.pose[1] = toolPose(1, 3);  // Y
+                pr.pose[2] = toolPose(2, 3);  // Z
+                zrcs::lfl_write(shm()->probeResult, pr);
             }
-            shm().probeTriggered().store(true, std::memory_order_release);
+            shm()->probeTriggered.store(true, std::memory_order_release);
 
             // 停在当前位置
             for (int i = 0; i < dof_; i++)

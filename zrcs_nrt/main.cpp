@@ -14,7 +14,6 @@
 #include <atomic>
 #include <string>
 #include <filesystem>
-#include <boost/interprocess/shared_memory_object.hpp>
 #include "NrtLogger.h"
 #include "BtEngine.h"
 #include "RtLogConsumer.h"
@@ -23,7 +22,7 @@
 #include "terminal/TerminalConsole.h"
 #include "rt_bridge/RtBridge.h"
 #include "shared_memory/NrtProcess.h"
-#include "shared_memory/ShmConstants.h"
+#include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"
 
 #ifdef _WIN32
@@ -37,7 +36,6 @@
 
 static std::atomic<bool> g_running{true};
 static ZMQServer* g_zmq_server = nullptr;
-namespace ipc = boost::interprocess;
 
 #ifdef _WIN32
 static HANDLE g_rt_process = nullptr;
@@ -81,7 +79,8 @@ static void signalHandler(int signum) {
 
 static void cleanupSharedMemory()
 {
-    ipc::shared_memory_object::remove(zrcs::SHM_NAME);
+    // Shared memory cleanup is handled by RtProcess (the creator).
+    // NRT side only detaches; nothing to unlink here.
 }
 
 // 启动 RT 子进程，返回是否成功
@@ -95,7 +94,7 @@ static bool launchRTProcess()
     GetModuleFileNameA(nullptr, exePath, MAX_PATH);
     std::string dir(exePath);
     dir = dir.substr(0, dir.find_last_of("\\/") + 1);
-    std::string rtPath = dir + zrcs::RT_PROCESS_NAME + ".exe";
+    std::string rtPath = dir + zrcs::kRtProcessName + ".exe";
 
     STARTUPINFOA si = {};
     si.cb = sizeof(si);
@@ -131,7 +130,7 @@ static bool launchRTProcess()
     exePath[exeLen] = '\0';
 
     std::filesystem::path execDir = std::filesystem::path(exePath).parent_path();
-    std::string rtPath = (execDir / zrcs::RT_PROCESS_NAME).string();
+    std::string rtPath = (execDir / zrcs::kRtProcessName).string();
 
     g_rt_pid = fork();
     if (g_rt_pid < 0) {
@@ -144,7 +143,7 @@ static bool launchRTProcess()
             spdlog::error("Failed to change directory to {}", execDir.string());
             _exit(1);
         }
-        execl(rtPath.c_str(), zrcs::RT_PROCESS_NAME, nullptr);
+        execl(rtPath.c_str(), zrcs::kRtProcessName, nullptr);
         // execl 失败
         spdlog::error("Failed to exec RT process: {}", rtPath);
         _exit(1);

@@ -7,16 +7,14 @@
  */
 #pragma once
 
-#include "config/CmdArgs.h"
-#include "shared_memory/RtProcess.h"
-#include "shared_memory/SharedData.h"
+#include "shared_memory/RtProcess.h"   // zrcs::RtProcess / RTProcess, SharedBlock
+#include "config/CmdArgs.h"            // 参数索引枚举、CmdId、TaskScheduling（via ShmLayout）
 #include "controller/Controller.h"
-#include "controller/ControllerInterface.h"
+#include "system/RtLog.h"
+#include "config/Parameter.h"
 #include <atomic>
 #include <cstdint>
 #include <string>
-#include "system/RtLog.h"
-#include "config/Parameter.h"
 
 class ModelRegistry;
 
@@ -29,7 +27,7 @@ public:
     std::string cmdParam_;
     ZrcsHardware::Controller* controller_;
     RTProcess *rtProcess_;
-    Command* command_;
+    zrcs::Command* command_;
     ModelRegistry* modelRegistry_;
 
     Basenode() : nodeCount_(0), nodeName_{}, cmdParam_(),
@@ -39,7 +37,7 @@ public:
     }
     virtual ~Basenode() = default;
 
-    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess, Command* command)
+    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess, zrcs::Command* command)
     {
         controller_    = ct;
         rtProcess_     = rtProcess;
@@ -52,84 +50,70 @@ public:
         rtProcess_  = rtProcess;
     }
 
-    ShmAccessor shm() { return ShmAccessor(rtProcess_->sharedBlock()); }
-    
-    // 获取节点名字
-    std::string getNodeName(void) const
-    {
-        return nodeName_;
-    }
-    
-    std::uint64_t getNodeCount() const
-    {
-        return nodeCount_;
-    }
+    // 直接返回 SharedBlock 指针，调用方通过 shm()->field 访问
+    zrcs::SharedBlock* shm() const noexcept { return rtProcess_->sharedBlock(); }
+
+    std::string getNodeName() const { return nodeName_; }
+    std::uint64_t getNodeCount() const { return nodeCount_; }
 };
 
 enum class CmdStatus {
-    START,         // 节点已创建
-    INIT,          // 非实时初始化中
-    EXECUTING,     // 核心逻辑执行中
-    EXIT,          // 非实时退出中
-    COMPLETED,     // 执行成功完成
-    FAILED         // 执行失败
+    START,
+    INIT,
+    EXECUTING,
+    EXIT,
+    COMPLETED,
+    FAILED
 };
 
 
 class CmdNode : public Basenode {
 public:
     std::atomic<CmdStatus> cmdStatus_;
-    
+
     CmdNode() : cmdStatus_(CmdStatus::INIT) {}
     virtual ~CmdNode() = default;
-    
-    // 非实时初始化
+
     virtual void init() = 0;
     virtual void run() = 0;
-    // 非实时退出
     virtual void exit() = 0;
-    
-    void execute(); 
-    
-    // 获取命令节点状态
+
+    void execute();
+
     CmdStatus getCmdStatus() const noexcept {
         return cmdStatus_.load(std::memory_order_acquire);
     }
-    
-    // 设置命令节点状态
+
     void setCmdStatus(CmdStatus status) {
         cmdStatus_.store(status, std::memory_order_release);
     }
 };
 
 
-enum class NodeStatus 
+enum class NodeStatus
 {
-    RTINIT,        // 实时初始化中
-    EXECUTING,     // 持续运行中
-    FAILED         // 运行失败
+    RTINIT,
+    EXECUTING,
+    FAILED
 };
 
-// 持久性节点：持续运行的节点
-class OutputNode : public Basenode 
+class OutputNode : public Basenode
 {
 public:
     std::atomic<NodeStatus> nodeStatus_;
-    
+
     OutputNode() : nodeStatus_(NodeStatus::RTINIT) {}
     virtual ~OutputNode() = default;
     virtual void init() = 0;
     virtual void run() = 0;
-   
+
     void execute();
-    
-    NodeStatus getNodeStatus() const
-    {
+
+    NodeStatus getNodeStatus() const {
         return nodeStatus_.load(std::memory_order_acquire);
     }
-    
-    void setNodeStatus(NodeStatus status) 
-    {
+
+    void setNodeStatus(NodeStatus status) {
         nodeStatus_.store(status, std::memory_order_release);
     }
 };
@@ -146,13 +130,11 @@ public:
 
     virtual void execute();
 
-    NodeStatus getNodeStatus() const
-    {
+    NodeStatus getNodeStatus() const {
         return nodeStatus_.load(std::memory_order_acquire);
     }
 
-    void setNodeStatus(NodeStatus status)
-    {
+    void setNodeStatus(NodeStatus status) {
         nodeStatus_.store(status, std::memory_order_release);
     }
 };

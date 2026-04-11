@@ -7,7 +7,7 @@
 #include "ControllerInterface.h"
 #include "laser/LaserController.h"
 #include "system/RtLog.h"
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 
 namespace ZrcsHardware {
 

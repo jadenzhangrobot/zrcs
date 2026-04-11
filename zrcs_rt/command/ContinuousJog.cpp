@@ -12,8 +12,8 @@ void ContinuousJog::init()
 {
     // 从共享内存中加载手动位置数据
     input_.control_interface = ruckig::ControlInterface::Velocity;
-    input_.max_acceleration[0] = controller_->axiss[shm().continueMotion().axisId.load()]->getMaxAcceleration();
-    input_.max_jerk[0] = controller_->axiss[shm().continueMotion().axisId.load()]->getMaxJerk();
+    input_.max_acceleration[0] = controller_->axiss[shm()->jogCtrl.axisId.load()]->getMaxAcceleration();
+    input_.max_jerk[0] = controller_->axiss[shm()->jogCtrl.axisId.load()]->getMaxJerk();
 }
 
 void ContinuousJog::accelerate(int axisId)
@@ -92,15 +92,15 @@ void ContinuousJog::decelerate(int axisId)
 
 void ContinuousJog::run(void)
 {
-    int axisId = shm().continueMotion().axisId.load(std::memory_order_acquire);
+    int axisId = shm()->jogCtrl.axisId.load(std::memory_order_acquire);
 
-    targetVelocity_ = shm().overrideRatio().load(std::memory_order_acquire) * controller_->axiss[axisId]->getMaxVelocity();
-    if (shm().continueMotion().direction.load() == false)
+    targetVelocity_ = shm()->overrideRatio.load(std::memory_order_acquire) * controller_->axiss[axisId]->getMaxVelocity();
+    if (shm()->jogCtrl.direction.load() == false)
     {
         targetVelocity_ = -targetVelocity_;
     }
 
-    if (shm().continueMotion().motion.load() == true)
+    if (shm()->jogCtrl.active.load() == true)
     {
         if (stopped_)
         {
@@ -115,7 +115,7 @@ void ContinuousJog::run(void)
         decelerateStart_ = true;
         accelerate(axisId);
     }
-    else if (shm().continueMotion().motion.load() == false)
+    else if (shm()->jogCtrl.active.load() == false)
     {
         if (stopped_)
         {

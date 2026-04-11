@@ -7,7 +7,7 @@ TrajectoryCmd::TrajectoryCmd() : baseDeltaTime_(cycletime * 0.001) {}
 
 void TrajectoryCmd::updateOverride()
 {
-    double override = shm().overrideRatio().load(std::memory_order_acquire);
+    double override = shm()->overrideRatio.load(std::memory_order_acquire);
     applyDeltaTime(baseDeltaTime_ * override);
 }
 

@@ -15,7 +15,7 @@ void Probe::applyDeltaTime(double dt) { if (otg_) otg_->delta_time = dt; }
 
 bool Probe::initTrajectory()
 {
-    shm().probeTriggered().store(false, std::memory_order_release);
+    shm()->probeTriggered.store(false, std::memory_order_release);
 
     axisId_ = static_cast<int>(command_->args[ProbeAxisId]);
     double direction = command_->args[ProbeDirection];
@@ -54,8 +54,10 @@ void Probe::run(void)
         if (controller_->ios_[ioIndex_]->ioRead32(ioIndex_, bitPos_))
         {
             double pos = controller_->axiss[axisId_]->actualPos();
-            shm().probeResult()[0] = pos;
-            shm().probeTriggered().store(true, std::memory_order_release);
+            zrcs::ProbeResultData pr{};
+            pr.pose[0] = pos;
+            zrcs::lfl_write(shm()->probeResult, pr);
+            shm()->probeTriggered.store(true, std::memory_order_release);
 
             controller_->axiss[axisId_]->setAxisPositionCmd(pos);
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);

@@ -1,38 +1,52 @@
 #include "RtProcess.h"
+#include "ShmPlatform.h"
 
-#include <iostream>
-#include <boost/interprocess/managed_shared_memory.hpp>
+#include <cstdio>
+#include <new>
 
-namespace ipc = boost::interprocess;
+namespace zrcs {
 
-RTProcess::RTProcess(const char* shm_name)
-    : shm_name_(shm_name), shm_(nullptr), shared_block_(nullptr)
+RtProcess::RtProcess(const char* name) noexcept
+    : name_(name)
 {
 }
 
-RTProcess::~RTProcess()
+RtProcess::~RtProcess()
 {
-    shm_.reset();
-    ipc::shared_memory_object::remove(shm_name_);
+    if (block_) {
+        block_->~SharedBlock();
+        block_ = nullptr;
+    }
+    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/true);
+    mapping_ = nullptr;
 }
 
-bool RTProcess::initialize()
+bool RtProcess::initialize() noexcept
 {
-    ipc::shared_memory_object::remove(shm_name_);
-    try {
-        shm_ = std::make_unique<ipc::managed_shared_memory>(
-            ipc::create_only, shm_name_, zrcs::SHM_SIZE);
-        shared_block_ = shm_->find_or_construct<SharedBlock>(zrcs::SHM_BLOCK_NAME)();
+    // 清理旧残留段（正常情况 RT 是首先启动的一方）
+    platformShmClose(nullptr, 0, name_, /*unlink=*/true);
 
-        std::cout << "[RT Process] Shared memory created." << std::endl;
-        return true;
-    } catch (const ipc::interprocess_exception& e) {
-        std::cerr << "[RT Process] Initialization error: " << e.what() << std::endl;
+    mapping_ = platformShmOpen(name_, kShmTotalSize, /*create=*/true);
+    if (!mapping_) {
+        std::fprintf(stderr, "[RtProcess] Failed to create shared memory '%s'\n", name_);
         return false;
     }
+
+    // 构造 SharedBlock（placement-new）
+    void* block_addr = static_cast<char*>(mapping_) + kSharedBlockOffset;
+    block_ = new (block_addr) SharedBlock{};
+
+    // 填写 ABI 头部（magic 最后写入，充当初始化完成信号）
+    auto* hdr = static_cast<ShmHeader*>(mapping_);
+    hdr->version      = kShmVersion;
+    hdr->sizeof_block = static_cast<uint32_t>(sizeof(SharedBlock));
+    // release fence：保证 SharedBlock 构造和 header 字段完全可见后再写 magic
+    std::atomic_thread_fence(std::memory_order_release);
+    hdr->magic.store(kShmMagic, std::memory_order_release);
+
+    std::fprintf(stdout, "[RtProcess] Shared memory '%s' created (v%u, block=%u bytes)\n",
+                 name_, kShmVersion, static_cast<unsigned>(sizeof(SharedBlock)));
+    return true;
 }
 
-SharedBlock* RTProcess::sharedBlock() const
-{
-    return shared_block_;
-}
+}  // namespace zrcs

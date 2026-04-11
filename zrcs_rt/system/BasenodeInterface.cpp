@@ -24,7 +24,7 @@ void CmdNode::execute()
             break;
         case CmdStatus::FAILED:
             ERROR_PRINT("%s(seq=%u) 执行失败\n", nodeName_, command_ ? command_->seq : 0);
-            shm().taskScheduling().store(TaskScheduling::ERROR_STATE, std::memory_order_release);
+            shm()->taskSched.store(zrcs::TaskScheduling::ERROR_STATE, std::memory_order_release);
             break;
         default:
             break;

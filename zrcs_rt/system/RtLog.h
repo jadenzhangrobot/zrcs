@@ -1,34 +1,36 @@
-
 #pragma once
 
-#include <cstdio>
+// RtLog.h — RT 侧实时日志
+//
+// g_logQueue 指向进程本地的 ShmSPSCProducer，由 NodeManager::run() 初始化。
+// RT 线程通过 INFO_PRINT / WARN_PRINT / ERROR_PRINT 宏写日志（栈上格式化，无动态分配）。
+// 队列满时静默丢弃（不阻塞实时循环）。
+
 #include <cstring>
 #include <cstdint>
 #include <chrono>
-#include "shared_memory/SharedData.h"
+#include "shared_memory/ShmLayout.h"
 
 #ifdef REALTIME
 #include <cobalt/stdio.h>
 #define RT_PRINTF rt_printf
 #else
+#include <cstdio>  // IWYU pragma: keep — printf is used via RT_PRINTF macro
 #define RT_PRINTF printf
 #endif
 
 namespace zrcs {
 namespace rtlog {
 
-// 日志级别
 enum Level : uint8_t { INFO = 0, WARN = 1, ERR = 2 };
 
-// 全局日志队列指针，RT 进程初始化时设置
-// RT 是单线程实时循环，无需 atomic
-inline SPSCRingBuffer<RtLogEntry, LOG_BUFFER_SIZE>* g_logQueue = nullptr;
+// 进程本地生产者指针（不在共享内存中）
+inline ShmSPSCProducer<RtLogEntry, kLogQueueCap>* g_logQueue = nullptr;
 
-inline void setLogQueue(SPSCRingBuffer<RtLogEntry, LOG_BUFFER_SIZE>* q) {
-    g_logQueue = q;
+inline void setLogQueue(ShmSPSCProducer<RtLogEntry, kLogQueueCap>* p) {
+    g_logQueue = p;
 }
 
-// 从完整路径提取文件名
 inline const char* extractFilename(const char* path) {
     const char* name = path;
     for (const char* p = path; *p; ++p) {
@@ -43,17 +45,14 @@ inline uint64_t nowMicroseconds() {
         duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count());
 }
 
-// 核心日志写入 -- RT-safe: 栈上格式化 + atomic store
-inline void logPush(Level level, const char* file, uint16_t line,
-                    const char* msg)
-{
+inline void logPush(Level level, const char* file, uint16_t line, const char* msg) {
     if (!g_logQueue) return;
 
     RtLogEntry entry;
     entry.timestamp_us = nowMicroseconds();
-    entry.level = static_cast<uint8_t>(level);
-    entry.padding[0] = 0;
-    entry.line = line;
+    entry.level        = static_cast<uint8_t>(level);
+    entry._pad[0]      = 0;
+    entry.line         = line;
 
     const char* fname = extractFilename(file);
     std::strncpy(entry.file, fname, sizeof(entry.file) - 1);
@@ -62,16 +61,15 @@ inline void logPush(Level level, const char* file, uint16_t line,
     std::strncpy(entry.message, msg, sizeof(entry.message) - 1);
     entry.message[sizeof(entry.message) - 1] = '\0';
 
-    g_logQueue->push(entry); // 队列满时静默丢弃
+    g_logQueue->push(entry);  // 队列满时静默丢弃
 }
 
 } // namespace rtlog
 } // namespace zrcs
 
-// ===================================================================
-// 兼容宏 -- 保持与原有 INFO_PRINT/WARN_PRINT/ERROR_PRINT 相同签名
-// 有 logQueue 时写入共享内存; 无 logQueue 时降级为 printf
-// ===================================================================
+// ─────────────────────────────────────────────────────────────────────────────
+// 日志宏（与原有签名兼容）
+// ─────────────────────────────────────────────────────────────────────────────
 
 #define RT_LOG_IMPL_(level, fmt, ...) \
     do { \
