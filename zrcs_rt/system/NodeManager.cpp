@@ -10,12 +10,12 @@ void NodeManager::run()
 
     auto* block = shm();
 
-    // 在实时循环外创建进程本地 SPSC 包装器（非共享内存，不触及 RT 路径分配）
-    zrcs::ShmSPSCConsumer<zrcs::Command,    zrcs::kCmdQueueCap> cmdConsumer(block->cmdQueue);
-    zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap> logProducer(block->logQueue);
+    // 构造进程本地 SPSC 包装器（成员变量，生命周期与 NodeManager 一致，不会悬空）
+    cmdConsumer_ = std::make_unique<zrcs::ShmSPSCConsumer<zrcs::Command,    zrcs::kCmdQueueCap>>(block->cmdQueue);
+    logProducer_ = std::make_unique<zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap>>(block->logQueue);
 
     // 注册日志生产者（RT 循环内 INFO_PRINT 等宏通过此指针写共享内存）
-    zrcs::rtlog::setLogQueue(&logProducer);
+    zrcs::rtlog::setLogQueue(logProducer_.get());
 
     for (auto& node : factory_.inPutNodes)
         node->registered(controller_.get(), rtProcess_.get());
@@ -41,8 +41,8 @@ void NodeManager::run()
         WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
-    controller_->rtos_->rtos_task_create();
-    controller_->rtos_->real_task([this, &cmdConsumer]()
+    // 先注册策略，再启动线程，避免线程启动时 strategy_ 尚为 nullptr
+    controller_->rtos_->real_task([this]()
     {
         controller_->receiveData();
 
@@ -78,7 +78,7 @@ void NodeManager::run()
                         }
                     }
                 } else {
-                    if (cmdConsumer.pop(cmd_)) {
+                    if (cmdConsumer_->pop(cmd_)) {
                         // cmdId → 字符串名称（NodeFactory 仍按名称索引）
                         // 通过查 CmdId 枚举名作为字符串键
                         const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
@@ -104,7 +104,7 @@ void NodeManager::run()
                     cmdNode_->setCmdStatus(CmdStatus::INIT);
                     cmdNode_ = nullptr;
                 }
-                if (cmdConsumer.pop(cmd_)) {
+                if (cmdConsumer_->pop(cmd_)) {
                     const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
                     auto nodePtr = factory_.getNodePtr(cmdName);
                     if (nodePtr) {
@@ -152,6 +152,8 @@ void NodeManager::run()
 
         controller_->sendData();
     });
+
+    controller_->rtos_->rtos_task_create();
 }
 
 } // namespace zrcsSystem

@@ -1,10 +1,3 @@
-/**
- * @copyright 版权所有(c)2024
- * @filename: NodeManager.h
- * @brief: 系统中心控制类，负责任务调度和节点管理
- * @author: 649894200@qq.com
- * @createdate: 2024-01-04
- */
 #pragma once
 
 #include "system/base/BaseNodeInterface.h"
@@ -30,6 +23,11 @@ private:
     NodeFactory                                   factory_;
     CmdNode*                                      cmdNode_{nullptr};
     zrcs::Command                                 cmd_;
+
+    // 进程本地 SPSC 包装器：在 run() 中初始化，生命周期与 NodeManager 一致
+    // 使用 unique_ptr 延迟构造（需要 shm() 指针才能初始化）
+    std::unique_ptr<zrcs::ShmSPSCConsumer<zrcs::Command,    zrcs::kCmdQueueCap>> cmdConsumer_;
+    std::unique_ptr<zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap>> logProducer_;
 
     zrcs::SharedBlock* shm() const noexcept { return rtProcess_->sharedBlock(); }
 
