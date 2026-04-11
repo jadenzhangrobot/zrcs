@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
+#include <array>
+#include <string_view>
 #include <vector>
 #include "system/base/BaseNodeInterface.h"
+#include "config/CmdArgs.h"
 
 class ModelRegistry;
 
@@ -24,8 +26,14 @@ public:
     // 构造时从静态 pending 列表接管所有注册
     NodeFactory();
 
-    Creator getNodePtr(std::string_view name);
-    bool    exist(std::string_view name) const;
+    // 按 CmdId 直接索引，O(1)，无字符串转换
+    Creator getNodePtr(CmdId id) const noexcept {
+        const auto idx = static_cast<size_t>(id);
+        if (idx == 0 || idx >= static_cast<size_t>(CmdId::SENTINEL)) return nullptr;
+        return registry_[idx];
+    }
+
+    bool exist(std::string_view name) const;
 
     // 静态 pending 列表 —— 仅供注册宏使用，函数内静态避免初始化顺序问题
     struct PendingCmd    { std::string_view name; Creator creator; };
@@ -39,7 +47,8 @@ public:
     ~NodeFactory() = default;
 
 private:
-    std::unordered_map<std::string_view, Creator> registry_;
+    // 下标 = CmdId 枚举值，0(INVALID) 和越界位置为 nullptr
+    std::array<Creator, static_cast<size_t>(CmdId::SENTINEL)> registry_{};
 };
 
 // ── 注册辅助模板（写 pending，不再依赖单例）────────────────────

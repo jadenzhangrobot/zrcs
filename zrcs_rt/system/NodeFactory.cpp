@@ -1,4 +1,6 @@
 #include "system/NodeFactory.h"
+#include "config/CmdArgs.h"
+#include <cstring>
 
 namespace zrcsSystem {
 
@@ -22,8 +24,16 @@ std::vector<NodeFactory::PendingInput>& NodeFactory::pendingInputs()
 
 NodeFactory::NodeFactory()
 {
-    for (auto& p : pendingCmds())
-        registry_[p.name] = p.creator;
+    // 将 pending 命令按名称反查 CmdId，填入数组
+    for (auto& p : pendingCmds()) {
+        // 扫描 cmdIdToName 表找到匹配的 CmdId
+        for (size_t i = 1; i < static_cast<size_t>(CmdId::SENTINEL); ++i) {
+            if (p.name == zrcs::cmdIdToName(static_cast<uint16_t>(i))) {
+                registry_[i] = p.creator;
+                break;
+            }
+        }
+    }
 
     for (auto& p : pendingOutputs())
         outPutNodes.push_back(p.node);
@@ -32,15 +42,13 @@ NodeFactory::NodeFactory()
         inPutNodes.push_back(p.node);
 }
 
-NodeFactory::Creator NodeFactory::getNodePtr(std::string_view name)
-{
-    auto it = registry_.find(name);
-    return (it != registry_.end()) ? it->second : nullptr;
-}
-
 bool NodeFactory::exist(std::string_view name) const
 {
-    return registry_.count(name) > 0;
+    for (size_t i = 1; i < static_cast<size_t>(CmdId::SENTINEL); ++i) {
+        if (registry_[i] && name == zrcs::cmdIdToName(static_cast<uint16_t>(i)))
+            return true;
+    }
+    return false;
 }
 
 } // namespace zrcsSystem

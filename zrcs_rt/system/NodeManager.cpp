@@ -79,17 +79,17 @@ void NodeManager::run()
                     }
                 } else {
                     if (cmdConsumer_->pop(cmd_)) {
-                        // cmdId → 字符串名称（NodeFactory 仍按名称索引）
-                        // 通过查 CmdId 枚举名作为字符串键
-                        const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
-                        auto nodePtr = factory_.getNodePtr(cmdName);
+                        const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);
+                        auto nodePtr = factory_.getNodePtr(cmdId);
                         if (nodePtr) {
-                            INFO_PRINT("调度命令: %s(seq=%u)\n", cmdName, cmd_.seq);
+                            INFO_PRINT("调度命令: %s(seq=%u)\n",
+                                       zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                             cmdNode_ = nodePtr.get();
                             cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                             cmdNode_->modelRegistry_ = &modelRegistry_;
                         } else {
-                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n", cmdName, cmd_.seq);
+                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n",
+                                       zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                             shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
                             shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
@@ -113,17 +113,19 @@ void NodeManager::run()
                     cmdNode_ = nullptr;
                 }
                 if (cmdConsumer_->pop(cmd_)) {
-                    const char* cmdName = zrcs::cmdIdToName(cmd_.cmdId);
-                    auto nodePtr = factory_.getNodePtr(cmdName);
+                    const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);
+                    auto nodePtr = factory_.getNodePtr(cmdId);
                     if (nodePtr) {
-                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n", cmdName, cmd_.seq);
+                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n",
+                                   zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                         cmdNode_ = nodePtr.get();
                         cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                         cmdNode_->modelRegistry_ = &modelRegistry_;
                         shm()->taskSched.store(zrcs::TaskScheduling::RUN,
                                                std::memory_order_release);
                     } else {
-                        INFO_PRINT("未注册的命令: %s, 已忽略\n", cmdName);
+                        INFO_PRINT("未注册的命令: %s, 已忽略\n",
+                                   zrcs::cmdIdToName(cmd_.cmdId));
                         shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
                         shm()->lastCmdResult.store(1, std::memory_order_release);
                     }
