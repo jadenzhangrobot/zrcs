@@ -25,6 +25,9 @@ void NodeManager::run()
 
     initData();
 
+    // 初始化完成，切换到 RUN 状态，使能命令调度
+    shm()->taskSched.store(zrcs::TaskScheduling::RUN, std::memory_order_release);
+
     try {
         modelConfig_ = std::make_unique<ModelConfig>(
             zrcs::ProjectConfig::prefixedFilename(projectName_, "model.xml"));
