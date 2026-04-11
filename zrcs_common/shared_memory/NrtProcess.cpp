@@ -27,7 +27,10 @@ bool NrtProcess::tryAttach() noexcept
     const auto* hdr = static_cast<const ShmHeader*>(addr);
 
     // acquire 读 magic：若 RT 尚未完成 SharedBlock 构造，magic 仍为 0
-    if (hdr->magic.load(std::memory_order_acquire) != kShmMagic) {
+    const uint32_t magic_val = hdr->magic.load(std::memory_order_acquire);
+    std::fprintf(stdout, "[NrtProcess] magic=0x%08X (expected 0x%08X)\n",
+                 magic_val, kShmMagic);
+    if (magic_val != kShmMagic) {
         platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
         return false;
     }

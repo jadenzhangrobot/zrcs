@@ -29,6 +29,7 @@ public:
 private:
     const char*  name_;
     void*        mapping_{nullptr};
+    void*        handle_{nullptr};   // Windows: CreateFileMappingA 句柄，保持对象存活
     SharedBlock* block_{nullptr};
 };
 

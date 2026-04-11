@@ -71,7 +71,9 @@ public:
             }
         }
 
-        spdlog::debug("[RtBridge] Sent '{}' seq={} args={}", name, cmd.seq, n);
+        spdlog::info("[RtBridge] Sent '{}' seq={} cmdId={} head_after={}",
+                     name, cmd.seq, cmd.cmdId,
+                     block_->cmdQueue.head.load(std::memory_order_relaxed));
         return {SendResult::OK, cmd.seq};
     }
 

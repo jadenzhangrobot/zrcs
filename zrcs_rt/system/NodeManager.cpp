@@ -93,6 +93,14 @@ void NodeManager::run()
                             shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
                             shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
+                    } else {
+                        // 诊断：每 500 次循环打印一次队列状态
+                        static uint32_t dbg_cnt = 0;
+                        if (++dbg_cnt % 500 == 0) {
+                            INFO_PRINT("[RT] 等待命令: head=%u tail=%u\n",
+                                shm()->cmdQueue.head.load(std::memory_order_relaxed),
+                                shm()->cmdQueue.tail.load(std::memory_order_relaxed));
+                        }
                     }
                 }
                 break;

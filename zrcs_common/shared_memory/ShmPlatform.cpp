@@ -20,14 +20,12 @@ namespace zrcs {
 // ─────────────────────────────────────────────────────────────────────────────
 #ifdef _WIN32
 
-void* platformShmOpen(const char* name, size_t size, bool create) noexcept
+void* platformShmOpen(const char* name, size_t size, bool create,
+                      void** out_handle) noexcept
 {
     HANDLE hMap;
 
     if (create) {
-        // 先尝试删除旧的同名段（如果其他进程没有持有句柄则对象已消失，此处幂等）
-        // Windows 不提供显式删除 API：只要没有其他进程持有句柄，命名对象在最后
-        // 一个句柄关闭时自动消失。此处直接 CreateFileMapping 即可覆盖。
         hMap = CreateFileMappingA(
             INVALID_HANDLE_VALUE,
             nullptr,
@@ -40,32 +38,49 @@ void* platformShmOpen(const char* name, size_t size, bool create) noexcept
                          GetLastError());
             return nullptr;
         }
+        std::fprintf(stdout, "[ShmPlatform] CreateFileMappingA('%s') ok, hMap=%p, already_existed=%s\n",
+                     name, static_cast<void*>(hMap),
+                     (GetLastError() == ERROR_ALREADY_EXISTS) ? "YES" : "NO");
     } else {
         hMap = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, name);
         if (!hMap) {
-            // 段不存在，返回 nullptr，由调用方重试
+            std::fprintf(stdout, "[ShmPlatform] OpenFileMappingA('%s') failed: err=%lu\n",
+                         name, GetLastError());
             return nullptr;
         }
     }
 
     void* addr = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, size);
-    CloseHandle(hMap);  // 视图存在时映射对象无需保持句柄开启
 
     if (!addr) {
-        std::fprintf(stderr, "[ShmPlatform] MapViewOfFile failed: %lu\n",
-                     GetLastError());
+        std::fprintf(stderr, "[ShmPlatform] MapViewOfFile failed: %lu\n", GetLastError());
+        CloseHandle(hMap);
+        return nullptr;
     }
+
+    if (create && out_handle) {
+        // RT 侧：调用方保存句柄，保持对象存活供其他进程 OpenFileMappingA
+        *out_handle = static_cast<void*>(hMap);
+    } else {
+        // NRT 侧或不需要保持：视图已建立，可以关闭句柄
+        // （NRT 侧 OpenFileMappingA 的 hMap 只需关闭自己那份，视图仍有效）
+        CloseHandle(hMap);
+    }
+
     return addr;
 }
 
 void platformShmClose(void* addr, size_t /*size*/, const char* /*name*/,
-                      bool /*unlink*/) noexcept
+                      bool /*unlink*/, void* handle) noexcept
 {
     if (addr) {
         UnmapViewOfFile(addr);
-        // Windows 命名文件映射对象在所有进程关闭句柄后自动销毁，
-        // 无需（也无法）显式 unlink。
     }
+    if (handle) {
+        CloseHandle(static_cast<HANDLE>(handle));
+    }
+    // Windows 命名文件映射对象在所有进程关闭句柄后自动销毁，
+    // 无需（也无法）显式 unlink。
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
