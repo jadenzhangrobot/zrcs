@@ -45,7 +45,6 @@
 #include "SetTCP.h"
 #include "SetBase.h"
 #include "SetPayload.h"
-#include "ConfJ.h"
 #include "ConfL.h"
 #include "SingArea.h"
 #include "SetPosLimit.h"

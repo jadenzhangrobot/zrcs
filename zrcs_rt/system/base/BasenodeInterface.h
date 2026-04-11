@@ -10,7 +10,6 @@
 #include "config/CmdArgs.h"
 #include "shared_memory/RtProcess.h"
 #include "shared_memory/SharedData.h"
-#include "shared_memory/RegisterInfo.h"
 #include "controller/Controller.h"
 #include "controller/ControllerInterface.h"
 #include <atomic>

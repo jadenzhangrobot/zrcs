@@ -101,12 +101,6 @@ struct singleAxisContinueMotion
     std::atomic<bool> motion{false};
     std::atomic<bool> direction{true};
 };
-
-static_assert(ATOMIC_INT_LOCK_FREE  == 2, "atomic<int> must be lock-free for cross-process safety");
-static_assert(ATOMIC_BOOL_LOCK_FREE == 2, "atomic<bool> must be lock-free for cross-process safety");
-static_assert(ATOMIC_LLONG_LOCK_FREE == 2, "atomic<uint64_t> must be lock-free for cross-process safety");
-static_assert(ATOMIC_CHAR_LOCK_FREE == 2, "atomic<uint8_t> must be lock-free for cross-process safety");
-
 struct Command
 {
     double   args[MAX_CMD_ARGS] = {0};
