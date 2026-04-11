@@ -88,7 +88,8 @@ void platformShmClose(void* addr, size_t /*size*/, const char* /*name*/,
 // ─────────────────────────────────────────────────────────────────────────────
 #else
 
-void* platformShmOpen(const char* name, size_t size, bool create) noexcept
+void* platformShmOpen(const char* name, size_t size, bool create,
+                      void** /*out_handle*/) noexcept
 {
     // POSIX shm_open 名称必须以 '/' 开头
     char posix_name[256];
@@ -127,7 +128,7 @@ void* platformShmOpen(const char* name, size_t size, bool create) noexcept
 }
 
 void platformShmClose(void* addr, size_t size, const char* name,
-                      bool unlink) noexcept
+                      bool unlink, void* /*handle*/) noexcept
 {
     if (addr) munmap(addr, size);
 
