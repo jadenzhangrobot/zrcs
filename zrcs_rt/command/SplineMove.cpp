@@ -11,7 +11,7 @@ void SplineMove::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool SplineMove::initTrajectory()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("SplineMove: 模型注册表未初始化\n");

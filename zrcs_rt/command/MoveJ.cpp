@@ -11,7 +11,7 @@ void MoveJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 bool MoveJ::initTrajectory()
 {
     // 获取运动学模型
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("MoveJ: 模型注册表未初始化\n");

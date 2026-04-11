@@ -19,6 +19,8 @@
 #include "system/RtLog.h"
 #include "config/Parameter.h"
 
+class ModelRegistry;
+
 namespace zrcsSystem {
 
 class Basenode {
@@ -29,24 +31,26 @@ public:
     ZrcsHardware::Controller* controller_;
     RTProcess *rtProcess_;
     Command* command_;
+    ModelRegistry* modelRegistry_;
 
-    Basenode() : nodeCount_(0), nodeName_{}, cmdParam_(), 
-                 controller_(nullptr), rtProcess_(nullptr), command_(nullptr)
+    Basenode() : nodeCount_(0), nodeName_{}, cmdParam_(),
+                 controller_(nullptr), rtProcess_(nullptr),
+                 command_(nullptr), modelRegistry_(nullptr)
     {
     }
     virtual ~Basenode() = default;
-    
-    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess, Command* command) 
+
+    void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess, Command* command)
     {
-        controller_ = ct;
-        rtProcess_ = rtProcess;
-        command_ = command;
+        controller_    = ct;
+        rtProcess_     = rtProcess;
+        command_       = command;
     }
-    
+
     void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess)
     {
         controller_ = ct;
-        rtProcess_ = rtProcess;
+        rtProcess_  = rtProcess;
     }
 
     ShmAccessor shm() { return ShmAccessor(rtProcess_->sharedBlock()); }

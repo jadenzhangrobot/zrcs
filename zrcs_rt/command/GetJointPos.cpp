@@ -5,7 +5,7 @@
 
 void GetJointPos::init()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("GetJointPos: 模型注册表未初始化\n");

@@ -35,6 +35,7 @@ private:
   std::unique_ptr<ZrcsHardware::Controller> controller_; // 硬件控制器指针
   std::unique_ptr<ModelConfig> modelConfig_;             // 模型配置
   ModelRegistry modelRegistry_;                          // 多模型注册表
+  NodeFactory factory_;                                  // 节点工厂（接管所有注册）
   CmdNode* cmdNode_;                             // 当前命令节点指针
   Command cmd_;                                  // 命令对象
 

@@ -12,7 +12,7 @@ void HelixMove::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool HelixMove::initTrajectory()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("HelixMove: 模型注册表未初始化\n");
@@ -83,7 +83,7 @@ void HelixMove::run(void)
 {
     updateOverride();
 
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     RobotModel* model = registry->getModel(0);
 
     auto result = otg_->update(*input_, *output_);

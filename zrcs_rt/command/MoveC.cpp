@@ -11,7 +11,7 @@ void MoveC::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveC::initTrajectory()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("MoveC: 模型注册表未初始化\n");
@@ -115,7 +115,7 @@ void MoveC::run(void)
 {
     updateOverride();
 
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     RobotModel* model = registry->getModel(0);
 
     auto result = otg_->update(*input_, *output_);

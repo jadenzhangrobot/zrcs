@@ -15,7 +15,7 @@ bool SearchL::initTrajectory()
     ioModule_ = static_cast<int>(command_->args[SearchLIOModule]);
     ioBit_ = static_cast<int>(command_->args[SearchLIOBit]);
 
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("SearchL: 模型注册表未初始化\n");
@@ -88,7 +88,7 @@ void SearchL::run(void)
         if (controller_->ios_[ioModule_]->ioRead32(ioModule_, ioBit_))
         {
             // IO触发：记录当前位置到共享内存
-            auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+            auto* registry = modelRegistry_;
             RobotModel* model = registry->getModel(0);
 
             Eigen::VectorXd jointPos(dof_);

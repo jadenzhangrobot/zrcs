@@ -16,7 +16,7 @@ bool TriggJ::initTrajectory()
     ioVal_ = static_cast<bool>(command_->args[TriggJIOVal]);
     triggered_ = false;
 
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("TriggJ: 模型注册表未初始化\n");

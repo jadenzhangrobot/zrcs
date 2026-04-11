@@ -5,7 +5,7 @@
 
 void SetBase::init()
 {
-    auto* registry = zrcsSystem::NodeFactory::getInstance().modelRegistry;
+    auto* registry = modelRegistry_;
     if (!registry)
     {
         ERROR_PRINT("SetBase: 模型注册表未初始化\n");
