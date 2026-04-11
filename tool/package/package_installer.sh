@@ -16,9 +16,11 @@ export PATH="/usr/bin:/bin:$PATH"
 # 配置
 # ---------------------------------------------------------------------------
 ZRCS_VERSION="2.0.0"
+ZRCS_VERSION_QUAD="2.0.0.0"   # 4-part version for Windows VIProductVersion
 ZRCS_NAME="ZRCS"
 ZRCS_PUBLISHER="ZRCS Project"
 EXE_NAME="zrcsgui.exe"
+ICON_FILE=""                   # set to .ico path if available, e.g. "resources/zrcs.ico"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # 通过 git 定位项目根目录，回退到相对路径
@@ -198,6 +200,38 @@ stage_files() {
     # ldd 递归收集剩余 DLL
     collect_dlls "$STAGING_DIR"
 
+    # 复制附属可执行文件 (非实时控制端也可能需要随 GUI 一起部署)
+    for extra_exe in zrcsnrt.exe zrcsrt.exe; do
+        if [[ -f "$BUILD_BIN/$extra_exe" ]]; then
+            info "Copying $extra_exe..."
+            cp "$BUILD_BIN/$extra_exe" "$STAGING_DIR/"
+            collect_dlls "$STAGING_DIR"
+        fi
+    done
+
+    # 复制配置文件目录
+    if [[ -d "$PROJECT_ROOT/config" ]]; then
+        info "Copying config directory..."
+        mkdir -p "$STAGING_DIR/config"
+        cp -r "$PROJECT_ROOT/config/"* "$STAGING_DIR/config/"
+    else
+        warn "Config directory not found, skipping"
+    fi
+
+    # 复制样式文件
+    local qss_file="$PROJECT_ROOT/zrcs_gui/resources/style/dark_theme.qss"
+    if [[ -f "$qss_file" ]]; then
+        info "Copying dark_theme.qss..."
+        mkdir -p "$STAGING_DIR/style"
+        cp "$qss_file" "$STAGING_DIR/style/"
+    fi
+
+    # 复制图标文件
+    if [[ -n "$ICON_FILE" && -f "$PROJECT_ROOT/$ICON_FILE" ]]; then
+        info "Copying icon: $ICON_FILE..."
+        cp "$PROJECT_ROOT/$ICON_FILE" "$STAGING_DIR/"
+    fi
+
     # 统计
     local size
     size=$(du -sh "$STAGING_DIR" | awk '{print $1}')
@@ -218,12 +252,55 @@ generate_nsis() {
     staging_win=$(cygpath -w "$STAGING_DIR" | sed 's/\\/\\\\/g')
     output_win=$(cygpath -w "$OUTPUT_DIR" | sed 's/\\/\\\\/g')
 
+    # Prepare icon defines (NSIS !define lines)
+    local icon_defines=""
+    local icon_reg=""
+    if [[ -n "$ICON_FILE" ]]; then
+        local icon_basename
+        icon_basename=$(basename "$ICON_FILE")
+        if [[ -f "$STAGING_DIR/$icon_basename" ]]; then
+            local icon_win
+            icon_win=$(cygpath -w "$STAGING_DIR/$icon_basename" | sed 's/\\/\\\\/g')
+            icon_defines="!define MUI_ICON \"${icon_win}\"
+!define MUI_UNICON \"${icon_win}\""
+            icon_reg="WriteRegStr HKLM \"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Uninstall\\\\\${PRODUCT_NAME}\" \\
+        \"DisplayIcon\" \"\$INSTDIR\\\\$icon_basename\""
+        fi
+    fi
+    # If no icon, leave defines empty (NSIS uses default)
+    if [[ -z "$icon_defines" ]]; then
+        icon_defines="; No custom icon provided - using NSIS default"
+        icon_reg="; No custom icon for registry"
+    fi
+
+    # Prepare license page
+    local license_page=""
+    local license_candidates=("$PROJECT_ROOT/LICENSE" "$PROJECT_ROOT/LICENSE.txt" "$PROJECT_ROOT/LICENSE.md")
+    for lf in "${license_candidates[@]}"; do
+        if [[ -f "$lf" ]]; then
+            cp "$lf" "$STAGING_DIR/"
+            local lf_win
+            lf_win=$(cygpath -w "$lf" | sed 's/\\/\\\\/g')
+            license_page="!insertmacro MUI_PAGE_LICENSE \"${lf_win}\""
+            info "Using license file: $lf"
+            break
+        fi
+    done
+    if [[ -z "$license_page" ]]; then
+        license_page="; No license file found - skipping license page"
+        warn "No LICENSE file found, skipping license page"
+    fi
+
     sed -e "s|@ZRCS_VERSION@|$ZRCS_VERSION|g" \
+        -e "s|@ZRCS_VERSION_QUAD@|$ZRCS_VERSION_QUAD|g" \
         -e "s|@ZRCS_NAME@|$ZRCS_NAME|g" \
         -e "s|@ZRCS_PUBLISHER@|$ZRCS_PUBLISHER|g" \
         -e "s|@STAGING_DIR@|${staging_win}|g" \
         -e "s|@OUTPUT_DIR@|${output_win}|g" \
         -e "s|@EXE_NAME@|$EXE_NAME|g" \
+        -e "s|@ICON_DEFINES@|${icon_defines}|g" \
+        -e "s|@ICON_REG@|${icon_reg}|g" \
+        -e "s|@LICENSE_PAGE@|${license_page}|g" \
         "$NSIS_TEMPLATE" > "$NSIS_SCRIPT"
 
     info "NSIS script generated: $NSIS_SCRIPT"
