@@ -1,13 +1,14 @@
 #pragma once
 
-// RtProcess.h — RT 进程侧：创建并拥有共享内存段
+// RtProcess.h — RT 进程侧：打开 NRT 创建的共享内存段并初始化 SharedBlock
 //
 // 职责：
-//   1. 通过 platformShmOpen 创建 kShmTotalSize 字节的共享内存段（清零）
-//   2. 在固定偏移 kSharedBlockOffset 处 placement-new SharedBlock
-//   3. 写入 ShmHeader（version、sizeof_block），最后以 release 语义写入 magic
-//      → magic 作为 NRT 侧的 "RT 已初始化完成" 信号
-//   4. 析构时 placement-delete SharedBlock，platformShmClose(unlink=true)
+//   1. 通过 platformShmOpen(create=false) 打开 NRT 已创建的段
+//   2. 校验 ShmHeader 的 version 和 sizeof_block
+//   3. 在固定偏移 kSharedBlockOffset 处 placement-new SharedBlock
+//   4. 最后以 release 语义写入 magic → 通知 NRT 初始化完成
+//   5. 析构时 placement-delete SharedBlock，platformShmClose(unlink=false)
+//     （RT 不负责删除段，NRT 析构时删除）
 
 #include "ShmLayout.h"
 
@@ -18,7 +19,7 @@ public:
     explicit RtProcess(const char* name = kShmName) noexcept;
     ~RtProcess();
 
-    // 创建共享内存段并构造 SharedBlock。失败时返回 false（调用方应终止进程）。
+    // 打开共享内存段并构造 SharedBlock。失败时返回 false（调用方应终止进程）。
     bool initialize() noexcept;
 
     SharedBlock* sharedBlock() const noexcept { return block_; }
@@ -29,7 +30,7 @@ public:
 private:
     const char*  name_;
     void*        mapping_{nullptr};
-    void*        handle_{nullptr};   // Windows: CreateFileMappingA 句柄，保持对象存活
+    void*        handle_{nullptr};
     SharedBlock* block_{nullptr};
 };
 

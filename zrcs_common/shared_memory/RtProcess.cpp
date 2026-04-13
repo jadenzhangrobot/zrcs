@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <new>
+#include <thread>
+#include <chrono>
 
 namespace zrcs {
 
@@ -17,18 +19,39 @@ RtProcess::~RtProcess()
         block_->~SharedBlock();
         block_ = nullptr;
     }
-    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/true, handle_);
+    // RT 不负责 unlink，NRT（创建方）负责
+    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/false, handle_);
     mapping_ = nullptr;
+    handle_  = nullptr;
 }
 
 bool RtProcess::initialize() noexcept
 {
-    // 清理旧残留段（正常情况 RT 是首先启动的一方）
-    platformShmClose(nullptr, 0, name_, /*unlink=*/true);
-
-    mapping_ = platformShmOpen(name_, kShmTotalSize, /*create=*/true, &handle_);
+    // 重试打开 NRT 已创建的共享内存段
+    for (int retry = 0; retry < kAttachRetries; ++retry) {
+        mapping_ = platformShmOpen(name_, kShmTotalSize, /*create=*/false, &handle_);
+        if (mapping_) break;
+        std::fprintf(stdout, "[RtProcess] Waiting for shared memory '%s' (%d/%d)...\n",
+                     name_, retry + 1, kAttachRetries);
+        std::this_thread::sleep_for(std::chrono::milliseconds(kAttachRetryMs));
+    }
     if (!mapping_) {
-        std::fprintf(stderr, "[RtProcess] Failed to create shared memory '%s'\n", name_);
+        std::fprintf(stderr, "[RtProcess] Failed to open shared memory '%s'\n", name_);
+        return false;
+    }
+
+    // 校验 NRT 写入的 ABI 头部
+    const auto* hdr = static_cast<const ShmHeader*>(mapping_);
+    if (hdr->version != kShmVersion) {
+        std::fprintf(stderr,
+            "[RtProcess] ABI version mismatch: expected %u, got %u.\n",
+            kShmVersion, hdr->version);
+        return false;
+    }
+    if (hdr->sizeof_block != static_cast<uint32_t>(sizeof(SharedBlock))) {
+        std::fprintf(stderr,
+            "[RtProcess] SharedBlock size mismatch: expected %u, got %u.\n",
+            static_cast<unsigned>(sizeof(SharedBlock)), hdr->sizeof_block);
         return false;
     }
 
@@ -36,17 +59,12 @@ bool RtProcess::initialize() noexcept
     void* block_addr = static_cast<char*>(mapping_) + kSharedBlockOffset;
     block_ = new (block_addr) SharedBlock{};
 
-    // 填写 ABI 头部（magic 最后写入，充当初始化完成信号）
-    auto* hdr = static_cast<ShmHeader*>(mapping_);
-    hdr->version      = kShmVersion;
-    hdr->sizeof_block = static_cast<uint32_t>(sizeof(SharedBlock));
-    // release fence：保证 SharedBlock 构造和 header 字段完全可见后再写 magic
+    // 最后以 release 语义写入 magic，通知 NRT "RT 初始化完成"
+    auto* hdr_mut = static_cast<ShmHeader*>(mapping_);
     std::atomic_thread_fence(std::memory_order_release);
-    hdr->magic.store(kShmMagic, std::memory_order_release);
-    std::fprintf(stdout, "[RtProcess] magic written: 0x%08X at offset 0, hdr=%p\n",
-                 kShmMagic, static_cast<void*>(hdr));
+    hdr_mut->magic.store(kShmMagic, std::memory_order_release);
 
-    std::fprintf(stdout, "[RtProcess] Shared memory '%s' created (v%u, block=%u bytes)\n",
+    std::fprintf(stdout, "[RtProcess] SharedBlock initialized in '%s' (v%u, block=%u bytes)\n",
                  name_, kShmVersion, static_cast<unsigned>(sizeof(SharedBlock)));
     return true;
 }

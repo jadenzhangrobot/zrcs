@@ -233,16 +233,22 @@ int main(int argc, char **argv)
             spdlog::info("Active project: {}", projectName);
         }
 
-        // 启动 RT 子进程（创建共享内存）
+        // NRT 侧创建共享内存段（RT 子进程将 open 并初始化 SharedBlock）
+        NRTProcess nrt_process;
+        if (!nrt_process.initialize()) {
+            spdlog::critical("Failed to initialize shared memory");
+            return 1;
+        }
+
+        // 启动 RT 子进程（打开已创建的共享内存）
         if (!launchRTProcess()) {
             spdlog::critical("Failed to launch RT process, exiting.");
             return 1;
         }
 
-        // 等待 RT 进程创建共享内存并 attach
-        NRTProcess nrt_process;
-        if (!nrt_process.initialize()) {
-            spdlog::critical("Failed to initialize shared memory");
+        // 等待 RT 子进程写入 magic（SharedBlock 就绪）
+        if (!nrt_process.waitForRt()) {
+            spdlog::critical("RT process did not initialize shared memory");
             terminateRTProcess();
             return 1;
         }

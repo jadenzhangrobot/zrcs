@@ -14,63 +14,52 @@ NrtProcess::NrtProcess(const char* name) noexcept
 
 NrtProcess::~NrtProcess()
 {
-    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/false);
+    block_ = nullptr;
+    // NRT 是创建方，负责 unlink
+    platformShmClose(mapping_, kShmTotalSize, name_, /*unlink=*/true, handle_);
     mapping_ = nullptr;
-    block_   = nullptr;
-}
-
-bool NrtProcess::tryAttach() noexcept
-{
-    void* addr = platformShmOpen(name_, kShmTotalSize, /*create=*/false);
-    if (!addr) return false;  // 段尚未创建，调用方重试
-
-    const auto* hdr = static_cast<const ShmHeader*>(addr);
-
-    // acquire 读 magic：若 RT 尚未完成 SharedBlock 构造，magic 仍为 0
-    const uint32_t magic_val = hdr->magic.load(std::memory_order_acquire);
-    std::fprintf(stdout, "[NrtProcess] magic=0x%08X (expected 0x%08X)\n",
-                 magic_val, kShmMagic);
-    if (magic_val != kShmMagic) {
-        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
-        return false;
-    }
-
-    // 版本校验
-    if (hdr->version != kShmVersion) {
-        std::fprintf(stderr,
-            "[NrtProcess] ABI version mismatch: expected %u, got %u. "
-            "Please rebuild both RT and NRT from the same source.\n",
-            kShmVersion, hdr->version);
-        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
-        return false;
-    }
-
-    // 布局大小校验
-    if (hdr->sizeof_block != static_cast<uint32_t>(sizeof(SharedBlock))) {
-        std::fprintf(stderr,
-            "[NrtProcess] SharedBlock size mismatch: expected %u, got %u.\n",
-            static_cast<unsigned>(sizeof(SharedBlock)), hdr->sizeof_block);
-        platformShmClose(addr, kShmTotalSize, name_, /*unlink=*/false);
-        return false;
-    }
-
-    mapping_ = addr;
-    block_   = reinterpret_cast<SharedBlock*>(static_cast<char*>(addr) + kSharedBlockOffset);
-    return true;
+    handle_  = nullptr;
 }
 
 bool NrtProcess::initialize() noexcept
 {
+    // 创建共享内存段（清零）
+    mapping_ = platformShmOpen(name_, kShmTotalSize, /*create=*/true, &handle_);
+    if (!mapping_) {
+        std::fprintf(stderr, "[NrtProcess] Failed to create shared memory '%s'\n", name_);
+        return false;
+    }
+
+    // 写入 ABI 头部（magic 留 0，等 RT 写入）
+    auto* hdr = static_cast<ShmHeader*>(mapping_);
+    hdr->version      = kShmVersion;
+    hdr->sizeof_block = static_cast<uint32_t>(sizeof(SharedBlock));
+
+    std::fprintf(stdout, "[NrtProcess] Shared memory '%s' created (v%u, block=%u bytes)\n",
+                 name_, kShmVersion, static_cast<unsigned>(sizeof(SharedBlock)));
+    return true;
+}
+
+bool NrtProcess::waitForRt() noexcept
+{
+    if (!mapping_) return false;
+
+    auto* hdr = static_cast<ShmHeader*>(mapping_);
+
     for (int retry = 0; retry < kAttachRetries; ++retry) {
-        if (tryAttach()) {
-            std::fprintf(stdout, "[NrtProcess] Attached to shared memory '%s'\n", name_);
+        const uint32_t magic_val = hdr->magic.load(std::memory_order_acquire);
+        if (magic_val == kShmMagic) {
+            block_ = reinterpret_cast<SharedBlock*>(
+                static_cast<char*>(mapping_) + kSharedBlockOffset);
+            std::fprintf(stdout, "[NrtProcess] RT initialized shared memory '%s'\n", name_);
             return true;
         }
         std::fprintf(stdout, "[NrtProcess] Waiting for RT process (%d/%d)...\n",
                      retry + 1, kAttachRetries);
         std::this_thread::sleep_for(std::chrono::milliseconds(kAttachRetryMs));
     }
-    std::fprintf(stderr, "[NrtProcess] Failed to attach after %d retries.\n", kAttachRetries);
+
+    std::fprintf(stderr, "[NrtProcess] RT did not initialize after %d retries.\n", kAttachRetries);
     return false;
 }
 

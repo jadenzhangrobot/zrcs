@@ -19,6 +19,8 @@ target_include_directories(zrcscommon
 )
 
 target_link_libraries(zrcscommon
+    PUBLIC
+        Boost::headers
     PRIVATE
         tinyxml2
 )

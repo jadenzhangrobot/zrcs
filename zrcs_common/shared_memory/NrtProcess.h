@@ -1,14 +1,13 @@
 #pragma once
 
-// NrtProcess.h — NRT 进程侧：附加到 RT 创建的共享内存段
+// NrtProcess.h — NRT 进程侧：创建共享内存段，等待 RT 初始化
 //
 // 职责：
-//   1. 通过 platformShmOpen(create=false) 尝试打开段
-//   2. 校验 ShmHeader：magic == kShmMagic（RT 已完成初始化）
-//                      version == kShmVersion（ABI 版本匹配）
-//                      sizeof_block == sizeof(SharedBlock)（布局一致）
-//   3. 重试最多 kAttachRetries 次（间隔 kAttachRetryMs ms），等待 RT 启动
-//   4. 析构时 platformShmClose(unlink=false)（NRT 不负责删除段，RT 析构时删除）
+//   1. 通过 platformShmOpen(create=true) 创建 kShmTotalSize 字节的共享内存段（清零）
+//   2. 写入 ShmHeader 的 version 和 sizeof_block（但不写 magic）
+//   3. 等待 RT 子进程 open 段、构造 SharedBlock 并写入 magic
+//   4. 校验 magic == kShmMagic 后开始使用 SharedBlock
+//   5. 析构时 platformShmClose(unlink=true)（NRT 是创建方，负责销毁段）
 
 #include "ShmLayout.h"
 
@@ -19,8 +18,11 @@ public:
     explicit NrtProcess(const char* name = kShmName) noexcept;
     ~NrtProcess();
 
-    // 尝试附加，超时或版本不匹配时返回 false。
+    // 创建共享内存段并写入 ABI 头部（不写 magic）。失败时返回 false。
     bool initialize() noexcept;
+
+    // 等待 RT 子进程写入 magic（SharedBlock 就绪）。超时返回 false。
+    bool waitForRt() noexcept;
 
     SharedBlock* sharedBlock() const noexcept { return block_; }
 
@@ -28,11 +30,9 @@ public:
     NrtProcess& operator=(const NrtProcess&) = delete;
 
 private:
-    // 单次尝试：打开段 + 校验头部。返回 true 表示成功附加。
-    bool tryAttach() noexcept;
-
     const char*  name_;
     void*        mapping_{nullptr};
+    void*        handle_{nullptr};
     SharedBlock* block_{nullptr};
 };
 
