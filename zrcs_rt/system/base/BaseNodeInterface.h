@@ -8,7 +8,7 @@
 #pragma once
 
 #include "shared_memory/RtProcess.h"   // zrcs::RtProcess / RTProcess, SharedBlock
-#include "config/CmdArgs.h"            // 参数索引枚举、CmdId、TaskScheduling（via ShmLayout）
+#include "CmdRegistry_gen.h"           // 参数索引枚举、CmdId、TaskScheduling（via ShmLayout）
 #include "controller/Controller.h"
 #include "system/RtLog.h"
 #include "config/Parameter.h"

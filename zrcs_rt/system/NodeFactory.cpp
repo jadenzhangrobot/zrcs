@@ -1,5 +1,5 @@
 #include "system/NodeFactory.h"
-#include "config/CmdArgs.h"
+#include "CmdRegistry_gen.h"
 #include <cstring>
 
 namespace zrcsSystem {
@@ -7,6 +7,12 @@ namespace zrcsSystem {
 std::vector<NodeFactory::PendingCmd>& NodeFactory::pendingCmds()
 {
     static std::vector<PendingCmd> v;
+    return v;
+}
+
+std::vector<NodeFactory::PendingCmdById>& NodeFactory::pendingCmdsById()
+{
+    static std::vector<PendingCmdById> v;
     return v;
 }
 
@@ -24,14 +30,20 @@ std::vector<NodeFactory::PendingInput>& NodeFactory::pendingInputs()
 
 NodeFactory::NodeFactory()
 {
-    // 将 pending 命令按名称反查 CmdId，填入数组
+    // 旧路径：按名称反查 CmdId（兼容过渡期，未来移除）
     for (auto& p : pendingCmds()) {
-        // 扫描 cmdIdToName 表找到匹配的 CmdId
         for (size_t i = 1; i < static_cast<size_t>(CmdId::SENTINEL); ++i) {
             if (p.name == zrcs::cmdIdToName(static_cast<uint16_t>(i))) {
                 registry_[i] = p.creator;
                 break;
             }
+        }
+    }
+
+    // 新路径：按 CmdId 直接注册，O(N)，无字符串匹配
+    for (auto& p : pendingCmdsById()) {
+        if (p.cmdId > 0 && p.cmdId < static_cast<uint16_t>(CmdId::SENTINEL)) {
+            registry_[p.cmdId] = p.creator;
         }
     }
 

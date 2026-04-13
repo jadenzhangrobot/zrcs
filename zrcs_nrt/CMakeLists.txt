@@ -23,6 +23,7 @@ set(PROTO_FILES
 protobuf_generate_cpp(ZRCSNRT_PROTO_SRCS ZRCSNRT_PROTO_HDRS ${PROTO_FILES})
 
 add_executable(zrcsnrt ${SOURCES} ${ZRCSNRT_PROTO_SRCS} ${ZRCSNRT_PROTO_HDRS})
+add_dependencies(zrcsnrt cmd_gen)
 target_include_directories(zrcsnrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # 链接库

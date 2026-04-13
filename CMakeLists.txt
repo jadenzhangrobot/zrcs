@@ -26,6 +26,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/3rdParty.cmake)
 #include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tool.cmake)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For generated proto headers
+include_directories(${CMAKE_BINARY_DIR}/generated) # For generated command registry headers
 
 # 查找 Protobuf 和 Abseil
 find_package(Protobuf REQUIRED)

@@ -2,12 +2,21 @@
  * @Description: 设置基坐标系/工件坐标系（ABB wobjdata / ZMC BASE）
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <Eigen/Dense>
+
+CMD_DEFINE(SetBase, 32,
+    PARAM(X)
+    PARAM(Y)
+    PARAM(Z)
+    PARAM(RX)
+    PARAM(RY)
+    PARAM(RZ)
+)
 
 class SetBase : public zrcsSystem::CmdNode
 {

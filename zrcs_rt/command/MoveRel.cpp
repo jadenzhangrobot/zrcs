@@ -41,4 +41,4 @@ bool MoveRel::initTrajectory()
     return true;
 }
 
-REGISTERCMD(MoveRel);
+REGISTERCMD(MoveRel, 22);

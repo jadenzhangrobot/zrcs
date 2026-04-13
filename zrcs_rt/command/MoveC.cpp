@@ -170,4 +170,4 @@ void MoveC::run(void)
     }
 }
 
-REGISTERCMD(MoveC);
+REGISTERCMD(MoveC, 26);

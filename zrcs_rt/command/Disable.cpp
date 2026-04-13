@@ -49,4 +49,4 @@ void Disable::exit(void)
 {
 }
 
-REGISTERCMD(Disable);
+REGISTERCMD(Disable, 2);

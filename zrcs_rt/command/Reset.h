@@ -9,7 +9,12 @@
 
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
 #include <iostream>
+
+CMD_DEFINE(Reset, 3,
+    PARAM(AxisId)
+)
 
 class Reset : public zrcsSystem::CmdNode
 {

@@ -7,10 +7,13 @@
  */
 #pragma once
 
-#include "config/CmdArgs.h"
-#include "shared_memory/ShmLayout.h"
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
+
+CMD_DEFINE(Enable, 1,
+    PARAM(AxisId)
+)
 
 class Enable : public zrcsSystem::CmdNode
 {

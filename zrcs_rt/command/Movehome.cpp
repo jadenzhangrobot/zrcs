@@ -44,4 +44,4 @@ void Movehome::applyOutput()
     }
 }
 
-REGISTERCMD(Movehome);
+REGISTERCMD(Movehome, 30);

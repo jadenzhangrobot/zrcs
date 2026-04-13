@@ -55,4 +55,4 @@ void MoveAbsJ::applyOutput()
     }
 }
 
-REGISTERCMD(MoveAbsJ);
+REGISTERCMD(MoveAbsJ, 23);

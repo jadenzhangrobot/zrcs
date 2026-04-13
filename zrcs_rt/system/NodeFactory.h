@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 #include "system/base/BaseNodeInterface.h"
-#include "config/CmdArgs.h"
+#include "CmdRegistry_gen.h"
 
 class ModelRegistry;
 
@@ -37,10 +37,12 @@ public:
 
     // 静态 pending 列表 —— 仅供注册宏使用，函数内静态避免初始化顺序问题
     struct PendingCmd    { std::string_view name; Creator creator; };
+    struct PendingCmdById { uint16_t cmdId; Creator creator; };
     struct PendingOutput { Output node; };
     struct PendingInput  { Input  node; };
 
     static std::vector<PendingCmd>&    pendingCmds();
+    static std::vector<PendingCmdById>& pendingCmdsById();
     static std::vector<PendingOutput>& pendingOutputs();
     static std::vector<PendingInput>&  pendingInputs();
 
@@ -62,6 +64,14 @@ public:
 };
 
 template <typename T>
+class RegisterNodeById {
+public:
+    explicit RegisterNodeById(uint16_t cmdId) {
+        NodeFactory::pendingCmdsById().push_back({cmdId, std::make_shared<T>()});
+    }
+};
+
+template <typename T>
 class registerAndAddOutputNode {
 public:
     registerAndAddOutputNode() {
@@ -79,8 +89,9 @@ public:
 
 } // namespace zrcsSystem
 
-#define REGISTERCMD(className) \
-    static zrcsSystem::RegisterNode<className> register##className(#className);
+// REGISTERCMD — 按 CmdId 直接注册（推荐）
+#define REGISTERCMD(className, id) \
+    static zrcsSystem::RegisterNodeById<className> register##className(id);
 
 #define REGISTEROUTPUT(className) \
     static zrcsSystem::registerAndAddOutputNode<className> register_##className;

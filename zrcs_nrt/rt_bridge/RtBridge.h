@@ -18,7 +18,8 @@
 #include <algorithm>
 #include <spdlog/spdlog.h>
 #include "shared_memory/ShmLayout.h"
-#include "config/CmdArgs.h"
+#include "CmdRegistry_gen.h"
+#include "CmdNameToId_gen.h"
 class RtBridge {
 public:
     enum class SendResult { OK, QUEUE_FULL, NOT_CONNECTED, UNKNOWN_CMD };
@@ -49,9 +50,10 @@ public:
     {
         if (!block_) return {SendResult::NOT_CONNECTED, 0};
 
-        auto it = kCmdNameToId.find(name);
-        if (it == kCmdNameToId.end()) {
-            spdlog::error("[RtBridge] Unknown command '{}', not registered in kCmdNameToId", name);
+        const auto& nameToId = zrcs::cmdNameToId();
+        auto it = nameToId.find(name);
+        if (it == nameToId.end()) {
+            spdlog::error("[RtBridge] Unknown command '{}', not registered in cmdNameToId", name);
             return {SendResult::UNKNOWN_CMD, 0};
         }
 
@@ -271,62 +273,8 @@ public:
         return dropped_count_.load(std::memory_order_relaxed);
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 命令名称 → CmdId 映射表（NRT 侧静态查表，不进入共享内存）
-    // ─────────────────────────────────────────────────────────────────
-    static inline const std::unordered_map<std::string, CmdId> kCmdNameToId = {
-        {"Enable",       CmdId::Enable},
-        {"Disable",      CmdId::Disable},
-        {"Reset",        CmdId::Reset},
-        {"Stop",         CmdId::Stop},
-        {"EmergStop",    CmdId::EmergStop},
-        {"Setmode",      CmdId::Setmode},
-        {"SetOverride",  CmdId::SetOverride},
-        {"ActUnit",      CmdId::ActUnit},
-        {"DeactUnit",    CmdId::DeactUnit},
-        {"SetZero",      CmdId::SetZero},
-        {"SetDO",        CmdId::SetDO},
-        {"SetGO",        CmdId::SetGO},
-        {"SetAO",        CmdId::SetAO},
-        {"PulseDO",      CmdId::PulseDO},
-        {"IORead",       CmdId::IORead},
-        {"Wait",         CmdId::Wait},
-        {"WaitDI",       CmdId::WaitDI},
-        {"WaitUntil",    CmdId::WaitUntil},
-        {"JogabsJ",      CmdId::JogabsJ},
-        {"JogJ",         CmdId::JogJ},
-        {"MoveAbs",      CmdId::MoveAbs},
-        {"MoveRel",      CmdId::MoveRel},
-        {"MoveAbsJ",     CmdId::MoveAbsJ},
-        {"MoveJ",        CmdId::MoveJ},
-        {"MoveL",        CmdId::MoveL},
-        {"MoveC",        CmdId::MoveC},
-        {"SearchL",      CmdId::SearchL},
-        {"TriggJ",       CmdId::TriggJ},
-        {"TriggL",       CmdId::TriggL},
-        {"Movehome",     CmdId::Movehome},
-        {"SetTCP",       CmdId::SetTCP},
-        {"SetBase",      CmdId::SetBase},
-        {"SetPayload",   CmdId::SetPayload},
-        {"ConfJ",        CmdId::ConfJ},
-        {"ConfL",        CmdId::ConfL},
-        {"SingArea",     CmdId::SingArea},
-        {"SetPosLimit",  CmdId::SetPosLimit},
-        {"SetVelLimit",  CmdId::SetVelLimit},
-        {"GetFK",        CmdId::GetFK},
-        {"GetJointPos",  CmdId::GetJointPos},
-        {"SyncMove",     CmdId::SyncMove},
-        {"CamMove",      CmdId::CamMove},
-        {"Probe",        CmdId::Probe},
-        {"PosCapture",   CmdId::PosCapture},
-        {"PosCompare",   CmdId::PosCompare},
-        {"HelixMove",    CmdId::HelixMove},
-        {"BufMove",      CmdId::BufMove},
-        {"SplineMove",   CmdId::SplineMove},
-        {"LaserSet",     CmdId::LaserSet},
-        {"GalvoMarkL",   CmdId::GalvoMarkL},
-        {"GalvoBufMark", CmdId::GalvoBufMark},
-    };
+    // 命令名称 → CmdId 映射表已由 CmdNameToId_gen.h 自动生成
+    // 使用 zrcs::cmdNameToId() 获取
 
 private:
     zrcs::SharedBlock*                                           block_;

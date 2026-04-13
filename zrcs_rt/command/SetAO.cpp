@@ -30,4 +30,4 @@ void SetAO::run(void)
 
 void SetAO::exit(void) {}
 
-REGISTERCMD(SetAO);
+REGISTERCMD(SetAO, 13);

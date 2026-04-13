@@ -2,9 +2,15 @@
  * @Description: 设置数字输出（单bit）
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
+
+CMD_DEFINE(SetDO, 11,
+    PARAM(ModuleIndex)
+    PARAM(BitPos)
+    PARAM(Value)
+)
 
 class SetDO : public zrcsSystem::CmdNode
 {

@@ -2,10 +2,15 @@
  * @Description: 关节运动绝对位置指令
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
 #include <ruckig/ruckig.hpp>
+
+CMD_DEFINE(JogabsJ, 19,
+    PARAM(AxisId)
+    PARAM(TargetPosition)
+)
 
 using namespace ruckig;
 

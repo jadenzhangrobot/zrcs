@@ -79,4 +79,4 @@ void MoveJ::applyOutput()
     }
 }
 
-REGISTERCMD(MoveJ);
+REGISTERCMD(MoveJ, 24);

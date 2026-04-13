@@ -8,6 +8,11 @@
 #pragma once
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
+
+CMD_DEFINE(Disable, 2,
+    PARAM(AxisId)
+)
 
 class Disable : public zrcsSystem::CmdNode
 {

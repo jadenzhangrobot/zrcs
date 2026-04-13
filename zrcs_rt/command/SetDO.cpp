@@ -27,4 +27,4 @@ void SetDO::run(void)
 
 void SetDO::exit(void) {}
 
-REGISTERCMD(SetDO);
+REGISTERCMD(SetDO, 11);

@@ -35,4 +35,4 @@ void Setmode::run(void)
 
 void Setmode::exit(void) {}
 
-REGISTERCMD(Setmode);
+REGISTERCMD(Setmode, 6);

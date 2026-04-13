@@ -2,10 +2,18 @@
  * @Description: 通用单轴绝对定位（带可选速度/加速度/加加速度参数）
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
 #include <ruckig/ruckig.hpp>
+
+CMD_DEFINE(MoveAbs, 21,
+    PARAM(AxisId)
+    PARAM(Position)
+    PARAM(Vel)
+    PARAM(Acc)
+    PARAM(Jerk)
+)
 
 using namespace ruckig;
 

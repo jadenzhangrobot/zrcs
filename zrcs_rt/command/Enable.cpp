@@ -57,4 +57,4 @@ void Enable::exit(void)
 {
 }
 
-REGISTERCMD(Enable);
+REGISTERCMD(Enable, 1);

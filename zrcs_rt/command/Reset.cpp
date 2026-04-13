@@ -56,4 +56,4 @@ void Reset::exit(void)
 {
 }
 
-REGISTERCMD(Reset);
+REGISTERCMD(Reset, 3);

@@ -2,11 +2,13 @@
  * @Description: 多轴回零命令
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
 #include <memory>
 #include <ruckig/ruckig.hpp>
+
+CMD_DEFINE(Movehome, 30)
 
 using namespace ruckig;
 

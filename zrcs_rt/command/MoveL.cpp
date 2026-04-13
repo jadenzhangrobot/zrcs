@@ -74,4 +74,4 @@ void MoveL::applyOutput()
     }
 }
 
-REGISTERCMD(MoveL);
+REGISTERCMD(MoveL, 25);

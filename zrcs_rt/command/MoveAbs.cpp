@@ -40,4 +40,4 @@ bool MoveAbs::initTrajectory()
     return true;
 }
 
-REGISTERCMD(MoveAbs);
+REGISTERCMD(MoveAbs, 21);

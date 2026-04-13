@@ -2,9 +2,15 @@
  * @Description: 设置模拟输出
  */
 #pragma once
-#include "config/CmdArgs.h"
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
+#include "system/CmdMeta.h"
+
+CMD_DEFINE(SetAO, 13,
+    PARAM(ModuleIndex)
+    PARAM(Channel)
+    PARAM(Value)
+)
 
 class SetAO : public zrcsSystem::CmdNode
 {
