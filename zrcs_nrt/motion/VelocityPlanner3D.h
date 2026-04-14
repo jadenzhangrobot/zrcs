@@ -25,11 +25,12 @@ struct WayPoint {
 class VelocityPlanner3D {
 private:
     std::vector<WayPoint> path;
-    
+
     double max_vel_global;
     double max_accel;
     double start_vel;
     double end_vel;
+    double corner_tolerance;  // 拐角偏差容限 (mm)
 
     // ==========================================
     // 2. 修改几何计算函数适配 3D
@@ -76,13 +77,12 @@ private:
 
         for (size_t i = 1; i < N - 1; ++i) {
             double cos_theta = getCosAngle(path[i - 1].pos, path[i].pos, path[i + 1].pos);
-            
-            // 简单的 3D 拐角限速逻辑
-            double turn_factor = (cos_theta + 1.0) / 2.0; 
-            if(turn_factor < 0.1) turn_factor = 0.1;
 
-            double geometry_limit = max_vel_global * turn_factor;
-            path[i].max_v = std::min(max_vel_global, geometry_limit);
+            // 向心加速度约束: v_corner = sqrt(a_max * r_tol / (1 - cos_theta))
+            double denom = 1.0 - cos_theta;
+            if (denom < 1e-6) denom = 1e-6;  // 接近直线，不限速
+            double v_corner = std::sqrt(max_accel * corner_tolerance / denom);
+            path[i].max_v = std::min(max_vel_global, v_corner);
         }
     }
 
@@ -107,14 +107,17 @@ private:
     }
 
 public:
-    VelocityPlanner3D() 
-        : max_vel_global(100.0), max_accel(100.0), start_vel(0.0), end_vel(0.0) {}
+    VelocityPlanner3D()
+        : max_vel_global(100.0), max_accel(100.0), start_vel(0.0), end_vel(0.0),
+          corner_tolerance(0.5) {}
 
-    void setConfig(double max_v, double max_a, double start_v = 0.0, double end_v = 0.0) {
+    void setConfig(double max_v, double max_a, double start_v = 0.0, double end_v = 0.0,
+                   double corner_tol = 0.5) {
         max_vel_global = max_v;
         max_accel = max_a;
         start_vel = start_v;
         end_vel = end_v;
+        corner_tolerance = corner_tol;
     }
 
     // 3. 接口增加 Z 参数

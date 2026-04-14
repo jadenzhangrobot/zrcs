@@ -31,7 +31,8 @@ public:
 
     explicit RtBridge(zrcs::SharedBlock* block)
         : block_(block),
-          cmdProducer_(block->cmdQueue)
+          cmdProducer_(block->cmdQueue),
+          axisFbConsumer_(block->axisFeedbackQueue)
     {}
 
     RtBridge(const RtBridge&) = delete;
@@ -113,6 +114,17 @@ public:
         return zrcs::lfl_read(block_->axisPositions, out);
     }
 
+    /// 从 axisFeedbackQueue 排空队列，取最新一帧完整轴数据
+    bool readLatestAxisFeedback(zrcs::AxisFeedbackData& out) noexcept {
+        bool got = false;
+        zrcs::AxisFeedbackData tmp{};
+        while (axisFbConsumer_.pop(tmp)) {
+            out = tmp;
+            got = true;
+        }
+        return got;
+    }
+
     uint8_t axisCount() const noexcept {
         if (!block_) return 0;
         return block_->axisCount.load(std::memory_order_acquire);
@@ -120,7 +132,7 @@ public:
 
     // ─────────────────────────────────────────────────────────────────
     // 3. 查询命令结果读取（修复旧版裸数组数据竞争）
-    // ───���─────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────
 
     bool readFkResult(zrcs::FkResultData& out) const noexcept {
         if (!block_) return false;
@@ -277,10 +289,11 @@ public:
     // 使用 zrcs::cmdNameToId() 获取
 
 private:
-    zrcs::SharedBlock*                                           block_;
-    zrcs::ShmSPSCProducer<zrcs::Command, zrcs::kCmdQueueCap>   cmdProducer_;
-    std::mutex                                                   push_mutex_;
-    std::atomic<uint32_t>                                        seq_counter_{1};
-    std::atomic<uint64_t>                                        dropped_count_{0};
-    uint64_t                                                     prev_heartbeat_{0};
+    zrcs::SharedBlock*                                                         block_;
+    zrcs::ShmSPSCProducer<zrcs::Command, zrcs::kCmdQueueCap>                 cmdProducer_;
+    zrcs::ShmSPSCConsumer<zrcs::AxisFeedbackData, zrcs::kLogQueueCap>        axisFbConsumer_;
+    std::mutex                                                                push_mutex_;
+    std::atomic<uint32_t>                                                     seq_counter_{1};
+    std::atomic<uint64_t>                                                     dropped_count_{0};
+    uint64_t                                                                  prev_heartbeat_{0};
 };

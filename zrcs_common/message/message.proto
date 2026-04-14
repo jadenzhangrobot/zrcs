@@ -81,8 +81,9 @@ message TypedCommand {
 message AxisStatus {
     int32 axis_id = 1;
     double position = 2;
-    double velocity = 3;
-    double torque = 4;
+    double cmd_position = 3;
+    double velocity = 4;
+    double torque = 5;
 }
 
 message SystemStatus {

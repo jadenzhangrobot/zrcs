@@ -63,10 +63,10 @@ private:
     std::atomic<bool> running_;
 
     void run() {
-        zrcs::JointPosData positions{};
+        zrcs::AxisFeedbackData feedback{};
 
         while (running_) {
-            if (bridge_->readLatestAxisPositions(positions)) {
+            if (bridge_->readLatestAxisFeedback(feedback)) {
                 zrcs_message::SystemStatus status;
                 uint8_t count = bridge_->axisCount();
                 if (count == 0) count = AXISMAXCOUNT;
@@ -74,7 +74,10 @@ private:
                 for (uint8_t i = 0; i < count; ++i) {
                     auto* axis = status.add_axes();
                     axis->set_axis_id(i);
-                    axis->set_position(positions.pos[i]);
+                    axis->set_position(feedback.position[i]);
+                    axis->set_cmd_position(feedback.cmdPosition[i]);
+                    axis->set_velocity(feedback.velocity[i]);
+                    axis->set_torque(feedback.torque[i]);
                 }
 
                 status.set_heartbeat(bridge_->heartbeat());

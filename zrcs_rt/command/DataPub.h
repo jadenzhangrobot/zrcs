@@ -7,4 +7,7 @@ class DataPub : public zrcsSystem::InputNode
 public:
     void init() override;
     void run() override;
+
+private:
+    zrcs::ShmSPSCProducer<zrcs::AxisFeedbackData, zrcs::kLogQueueCap>* producer_{nullptr};
 };

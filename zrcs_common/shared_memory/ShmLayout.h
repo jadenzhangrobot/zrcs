@@ -35,7 +35,7 @@ inline constexpr size_t   kCmdQueueCap   = 64;   // 必须为 2 的幂
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 20;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 4;            // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 6;            // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 4 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -105,6 +105,16 @@ struct RtLogEntry {
     char     message[192];
 };
 static_assert(sizeof(RtLogEntry) == 264, "RtLogEntry layout changed");
+
+struct AxisFeedbackData 
+{
+    double position[kAxisMax];
+    double cmdPosition[kAxisMax];
+    double velocity[kAxisMax];
+    double torque[kAxisMax];
+};
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. ShmSPSC — 共享端（仅存共享状态，无进程本地缓存）
@@ -254,6 +264,15 @@ struct FkResultData    { double pose[6]       = {}; };   // X Y Z RX RY RZ
 struct ProbeResultData { double pose[6]       = {}; };
 struct CaptureData     { double pos[kAxisMax] = {}; };
 
+// 路径运动路点（NRT 写，RT 读）
+struct PathPoint {
+    double x  = 0, y  = 0, z  = 0;    // 笛卡尔位置 (mm)
+    double rx = 0, ry = 0, rz = 0;    // 姿态 (rad)
+    double maxVel = 0;                  // 速度前瞻输出 (mm/s)
+};
+
+inline constexpr size_t kPathBufCap = 256;  // 路径缓冲区容量，必须为 2 的幂
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 8. SharedBlock — 完整的共享数据布局
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,6 +288,8 @@ struct alignas(64) SharedBlock {
 
     // ── 日志队列（RT→NRT，单消费者：NRT 日志线程）──────────────────────
     ShmSPSC<RtLogEntry, kLogQueueCap> logQueue;
+
+    ShmSPSC<AxisFeedbackData, kLogQueueCap> axisFeedbackQueue;  // 额外的日志队列，用于高频轴状态反馈（可选）
 
     // ── 任务调度控制（双向，原子读写）────────────────────────────────────
     alignas(64) std::atomic<TaskScheduling> taskSched{TaskScheduling::START};
@@ -296,17 +317,27 @@ struct alignas(64) SharedBlock {
     // ── IO 读结果（RT 写，NRT 读）────────────────────────────────────────
     alignas(64) std::atomic<uint32_t> ioReadResult{0};
 
-    // ── 高频状态（RT 每周期写，NRT 读最新帧）─────────────────────────────
-    // 替代旧的 statusQueue SPSC：NRT 无需排空队列，始终直接读到最新帧
-    alignas(64) LockFreeLatest<JointPosData> axisPositions;
+    // ── 轴位置快照（RT 写，NRT 读，LockFreeLatest）──────────────────────
+    LockFreeLatest<JointPosData> axisPositions;
 
-    // ── 查询命令结果（RT 写，NRT 在命令完成后读，修复裸数组数据竞争）────
-    alignas(64) LockFreeLatest<FkResultData>    fkResult;
-    alignas(64) LockFreeLatest<JointPosData>    jointPosResult;
-    alignas(64) LockFreeLatest<ProbeResultData> probeResult;
-    alignas(64) LockFreeLatest<CaptureData>     captureResult;
-    alignas(64) std::atomic<bool>               probeTriggered{false};
-    alignas(64) std::atomic<bool>               captureTriggered{false};
+    // ── 查询命令结果（RT 写，NRT 读）────────────────────────────────────
+    LockFreeLatest<FkResultData>    fkResult;
+    LockFreeLatest<JointPosData>    jointPosResult;
+    LockFreeLatest<ProbeResultData> probeResult;
+    LockFreeLatest<CaptureData>     captureResult;
+    alignas(64) std::atomic<bool>   probeTriggered{false};
+    alignas(64) std::atomic<bool>   captureTriggered{false};
+
+    // ── 路径运动（NRT→RT）──────────────────────────────────────────────
+    ShmSPSC<PathPoint, kPathBufCap> pathQueue;              // 路点队列
+    alignas(64) std::atomic<bool>   pathMoveActive{false};  // 使能标志
+
+    struct alignas(64) PathMoveConfig {
+        std::atomic<double> maxVel{100.0};    // mm/s
+        std::atomic<double> maxAccel{500.0};  // mm/s²
+        std::atomic<double> maxJerk{2000.0};  // mm/s³
+    };
+    PathMoveConfig pathMoveCfg;
 };
 
 // 内存边界检查
