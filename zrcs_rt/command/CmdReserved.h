@@ -184,12 +184,7 @@ CMD_RESERVE(BufMove, 47,
     PARAM(P5)
     PARAM(Vel)
 )
-CMD_RESERVE(SplineMove, 48,
-    PARAM(X)
-    PARAM(Y)
-    PARAM(Z)
-    PARAM(Vel)
-)
+// CmdId 48 (PathMove) 已在 command/PathMove.h 中通过 CMD_DEFINE 定义
 
 // === 激光命令 ===
 CMD_RESERVE(LaserSet, 49,

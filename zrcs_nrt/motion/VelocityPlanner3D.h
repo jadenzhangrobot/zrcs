@@ -129,6 +129,8 @@ public:
         path.clear();
     }
 
+    const std::vector<WayPoint>& getPath() const { return path; }
+
     bool plan() {
         if (path.size() < 2) {
             std::cerr << "Error: Path must have at least 2 points." << std::endl;

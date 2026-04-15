@@ -70,30 +70,29 @@ public:
             return false;
         }
 
-        // Step 3: 写入 SHM 路径配置
-        bridge_->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
-
-        // Step 4: 将路点写入 pathQueue
+        // Step 3: 将每个规划路点作为 MoveL 命令发送到命令队列
         const auto& planned = velPlanner_.getPath();
-        for (size_t i = 0; i < planned.size(); ++i) {
-            zrcs::PathPoint pt{};
-            pt.x  = planned[i].pos.x;
-            pt.y  = planned[i].pos.y;
-            pt.z  = planned[i].pos.z;
-            pt.rx = rx;
-            pt.ry = ry;
-            pt.rz = rz;
-            pt.maxVel = planned[i].max_v;
+        for (size_t i = 0; i < planned.size(); ++i)
+        {
+            double args[] = {
+                planned[i].pos.x,   // X
+                planned[i].pos.y,   // Y
+                planned[i].pos.z,   // Z
+                rx,                 // RX
+                ry,                 // RY
+                rz,                 // RZ
+                planned[i].max_v    // Vel
+            };
 
-            if (!bridge_->pushPathPoint(pt)) {
-                spdlog::error("[MotionPreprocessor] pathQueue full at point {}/{}", i, planned.size());
+            auto [result, seq] = bridge_->sendCommand("MoveL", args, 7);
+            if (result != RtBridge::SendResult::OK) {
+                spdlog::error("[MotionPreprocessor] sendCommand MoveL failed at point {}/{}",
+                              i, planned.size());
                 return false;
             }
         }
 
-        // Step 5: 使能路径运动
-        bridge_->setPathMoveActive(true);
-        spdlog::info("[MotionPreprocessor] {} points queued, maxVel={}, cornerTol={}",
+        spdlog::info("[MotionPreprocessor] {} MoveL commands sent, maxVel={}, cornerTol={}",
                      planned.size(), cfg.maxVel, cfg.cornerTol);
         return true;
     }
