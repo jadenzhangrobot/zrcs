@@ -24,6 +24,7 @@
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"
+#include "motion/MotionPreprocessor.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -294,9 +295,48 @@ int main(int argc, char **argv)
         if (terminal.initialize()) {
             terminal.start();
             spdlog::info("Terminal console started");
-        } else {
+        } else 
+        {
             spdlog::warn("Terminal console not available, continuing without it");
+
         }
+
+
+        MotionPreprocessor motion_preprocessor(&bridge);
+
+        // ── 测试：路径拟合 + 速度前瞻 ──────────────────────────────
+        {
+            // 构造一组 3D 离散路点，包含直线段、拐角和圆弧近似
+        std::vector<Point3D> testWaypoints = {
+        {  0.0,   0.0,  0.0},  // 起点 (左下角)
+        {200.0,   0.0,  0.0},  // X轴正向移动 -> 到达右下角
+        {200.0, 100.0,  0.0},  // Y轴正向移动 -> 到达右上角
+        {  0.0, 100.0,  0.0},  // X轴负向移动 -> 到达左上角
+        {  0.0,   0.0,  0.0}   // Y轴负向移动 -> 回到起点闭合
+    };
+
+            // 姿态保持不变（简化测试）
+            double rx = 0.0, ry = 0.0, rz = 0.0;
+
+            // 配置运动参数（需匹配 config/3axis/axis.xml 限制：maxVel=10, maxAcc=20, maxJerk=30）
+            MotionPreprocessor::Config cfg;
+            cfg.maxVel    = 8.0;     // mm/s  （轴限速 10，留余量）
+            cfg.maxAccel  = 15.0;    // mm/s² （轴限加速度 20）
+            cfg.maxJerk   = 25.0;    // mm/s³ （轴限加加速度 30）
+            cfg.stepSize  = 1;     // mm 重采样步长
+            cfg.cornerTol = 0.5;     // mm 拐角偏差容限
+
+            spdlog::info("[Test] Starting path preprocessing test with {} waypoints",
+                         testWaypoints.size());
+
+            bool ok = motion_preprocessor.process(testWaypoints, rx, ry, rz, cfg);
+            if (ok) {
+                spdlog::info("[Test] Path preprocessing PASSED — MoveL commands sent");
+            } else {
+                spdlog::error("[Test] Path preprocessing FAILED");
+            }
+        }
+        // ── 测试结束 ────────────────────────────────────────────────
 
         // 主循环：监控共享内存状态
         while (g_running) {

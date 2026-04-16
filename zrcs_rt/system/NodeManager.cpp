@@ -71,6 +71,7 @@ void NodeManager::run()
                                    static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         cmdNode_ = nullptr;
+                        // 不 break，直接 fall through 到 pop 新命令
                     } else {
                         cmdNode_->execute();
                         if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) {
@@ -79,8 +80,22 @@ void NodeManager::run()
                             shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
                             shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
+                        // COMPLETED 可能在 execute() 里就到了（状态连跳）
+                        if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) {
+                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                            shm()->lastCmdResult.store(0, std::memory_order_release);
+                            INFO_PRINT("命令完成: id=%u(seq=%u)\n",
+                                       static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                            cmdNode_->setCmdStatus(CmdStatus::INIT);
+                            cmdNode_ = nullptr;
+                            // 不 break，fall through 到 pop 新命令
+                        } else {
+                            break;
+                        }
                     }
-                } else {
+                }
+                // cmdNode_ == nullptr: 立刻尝试取下一条命令
+                if (cmdNode_ == nullptr) {
                     if (cmdConsumer_->pop(cmd_)) {
                         const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);
                         auto nodePtr = factory_.getNodePtr(cmdId);
@@ -90,13 +105,21 @@ void NodeManager::run()
                             cmdNode_ = nodePtr.get();
                             cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
                             cmdNode_->modelRegistry_ = &modelRegistry_;
+                            // 同周期立刻执行 init（甚至第一拍 run）
+                            cmdNode_->execute();
+                            if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) {
+                                WARN_PRINT("命令失败: id=%u(seq=%u)\n",
+                                           static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                                shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
+                                shm()->lastCmdResult.store(1, std::memory_order_release);
+                            }
                         } else {
                             WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n",
                                        zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                             shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
                             shm()->lastCmdResult.store(1, std::memory_order_release);
                         }
-                    } 
+                    }
                 }
                 break;
 

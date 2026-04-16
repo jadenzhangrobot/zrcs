@@ -17,9 +17,11 @@ struct Point3D {
 struct WayPoint {
     Point3D pos;            // 3D 坐标
     double dist_to_next;    // 到下一个点的空间距离 (3D 距离)
-    double max_v;           // 规划速度
-    
-    WayPoint(double x, double y, double z) : pos{x, y, z}, dist_to_next(0), max_v(0) {}
+    double velocity;        // 该点规划速度
+    double acceleration;    // 从该点出发进入下一段时的切向加速度
+
+    WayPoint(double x, double y, double z)
+        : pos{x, y, z}, dist_to_next(0), velocity(0), acceleration(0) {}
 };
 
 class VelocityPlanner3D {
@@ -72,8 +74,8 @@ private:
 
     void calculateGeometryConstraints() {
         size_t N = path.size();
-        path[0].max_v = start_vel;
-        path[N - 1].max_v = end_vel;
+        path[0].velocity = start_vel;
+        path[N - 1].velocity = end_vel;
 
         for (size_t i = 1; i < N - 1; ++i) {
             double cos_theta = getCosAngle(path[i - 1].pos, path[i].pos, path[i + 1].pos);
@@ -82,7 +84,7 @@ private:
             double denom = 1.0 - cos_theta;
             if (denom < 1e-6) denom = 1e-6;  // 接近直线，不限速
             double v_corner = std::sqrt(max_accel * corner_tolerance / denom);
-            path[i].max_v = std::min(max_vel_global, v_corner);
+            path[i].velocity = std::min(max_vel_global, v_corner);
         }
     }
 
@@ -90,9 +92,9 @@ private:
         size_t N = path.size();
         for (int i = N - 2; i >= 0; --i) {
             double dist = path[i].dist_to_next;
-            double v_next = path[i + 1].max_v;
+            double v_next = path[i + 1].velocity;
             double max_reachable_v = std::sqrt(v_next * v_next + 2 * max_accel * dist);
-            path[i].max_v = std::min(path[i].max_v, max_reachable_v);
+            path[i].velocity = std::min(path[i].velocity, max_reachable_v);
         }
     }
 
@@ -100,10 +102,24 @@ private:
         size_t N = path.size();
         for (size_t i = 1; i < N; ++i) {
             double dist = path[i - 1].dist_to_next;
-            double v_prev = path[i - 1].max_v;
+            double v_prev = path[i - 1].velocity;
             double max_reachable_v = std::sqrt(v_prev * v_prev + 2 * max_accel * dist);
-            path[i].max_v = std::min(path[i].max_v, max_reachable_v);
+            path[i].velocity = std::min(path[i].velocity, max_reachable_v);
         }
+    }
+
+    void calculateAccelerations() {
+        for (size_t i = 0; i + 1 < path.size(); ++i) {
+            double ds = path[i].dist_to_next;
+            if (ds > 1e-9) {
+                double v0 = path[i].velocity;
+                double v1 = path[i + 1].velocity;
+                path[i].acceleration = (v1 * v1 - v0 * v0) / (2.0 * ds);
+            } else {
+                path[i].acceleration = 0.0;
+            }
+        }
+        path.back().acceleration = 0.0;
     }
 
 public:
@@ -145,6 +161,7 @@ public:
         calculateGeometryConstraints();
         backwardScan();
         forwardScan();
+        calculateAccelerations();
 
         return true;
     }
@@ -162,7 +179,7 @@ public:
         }
 
         outFile << std::fixed << std::setprecision(4);
-        outFile << "Index,X,Y,Z,Distance,VelocityLimit" << std::endl;
+        outFile << "Index,X,Y,Z,Distance,Velocity,Acceleration" << std::endl;
 
         for (size_t i = 0; i < path.size(); ++i) {
             outFile << i << ","
@@ -170,7 +187,8 @@ public:
                     << path[i].pos.y << ","
                     << path[i].pos.z << ","
                     << (i < path.size() - 1 ? path[i].dist_to_next : 0.0) << ","
-                    << path[i].max_v << "\n";
+                    << path[i].velocity << ","
+                    << path[i].acceleration << "\n";
         }
 
         if (!rawPoints.empty()) {

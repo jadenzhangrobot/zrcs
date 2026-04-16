@@ -31,11 +31,11 @@ namespace zrcs {
 // ─────────────────────────────────────────────────────────────────────────────
 
 inline constexpr size_t   kAxisMax       = 50;
-inline constexpr size_t   kCmdQueueCap   = 512;  // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
+inline constexpr size_t   kCmdQueueCap   = 2048; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 20;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 7;            // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 8;            // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 4 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;

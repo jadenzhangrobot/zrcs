@@ -46,10 +46,10 @@ public:
             return false;
         }
 
-        // Step 1: 路径拟合 + 重采样
+        // Step 1: 路径平滑（局部角点 Bezier 过渡 + 直线段重采样）
         std::vector<Point3D> smoothPath;
         if (waypoints.size() >= 3) {
-            smoothPath = pathFitter_.processWithSpline(waypoints, cfg.stepSize);
+            smoothPath = pathFitter_.processWithCornerBlend(waypoints, cfg.stepSize, cfg.cornerTol);
         } else {
             smoothPath = waypoints;  // 两点直线，无需拟合
         }
@@ -70,30 +70,44 @@ public:
             return false;
         }
 
-        // Step 3: 将每个规划路点作为 MoveL 命令发送到命令队列
+        // Step 3: 将每段规划路径作为一条 MoveL 命令发送到命令队列
         const auto& planned = velPlanner_.getPath();
-        for (size_t i = 0; i < planned.size(); ++i)
+        for (size_t i = 1; i < planned.size(); ++i)
         {
+            const auto& start = planned[i - 1];
+            const auto& end = planned[i];
+            double segmentMaxVel = std::max(start.velocity, end.velocity);
+
             double args[] = {
-                planned[i].pos.x,   // X
-                planned[i].pos.y,   // Y
-                planned[i].pos.z,   // Z
-                rx,                 // RX
-                ry,                 // RY
-                rz,                 // RZ
-                planned[i].max_v    // Vel
+                start.pos.x,           // CurrentX
+                start.pos.y,           // CurrentY
+                start.pos.z,           // CurrentZ
+                rx,                    // CurrentRX
+                ry,                    // CurrentRY
+                rz,                    // CurrentRZ
+                end.pos.x,             // X
+                end.pos.y,             // Y
+                end.pos.z,             // Z
+                rx,                    // RX
+                ry,                    // RY
+                rz,                    // RZ
+                segmentMaxVel,         // Vel
+                start.velocity,        // CurrentVel
+                0.0,                   // CurrentAcc
+                end.velocity,          // TargetVel
+                0.0                    // TargetAcc
             };
 
-            auto [result, seq] = bridge_->sendCommand("MoveL", args, 7);
+            auto [result, seq] = bridge_->sendCommand("MoveL", args, 17);
             if (result != RtBridge::SendResult::OK) {
-                spdlog::error("[MotionPreprocessor] sendCommand MoveL failed at point {}/{}",
-                              i, planned.size());
+                spdlog::error("[MotionPreprocessor] sendCommand MoveL failed at segment {}/{}",
+                              i, planned.size() - 1);
                 return false;
             }
         }
 
-        spdlog::info("[MotionPreprocessor] {} MoveL commands sent, maxVel={}, cornerTol={}",
-                     planned.size(), cfg.maxVel, cfg.cornerTol);
+        spdlog::info("[MotionPreprocessor] {} MoveL segments sent, maxVel={}, cornerTol={}",
+                     planned.size() - 1, cfg.maxVel, cfg.cornerTol);
         return true;
     }
 

@@ -115,7 +115,8 @@ QGroupBox *CommandPanel::createMultiAxisGroup()
     auto *group = new QGroupBox("多轴运动");
     auto *layout = new QVBoxLayout(group);
     addCommandRow(layout, "MoveJ", {"X", "Y", "Z", "RX", "RY", "RZ", "速度"}, {0, 0, 0, 0, 0, 0, 50});
-    addCommandRow(layout, "MoveL", {"X", "Y", "Z", "RX", "RY", "RZ", "速度"}, {0, 0, 0, 0, 0, 0, 50});
+    addCommandRow(layout, "MoveL", {"CurX", "CurY", "CurZ", "CurRX", "CurRY", "CurRZ",
+                                     "X", "Y", "Z", "RX", "RY", "RZ", "速度"}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50});
     addCommandRow(layout, "MoveC", {"ViaX", "ViaY", "ViaZ", "EndX", "EndY", "EndZ", "速度"}, {0, 0, 0, 0, 0, 0, 50});
     return group;
 }
