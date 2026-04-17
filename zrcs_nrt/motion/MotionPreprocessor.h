@@ -23,8 +23,9 @@ public:
         double maxVel    = 100.0;   // mm/s
         double maxAccel  = 500.0;   // mm/s²
         double maxJerk   = 2000.0;  // mm/s³
-        double stepSize  = 1.0;     // mm，重采样步长
+        double stepSize  = 1.0;     // mm，重采样步长（仅用于角点 Bezier 采样，不影响 MoveL 段数）
         double cornerTol = 0.5;     // mm，拐角偏差容限
+        bool   galvoMode = false;   // true: 使用 MoveLGalvo（振镜-平台分解）而非 MoveL
     };
 
     explicit MotionPreprocessor(RtBridge* bridge)
@@ -46,23 +47,15 @@ public:
             return false;
         }
 
-        // Step 1: 路径平滑（局部角点 Bezier 过渡 + 直线段重采样）
-        std::vector<Point3D> smoothPath;
-        if (waypoints.size() >= 3) {
-            smoothPath = pathFitter_.processWithCornerBlend(waypoints, cfg.stepSize, cfg.cornerTol);
-        } else {
-            smoothPath = waypoints;  // 两点直线，无需拟合
-        }
+        // 将运动参数同步到 RT 侧，确保 Ruckig 使用与速度前瞻相同的限制
+        bridge_->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
 
-        if (smoothPath.size() < 2) {
-            spdlog::error("[MotionPreprocessor] Spline produced < 2 points");
-            return false;
-        }
-
-        // Step 2: 速度前瞻
+        // Step 1: 直接对原始路点做速度前瞻（不密集重采样）
+        // 每个 waypoint 间距足够长，Ruckig 可以完成完整 S 型轨迹
+        // Bezier 角点混合由 VelocityPlanner 的拐角限速公式处理
         velPlanner_.clearPath();
-        velPlanner_.setConfig(cfg.maxVel, cfg.maxAccel, 0.0, 0.0, cfg.cornerTol);
-        for (const auto& p : smoothPath) {
+        velPlanner_.setConfig(cfg.maxVel, cfg.maxAccel, 0.0, 0.0, cfg.cornerTol, cfg.maxJerk);
+        for (const auto& p : waypoints) {
             velPlanner_.addPoint(p.x, p.y, p.z);
         }
         if (!velPlanner_.plan()) {
@@ -70,13 +63,15 @@ public:
             return false;
         }
 
-        // Step 3: 将每段规划路径作为一条 MoveL 命令发送到命令队列
+        // Step 2: 每对相邻路点发一条 MoveL（段数 = waypoints.size()-1）
         const auto& planned = velPlanner_.getPath();
         for (size_t i = 1; i < planned.size(); ++i)
         {
             const auto& start = planned[i - 1];
             const auto& end = planned[i];
-            double segmentMaxVel = std::max(start.velocity, end.velocity);
+            // 用前后向扫描所允许的峰值速度，而非仅取端点速度的最大值
+            // 以免把中间本可加速的长线段限制在拐角低速
+            double segmentMaxVel = cfg.maxVel;
 
             double args[] = {
                 start.pos.x,           // CurrentX
@@ -98,7 +93,7 @@ public:
                 0.0                    // TargetAcc
             };
 
-            auto [result, seq] = bridge_->sendCommand("MoveL", args, 17);
+            auto [result, seq] = bridge_->sendCommand(cfg.galvoMode ? "MoveLGalvo" : "MoveL", args, 17);
             if (result != RtBridge::SendResult::OK) {
                 spdlog::error("[MotionPreprocessor] sendCommand MoveL failed at segment {}/{}",
                               i, planned.size() - 1);

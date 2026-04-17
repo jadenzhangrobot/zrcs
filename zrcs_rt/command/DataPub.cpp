@@ -13,7 +13,7 @@ void DataPub::run()
     for (size_t i = 0; i < count; ++i) {
         fb.position[i]    = controller_->axiss[i]->actualPos();
         fb.cmdPosition[i] = controller_->axiss[i]->actualposCmd();
-        fb.velocity[i]    = controller_->axiss[i]->actualVel();
+        fb.velocity[i] = controller_->axiss[i]->actualVelCmd();
         // fb.torque[i] — Axis 暂无 torque 接口，默认 0
     }
     producer_->push(fb);

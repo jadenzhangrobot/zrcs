@@ -1,1 +1,1 @@
-3axis
+galvo-platform

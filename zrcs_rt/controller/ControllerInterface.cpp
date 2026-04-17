@@ -31,7 +31,7 @@ bool Axis::cmdsProcessing(double frequency)
     // Check motion direction and limits based on command differences
     double vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
     double acc_cmd = (vel_cmd - lastAxisVelCmd_) * frequency;
-
+    axisVelCmd_ = vel_cmd;  // 存储 double 精度指令速度（无编码器量化噪声）
     if(vel_cmd > 0 && !enablePositive_)
     {
       axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE;

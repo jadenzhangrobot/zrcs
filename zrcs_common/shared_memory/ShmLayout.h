@@ -35,7 +35,7 @@ inline constexpr size_t   kCmdQueueCap   = 2048; // 必须为 2 的幂（扩容�
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 20;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 8;            // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 9;            // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 4 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -338,6 +338,16 @@ struct alignas(64) SharedBlock {
         std::atomic<double> maxJerk{2000.0};  // mm/s³
     };
     PathMoveConfig pathMoveCfg;
+
+    // ── 振镜-平台联动配置（NRT→RT）──────────────────────────────────────
+    struct alignas(64) GalvoConfig {
+        std::atomic<int32_t> platXId{0};       // 平台 X 轴 ID
+        std::atomic<int32_t> platYId{1};       // 平台 Y 轴 ID
+        std::atomic<int32_t> galvoXId{2};      // 振镜 X 轴 ID
+        std::atomic<int32_t> galvoYId{3};      // 振镜 Y 轴 ID
+        std::atomic<double>  cutoffHz{5.0};    // LPF 截止频率 (Hz)
+    };
+    GalvoConfig galvoCfg;
 };
 
 // 内存边界检查

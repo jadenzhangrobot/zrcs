@@ -294,6 +294,15 @@ public:
         block_->pathMoveCfg.maxJerk.store(maxJerk, std::memory_order_release);
     }
 
+    void setGalvoConfig(int platXId, int platYId, int galvoXId, int galvoYId, double cutoffHz) noexcept {
+        if (!block_) return;
+        block_->galvoCfg.platXId.store(platXId, std::memory_order_release);
+        block_->galvoCfg.platYId.store(platYId, std::memory_order_release);
+        block_->galvoCfg.galvoXId.store(galvoXId, std::memory_order_release);
+        block_->galvoCfg.galvoYId.store(galvoYId, std::memory_order_release);
+        block_->galvoCfg.cutoffHz.store(cutoffHz, std::memory_order_release);
+    }
+
     void setPathMoveActive(bool active) noexcept {
         if (!block_) return;
         block_->pathMoveActive.store(active, std::memory_order_release);

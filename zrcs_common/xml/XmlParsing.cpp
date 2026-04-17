@@ -29,13 +29,11 @@ XmlParsing::XmlParsing(std::string xmlName)
     if (status == XML_SUCCESS) {
         std::cout << "[XML] Successfully loaded " << xmlName << std::endl;
     } else if (status == XML_ERROR_FILE_NOT_FOUND) {
-        std::string str = "can't find \n";
-        throw str + xmlpath_;
+        throw std::runtime_error("can't find " + xmlpath_);
     } else if (status == XML_ERROR_PARSING_ATTRIBUTE || status == XML_CAN_NOT_CONVERT_TEXT) {
-        std::string str = " has syntax error\n";
-        throw xmlpath_ + str;
+        throw std::runtime_error(xmlpath_ + " has syntax error");
     } else if (status == XML_NO_TEXT_NODE) {
-        throw std::string("The name of rootelement is empty\n");
+        throw std::runtime_error("The name of rootelement is empty");
     } else {
         throw std::runtime_error("Failed to read XML file");
     }

@@ -304,36 +304,110 @@ int main(int argc, char **argv)
 
         MotionPreprocessor motion_preprocessor(&bridge);
 
-        // ── 测试：路径拟合 + 速度前瞻 ──────────────────────────────
+        // ── 测试：蝴蝶图案路径（振镜-平台联动模式）────────────────────────
+        // 配置振镜参数：平台 X/Y = 轴 0/1，振镜 X/Y = 轴 2/3，截止频率 5Hz
+        bridge.setGalvoConfig(0, 1, 2, 3, 0.3);  // 0.3Hz: 平台只跟极低频包络，振镜补偿高频细齿
         {
-            // 构造一组 3D 离散路点，包含直线段、拐角和圆弧近似
-        std::vector<Point3D> testWaypoints = {
-        {  0.0,   0.0,  0.0},  // 起点 (左下角)
-        {200.0,   0.0,  0.0},  // X轴正向移动 -> 到达右下角
-        {200.0, 100.0,  0.0},  // Y轴正向移动 -> 到达右上角
-        {  0.0, 100.0,  0.0},  // X轴负向移动 -> 到达左上角
-        {  0.0,   0.0,  0.0}   // Y轴负向移动 -> 回到起点闭合
-    };
+            // 蝴蝶轮廓：平滑骨架 + 全轮廓高频细齿
+            // addTeeth: 在骨架两点之间按 pitch 步长插入 ±amp 垂直偏移的锯齿点
+            //   左侧法向（相对行进方向）为 +amp 方向
+            //   骨架端点本身不偏移，齿点从第 1 步开始
+            double PITCH = 0.5;  // mm，齿距（小齿距 → 高齿频 → 平台充分平滑）
+            double AMP   = 5.0;  // mm，半幅（峰-骨线距离）
+
+            std::vector<Point3D> testWaypoints;
+            testWaypoints.reserve(256);
+
+            auto addTeeth = [&](double x1, double y1) {
+                if (testWaypoints.empty()) {
+                    testWaypoints.push_back({x1, y1, 0.0});
+                    return;
+                }
+                double x0 = testWaypoints.back().x;
+                double y0 = testWaypoints.back().y;
+                double dx = x1 - x0, dy = y1 - y0;
+                double len = std::sqrt(dx*dx + dy*dy);
+                if (len < 1e-6) return;
+                // 左侧法向（逆时针 90°）
+                double nx = -dy / len, ny = dx / len;
+                int n = std::max(1, static_cast<int>(std::round(len / PITCH)));
+                for (int i = 1; i < n; ++i) {
+                    double t    = static_cast<double>(i) / n;
+                    double bx   = x0 + t * dx;
+                    double by   = y0 + t * dy;
+                    double side = (i % 2 == 1) ? AMP : -AMP;
+                    testWaypoints.push_back({bx + side * nx, by + side * ny, 0.0});
+                }
+                testWaypoints.push_back({x1, y1, 0.0});  // 骨架端点（无偏移）
+            };
+
+            // ── 平滑骨架（约 20 点，每段 ~10mm）─────────────────────────
+            // 右前翼（顺时针：中心 → 上缘 → 翼尖 → 燕尾凹口）
+            addTeeth(100.0, 50.0);  // 身体中心
+            addTeeth(114.0, 62.0);
+            addTeeth(128.0, 74.0);
+            addTeeth(142.0, 82.0);  // 上缘峰
+            addTeeth(158.0, 78.0);
+            addTeeth(170.0, 66.0);
+            addTeeth(177.0, 52.0);  // 翼最右端
+            addTeeth(172.0, 38.0);
+            addTeeth(166.0, 30.0);  // 燕尾凹口
+
+            // 右后翼（顺时针：凹口 → 后翼底 → 翼根）
+            addTeeth(170.0, 22.0);
+            addTeeth(160.0, 12.0);
+            addTeeth(148.0,  6.0);  // 后翼底
+            addTeeth(136.0, 12.0);
+            addTeeth(124.0, 22.0);
+            addTeeth(112.0, 36.0);
+            addTeeth(102.0, 48.0);
+
+            // 身体中心
+            addTeeth(100.0, 50.0);
+
+            // 左后翼（逆时针镜像）
+            addTeeth( 98.0, 48.0);
+            addTeeth( 88.0, 36.0);
+            addTeeth( 76.0, 22.0);
+            addTeeth( 64.0, 12.0);
+            addTeeth( 52.0,  6.0);  // 后翼底
+            addTeeth( 40.0, 12.0);
+            addTeeth( 30.0, 22.0);
+
+            // 左燕尾凹口
+            addTeeth( 34.0, 30.0);
+            addTeeth( 28.0, 38.0);
+
+            // 左前翼（逆时针：翼尖 → 上缘 → 中心）
+            addTeeth( 23.0, 52.0);  // 翼最左端
+            addTeeth( 30.0, 66.0);
+            addTeeth( 42.0, 78.0);
+            addTeeth( 58.0, 82.0);  // 上缘峰
+            addTeeth( 72.0, 74.0);
+            addTeeth( 86.0, 62.0);
+
+            addTeeth(100.0, 50.0);  // 回到身体中心（闭合）
 
             // 姿态保持不变（简化测试）
             double rx = 0.0, ry = 0.0, rz = 0.0;
 
             // 配置运动参数（需匹配 config/3axis/axis.xml 限制：maxVel=10, maxAcc=20, maxJerk=30）
             MotionPreprocessor::Config cfg;
-            cfg.maxVel    = 8.0;     // mm/s  （轴限速 10，留余量）
-            cfg.maxAccel  = 15.0;    // mm/s² （轴限加速度 20）
-            cfg.maxJerk   = 25.0;    // mm/s³ （轴限加加速度 30）
-            cfg.stepSize  = 1;     // mm 重采样步长
-            cfg.cornerTol = 0.5;     // mm 拐角偏差容限
+            cfg.maxVel    = 8.0;    // mm/s  （轴限速 10，留余量）
+            cfg.maxAccel  = 15.0;   // mm/s² （轴限加速度 20）
+            cfg.maxJerk   = 25.0;   // mm/s³ （轴限加加速度 30）
+            cfg.stepSize  = 1.0;    // mm，重采样步长（仅影响 Bezier 弧采样）
+            cfg.cornerTol = 3.0;    // mm，拐角偏差容限（蝴蝶翅尖圆弧过渡）
+            cfg.galvoMode = true;   // 启用振镜-平台联动分解
 
-            spdlog::info("[Test] Starting path preprocessing test with {} waypoints",
+            spdlog::info("[Test] Starting butterfly path test with {} waypoints",
                          testWaypoints.size());
 
             bool ok = motion_preprocessor.process(testWaypoints, rx, ry, rz, cfg);
             if (ok) {
-                spdlog::info("[Test] Path preprocessing PASSED — MoveL commands sent");
+                spdlog::info("[Test] Butterfly galvo path PASSED — MoveLGalvo commands sent");
             } else {
-                spdlog::error("[Test] Path preprocessing FAILED");
+                spdlog::error("[Test] Butterfly galvo path FAILED");
             }
         }
         // ── 测试结束 ────────────────────────────────────────────────

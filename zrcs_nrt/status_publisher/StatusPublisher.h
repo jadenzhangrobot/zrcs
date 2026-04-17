@@ -72,7 +72,13 @@ private:
         // 轴数据 CSV 日志
         std::ofstream axisLog("axis_log.csv", std::ios::out | std::ios::trunc);
         if (axisLog.is_open()) {
-            axisLog << "time_ms,x_pos,y_pos,z_pos,x_cmd,y_cmd,z_cmd,x_vel,y_vel,z_vel\n";
+            axisLog << "time_ms,"
+                    << "plat_x,plat_y,"
+                    << "galvo_x,galvo_y,"
+                    << "plat_x_cmd,plat_y_cmd,"
+                    << "galvo_x_cmd,galvo_y_cmd,"
+                    << "plat_x_vel,plat_y_vel,"
+                    << "galvo_x_vel,galvo_y_vel\n";
         }
         auto startTime = std::chrono::steady_clock::now();
 
@@ -91,20 +97,29 @@ private:
                     axis->set_torque(feedback.torque[i]);
                 }
 
-                // 写入前 3 轴（x/y/z）数据到 CSV
-                if (axisLog.is_open() && count >= 3) {
+                // 写入平台轴（0/1）和振镜轴（2/3）数据到 CSV
+                if (axisLog.is_open() && count >= 4) {
                     auto elapsed = std::chrono::steady_clock::now() - startTime;
                     double ms = std::chrono::duration<double, std::milli>(elapsed).count();
                     axisLog << ms << ","
+                            // 平台实际位置
                             << feedback.position[0] << ","
                             << feedback.position[1] << ","
+                            // 振镜实际位置
                             << feedback.position[2] << ","
+                            << feedback.position[3] << ","
+                            // 平台指令位置
                             << feedback.cmdPosition[0] << ","
                             << feedback.cmdPosition[1] << ","
+                            // 振镜指令位置
                             << feedback.cmdPosition[2] << ","
+                            << feedback.cmdPosition[3] << ","
+                            // 平台速度
                             << feedback.velocity[0] << ","
                             << feedback.velocity[1] << ","
-                            << feedback.velocity[2] << "\n";
+                            // 振镜速度
+                            << feedback.velocity[2] << ","
+                            << feedback.velocity[3] << "\n";
                 }
 
                 status.set_heartbeat(bridge_->heartbeat());

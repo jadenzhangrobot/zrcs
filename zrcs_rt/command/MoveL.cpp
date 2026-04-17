@@ -124,36 +124,41 @@ void MoveL::run()
         if (u > 1) u = 1;
 
         Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
-        Eigen::Vector3d rpy = startRpy_ + u * (targetRpy_ - startRpy_);
+       // Eigen::Vector3d rpy = startRpy_ + u * (targetRpy_ - startRpy_);
 
-        Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
-            pos.x(), pos.y(), pos.z(),
-            rpy.x(), rpy.y(), rpy.z());
+        // Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
+        //     pos.x(), pos.y(), pos.z(),
+        //     rpy.x(), rpy.y(), rpy.z());
 
-        // 当前关节位置作为 IK seed
-        Eigen::VectorXd currentJoint(dof_);
-        for (int i = 0; i < dof_; i++)
-        {
-            currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
-        }
+        // // 当前关节位置作为 IK seed
+        // Eigen::VectorXd currentJoint(dof_);
+        // for (int i = 0; i < dof_; i++)
+        // {
+        //     currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
+        // }
 
-        // IK 求解
-        Eigen::VectorXd targetJoint(dof_);
-        if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
-        {
-            ERROR_PRINT("MoveL: IK 求解失败 (s=%.2f)\n", s);
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-            return;
-        }
+        // // IK 求解
+        // Eigen::VectorXd targetJoint(dof_);
+        // if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
+        // {
+        //     ERROR_PRINT("MoveL: IK 求解失败 (s=%.2f)\n", s);
+        //     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        //     return;
+        // }
 
-        // 写入关节指令
-        for (int i = 0; i < dof_; i++)
-        {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
-        }
+        // // 写入关节指令
+        // for (int i = 0; i < dof_; i++)
+        // {
+        //     controller_->axiss[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
+        // }
+
+          controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
+          controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
+          controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
 
         if (result == Result::Finished)
         {
+            output_->pass_to_input(*input_);
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);
         }
         else

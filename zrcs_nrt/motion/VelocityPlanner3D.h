@@ -30,6 +30,7 @@ private:
 
     double max_vel_global;
     double max_accel;
+    double max_jerk;
     double start_vel;
     double end_vel;
     double corner_tolerance;  // 拐角偏差容限 (mm)
@@ -84,16 +85,54 @@ private:
             double denom = 1.0 - cos_theta;
             if (denom < 1e-6) denom = 1e-6;  // 接近直线，不限速
             double v_corner = std::sqrt(max_accel * corner_tolerance / denom);
-            path[i].velocity = std::min(max_vel_global, v_corner);
+
+            // 方向连续性因子：转角越大，轴向速度跳变越大，必须降低过渡速度
+            // cos_theta= 1（直线）→ factor=1；cos_theta=0（90°）→ factor=0；cos_theta=-1（掉头）→ factor=0
+            // 这保证了在没有物理路径混合的情况下，各轴速度平滑减速到0再换向
+            double dir_factor = std::max(0.0, cos_theta);
+            path[i].velocity = std::min(max_vel_global, v_corner * dir_factor);
         }
+    }
+
+    // 从 v0 变速到 v1 所需最小弧长（Jerk 感知，使用 Ruckig 相同的三段式模型）
+    double dMinTransition(double v0, double v1) const {
+        double dv = std::abs(v1 - v0);
+        if (dv < 1e-9) return 0.0;
+        // Type I（全程 Jerk 受限）：加速度峰值 = sqrt(j * dv)
+        // Type II（Jerk 斜坡 + 匀加速）：加速度到达 max_accel
+        double a_peak = std::sqrt(max_jerk * dv);
+        double T_total;
+        if (a_peak <= max_accel) {
+            // Type I
+            T_total = 2.0 * std::sqrt(dv / max_jerk);
+        } else {
+            // Type II
+            double T_j = max_accel / max_jerk;
+            double T_a = dv / max_accel - T_j;
+            T_total = 2.0 * T_j + T_a;
+        }
+        return (v0 + v1) / 2.0 * T_total;
+    }
+
+    // 给定弧长 d 和起始速度 v0，二分求最大可达末速度
+    double maxReachableVel(double v0, double d) const {
+        double lo = v0, hi = max_vel_global;
+        if (dMinTransition(v0, hi) <= d) return hi;
+        for (int iter = 0; iter < 64; ++iter) {
+            double mid = (lo + hi) * 0.5;
+            if (dMinTransition(v0, mid) <= d) lo = mid;
+            else hi = mid;
+        }
+        return lo;
     }
 
     void backwardScan() {
         size_t N = path.size();
-        for (int i = N - 2; i >= 0; --i) {
+        for (int i = (int)N - 2; i >= 0; --i) {
             double dist = path[i].dist_to_next;
             double v_next = path[i + 1].velocity;
-            double max_reachable_v = std::sqrt(v_next * v_next + 2 * max_accel * dist);
+            // 对称性：从 v_next 减速到 path[i] 的最大可达速度
+            double max_reachable_v = maxReachableVel(v_next, dist);
             path[i].velocity = std::min(path[i].velocity, max_reachable_v);
         }
     }
@@ -103,7 +142,7 @@ private:
         for (size_t i = 1; i < N; ++i) {
             double dist = path[i - 1].dist_to_next;
             double v_prev = path[i - 1].velocity;
-            double max_reachable_v = std::sqrt(v_prev * v_prev + 2 * max_accel * dist);
+            double max_reachable_v = maxReachableVel(v_prev, dist);
             path[i].velocity = std::min(path[i].velocity, max_reachable_v);
         }
     }
@@ -124,13 +163,14 @@ private:
 
 public:
     VelocityPlanner3D()
-        : max_vel_global(100.0), max_accel(100.0), start_vel(0.0), end_vel(0.0),
-          corner_tolerance(0.5) {}
+        : max_vel_global(100.0), max_accel(100.0), max_jerk(1000.0),
+          start_vel(0.0), end_vel(0.0), corner_tolerance(0.5) {}
 
     void setConfig(double max_v, double max_a, double start_v = 0.0, double end_v = 0.0,
-                   double corner_tol = 0.5) {
+                   double corner_tol = 0.5, double max_j = 1000.0) {
         max_vel_global = max_v;
         max_accel = max_a;
+        max_jerk = max_j;
         start_vel = start_v;
         end_vel = end_v;
         corner_tolerance = corner_tol;
