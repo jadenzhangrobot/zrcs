@@ -291,17 +291,33 @@ generate_nsis() {
         warn "No LICENSE file found, skipping license page"
     fi
 
-    sed -e "s|@ZRCS_VERSION@|$ZRCS_VERSION|g" \
-        -e "s|@ZRCS_VERSION_QUAD@|$ZRCS_VERSION_QUAD|g" \
-        -e "s|@ZRCS_NAME@|$ZRCS_NAME|g" \
-        -e "s|@ZRCS_PUBLISHER@|$ZRCS_PUBLISHER|g" \
-        -e "s|@STAGING_DIR@|${staging_win}|g" \
-        -e "s|@OUTPUT_DIR@|${output_win}|g" \
-        -e "s|@EXE_NAME@|$EXE_NAME|g" \
-        -e "s|@ICON_DEFINES@|${icon_defines}|g" \
-        -e "s|@ICON_REG@|${icon_reg}|g" \
-        -e "s|@LICENSE_PAGE@|${license_page}|g" \
-        "$NSIS_TEMPLATE" > "$NSIS_SCRIPT"
+    # 使用 PowerShell 生成脚本，保证 UTF-8 编码和正确的行尾
+    powershell -NoProfile -Command "
+        \$template = Get-Content '$NSIS_TEMPLATE' -Encoding UTF8 -Raw
+        \$script = \$template `
+            -replace '@ZRCS_VERSION@', '$ZRCS_VERSION' `
+            -replace '@ZRCS_VERSION_QUAD@', '$ZRCS_VERSION_QUAD' `
+            -replace '@ZRCS_NAME@', '$ZRCS_NAME' `
+            -replace '@ZRCS_PUBLISHER@', '$ZRCS_PUBLISHER' `
+            -replace '@STAGING_DIR@', '$staging_win' `
+            -replace '@OUTPUT_DIR@', '$output_win' `
+            -replace '@EXE_NAME@', '$EXE_NAME' `
+            -replace '@ICON_DEFINES@', @'
+$icon_defines
+'@ `
+            -replace '@ICON_REG@', @'
+$icon_reg
+'@ `
+            -replace '@LICENSE_PAGE@', @'
+$license_page
+'@
+        # 写入文件，使用 UTF8 编码（不带 BOM）
+        [IO.File]::WriteAllText('$NSIS_SCRIPT', \$script, (New-Object System.Text.UTF8Encoding \$false))
+    " 2>&1
+    
+    if [[ $? -ne 0 ]]; then
+        error "Failed to generate NSIS script with PowerShell"
+    fi
 
     info "NSIS script generated: $NSIS_SCRIPT"
 }

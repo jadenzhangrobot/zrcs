@@ -22,9 +22,6 @@ CMD_RESERVE(ActUnit, 8,
 CMD_RESERVE(DeactUnit, 9,
     PARAM(UnitId)
 )
-CMD_RESERVE(SetZero, 10,
-    PARAM(AxisId)
-)
 
 // === IO 命令 ===
 CMD_RESERVE(SetGO, 12,
