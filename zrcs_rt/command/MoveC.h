@@ -12,20 +12,21 @@
 #include <Eigen/Dense>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(MoveC, 26,
-    PARAM(ViaX)
-    PARAM(ViaY)
-    PARAM(ViaZ)
-    PARAM(EndX)
-    PARAM(EndY)
-    PARAM(EndZ)
-    PARAM(Vel)
-)
-
 using namespace ruckig;
 
 class MoveC : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(26,
+        PARAM(ViaX)
+        PARAM(ViaY)
+        PARAM(ViaZ)
+        PARAM(EndX)
+        PARAM(EndY)
+        PARAM(EndZ)
+        PARAM(Vel)
+    )
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -54,3 +55,4 @@ public:
     MoveC();
     void run() override;
 };
+

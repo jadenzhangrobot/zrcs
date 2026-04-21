@@ -6,20 +6,11 @@
 #include "system/NodeFactory.h"
 #include "system/CmdMeta.h"
 
-CMD_DEFINE(SetDO, 11,
-    PARAM(ModuleIndex)
-    PARAM(BitPos)
-    PARAM(Value)
-)
-
 class SetDO : public zrcsSystem::CmdNode
 {
-private:
-    int moduleIndex_;
-    int bitPos_;
-    bool value_;
-
 public:
+    CMD_DEFINE(11, PARAM(ModuleIndex) PARAM(BitPos) PARAM(Value))
+
     SetDO()
     {
         std::strcpy(nodeName_, "SetDO");
@@ -28,4 +19,10 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int moduleIndex_;
+    int bitPos_;
+    bool value_;
 };
+

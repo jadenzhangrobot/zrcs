@@ -14,14 +14,14 @@
 #include <Eigen/Dense>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(PathMove, 48,
-    PARAM(Vel)
-)
 
 using namespace ruckig;
 
 class PathMove : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(48, PARAM(Vel))
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>>          otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>>   input_;

@@ -1,5 +1,5 @@
 #include "system/NodeFactory.h"
-#include "CmdRegistry_gen.h"
+#include "system/CmdIds.h"
 #include <cstring>
 
 namespace zrcsSystem {
@@ -30,17 +30,6 @@ std::vector<NodeFactory::PendingInput>& NodeFactory::pendingInputs()
 
 NodeFactory::NodeFactory()
 {
-    // 旧路径：按名称反查 CmdId（兼容过渡期，未来移除）
-    for (auto& p : pendingCmds()) {
-        for (size_t i = 1; i < static_cast<size_t>(CmdId::SENTINEL); ++i) {
-            if (p.name == zrcs::cmdIdToName(static_cast<uint16_t>(i))) {
-                registry_[i] = p.creator;
-                break;
-            }
-        }
-    }
-
-    // 新路径：按 CmdId 直接注册，O(N)，无字符串匹配
     for (auto& p : pendingCmdsById()) {
         if (p.cmdId > 0 && p.cmdId < static_cast<uint16_t>(CmdId::SENTINEL)) {
             registry_[p.cmdId] = p.creator;

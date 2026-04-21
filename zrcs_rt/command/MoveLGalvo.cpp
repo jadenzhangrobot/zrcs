@@ -22,14 +22,14 @@ bool MoveLGalvo::initTrajectory()
 {
     // 从命令参数构建起点和终点位置
     startPos_ = Eigen::Vector3d(
-        command_->args[MoveLGalvoCurrentX],
-        command_->args[MoveLGalvoCurrentY],
-        command_->args[MoveLGalvoCurrentZ]);
+        command_->args[CurrentX],
+        command_->args[CurrentY],
+        command_->args[CurrentZ]);
 
     targetPos_ = Eigen::Vector3d(
-        command_->args[MoveLGalvoX],
-        command_->args[MoveLGalvoY],
-        command_->args[MoveLGalvoZ]);
+        command_->args[X],
+        command_->args[Y],
+        command_->args[Z]);
 
     cartDist_ = (targetPos_ - startPos_).norm();
     if (cartDist_ < 1e-6)
@@ -38,7 +38,7 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
-    double maxVel   = command_->args[MoveLGalvoVel];
+    double maxVel   = command_->args[Vel];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
@@ -64,7 +64,7 @@ bool MoveLGalvo::initTrajectory()
     }
 
     input_->target_position[0]     = cartDist_;
-    input_->target_velocity[0]     = command_->args[MoveLGalvoTargetVel];
+    input_->target_velocity[0]     = command_->args[TargetVel];
     input_->target_acceleration[0] = 0;
     input_->max_velocity[0]        = maxVel;
     input_->max_acceleration[0]    = maxAccel;
@@ -143,4 +143,4 @@ void MoveLGalvo::run()
     }
 }
 
-REGISTERCMD(MoveLGalvo, 52);
+CMD_REGISTER(MoveLGalvo);

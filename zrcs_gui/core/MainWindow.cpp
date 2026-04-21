@@ -8,6 +8,7 @@
 #include <QFont>
 #include <QScrollArea>
 #include <QFrame>
+#include <QDateTime>
 #include <functional>
 #include <QFile>
 #include "ui_main_window.h"
@@ -35,6 +36,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     statusSubscriber = new ZMQStatusSubscriber(commCfg2.zmqHost, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
+            this, &MainWindowRefactored::onRtLogReceived);
     statusSubscriber->start();
 
     // 连接命令面板信号
@@ -342,6 +345,14 @@ void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
     }
 }
 
+void MainWindowRefactored::onRtLogReceived(quint32 level, const QString &source, const QString &message)
+{
+    if (!alarmPanel) return;
+
+    const QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
+    alarmPanel->addLogEntry(level, source, message, timestamp);
+}
+
 void MainWindowRefactored::onConnectClicked()
 {
     if (zmqClient && zmqClient->isConnected()) {
@@ -390,5 +401,7 @@ void MainWindowRefactored::onConnectClicked()
     statusSubscriber = new ZMQStatusSubscriber(host, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
+            this, &MainWindowRefactored::onRtLogReceived);
     statusSubscriber->start();
 }

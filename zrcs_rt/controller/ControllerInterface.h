@@ -206,8 +206,11 @@ public:
 
   // --- 零点偏移 ---
   void setZeroOffset(double offset) 
-  { zeroOffset_ = offset+zeroOffset_; }
-  double getZeroOffset() const { return zeroOffset_; }
+  { 
+    zeroOffset_ = offset+zeroOffset_;
+   }
+  double getZeroOffset() const 
+  { return zeroOffset_; }
 
   // --- 动态限位修改 ---
   void setPosLimits(double posLimit, double negLimit)

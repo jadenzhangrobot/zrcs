@@ -9,7 +9,7 @@
 
 void Reset::init()
 {
-    axisId_ = static_cast<int>(command_->args[ResetAxisId]);
+    axisId_ = static_cast<int>(command_->args[AxisId]);
 }
 
 void Reset::run(void)
@@ -56,4 +56,4 @@ void Reset::exit(void)
 {
 }
 
-REGISTERCMD(Reset, 3);
+CMD_REGISTER(Reset);

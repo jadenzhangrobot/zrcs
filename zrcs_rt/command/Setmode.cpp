@@ -5,8 +5,8 @@
 
 void Setmode::init()
 {
-    axisId_ = static_cast<int>(command_->args[SetmodeAxisId]);
-    mode_ = static_cast<int>(command_->args[SetmodeMode]);
+    axisId_ = static_cast<int>(command_->args[AxisId]);
+    mode_ = static_cast<int>(command_->args[Mode]);
 }
 
 void Setmode::run(void)
@@ -35,4 +35,4 @@ void Setmode::run(void)
 
 void Setmode::exit(void) {}
 
-REGISTERCMD(Setmode, 6);
+CMD_REGISTER(Setmode);

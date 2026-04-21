@@ -12,16 +12,11 @@
 #include "system/CmdMeta.h"
 #include <iostream>
 
-CMD_DEFINE(Reset, 3,
-    PARAM(AxisId)
-)
-
 class Reset : public zrcsSystem::CmdNode
 {
-private:
-    int axisId_;
-
 public:
+    CMD_DEFINE(3, PARAM(AxisId))
+
     Reset()
     {
         std::strcpy(nodeName_, "Reset");
@@ -30,5 +25,8 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int axisId_;
 };
 

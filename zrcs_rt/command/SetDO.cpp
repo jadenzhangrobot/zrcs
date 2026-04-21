@@ -5,9 +5,9 @@
 
 void SetDO::init()
 {
-    moduleIndex_ = static_cast<int>(command_->args[SetDOModuleIndex]);
-    bitPos_ = static_cast<int>(command_->args[SetDOBitPos]);
-    value_ = static_cast<bool>(command_->args[SetDOValue]);
+    moduleIndex_ = static_cast<int>(command_->args[ModuleIndex]);
+    bitPos_ = static_cast<int>(command_->args[BitPos]);
+    value_ = static_cast<bool>(command_->args[Value]);
 }
 
 void SetDO::run(void)
@@ -27,4 +27,4 @@ void SetDO::run(void)
 
 void SetDO::exit(void) {}
 
-REGISTERCMD(SetDO, 11);
+CMD_REGISTER(SetDO);

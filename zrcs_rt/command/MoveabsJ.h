@@ -10,20 +10,21 @@
 #include <memory>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(MoveAbsJ, 23,
-    PARAM(Count)
-    PARAM(J1)
-    PARAM(J2)
-    PARAM(J3)
-    PARAM(J4)
-    PARAM(J5)
-    PARAM(J6)
-)
-
 using namespace ruckig;
 
 class MoveAbsJ : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(23,
+        PARAM(Count)
+        PARAM(J1)
+        PARAM(J2)
+        PARAM(J3)
+        PARAM(J4)
+        PARAM(J5)
+        PARAM(J6)
+    )
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -41,3 +42,4 @@ protected:
 public:
     MoveAbsJ();
 };
+

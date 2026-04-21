@@ -8,12 +8,13 @@
 #include <memory>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(Movehome, 30)
-
 using namespace ruckig;
 
 class Movehome : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(30)
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -30,3 +31,4 @@ protected:
 public:
     Movehome();
 };
+

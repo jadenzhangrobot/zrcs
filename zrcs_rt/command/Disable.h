@@ -10,16 +10,11 @@
 #include "system/NodeFactory.h"
 #include "system/CmdMeta.h"
 
-CMD_DEFINE(Disable, 2,
-    PARAM(AxisId)
-)
-
 class Disable : public zrcsSystem::CmdNode
 {
-private:
-    int axisId_;
-
 public:
+    CMD_DEFINE(2, PARAM(AxisId))
+
     Disable()
     {
         std::strcpy(nodeName_, "Disable");
@@ -28,4 +23,8 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int axisId_;
 };
+

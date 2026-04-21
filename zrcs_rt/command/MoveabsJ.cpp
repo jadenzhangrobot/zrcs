@@ -23,7 +23,7 @@ bool MoveAbsJ::initTrajectory()
         return false;
     }
 
-    dof_ = static_cast<int>(command_->args[MoveAbsJCount]);
+    dof_ = static_cast<int>(command_->args[Count]);
     if (dof_ <= 0) dof_ = model->getDof();
     axisIds_ = model->getAxisIds();
 
@@ -37,7 +37,7 @@ bool MoveAbsJ::initTrajectory()
         input_->current_position[i] = controller_->axiss[axisId]->actualPos();
         input_->current_velocity[i] = 0;
         input_->current_acceleration[i] = 0;
-        input_->target_position[i] = command_->args[MoveAbsJJ1 + i];
+        input_->target_position[i] = command_->args[J1 + i];
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
         input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity();
@@ -55,4 +55,4 @@ void MoveAbsJ::applyOutput()
     }
 }
 
-REGISTERCMD(MoveAbsJ, 23);
+CMD_REGISTER(MoveAbsJ);

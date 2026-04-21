@@ -15,8 +15,8 @@ void JogJ::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool JogJ::initTrajectory()
 {
-    axisId_ = static_cast<int>(command_->args[JogJAxisId]);
-    position_ = command_->args[JogJTargetPosition];
+    axisId_ = static_cast<int>(command_->args[AxisId]);
+    position_ = command_->args[TargetPosition];
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
@@ -36,4 +36,4 @@ bool JogJ::initTrajectory()
     return true;
 }
 
-REGISTERCMD(JogJ, 20);
+CMD_REGISTER(JogJ);

@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 #include "system/base/BaseNodeInterface.h"
-#include "CmdRegistry_gen.h"
+#include "system/CmdIds.h"
 
 class ModelRegistry;
 

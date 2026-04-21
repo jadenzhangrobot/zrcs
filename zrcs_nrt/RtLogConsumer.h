@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <cstring>
+#include <functional>
 #include <spdlog/spdlog.h>
 #include "shared_memory/ShmLayout.h"
 
@@ -15,11 +16,15 @@
  */
 class RtLogConsumer {
 public:
+    using LogCallback = std::function<void(const zrcs::RtLogEntry&)>;
+
     explicit RtLogConsumer(
         zrcs::SharedBlock* block,
-        std::chrono::milliseconds poll_interval = std::chrono::milliseconds(10))
+        std::chrono::milliseconds poll_interval = std::chrono::milliseconds(10),
+        LogCallback callback = {})
         : logConsumer_(block->logQueue),
-          poll_interval_(poll_interval)
+          poll_interval_(poll_interval),
+          callback_(std::move(callback))
     {}
 
     ~RtLogConsumer() { stop(); }
@@ -69,10 +74,15 @@ private:
         case 2:  spdlog::error("[RT] [{}:{}] {}", file, entry.line, msg); break;
         default: spdlog::info ("[RT] [L{}] [{}:{}] {}", entry.level, file, entry.line, msg); break;
         }
+
+        if (callback_) {
+            callback_(entry);
+        }
     }
 
     zrcs::ShmSPSCConsumer<zrcs::RtLogEntry, zrcs::kLogQueueCap> logConsumer_;
     std::chrono::milliseconds poll_interval_;
+    LogCallback               callback_;
     std::atomic<bool>         running_{false};
     std::thread               thread_;
 };

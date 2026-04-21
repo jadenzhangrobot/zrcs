@@ -7,15 +7,13 @@
 #include "system/CmdMeta.h"
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(JogabsJ, 19,
-    PARAM(AxisId)
-    PARAM(TargetPosition)
-)
-
 using namespace ruckig;
 
 class JogabsJ : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(19, PARAM(AxisId) PARAM(TargetPosition))
+
 private:
     Ruckig<1> otg_;
     InputParameter<1> input_;
@@ -33,3 +31,4 @@ protected:
 public:
     JogabsJ();
 };
+

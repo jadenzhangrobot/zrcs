@@ -29,8 +29,8 @@ bool MoveJ::initTrajectory()
 
     // 构建目标位姿
     Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
-        command_->args[MoveJX], command_->args[MoveJY], command_->args[MoveJZ],
-        command_->args[MoveJRX], command_->args[MoveJRY], command_->args[MoveJRZ]);
+        command_->args[X], command_->args[Y], command_->args[Z],
+        command_->args[RX], command_->args[RY], command_->args[RZ]);
 
     // 当前关节位置
     Eigen::VectorXd currentJoint(dof_);
@@ -52,7 +52,7 @@ bool MoveJ::initTrajectory()
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double velScale = command_->args[MoveJVel];
+    double velScale = command_->args[Vel];
     if (velScale <= 0) velScale = 1.0;
 
     for (int i = 0; i < dof_; i++)
@@ -79,4 +79,4 @@ void MoveJ::applyOutput()
     }
 }
 
-REGISTERCMD(MoveJ, 24);
+CMD_REGISTER(MoveJ);

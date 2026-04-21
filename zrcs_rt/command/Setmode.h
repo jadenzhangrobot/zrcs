@@ -6,18 +6,11 @@
 #include "system/NodeFactory.h"
 #include "system/CmdMeta.h"
 
-CMD_DEFINE(Setmode, 6,
-    PARAM(AxisId)
-    PARAM(Mode)
-)
-
 class Setmode : public zrcsSystem::CmdNode
 {
-private:
-    int axisId_;
-    int mode_;
-
 public:
+    CMD_DEFINE(6, PARAM(AxisId) PARAM(Mode))
+
     Setmode()
     {
         std::strcpy(nodeName_, "Setmode");
@@ -26,4 +19,9 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int axisId_;
+    int mode_;
 };
+

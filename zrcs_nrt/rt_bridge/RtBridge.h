@@ -18,8 +18,7 @@
 #include <algorithm>
 #include <spdlog/spdlog.h>
 #include "shared_memory/ShmLayout.h"
-#include "CmdRegistry_gen.h"
-#include "CmdNameToId_gen.h"
+#include "system/CmdIds.h"
 class RtBridge {
 public:
     enum class SendResult { OK, QUEUE_FULL, NOT_CONNECTED, UNKNOWN_CMD };
@@ -316,7 +315,7 @@ public:
         return dropped_count_.load(std::memory_order_relaxed);
     }
 
-    // 命令名称 → CmdId 映射表已由 CmdNameToId_gen.h 自动生成
+    // 命令名称 → CmdId 映射表由 CmdIds.h 提供
     // 使用 zrcs::cmdNameToId() 获取
 
 private:

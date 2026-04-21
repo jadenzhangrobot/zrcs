@@ -5,7 +5,7 @@
 
 void SetZero::init()
 {
-    axisId_ = static_cast<int>(command_->args[SetZeroAxisId]);
+    axisId_ = static_cast<int>(command_->args[AxisId]);
 }
 
 void SetZero::run(void)
@@ -14,6 +14,8 @@ void SetZero::run(void)
     {
         controller_->axiss[axisId_]->setZeroOffset(
             controller_->axiss[axisId_]->actualPos());
+        controller_->axiss[axisId_]->setAxisPositionCmd(0.0);
+        controller_->axiss[axisId_]->syncCmdHistory();
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
     else if (controller_->axiss.size() == axisId_)
@@ -22,6 +24,8 @@ void SetZero::run(void)
         {
             controller_->axiss[i]->setZeroOffset(
                 controller_->axiss[i]->actualPos());
+            controller_->axiss[i]->setAxisPositionCmd(0.0);
+            controller_->axiss[i]->syncCmdHistory();
         }
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
@@ -34,4 +38,4 @@ void SetZero::run(void)
 
 void SetZero::exit(void) {}
 
-REGISTERCMD(SetZero, 10);
+CMD_REGISTER(SetZero);

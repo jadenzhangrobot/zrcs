@@ -7,16 +7,11 @@
 #include "system/NodeFactory.h"
 #include "system/CmdMeta.h"
 
-CMD_DEFINE(SetZero, 10,
-    PARAM(AxisId)
-)
-
 class SetZero : public zrcsSystem::CmdNode
 {
-private:
-    int axisId_;
-
 public:
+    CMD_DEFINE(10, PARAM(AxisId))
+
     SetZero()
     {
         std::strcpy(nodeName_, "SetZero");
@@ -25,4 +20,7 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int axisId_;
 };

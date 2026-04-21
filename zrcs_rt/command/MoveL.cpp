@@ -35,22 +35,22 @@ bool MoveL::initTrajectory()
 
     // 从命令参数构建起点和终点位姿
     startPos_ = Eigen::Vector3d(
-        command_->args[MoveLCurrentX],
-        command_->args[MoveLCurrentY],
-        command_->args[MoveLCurrentZ]);
+        command_->args[CurrentX],
+        command_->args[CurrentY],
+        command_->args[CurrentZ]);
     startRpy_ = Eigen::Vector3d(
-        command_->args[MoveLCurrentRX],
-        command_->args[MoveLCurrentRY],
-        command_->args[MoveLCurrentRZ]);
+        command_->args[CurrentRX],
+        command_->args[CurrentRY],
+        command_->args[CurrentRZ]);
 
     targetPos_ = Eigen::Vector3d(
-        command_->args[MoveLX],
-        command_->args[MoveLY],
-        command_->args[MoveLZ]);
+        command_->args[X],
+        command_->args[Y],
+        command_->args[Z]);
     targetRpy_ = Eigen::Vector3d(
-        command_->args[MoveLRX],
-        command_->args[MoveLRY],
-        command_->args[MoveLRZ]);
+        command_->args[RX],
+        command_->args[RY],
+        command_->args[RZ]);
 
     // 计算线段长度
     cartDist_ = (targetPos_ - startPos_).norm();
@@ -61,8 +61,8 @@ bool MoveL::initTrajectory()
     }
 
     // 读取笛卡尔标量边界条件
-    double maxVel = command_->args[MoveLVel];
-    double tgtVel = command_->args[MoveLTargetVel];
+    double maxVel = command_->args[Vel];
+    double tgtVel = command_->args[TargetVel];
 
     // 读取标量路径加速度/jerk 限制（复用 PathMove 配置）
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
@@ -186,4 +186,4 @@ void MoveL::run()
     }
 }
 
-REGISTERCMD(MoveL, 25);
+CMD_REGISTER(MoveL);

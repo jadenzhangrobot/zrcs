@@ -15,11 +15,11 @@ void MoveAbs::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveAbs::initTrajectory()
 {
-    axisId_ = static_cast<int>(command_->args[MoveAbsAxisId]);
-    double position = command_->args[MoveAbsPosition];
-    double vel = command_->args[MoveAbsVel];
-    double acc = command_->args[MoveAbsAcc];
-    double jerk = command_->args[MoveAbsJerk];
+    axisId_ = static_cast<int>(command_->args[AxisId]);
+    double position = command_->args[Position];
+    double vel = command_->args[Vel];
+    double acc = command_->args[Acc];
+    double jerk = command_->args[Jerk];
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
@@ -40,4 +40,4 @@ bool MoveAbs::initTrajectory()
     return true;
 }
 
-REGISTERCMD(MoveAbs, 21);
+CMD_REGISTER(MoveAbs);

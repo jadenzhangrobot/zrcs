@@ -6,20 +6,11 @@
 #include "system/NodeFactory.h"
 #include "system/CmdMeta.h"
 
-CMD_DEFINE(SetAO, 13,
-    PARAM(ModuleIndex)
-    PARAM(Channel)
-    PARAM(Value)
-)
-
 class SetAO : public zrcsSystem::CmdNode
 {
-private:
-    int moduleIndex_;
-    int channel_;
-    double value_;
-
 public:
+    CMD_DEFINE(13, PARAM(ModuleIndex) PARAM(Channel) PARAM(Value))
+
     SetAO()
     {
         std::strcpy(nodeName_, "SetAO");
@@ -28,4 +19,10 @@ public:
     void init() override;
     void run(void) override;
     void exit(void) override;
+
+private:
+    int moduleIndex_;
+    int channel_;
+    double value_;
 };
+

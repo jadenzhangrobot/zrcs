@@ -9,7 +9,7 @@
 
 void Disable::init()
 {
-    axisId_ = static_cast<int>(command_->args[DisableAxisId]);
+    axisId_ = static_cast<int>(command_->args[AxisId]);
 }
 
 void Disable::run(void)
@@ -49,4 +49,4 @@ void Disable::exit(void)
 {
 }
 
-REGISTERCMD(Disable, 2);
+CMD_REGISTER(Disable);

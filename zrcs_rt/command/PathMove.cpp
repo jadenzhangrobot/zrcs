@@ -86,7 +86,7 @@ bool PathMove::initTrajectory()
     double maxJerk   = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
     // 速度倍率（命令参数）
-    double velScale = command_->args[PathMoveVel];
+    double velScale = command_->args[Vel];
     if (velScale > 0) maxVel *= velScale;
 
     // 初始化 1D Ruckig（弧长参数 s）
@@ -243,4 +243,4 @@ double PathMove::lookupMaxVel(double s) const
     return p0.maxVel + t * (p1.maxVel - p0.maxVel);
 }
 
-REGISTERCMD(PathMove, 48);
+CMD_REGISTER(PathMove);

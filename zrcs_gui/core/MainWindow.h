@@ -110,6 +110,7 @@ class AlarmPanel : public QWidget {
 public:
     AlarmPanel(QWidget *parent = nullptr);
     void addAlarm(const QString &message, const QString &timestamp);
+    void addLogEntry(quint32 level, const QString &source, const QString &message, const QString &timestamp);
     void clearAlarms();
 
 private:
@@ -152,6 +153,7 @@ private slots:
 
     // Status
     void onAxisPositionsUpdated(QVector<double> positions);
+    void onRtLogReceived(quint32 level, const QString &source, const QString &message);
 
 private:
     void setupUI();
@@ -209,4 +211,3 @@ private:
     void sendMotionCommand(const QString &command, const QVector<double> &args = {});
     void showConfirmDialog(const QString &title, const QString &message, std::function<void()> onConfirm);
 };
-

@@ -9,7 +9,7 @@
 
 void Enable::init()
 {
-    axisId_ = static_cast<int>(command_->args[EnableAxisId]);
+    axisId_ = static_cast<int>(command_->args[AxisId]);
 }
 
 void Enable::run(void)
@@ -57,4 +57,4 @@ void Enable::exit(void)
 {
 }
 
-REGISTERCMD(Enable, 1);
+CMD_REGISTER(Enable);

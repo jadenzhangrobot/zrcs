@@ -15,11 +15,11 @@ void MoveRel::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveRel::initTrajectory()
 {
-    axisId_ = static_cast<int>(command_->args[MoveRelAxisId]);
-    double distance = command_->args[MoveRelDistance];
-    double vel = command_->args[MoveRelVel];
-    double acc = command_->args[MoveRelAcc];
-    double jerk = command_->args[MoveRelJerk];
+    axisId_ = static_cast<int>(command_->args[AxisId]);
+    double distance = command_->args[Distance];
+    double vel = command_->args[Vel];
+    double acc = command_->args[Acc];
+    double jerk = command_->args[Jerk];
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
@@ -41,4 +41,4 @@ bool MoveRel::initTrajectory()
     return true;
 }
 
-REGISTERCMD(MoveRel, 22);
+CMD_REGISTER(MoveRel);

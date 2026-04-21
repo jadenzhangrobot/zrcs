@@ -1,28 +1,38 @@
 /*
- * @Description: 命令元数据声明宏
+ * CmdMeta.h — 命令注册宏
  *
- * 在命令 .h 中使用 CMD_DEFINE 声明 CmdId 和参数列表。
- * C++ 编译时这些宏展开为空；Python 代码生成器 (tool/gen_cmd_registry.py)
- * 通过正则匹配提取元数据，自动生成 CmdRegistry_gen.h / CmdHead_gen.h /
- * CmdNameToId_gen.h / message_gen.proto。
+ * CMD_DEFINE 放在命令类体 public 区域，展开为:
+ *   - kCmdId: 命令 ID 常量，供 CMD_REGISTER 宏使用
+ *   - 匿名参数索引枚举：在类方法内可直接用参数名作下标访问 command_->args[]
  *
- * 用法：
- *   CMD_DEFINE(Enable, 1, PARAM(AxisId))
- *   CMD_DEFINE(MoveJ, 24, PARAM(X) PARAM(Y) PARAM(Z) PARAM(RX) PARAM(RY) PARAM(RZ) PARAM(Vel))
- *   CMD_DEFINE(Movehome, 30)          // 无参数
- *   CMD_RESERVE(Stop, 4)              // 保留 ID（未实现的命令）
- *   CMD_RESERVE(EmergStop, 5, PARAM(xxx))   // 保留 ID + 参数
+ * 用法（在类 public 区域）：
+ *   CMD_DEFINE(1, PARAM(AxisId))
+ *   CMD_DEFINE(25, PARAM(CurrentX) PARAM(CurrentY) PARAM(Z) PARAM(Vel))
+ *   CMD_DEFINE(30)                    // 无参数
+ *
+ * CMD_REGISTER 放在命令 .cpp 文件底部，将命令注册到 NodeFactory:
+ *   CMD_REGISTER(Enable)
+ *
+ * CMD_RESERVE 保留 ID 占位，展开为空（仅文档用途）:
+ *   CMD_RESERVE(Stop, 4)
  */
 #pragma once
 
-// PARAM — C++ 编译时为空，仅供代码生成器解析
-#define PARAM(name)
+#include "system/NodeFactory.h"
 
-// CMD_DEFINE — 已实现的命令
-// 生成器解析格式: CMD_DEFINE(className, cmdId, PARAM(p1) PARAM(p2) ...)
-// 生成 CmdId 枚举项 + 参数索引枚举 + CmdHead_gen.h #include + CmdNameToId 映射
-#define CMD_DEFINE(className, id, ...)
+// PARAM(name) — 在 CMD_DEFINE 枚举中展开为一个枚举成员
+#define PARAM(name) name,
 
-// CMD_RESERVE — 保留但未实现的命令（只生成 CmdId 枚举项 + 参数索引 + CmdNameToId，
-//               不生成 CmdHead_gen.h #include）
+// CMD_DEFINE(id, PARAM(p1) PARAM(p2) ...) — 放在类体 public 区域
+// 展开为 kCmdId 常量 + 匿名参数索引枚举
+#define CMD_DEFINE(id, ...)                        \
+    static constexpr uint16_t kCmdId = (id);      \
+    enum : int { __VA_ARGS__ };
+
+// CMD_REGISTER(ClassName) — 放在 .cpp 底部，触发静态注册
+#define CMD_REGISTER(ClassName)                                              \
+    static zrcsSystem::RegisterNodeById<ClassName> _reg_##ClassName(        \
+        ClassName::kCmdId);
+
+// CMD_RESERVE — 保留但未实现的命令，展开为空
 #define CMD_RESERVE(className, id, ...)

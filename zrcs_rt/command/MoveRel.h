@@ -7,18 +7,13 @@
 #include "system/CmdMeta.h"
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(MoveRel, 22,
-    PARAM(AxisId)
-    PARAM(Distance)
-    PARAM(Vel)
-    PARAM(Acc)
-    PARAM(Jerk)
-)
-
 using namespace ruckig;
 
 class MoveRel : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(22, PARAM(AxisId) PARAM(Distance) PARAM(Vel) PARAM(Acc) PARAM(Jerk))
+
 private:
     Ruckig<1> otg_;
     InputParameter<1> input_;
@@ -35,3 +30,4 @@ protected:
 public:
     MoveRel();
 };
+

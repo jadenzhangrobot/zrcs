@@ -11,20 +11,21 @@
 #include <Eigen/Dense>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(MoveJ, 24,
-    PARAM(X)
-    PARAM(Y)
-    PARAM(Z)
-    PARAM(RX)
-    PARAM(RY)
-    PARAM(RZ)
-    PARAM(Vel)
-)
-
 using namespace ruckig;
 
 class MoveJ : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(24,
+        PARAM(X)
+        PARAM(Y)
+        PARAM(Z)
+        PARAM(RX)
+        PARAM(RY)
+        PARAM(RZ)
+        PARAM(Vel)
+    )
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -42,3 +43,4 @@ protected:
 public:
     MoveJ();
 };
+

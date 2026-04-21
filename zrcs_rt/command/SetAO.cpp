@@ -5,9 +5,9 @@
 
 void SetAO::init()
 {
-    moduleIndex_ = static_cast<int>(command_->args[SetAOModuleIndex]);
-    channel_ = static_cast<int>(command_->args[SetAOChannel]);
-    value_ = command_->args[SetAOValue];
+    moduleIndex_ = static_cast<int>(command_->args[ModuleIndex]);
+    channel_ = static_cast<int>(command_->args[Channel]);
+    value_ = command_->args[Value];
 }
 
 void SetAO::run(void)
@@ -30,4 +30,4 @@ void SetAO::run(void)
 
 void SetAO::exit(void) {}
 
-REGISTERCMD(SetAO, 13);
+CMD_REGISTER(SetAO);

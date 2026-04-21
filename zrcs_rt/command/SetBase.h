@@ -9,18 +9,11 @@
 #include "model/RobotModel.h"
 #include <Eigen/Dense>
 
-CMD_DEFINE(SetBase, 32,
-    PARAM(X)
-    PARAM(Y)
-    PARAM(Z)
-    PARAM(RX)
-    PARAM(RY)
-    PARAM(RZ)
-)
-
 class SetBase : public zrcsSystem::CmdNode
 {
 public:
+    CMD_DEFINE(32, PARAM(X) PARAM(Y) PARAM(Z) PARAM(RX) PARAM(RY) PARAM(RZ))
+
     SetBase()
     {
         std::strcpy(nodeName_, "SetBase");
@@ -30,3 +23,4 @@ public:
     void run(void) override;
     void exit(void) override;
 };
+

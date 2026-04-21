@@ -42,8 +42,8 @@ bool MoveC::initTrajectory()
     }
 
     Eigen::Vector3d P0 = startPose.block<3,1>(0,3);
-    Eigen::Vector3d P1(command_->args[MoveCViaX], command_->args[MoveCViaY], command_->args[MoveCViaZ]);
-    Eigen::Vector3d P2(command_->args[MoveCEndX], command_->args[MoveCEndY], command_->args[MoveCEndZ]);
+    Eigen::Vector3d P1(command_->args[ViaX], command_->args[ViaY], command_->args[ViaZ]);
+    Eigen::Vector3d P2(command_->args[EndX], command_->args[EndY], command_->args[EndZ]);
 
     // three-point circle: compute center using circumcenter formula
     Eigen::Vector3d A = P1 - P0;
@@ -96,7 +96,7 @@ bool MoveC::initTrajectory()
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 
-    double velScale = command_->args[MoveCVel];
+    double velScale = command_->args[Vel];
     if (velScale <= 0) velScale = 1.0;
 
     input_->current_position[0] = 0;
@@ -170,4 +170,4 @@ void MoveC::run(void)
     }
 }
 
-REGISTERCMD(MoveC, 26);
+CMD_REGISTER(MoveC);

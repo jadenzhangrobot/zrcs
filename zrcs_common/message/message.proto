@@ -86,9 +86,18 @@ message AxisStatus {
     double torque = 5;
 }
 
+message RtLogStatus {
+    uint64 timestamp_us = 1;
+    uint32 level = 2;
+    string file = 3;
+    uint32 line = 4;
+    string message = 5;
+}
+
 message SystemStatus {
     repeated AxisStatus axes = 1;
     string system_state = 2;
     uint64 heartbeat = 3;
     uint64 dropped_commands = 4;
+    repeated RtLogStatus rt_logs = 5;
 }

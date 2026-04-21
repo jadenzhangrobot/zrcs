@@ -11,30 +11,32 @@
 #include <Eigen/Dense>
 #include <ruckig/ruckig.hpp>
 
-CMD_DEFINE(MoveL, 25,
-    PARAM(CurrentX)
-    PARAM(CurrentY)
-    PARAM(CurrentZ)
-    PARAM(CurrentRX)
-    PARAM(CurrentRY)
-    PARAM(CurrentRZ)
-    PARAM(X)
-    PARAM(Y)
-    PARAM(Z)
-    PARAM(RX)
-    PARAM(RY)
-    PARAM(RZ)
-    PARAM(Vel)
-    PARAM(CurrentVel)
-    PARAM(CurrentAcc)
-    PARAM(TargetVel)
-    PARAM(TargetAcc)
-)
 
 using namespace ruckig;
 
 class MoveL : public TrajectoryCmd
 {
+public:
+    CMD_DEFINE(25,
+        PARAM(CurrentX)
+        PARAM(CurrentY)
+        PARAM(CurrentZ)
+        PARAM(CurrentRX)
+        PARAM(CurrentRY)
+        PARAM(CurrentRZ)
+        PARAM(X)
+        PARAM(Y)
+        PARAM(Z)
+        PARAM(RX)
+        PARAM(RY)
+        PARAM(RZ)
+        PARAM(Vel)
+        PARAM(CurrentVel)
+        PARAM(CurrentAcc)
+        PARAM(TargetVel)
+        PARAM(TargetAcc)
+    )
+
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
