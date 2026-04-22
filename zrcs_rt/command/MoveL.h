@@ -1,10 +1,9 @@
 /*
- * @Description: 笛卡尔直线运动（ABB MoveL）— 1D 弧长参数化 + 每周期 IK
+ * @Description: 笛卡尔直线运动（ABB MoveL）�?1D 弧长参数�?+ 每周�?IK
  */
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>
@@ -17,25 +16,7 @@ using namespace ruckig;
 class MoveL : public TrajectoryCmd
 {
 public:
-    CMD_DEFINE(25,
-        PARAM(CurrentX)
-        PARAM(CurrentY)
-        PARAM(CurrentZ)
-        PARAM(CurrentRX)
-        PARAM(CurrentRY)
-        PARAM(CurrentRZ)
-        PARAM(X)
-        PARAM(Y)
-        PARAM(Z)
-        PARAM(RX)
-        PARAM(RY)
-        PARAM(RZ)
-        PARAM(Vel)
-        PARAM(CurrentVel)
-        PARAM(CurrentAcc)
-        PARAM(TargetVel)
-        PARAM(TargetAcc)
-    )
+    
 
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;

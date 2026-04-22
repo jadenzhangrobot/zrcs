@@ -1,7 +1,7 @@
 /*
- * @Description: 振镜-平台联动直线运动（MoveLGalvo）
- *               与 MoveL 使用相同的 Ruckig 1D 弧长插补方案，
- *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量。
+ * @Description: 振镜-平台联动直线运动（MoveLGalvo�?
+ *               �?MoveL 使用相同�?Ruckig 1D 弧长插补方案�?
+ *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量�?
  */
 #include "command/MoveLGalvo.h"
 #include "shared_memory/ShmLayout.h"
@@ -14,7 +14,7 @@ MoveLGalvo::MoveLGalvo()
 }
 
 Result MoveLGalvo::updateTrajectory() { return otg_->update(*input_, *output_); }
-void   MoveLGalvo::applyOutput() {}   // run() 中手动处理
+void   MoveLGalvo::applyOutput() {}   // run() 中手动处�?
 void   MoveLGalvo::passOutputToInput() { output_->pass_to_input(*input_); }
 void   MoveLGalvo::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
@@ -22,14 +22,14 @@ bool MoveLGalvo::initTrajectory()
 {
     // 从命令参数构建起点和终点位置
     startPos_ = Eigen::Vector3d(
-        command_->args[CurrentX],
-        command_->args[CurrentY],
-        command_->args[CurrentZ]);
+        command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentX)],
+        command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentY)],
+        command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentZ)]);
 
     targetPos_ = Eigen::Vector3d(
-        command_->args[X],
-        command_->args[Y],
-        command_->args[Z]);
+        command_->args[static_cast<size_t>(MoveLGalvoArg::X)],
+        command_->args[static_cast<size_t>(MoveLGalvoArg::Y)],
+        command_->args[static_cast<size_t>(MoveLGalvoArg::Z)]);
 
     cartDist_ = (targetPos_ - startPos_).norm();
     if (cartDist_ < 1e-6)
@@ -38,7 +38,7 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
-    double maxVel   = command_->args[Vel];
+    double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
@@ -59,12 +59,12 @@ bool MoveLGalvo::initTrajectory()
     }
     else
     {
-        // 后续段：位置归零，速度/加速度由 pass_to_input 保持连续
+        // 后续段：位置归零，速度/加速度�?pass_to_input 保持连续
         input_->current_position[0] = 0;
     }
 
     input_->target_position[0]     = cartDist_;
-    input_->target_velocity[0]     = command_->args[TargetVel];
+    input_->target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
     input_->target_acceleration[0] = 0;
     input_->max_velocity[0]        = maxVel;
     input_->max_acceleration[0]    = maxAccel;
@@ -92,7 +92,7 @@ void MoveLGalvo::run()
     {
         double s = output_->new_position[0];
 
-        // 线性插值得到当前全局笛卡尔位置
+        // 线性插值得到当前全局笛卡尔位�?
         double u = s / cartDist_;
         if (u < 0.0) u = 0.0;
         if (u > 1.0) u = 1.0;
@@ -105,7 +105,7 @@ void MoveLGalvo::run()
         double galvoX = pos.x() - platX;
         double galvoY = pos.y() - platY;
 
-        // 读取轴 ID（运行时可由 NRT 侧动态配置）
+        // 读取�?ID（运行时可由 NRT 侧动态配置）
         int pXId = shm()->galvoCfg.platXId.load(std::memory_order_acquire);
         int pYId = shm()->galvoCfg.platYId.load(std::memory_order_acquire);
         int gXId = shm()->galvoCfg.galvoXId.load(std::memory_order_acquire);

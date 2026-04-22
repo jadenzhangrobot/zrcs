@@ -13,7 +13,7 @@ bool Movehome::initTrajectory()
     dof_ = static_cast<int>(controller_->axiss.size());
     if (dof_ <= 0)
     {
-        ERROR_PRINT("Movehome: 自由度无效(dof=%d)\n", dof_);
+        ERROR_PRINT("Movehome: 自由度无�?dof=%d)\n", dof_);
         return false;
     }
 

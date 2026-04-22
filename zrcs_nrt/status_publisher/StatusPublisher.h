@@ -120,7 +120,7 @@ private:
             if (hasFeedback || !rtLogs.empty()) {
                 zrcs_message::SystemStatus status;
                 uint8_t count = bridge_->axisCount();
-                if (count == 0) count = AXISMAXCOUNT;
+                if (count == 0) count = static_cast<uint8_t>(zrcs::kAxisMax);
 
                 if (hasFeedback) {
                     for (uint8_t i = 0; i < count; ++i) {

@@ -4,7 +4,6 @@
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include <memory>
 #include <ruckig/ruckig.hpp>
 
@@ -12,8 +11,6 @@ using namespace ruckig;
 
 class Movehome : public TrajectoryCmd
 {
-public:
-    CMD_DEFINE(30)
 
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;

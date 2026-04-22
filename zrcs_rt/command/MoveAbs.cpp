@@ -1,6 +1,5 @@
 /*
- * @Description: 通用单轴绝对定位（带可选速度/加速度/加加速度参数）
- */
+ * @Description: 通用单轴绝对定位（带可选速度/加速度/加加速度参数�? */
 #include "command/MoveAbs.h"
 
 MoveAbs::MoveAbs() : otg_(cycletime * 0.001)
@@ -15,15 +14,15 @@ void MoveAbs::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveAbs::initTrajectory()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
-    double position = command_->args[Position];
-    double vel = command_->args[Vel];
-    double acc = command_->args[Acc];
-    double jerk = command_->args[Jerk];
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(MoveAbsArg::AxisId)]);
+    double position = command_->args[static_cast<size_t>(MoveAbsArg::Position)];
+    double vel = command_->args[static_cast<size_t>(MoveAbsArg::Vel)];
+    double acc = command_->args[static_cast<size_t>(MoveAbsArg::Acc)];
+    double jerk = command_->args[static_cast<size_t>(MoveAbsArg::Jerk)];
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
-        ERROR_PRINT("MoveAbs: 轴索引 %d 超出范围\n", axisId_);
+        ERROR_PRINT("MoveAbs: 轴索�?%d 超出范围\n", axisId_);
         return false;
     }
 

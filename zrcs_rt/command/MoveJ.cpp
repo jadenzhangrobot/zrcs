@@ -1,5 +1,5 @@
 /*
- * @Description: 笛卡尔目标+关节路径PTP运动（ABB MoveJ）— 经IK解算
+ * @Description: 笛卡尔目�?关节路径PTP运动（ABB MoveJ）�?经IK解算
  */
 #include "command/MoveJ.h"
 
@@ -29,8 +29,12 @@ bool MoveJ::initTrajectory()
 
     // 构建目标位姿
     Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
-        command_->args[X], command_->args[Y], command_->args[Z],
-        command_->args[RX], command_->args[RY], command_->args[RZ]);
+        command_->args[static_cast<size_t>(MoveJArg::X)],
+        command_->args[static_cast<size_t>(MoveJArg::Y)],
+        command_->args[static_cast<size_t>(MoveJArg::Z)],
+        command_->args[static_cast<size_t>(MoveJArg::RX)],
+        command_->args[static_cast<size_t>(MoveJArg::RY)],
+        command_->args[static_cast<size_t>(MoveJArg::RZ)]);
 
     // 当前关节位置
     Eigen::VectorXd currentJoint(dof_);
@@ -52,7 +56,7 @@ bool MoveJ::initTrajectory()
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
-    double velScale = command_->args[Vel];
+    double velScale = command_->args[static_cast<size_t>(MoveJArg::Vel)];
     if (velScale <= 0) velScale = 1.0;
 
     for (int i = 0; i < dof_; i++)

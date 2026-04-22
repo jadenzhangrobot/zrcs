@@ -77,5 +77,5 @@ public:
   void exit()override{}
 };
 
-REGISTERCMD(MoveSine);
+CMD_REGISTER(MoveSine);
 

@@ -26,7 +26,6 @@ public slots:
 signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
-    void rtLogReceived(quint32 level, const QString& source, const QString& message);
     void errorOccurred(const QString& error);
 
 private:
@@ -58,7 +57,6 @@ public:
 signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
-    void rtLogReceived(quint32 level, const QString& source, const QString& message);
     void errorOccurred(const QString& error);
 
 private:

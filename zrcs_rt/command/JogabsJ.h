@@ -4,7 +4,6 @@
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
@@ -12,7 +11,7 @@ using namespace ruckig;
 class JogabsJ : public TrajectoryCmd
 {
 public:
-    CMD_DEFINE(19, PARAM(AxisId) PARAM(TargetPosition))
+    
 
 private:
     Ruckig<1> otg_;
@@ -31,4 +30,3 @@ protected:
 public:
     JogabsJ();
 };
-

@@ -9,12 +9,11 @@
 
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 
 class Enable : public zrcsSystem::CmdNode
 {
 public:
-    CMD_DEFINE(1, PARAM(AxisId))
+    
 
     Enable()
     {

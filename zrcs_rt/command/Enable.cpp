@@ -9,7 +9,7 @@
 
 void Enable::init()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(EnableArg::AxisId)]);
 }
 
 void Enable::run(void)
@@ -22,7 +22,7 @@ void Enable::run(void)
         controller_->axiss[axisId_]->syncCmdHistory();
         if(!controller_->axiss[axisId_]->powerOn())
         {
-            ERROR_PRINT("轴 %d 使能失败\n", axisId_);
+            ERROR_PRINT("�?%d 使能失败\n", axisId_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         }
         else
@@ -40,7 +40,7 @@ void Enable::run(void)
             controller_->axiss[i]->syncCmdHistory();
             if(!controller_->axiss[i]->powerOn())
             {
-                ERROR_PRINT("轴 %d 使能失败\n", i);
+                ERROR_PRINT("�?%d 使能失败\n", i);
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }

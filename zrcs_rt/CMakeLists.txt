@@ -9,12 +9,13 @@ set(CMD_SRC_DIR    ${CMAKE_SOURCE_DIR}/zrcs_rt/command)
 # 包含目录
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcs_rt
+    ${CMAKE_SOURCE_DIR}/3rdParty/magic_enum/include
     ${CMAKE_BINARY_DIR}
 )
 
 # 源文件 (暂时假设使用 zrcs_rt/main.cpp)
 # 之前的目录结构显示 zrcs_rt 下有 main.cpp
-file(GLOB_RECURSE SOURCES
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "main.cpp"
     "command/*.cpp"
     "controller/*.cpp"

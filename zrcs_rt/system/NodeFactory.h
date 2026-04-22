@@ -2,10 +2,11 @@
 
 #include <memory>
 #include <array>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 #include "system/base/BaseNodeInterface.h"
-#include "system/CmdIds.h"
+#include "config/CmdDefine.h"
 
 class ModelRegistry;
 
@@ -37,7 +38,7 @@ public:
 
     // 静态 pending 列表 —— 仅供注册宏使用，函数内静态避免初始化顺序问题
     struct PendingCmd    { std::string_view name; Creator creator; };
-    struct PendingCmdById { uint16_t cmdId; Creator creator; };
+    struct PendingCmdById { CmdId cmdId; Creator creator; };
     struct PendingOutput { Output node; };
     struct PendingInput  { Input  node; };
 
@@ -66,7 +67,7 @@ public:
 template <typename T>
 class RegisterNodeById {
 public:
-    explicit RegisterNodeById(uint16_t cmdId) {
+    explicit RegisterNodeById(CmdId cmdId) {
         NodeFactory::pendingCmdsById().push_back({cmdId, std::make_shared<T>()});
     }
 };
@@ -89,12 +90,25 @@ public:
 
 } // namespace zrcsSystem
 
-// REGISTERCMD — 按 CmdId 直接注册（推荐）
-#define REGISTERCMD(className, id) \
-    static zrcsSystem::RegisterNodeById<className> register##className(id);
+inline CmdId resolveCmdIdOrThrow(std::string_view name)
+{
+    const auto cmdId = ::cmdNameToId(name);
+    if (!cmdId.has_value()) {
+        throw std::logic_error("Unknown command name in CMD_REGISTER");
+    }
+    return *cmdId;
+}
+
+// CMD_REGISTER — 通过类名和 magic_enum 自动查找 CmdId
+#define CMD_REGISTER(className) \
+    static zrcsSystem::RegisterNodeById<class className> register##className( \
+        ::resolveCmdIdOrThrow(#className));
+
+// 兼容旧写法，忽略显式 id，统一走 magic_enum 名称映射
+#define REGISTERCMD(className, id) CMD_REGISTER(className)
 
 #define REGISTEROUTPUT(className) \
-    static zrcsSystem::registerAndAddOutputNode<className> register_##className;
+    static zrcsSystem::registerAndAddOutputNode<class className> register_##className;
 
 #define REGISTERINPUT(className) \
-    static zrcsSystem::registerAndAddInputNode<className> register_##className;
+    static zrcsSystem::registerAndAddInputNode<class className> register_##className;

@@ -1,0 +1,129 @@
+ZRCCS RT/NRT COMMUNICATION ARCHITECTURE SUMMARY
+================================================
+
+1. PROJECT STRUCTURE OVERVIEW
+=============================
+This codebase implements a real-time motion control system with clear separation:
+- **zrcs_rt**: Real-Time component - runs motion control loop with hard RT constraints
+- **zrcs_nrt**: Non-Real-Time component - handles UI, BT execution, communication
+- **zrcs_gui**: Qt6-based graphical user interface
+- **zrcs_common**: Shared code/definitions used by both RT and NRT
+
+2. COMMUNICATION MECHANISMS
+============================
+Two primary communication channels:
+
+A. SHARED MEMORY (PRIMARY RT-SAFE CHANNEL)
+-----------------------------------------
+High-performance, zero-copy lock-free communication optimized for RT hot path.
+
+B. ZEROMQ (NETWORK/REMOTE COMMUNICATION)
+--------------------------------------
+For GUI/remote clients to send commands and receive status.
+
+3. SHARED MEMORY LAYOUT
+=======================
+
+3.1 Core Structures
+-------------------
+- `ShmHeader`: 64-byte ABI header with magic number/version
+- `Command`: 172-byte command structure with 20 args, sequence number, cmdId
+- `RtLogEntry`: 264-byte RT log entry for debugging
+- `AxisFeedbackData`: Per-axis position/velocity/torque feedback
+
+3.2 SPSC Queues
+--------------
+- `cmdQueue`: NRT→RT command queue (2048 slots)
+- `logQueue`: RT→NRT log entries (256 slots)
+- `axisFeedbackQueue`: High-frequency axis state feedback
+- `pathQueue`: NRT→RT path points for continuous motion
+
+3.3 Lock-Free Latest (LFL)
+--------------------------
+3-slot seqlock implementation for safe access to mutable state arrays:
+- Axis positions, FK results, joint positions, probe results, capture results
+
+3.4 Atomic Variables
+--------------------
+Direct memory-mapped atomic operations for:
+- Task scheduling control (START/RUN/STOP/RESET)
+- Heartbeat counters
+- Speed overrides
+- Configuration flags
+- Command completion tracking
+
+4. COMMAND SYSTEM
+=================
+
+4.1 CmdId Enum
+------------
+63+ unique command identifiers (Enable, Disable, MoveJ, MoveL, etc.)
+
+4.2 Parameter Definitions
+------------------------
+Each command has strongly typed parameter definitions with name-to-index mapping:
+```cpp
+enum class MoveJArg : std::size_t { X=0, Y, Z, RX, RY, RZ, Vel };
+```
+
+4.3 Command Registration
+----------------------
+- `CMD_DEFINE`: Creates kCmdId constant and parameter index enum
+- `CMD_REGISTER`: Registers command to NodeFactory static registry
+- `REGISTERCMD`: Alternative by CmdId directly
+
+5. NRT COMPONENTS
+================
+
+5.1 RtBridge
+-----------
+Primary NRT access layer to shared memory:
+- Multiple overloads for sending commands (positional, named, CSV)
+- Command completion tracking with sequence numbers
+- Heartbeat monitoring
+- Jog control, speed multipliers, configuration access
+
+5.2 ZmqServer
+-----------
+ZMQ REQ/REP server on tcp://*:5555:
+- Protobuf serialized commands
+- Supports both TypedCommand and legacy MotionCommand formats
+- Behavior Tree command handling (LOAD/START/STOP/STATUS)
+- System command routing (RUN/STOP/RESET/ESTOP)
+- XML BT file management
+
+5.3 ZMQClient
+------------
+Qt6 GUI client with worker thread:
+- Thread-safe signal/slot interface
+- Automatic reconnect with exponential backoff
+- Supports both regular commands and BT commands
+
+6. PROTOBUF MESSAGES
+===================
+
+Located in `/e/zrcs-dev/zrcs_common/message/message.proto`:
+- `TypedCommand`: Type-safe oneof wrapper for all command types
+- `MotionCommand`: Legacy generic command format
+- Detailed command types (MoveJCommand, MoveLCommand, etc.)
+- Status messages (AxisStatus, SystemStatus, BehaviorTreeStatus)
+
+7. MESSAGE FLOW EXAMPLE
+=====================
+
+1. GUI sends MoveJ command via ZMQ
+2. ZmqServer receives and parses protobuf
+3. ZmqServer routes command through RtBridge
+4. RtBridge pushes command to shared memory queue
+5. RT NodeManager consumes command from queue
+6. NodeFactory dispatches to command handler
+7. Command executes and sends commands to hardware
+
+8. KEY DESIGN PRINCIPLES
+=======================
+- RT Safety: No dynamic allocations in hot path, lock-free algorithms
+- Zero Copy: Shared memory avoids serialization overhead
+- Type Safety: CmdId enum eliminates string comparisons in RT
+- ABI Stability: Strict version control with magic number
+- Separation of Concerns: RT handles motion control, NRT handles UI/BT
+- Protocol Evolution: Protobuf allows backward compatibility

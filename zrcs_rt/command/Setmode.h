@@ -4,13 +4,10 @@
 #pragma once
 #include "system/base/BaseNodeInterface.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 
 class Setmode : public zrcsSystem::CmdNode
 {
 public:
-    CMD_DEFINE(6, PARAM(AxisId) PARAM(Mode))
-
     Setmode()
     {
         std::strcpy(nodeName_, "Setmode");
@@ -24,4 +21,3 @@ private:
     int axisId_;
     int mode_;
 };
-

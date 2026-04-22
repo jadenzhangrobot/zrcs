@@ -15,12 +15,12 @@ void JogJ::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool JogJ::initTrajectory()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
-    position_ = command_->args[TargetPosition];
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(JogJArg::AxisId)]);
+    position_ = command_->args[static_cast<size_t>(JogJArg::TargetPosition)];
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
-        ERROR_PRINT("JogJ: 轴索引 %d 超出范围\n", axisId_);
+        ERROR_PRINT("JogJ: 轴索�?%d 超出范围\n", axisId_);
         return false;
     }
 

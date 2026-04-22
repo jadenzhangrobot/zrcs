@@ -1,11 +1,10 @@
 /*
- * @Description: 设置当前位置为零点
- */
+ * @Description: 设置当前位置为零�? */
 #include "command/SetZero.h"
 
 void SetZero::init()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(SetZeroArg::AxisId)]);
 }
 
 void SetZero::run(void)
@@ -31,7 +30,7 @@ void SetZero::run(void)
     }
     else
     {
-        ERROR_PRINT("SetZero: 轴索引 %d 超出范围\n", axisId_);
+        ERROR_PRINT("SetZero: 轴索�?%d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

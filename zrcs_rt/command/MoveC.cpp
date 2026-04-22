@@ -1,5 +1,5 @@
 /*
- * @Description: 圆弧运动（ABB MoveC）— 三点定弧，经IK解算
+ * @Description: 圆弧运动（ABB MoveC）�?三点定弧，经IK解算
  */
 #include "command/MoveC.h"
 
@@ -20,7 +20,7 @@ bool MoveC::initTrajectory()
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
-        ERROR_PRINT("MoveC: 未找到模型(id=0)\n");
+        ERROR_PRINT("MoveC: 未找到模�?id=0)\n");
         return false;
     }
 
@@ -42,8 +42,14 @@ bool MoveC::initTrajectory()
     }
 
     Eigen::Vector3d P0 = startPose.block<3,1>(0,3);
-    Eigen::Vector3d P1(command_->args[ViaX], command_->args[ViaY], command_->args[ViaZ]);
-    Eigen::Vector3d P2(command_->args[EndX], command_->args[EndY], command_->args[EndZ]);
+    Eigen::Vector3d P1(
+        command_->args[static_cast<size_t>(MoveCArg::ViaX)],
+        command_->args[static_cast<size_t>(MoveCArg::ViaY)],
+        command_->args[static_cast<size_t>(MoveCArg::ViaZ)]);
+    Eigen::Vector3d P2(
+        command_->args[static_cast<size_t>(MoveCArg::EndX)],
+        command_->args[static_cast<size_t>(MoveCArg::EndY)],
+        command_->args[static_cast<size_t>(MoveCArg::EndZ)]);
 
     // three-point circle: compute center using circumcenter formula
     Eigen::Vector3d A = P1 - P0;
@@ -96,7 +102,7 @@ bool MoveC::initTrajectory()
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 
-    double velScale = command_->args[Vel];
+    double velScale = command_->args[static_cast<size_t>(MoveCArg::Vel)];
     if (velScale <= 0) velScale = 1.0;
 
     input_->current_position[0] = 0;

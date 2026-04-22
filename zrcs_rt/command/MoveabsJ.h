@@ -1,10 +1,9 @@
 /*
- * @Description: 绝对关节位置运动（ABB MoveAbsJ）— 多轴同步，不经IK
+ * @Description: 绝对关节位置运动（ABB MoveAbsJ）�?多轴同步，不经IK
  */
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>
@@ -15,16 +14,6 @@ using namespace ruckig;
 class MoveAbsJ : public TrajectoryCmd
 {
 public:
-    CMD_DEFINE(23,
-        PARAM(Count)
-        PARAM(J1)
-        PARAM(J2)
-        PARAM(J3)
-        PARAM(J4)
-        PARAM(J5)
-        PARAM(J6)
-    )
-
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -42,4 +31,3 @@ protected:
 public:
     MoveAbsJ();
 };
-

@@ -16,9 +16,10 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <optional>
 #include <spdlog/spdlog.h>
 #include "shared_memory/ShmLayout.h"
-#include "system/CmdIds.h"
+#include "config/CmdDefine.h"
 class RtBridge {
 public:
     enum class SendResult { OK, QUEUE_FULL, NOT_CONNECTED, UNKNOWN_CMD };
@@ -51,15 +52,14 @@ public:
     {
         if (!block_) return {SendResult::NOT_CONNECTED, 0};
 
-        const auto& nameToId = zrcs::cmdNameToId();
-        auto it = nameToId.find(name);
-        if (it == nameToId.end()) {
+        const auto cmdId = zrcs::cmdNameToId(name);
+        if (!cmdId.has_value()) {
             spdlog::error("[RtBridge] Unknown command '{}', not registered in cmdNameToId", name);
             return {SendResult::UNKNOWN_CMD, 0};
         }
 
         zrcs::Command cmd{};
-        cmd.cmdId = static_cast<uint16_t>(it->second);
+        cmd.cmdId = static_cast<uint16_t>(*cmdId);
         cmd.seq   = seq_counter_.fetch_add(1, std::memory_order_relaxed);
 
         const size_t n = std::min(count, zrcs::kCmdArgsMax);
@@ -315,7 +315,7 @@ public:
         return dropped_count_.load(std::memory_order_relaxed);
     }
 
-    // 命令名称 → CmdId 映射表由 CmdIds.h 提供
+    // 命令名称 → CmdId 映射表由 CmdDefine.h 提供
     // 使用 zrcs::cmdNameToId() 获取
 
 private:

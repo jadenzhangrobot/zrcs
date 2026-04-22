@@ -1,18 +1,17 @@
 /*
- * @Description: 振镜-平台联动直线运动 — 1D 弧长参数化 + IIR 低通滤波分解
+ * @Description: 振镜-平台联动直线运动 �?1D 弧长参数�?+ IIR 低通滤波分�?
  *
- * 在全局坐标系中规划直线轨迹（与 MoveL 相同的 Ruckig 1D 弧长方案），
- * 每周期将插补结果通过一阶 IIR 低通滤波器（LPF）分解为：
- *   platform_pos = LPF(global_pos)          → 平台 X/Y 轴（低频，大行程）
- *   galvo_offset = global_pos - platform_pos → 振镜 X/Y 轴（高频，小行程）
+ * 在全局坐标系中规划直线轨迹（与 MoveL 相同�?Ruckig 1D 弧长方案），
+ * 每周期将插补结果通过一�?IIR 低通滤波器（LPF）分解为�?
+ *   platform_pos = LPF(global_pos)          �?平台 X/Y 轴（低频，大行程�?
+ *   galvo_offset = global_pos - platform_pos �?振镜 X/Y 轴（高频，小行程�?
  *
- * 轴 ID 和截止频率从共享内存 galvoCfg 中读取，由 NRT 侧 setGalvoConfig() 配置。
- * 多段连续路径中 Ruckig 状态和 LPF 状态均保持连续（同一实例复用）。
+ * �?ID 和截止频率从共享内存 galvoCfg 中读取，�?NRT �?setGalvoConfig() 配置�?
+ * 多段连续路径�?Ruckig 状态和 LPF 状态均保持连续（同一实例复用）�?
  */
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include "system/base/RtLowPassFilter.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
@@ -25,27 +24,6 @@ using namespace ruckig;
 
 class MoveLGalvo : public TrajectoryCmd
 {
-public:
-    CMD_DEFINE(52,
-        PARAM(CurrentX)
-        PARAM(CurrentY)
-        PARAM(CurrentZ)
-        PARAM(CurrentRX)
-        PARAM(CurrentRY)
-        PARAM(CurrentRZ)
-        PARAM(X)
-        PARAM(Y)
-        PARAM(Z)
-        PARAM(RX)
-        PARAM(RY)
-        PARAM(RZ)
-        PARAM(Vel)
-        PARAM(CurrentVel)
-        PARAM(CurrentAcc)
-        PARAM(TargetVel)
-        PARAM(TargetAcc)
-    )
-
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>>         otg_;
     std::unique_ptr<InputParameter<DynamicDOFs>> input_;
@@ -57,7 +35,7 @@ private:
     double          cartDist_;
     bool            firstSegment_;
 
-    // LPF 状态跨段持久（同一实例复用，不重置）
+    // LPF 状态跨段持久（同一实例复用，不重置�?
     RtLowPassFilter lpf_;
     bool            lpfConfigured_;
     double          lastCutoffHz_;

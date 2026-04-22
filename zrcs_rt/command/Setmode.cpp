@@ -5,8 +5,8 @@
 
 void Setmode::init()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
-    mode_ = static_cast<int>(command_->args[Mode]);
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(SetmodeArg::AxisId)]);
+    mode_ = static_cast<int>(command_->args[static_cast<size_t>(SetmodeArg::Mode)]);
 }
 
 void Setmode::run(void)

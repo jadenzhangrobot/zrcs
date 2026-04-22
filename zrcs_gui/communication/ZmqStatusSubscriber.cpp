@@ -69,17 +69,6 @@ void ZMQStatusWorker::pollLoop()
                 emit heartbeatReceived(status.heartbeat());
             }
 
-            for (int i = 0; i < status.rt_logs_size(); ++i) {
-                const auto& log = status.rt_logs(i);
-                const QString source = QString("%1:%2")
-                    .arg(QString::fromStdString(log.file()))
-                    .arg(log.line());
-                emit rtLogReceived(
-                    static_cast<quint32>(log.level()),
-                    source,
-                    QString::fromStdString(log.message()));
-            }
-
         } catch (const zmq::error_t& e) {
             if (running_ && e.num() != EAGAIN) {
                 emit errorOccurred(QString("SUB recv error: %1").arg(e.what()));
@@ -112,8 +101,6 @@ ZMQStatusSubscriber::ZMQStatusSubscriber(const QString& host, int port, QObject*
             this, &ZMQStatusSubscriber::axisPositionsUpdated);
     connect(worker_, &ZMQStatusWorker::heartbeatReceived,
             this, &ZMQStatusSubscriber::heartbeatReceived);
-    connect(worker_, &ZMQStatusWorker::rtLogReceived,
-            this, &ZMQStatusSubscriber::rtLogReceived);
     connect(worker_, &ZMQStatusWorker::errorOccurred,
             this, &ZMQStatusSubscriber::errorOccurred);
 

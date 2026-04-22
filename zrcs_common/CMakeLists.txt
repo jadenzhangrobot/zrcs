@@ -14,6 +14,7 @@ target_include_directories(zrcscommon
         ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${CMAKE_CURRENT_SOURCE_DIR}/shared_memory
         ${CMAKE_CURRENT_SOURCE_DIR}/xml
+        ${CMAKE_SOURCE_DIR}/3rdParty/magic_enum/include
     PRIVATE
         ${CMAKE_SOURCE_DIR}/3rdParty/tinyxml2
 )

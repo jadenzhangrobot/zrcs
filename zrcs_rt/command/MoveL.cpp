@@ -1,5 +1,5 @@
 /*
- * @Description: 笛卡尔直线运动（ABB MoveL）— 1D 弧长参数化 + 每周期 IK
+ * @Description: 笛卡尔直线运动（ABB MoveL）�?1D 弧长参数�?+ 每周�?IK
  *               复用 Ruckig 实例，跨段速度/加速度天然连续
  */
 #include "command/MoveL.h"
@@ -11,9 +11,9 @@ MoveL::MoveL() : dof_(0), cartDist_(0), firstSegment_(true)
 }
 
 Result MoveL::updateTrajectory() { return otg_->update(*input_, *output_); }
-void   MoveL::applyOutput() {}  // run() 中手动处理
-void   MoveL::passOutputToInput() { output_->pass_to_input(*input_); }
-void   MoveL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+void MoveL::applyOutput() {}  // run() 中手动处理
+void MoveL::passOutputToInput() { output_->pass_to_input(*input_); }
+void MoveL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveL::initTrajectory()
 {
@@ -35,22 +35,22 @@ bool MoveL::initTrajectory()
 
     // 从命令参数构建起点和终点位姿
     startPos_ = Eigen::Vector3d(
-        command_->args[CurrentX],
-        command_->args[CurrentY],
-        command_->args[CurrentZ]);
+        command_->args[static_cast<size_t>(MoveLArg::CurrentX)],
+        command_->args[static_cast<size_t>(MoveLArg::CurrentY)],
+        command_->args[static_cast<size_t>(MoveLArg::CurrentZ)]);
     startRpy_ = Eigen::Vector3d(
-        command_->args[CurrentRX],
-        command_->args[CurrentRY],
-        command_->args[CurrentRZ]);
+        command_->args[static_cast<size_t>(MoveLArg::CurrentRX)],
+        command_->args[static_cast<size_t>(MoveLArg::CurrentRY)],
+        command_->args[static_cast<size_t>(MoveLArg::CurrentRZ)]);
 
     targetPos_ = Eigen::Vector3d(
-        command_->args[X],
-        command_->args[Y],
-        command_->args[Z]);
+        command_->args[static_cast<size_t>(MoveLArg::X)],
+        command_->args[static_cast<size_t>(MoveLArg::Y)],
+        command_->args[static_cast<size_t>(MoveLArg::Z)]);
     targetRpy_ = Eigen::Vector3d(
-        command_->args[RX],
-        command_->args[RY],
-        command_->args[RZ]);
+        command_->args[static_cast<size_t>(MoveLArg::RX)],
+        command_->args[static_cast<size_t>(MoveLArg::RY)],
+        command_->args[static_cast<size_t>(MoveLArg::RZ)]);
 
     // 计算线段长度
     cartDist_ = (targetPos_ - startPos_).norm();
@@ -61,8 +61,8 @@ bool MoveL::initTrajectory()
     }
 
     // 读取笛卡尔标量边界条件
-    double maxVel = command_->args[Vel];
-    double tgtVel = command_->args[TargetVel];
+    double maxVel = command_->args[static_cast<size_t>(MoveLArg::Vel)];
+    double tgtVel = command_->args[static_cast<size_t>(MoveLArg::TargetVel)];
 
     // 读取标量路径加速度/jerk 限制（复用 PathMove 配置）
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
@@ -88,11 +88,11 @@ bool MoveL::initTrajectory()
     else
     {
         // 后续段：保留上一段末尾的速度和加速度，只重置位置为 0
-        // Ruckig 内部的 current_input 已经被 pass_to_input 更新过
+        // Ruckig 内部的 current_input 已经被 pass_to_input 更新
         // 这里只需要把位置归零（新段从 s=0 开始）
         input_->current_position[0] = 0;
         // current_velocity 和 current_acceleration 保持上一段末尾的值
-        // → 速度和加速度天然连续
+        // 速度和加速度天然连续
     }
 
     // 只更新目标和限制

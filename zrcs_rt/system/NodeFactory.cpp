@@ -1,5 +1,5 @@
 #include "system/NodeFactory.h"
-#include "system/CmdIds.h"
+#include "config/CmdDefine.h"
 #include <cstring>
 
 namespace zrcsSystem {
@@ -31,8 +31,9 @@ std::vector<NodeFactory::PendingInput>& NodeFactory::pendingInputs()
 NodeFactory::NodeFactory()
 {
     for (auto& p : pendingCmdsById()) {
-        if (p.cmdId > 0 && p.cmdId < static_cast<uint16_t>(CmdId::SENTINEL)) {
-            registry_[p.cmdId] = p.creator;
+        const auto idx = static_cast<size_t>(p.cmdId);
+        if (idx > 0 && idx < static_cast<size_t>(CmdId::SENTINEL)) {
+            registry_[idx] = p.creator;
         }
     }
 

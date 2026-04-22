@@ -1,10 +1,9 @@
 /*
- * @Description: 圆弧运动（ABB MoveC）— 三点定弧，经IK解算
+ * @Description: 圆弧运动（ABB MoveC）�?三点定弧，经IK解算
  */
 #pragma once
 #include "system/base/TrajectoryCmd.h"
 #include "system/NodeFactory.h"
-#include "system/CmdMeta.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>
@@ -16,16 +15,6 @@ using namespace ruckig;
 
 class MoveC : public TrajectoryCmd
 {
-public:
-    CMD_DEFINE(26,
-        PARAM(ViaX)
-        PARAM(ViaY)
-        PARAM(ViaZ)
-        PARAM(EndX)
-        PARAM(EndY)
-        PARAM(EndZ)
-        PARAM(Vel)
-    )
 
 private:
     std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
@@ -55,4 +44,3 @@ public:
     MoveC();
     void run() override;
 };
-

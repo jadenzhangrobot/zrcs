@@ -259,6 +259,11 @@ int main(int argc, char **argv)
         // 创建 RtBridge（NRT→RT 共享内存通信的唯一入口）
         RtBridge bridge(nrt_process.sharedBlock());
 
+        // 启动 RT 日志消费者（从共享内存读取 RT 日志并写入 spdlog）
+        RtLogConsumer rtLogConsumer(nrt_process.sharedBlock());
+        rtLogConsumer.start();
+        spdlog::info("RT log consumer started");
+
         // 初始化行为树引擎
         BTEngine bt_engine(&bridge);
         spdlog::info("BTEngine initialized");
@@ -284,16 +289,6 @@ int main(int argc, char **argv)
         } else {
             spdlog::warn("Status publisher failed to initialize, continuing without it");
         }
-
-        // 启动 RT 日志消费者（从共享内存读取 RT 日志并写入 spdlog，同时转发到 5556）
-        RtLogConsumer rtLogConsumer(
-            nrt_process.sharedBlock(),
-            std::chrono::milliseconds(10),
-            [&status_publisher](const zrcs::RtLogEntry& entry) {
-                status_publisher.enqueueRtLog(entry);
-            });
-        rtLogConsumer.start();
-        spdlog::info("RT log consumer started");
 
         // 初始化终端控制台
         TerminalConsole terminal(&bridge, &bt_engine, g_running);
