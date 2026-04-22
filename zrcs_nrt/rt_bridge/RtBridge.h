@@ -194,7 +194,9 @@ public:
 
     uint64_t heartbeat() const noexcept {
         if (!block_) return 0;
-        return block_->heartbeat.load(std::memory_order_acquire);
+        uint64_t value = 0;
+        zrcs::lfl_read(block_->heartbeat, value);
+        return value;
     }
 
     bool isRtAlive() noexcept {

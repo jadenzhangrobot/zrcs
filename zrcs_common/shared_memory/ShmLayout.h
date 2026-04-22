@@ -30,13 +30,13 @@ namespace zrcs {
 // 1. 全局常量
 // ─────────────────────────────────────────────────────────────────────────────
 
-inline constexpr size_t   kAxisMax       = 50;
+inline constexpr size_t   kAxisMax       = 64;
 inline constexpr size_t   kCmdQueueCap   = 2048; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
-inline constexpr size_t   kCmdArgsMax    = 20;
+inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
 inline constexpr uint32_t kShmVersion    = 9;            // ABI 变更时必须 +1
-inline constexpr size_t   kShmTotalSize  = 4 * 1024 * 1024;
+inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
 inline constexpr int         kAttachRetryMs = 1000;
@@ -110,6 +110,7 @@ struct AxisFeedbackData
 {
     double position[kAxisMax];
     double cmdPosition[kAxisMax];
+    double cmdVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
 };
@@ -289,11 +290,11 @@ struct alignas(64) SharedBlock {
     // ── 日志队列（RT→NRT，单消费者：NRT 日志线程）──────────────────────
     ShmSPSC<RtLogEntry, kLogQueueCap> logQueue;
 
-    ShmSPSC<AxisFeedbackData, kLogQueueCap> axisFeedbackQueue;  // 额外的日志队列，用于高频轴状态反馈（可选）
+    ShmSPSC<AxisFeedbackData, kLogQueueCap> axisFeedbackQueue;  // 额外的队列，用于高频轴状态反馈（可选）
 
     // ── 任务调度控制（双向，原子读写）────────────────────────────────────
     alignas(64) std::atomic<TaskScheduling> taskSched{TaskScheduling::START};
-    alignas(64) std::atomic<uint64_t>       heartbeat{0};   // RT 每周期递增，NRT 检测存活
+  
 
     // ── 系统配置（NRT 写，RT 读）──────────────────────────────────────────
     alignas(64) std::atomic<uint8_t>  axisCount{0};
@@ -325,6 +326,7 @@ struct alignas(64) SharedBlock {
     LockFreeLatest<JointPosData>    jointPosResult;
     LockFreeLatest<ProbeResultData> probeResult;
     LockFreeLatest<CaptureData>     captureResult;
+    LockFreeLatest<uint64_t>        heartbeat;      // 仅用于监测 RT 活跃（每周期递增）
     alignas(64) std::atomic<bool>   probeTriggered{false};
     alignas(64) std::atomic<bool>   captureTriggered{false};
 

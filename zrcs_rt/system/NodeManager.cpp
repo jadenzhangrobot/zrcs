@@ -179,6 +179,11 @@ void NodeManager::run()
         }
 
         controller_->sendData();
+
+        // 更新心跳（仅用于监测 RT 活跃，NRT 不依赖此字段做任何决策）
+        static uint64_t heartbeat = 0;  // 初始化
+        heartbeat++;  
+        zrcs::lfl_write(shm()->heartbeat, heartbeat);
     });
 
     controller_->rtos_->rtos_task_create();
