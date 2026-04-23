@@ -20,7 +20,7 @@ bool JogJ::initTrajectory()
 
     if (axisId_ < 0 || axisId_ >= static_cast<int>(controller_->axiss.size()))
     {
-        ERROR_PRINT("JogJ: 轴索�?%d 超出范围\n", axisId_);
+        ERROR_PRINT("JogJ: 轴索%d 超出范围\n", axisId_);
         return false;
     }
 

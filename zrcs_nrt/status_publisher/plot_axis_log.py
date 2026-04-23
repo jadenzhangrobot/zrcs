@@ -24,10 +24,8 @@ def read_axis_log(csv_path: Path):
         "time_ms": [],
         "plat_x": [], "plat_y": [],
         "galvo_x": [], "galvo_y": [],
-        "plat_x_cmd": [], "plat_y_cmd": [],
-        "galvo_x_cmd": [], "galvo_y_cmd": [],
-        "plat_x_vel": [], "plat_y_vel": [],
-        "galvo_x_vel": [], "galvo_y_vel": [],
+        "plat_speed": [],
+        "galvo_speed": [],
     }
     with csv_path.open("r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -48,22 +46,22 @@ def main():
 
     d = read_axis_log(csv_path)
     t = d["time_ms"]
+    if len(t) == 0:
+        raise ValueError("axis_log.csv 中没有有效数据")
 
     # ── 诊断：打印数据范围，确认各列含义 ────────────────────────────
     print(f"总帧数: {len(t)},  时间范围: {t[0]:.0f}~{t[-1]:.0f} ms")
-    for key in ["plat_x_cmd", "plat_y_cmd", "galvo_x_cmd", "galvo_y_cmd",
-                "plat_x", "plat_y", "galvo_x", "galvo_y"]:
+    for key in ["plat_x", "plat_y", "galvo_x", "galvo_y"]:
         v = d[key]
         print(f"  {key:20s}: min={v.min():.3f}  max={v.max():.3f}  range={v.max()-v.min():.3f} mm")
 
     # ── 裁剪到活跃运动窗口 ────────────────────────────────────────────
-    # 用平台指令位置的变化量检测运动起止，避免 idle 时间段干扰轨迹图
-    combined_x_all = d["plat_x_cmd"] + d["galvo_x_cmd"]
-    combined_y_all = d["plat_y_cmd"] + d["galvo_y_cmd"]
+    # 用平台+振镜的实际位置变化量检测运动起止，避免 idle 时间段干扰轨迹图
+    combined_x_all = d["plat_x"] + d["galvo_x"]
+    combined_y_all = d["plat_y"] + d["galvo_y"]
 
     cmd_speed = np.hypot(np.diff(combined_x_all, prepend=combined_x_all[0]),
                          np.diff(combined_y_all, prepend=combined_y_all[0]))
-    # 找第一个 cmdPosition 发生显著变化的帧（运动开始）
     MOVE_THRESH = 0.01  # mm/sample
     active = cmd_speed > MOVE_THRESH
     if not active.any():
@@ -83,8 +81,8 @@ def main():
     # 裁剪后的数据
     dm = {k: v[mask] for k, v in d.items()}
     tm = dm["time_ms"]
-    combined_x = dm["plat_x_cmd"] + dm["galvo_x_cmd"]
-    combined_y = dm["plat_y_cmd"] + dm["galvo_y_cmd"]
+    combined_x = dm["plat_x"] + dm["galvo_x"]
+    combined_y = dm["plat_y"] + dm["galvo_y"]
 
     from matplotlib.collections import LineCollection
     from matplotlib.cm import get_cmap
@@ -98,8 +96,8 @@ def main():
                            hspace=0.45, wspace=0.35)
 
     # 计算共享坐标范围（加 5% 边距）
-    all_x = np.concatenate([combined_x, dm["plat_x_cmd"]])
-    all_y = np.concatenate([combined_y, dm["plat_y_cmd"]])
+    all_x = np.concatenate([combined_x, dm["plat_x"]])
+    all_y = np.concatenate([combined_y, dm["plat_y"]])
     xspan = all_x.max() - all_x.min()
     yspan = all_y.max() - all_y.min()
     xlim = (all_x.min() - xspan*0.05 - 2, all_x.max() + xspan*0.05 + 2)
@@ -120,12 +118,9 @@ def main():
     cbar.set_label("时间 (ms)", fontsize=7)
 
     # 平台轨迹：蓝色实线叠加
-    ax_comb.plot(dm["plat_x_cmd"], dm["plat_y_cmd"],
-                 color="deepskyblue", linewidth=2.5, zorder=3,
-                 label="平台指令（低通滤波）", alpha=0.9)
     ax_comb.plot(dm["plat_x"], dm["plat_y"],
-                 color="limegreen", linewidth=1.5, linestyle="--",
-                 zorder=3, label="平台实际", alpha=0.8)
+                 color="deepskyblue", linewidth=2.5, zorder=3,
+                 label="平台实际轨迹", alpha=0.9)
 
     ax_comb.scatter(combined_x[0],  combined_y[0],  s=80, color="green",
                     zorder=6, marker="o", label="起点")
@@ -133,7 +128,7 @@ def main():
                     zorder=6, marker="x", label="终点")
     ax_comb.set_xlim(xlim); ax_comb.set_ylim(ylim)
     ax_comb.set_xlabel("X (mm)"); ax_comb.set_ylabel("Y (mm)")
-    ax_comb.set_title("① 综合加工轨迹（plasma色）vs 平台轨迹（蓝色）",
+    ax_comb.set_title("① 综合实际轨迹（plasma色）vs 平台实际轨迹（蓝色）",
                        fontweight="bold", fontsize=12)
     ax_comb.legend(fontsize=9, loc="upper right")
     ax_comb.set_aspect("equal", adjustable="box")
@@ -141,45 +136,31 @@ def main():
 
     # ── 子图 ③: 振镜偏移验证 ─────────────────────────────────────────
     ax_galvo = fig.add_subplot(gs[1, 0])
-
-    # 直接计算残差：综合 - 平台 = 振镜应有的偏移
-    residual_x = combined_x - dm["plat_x_cmd"]
-    residual_y = combined_y - dm["plat_y_cmd"]
-
-    # 两者应该完全重合；如果不重合说明数据记录有问题
-    ax_galvo.plot(dm["galvo_x_cmd"], dm["galvo_y_cmd"],
-                  color="crimson", linewidth=2.0, label="galvo_cmd（CSV记录）", zorder=2)
-    ax_galvo.plot(residual_x, residual_y,
-                  color="deepskyblue", linewidth=1.2, linestyle="--",
-                  label="综合−平台（计算验证）", zorder=3)
-    ax_galvo.scatter(dm["galvo_x_cmd"][0],  dm["galvo_y_cmd"][0],
+    ax_galvo.plot(dm["galvo_x"], dm["galvo_y"],
+                  color="crimson", linewidth=2.0, label="galvo实际（CSV记录）", zorder=2)
+    ax_galvo.scatter(dm["galvo_x"][0],  dm["galvo_y"][0],
                      s=50, color="green", zorder=5, marker="o", label="起点")
-    ax_galvo.scatter(dm["galvo_x_cmd"][-1], dm["galvo_y_cmd"][-1],
+    ax_galvo.scatter(dm["galvo_x"][-1], dm["galvo_y"][-1],
                      s=50, color="blue",  zorder=5, marker="x", label="终点")
-
-    # 计算残差误差（两者不一致时报告）
-    err = np.hypot(residual_x - dm["galvo_x_cmd"], residual_y - dm["galvo_y_cmd"])
     ax_galvo.set_xlabel("X_offset (mm)")
     ax_galvo.set_ylabel("Y_offset (mm)")
-    ax_galvo.set_title(f"③ 振镜偏移验证\n"
-                       f"红=CSV记录  蓝虚=综合−平台  最大误差={err.max():.4f}mm")
+    ax_galvo.set_title("③ 振镜实际轨迹")
     ax_galvo.legend(fontsize=8)
     ax_galvo.set_aspect("equal", adjustable="datalim")
     ax_galvo.grid(True, alpha=0.3)
 
     # ── 子图 ④: 速度曲线 ──────────────────────────────────────────────
     ax_vel = fig.add_subplot(gs[1, 1])
-    plat_speed  = np.hypot(dm["plat_x_vel"],  dm["plat_y_vel"])
-    galvo_speed = np.hypot(dm["galvo_x_vel"], dm["galvo_y_vel"])
-    total_speed = np.hypot(dm["plat_x_vel"] + dm["galvo_x_vel"],
-                           dm["plat_y_vel"] + dm["galvo_y_vel"])
-    ax_vel.plot(tm, plat_speed,  color="steelblue", linewidth=1.2, label="平台合速度")
-    ax_vel.plot(tm, galvo_speed, color="crimson",   linewidth=1.2, label="振镜合速度")
+    plat_speed = dm["plat_speed"]
+    galvo_speed = dm["galvo_speed"]
+    total_speed = plat_speed + galvo_speed
+    ax_vel.plot(tm, plat_speed, color="steelblue", linewidth=1.2, label="平台合速度")
+    ax_vel.plot(tm, galvo_speed, color="crimson", linewidth=1.2, label="振镜合速度")
     ax_vel.plot(tm, total_speed, color="gray", linewidth=1.0, linestyle="--",
-                alpha=0.7, label="综合合速度")
+                alpha=0.7, label="两者速度和")
     ax_vel.set_xlabel("时间 (ms)")
     ax_vel.set_ylabel("速度 (mm/s)")
-    ax_vel.set_title("④ 速度分解: 平台 vs 振镜")
+    ax_vel.set_title("④ 合速度曲线: 平台 vs 振镜")
     ax_vel.legend(fontsize=8)
     ax_vel.grid(True, alpha=0.3)
 

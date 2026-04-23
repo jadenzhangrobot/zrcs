@@ -1,22 +1,21 @@
 /*
- * @Description: 振镜-平台联动直线运动（MoveLGalvo�?
- *               �?MoveL 使用相同�?Ruckig 1D 弧长插补方案�?
- *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量�?
+ * @Description: 振镜-平台联动直线运动（MoveLGalvo�?
+ *               �?MoveL 使用相同�?Ruckig 1D 弧长插补方案�?
+ *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量�?
  */
 #include "command/MoveLGalvo.h"
 #include "shared_memory/ShmLayout.h"
 
-MoveLGalvo::MoveLGalvo()
-    : cartDist_(0), firstSegment_(true),
+MoveLGalvo::MoveLGalvo() :otg_(cycletime * 0.001)
+    ,cartDist_(0), firstSegment_(true),
       lpfConfigured_(false), lastCutoffHz_(0.0)
 {
     std::strcpy(nodeName_, "MoveLGalvo");
 }
 
-Result MoveLGalvo::updateTrajectory() { return otg_->update(*input_, *output_); }
-void   MoveLGalvo::applyOutput() {}   // run() 中手动处�?
-void   MoveLGalvo::passOutputToInput() { output_->pass_to_input(*input_); }
-void   MoveLGalvo::applyDeltaTime(double dt) { otg_->delta_time = dt; }
+Result MoveLGalvo::updateTrajectory() { return otg_.update(input_, output_); }
+void   MoveLGalvo::passOutputToInput() { output_.pass_to_input(input_); }
+void   MoveLGalvo::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveLGalvo::initTrajectory()
 {
@@ -42,33 +41,14 @@ bool MoveLGalvo::initTrajectory()
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
-    if (!otg_)
-    {
-        otg_    = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
-        input_  = std::make_unique<InputParameter<DynamicDOFs>>(1);
-        output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
-        firstSegment_ = true;
-    }
+   
 
-    if (firstSegment_)
-    {
-        input_->current_position[0]     = 0;
-        input_->current_velocity[0]     = 0;
-        input_->current_acceleration[0] = 0;
-        firstSegment_ = false;
-    }
-    else
-    {
-        // 后续段：位置归零，速度/加速度�?pass_to_input 保持连续
-        input_->current_position[0] = 0;
-    }
-
-    input_->target_position[0]     = cartDist_;
-    input_->target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
-    input_->target_acceleration[0] = 0;
-    input_->max_velocity[0]        = maxVel;
-    input_->max_acceleration[0]    = maxAccel;
-    input_->max_jerk[0]            = maxJerk;
+    input_.target_position[0]     = cartDist_;
+    input_.target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
+    input_.target_acceleration[0] = 0;
+    input_.max_velocity[0]        = maxVel;
+    input_.max_acceleration[0]    = maxAccel;
+    input_.max_jerk[0]            = maxJerk;
 
     // 配置 LPF（仅在截止频率变化时重新配置，避免重置状态）
     double cutoffHz = shm()->galvoCfg.cutoffHz.load(std::memory_order_acquire);
@@ -79,20 +59,20 @@ bool MoveLGalvo::initTrajectory()
         lastCutoffHz_  = cutoffHz;
         lpfConfigured_ = true;
     }
-
+    
     return true;
 }
 
-void MoveLGalvo::run()
+void MoveLGalvo::applyOutput()
 {
-    updateOverride();
+        updateOverride();
+        double s = output_.new_position[0];
+        double vel=output_.new_velocity[0];
+        controller_->axiss[0]->setAxis‌VelocityCmd(vel);
 
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working || result == Result::Finished)
-    {
-        double s = output_->new_position[0];
 
-        // 线性插值得到当前全局笛卡尔位�?
+
+        // 线性插值得到当前全局笛卡尔位�?
         double u = s / cartDist_;
         if (u < 0.0) u = 0.0;
         if (u > 1.0) u = 1.0;
@@ -105,7 +85,7 @@ void MoveLGalvo::run()
         double galvoX = pos.x() - platX;
         double galvoY = pos.y() - platY;
 
-        // 读取�?ID（运行时可由 NRT 侧动态配置）
+        // 读取�?ID（运行时可由 NRT 侧动态配置）
         int pXId = shm()->galvoCfg.platXId.load(std::memory_order_acquire);
         int pYId = shm()->galvoCfg.platYId.load(std::memory_order_acquire);
         int gXId = shm()->galvoCfg.galvoXId.load(std::memory_order_acquire);
@@ -116,31 +96,6 @@ void MoveLGalvo::run()
         controller_->axiss[gXId]->setAxisPositionCmd(galvoX);
         controller_->axiss[gYId]->setAxisPositionCmd(galvoY);
 
-        if (result == Result::Finished)
-        {
-            output_->pass_to_input(*input_);
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-        }
-        else
-        {
-            output_->pass_to_input(*input_);
-        }
-    }
-    else
-    {
-        ERROR_PRINT(
-            "MoveLGalvo invalid input: result=%d, dist=%.4f, curVel=%.4f, "
-            "tgtVel=%.4f, maxVel=%.4f, maxAcc=%.4f, maxJerk=%.4f\n",
-            static_cast<int>(result),
-            cartDist_,
-            input_->current_velocity[0],
-            input_->target_velocity[0],
-            input_->max_velocity[0],
-            input_->max_acceleration[0],
-            input_->max_jerk[0]
-        );
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-    }
-}
+ }
 
 CMD_REGISTER(MoveLGalvo);

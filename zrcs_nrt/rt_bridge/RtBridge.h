@@ -114,15 +114,9 @@ public:
         return zrcs::lfl_read(block_->axisPositions, out);
     }
 
-    /// 从 axisFeedbackQueue 排空队列，取最新一帧完整轴数据
+    /// 从 axisFeedbackQueue 逐帧读取一条完整轴数据，不主动丢弃中间帧
     bool readLatestAxisFeedback(zrcs::AxisFeedbackData& out) noexcept {
-        bool got = false;
-        zrcs::AxisFeedbackData tmp{};
-        while (axisFbConsumer_.pop(tmp)) {
-            out = tmp;
-            got = true;
-        }
-        return got;
+        return axisFbConsumer_.pop(out);
     }
 
     uint8_t axisCount() const noexcept {

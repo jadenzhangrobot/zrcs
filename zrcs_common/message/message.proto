@@ -82,8 +82,9 @@ message AxisStatus {
     int32 axis_id = 1;
     double position = 2;
     double cmd_position = 3;
-    double velocity = 4;
-    double torque = 5;
+    double cmd_velocity = 4;
+    double velocity = 5;
+    double torque = 6;
 }
 
 message RtLogStatus {

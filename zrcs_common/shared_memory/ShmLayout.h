@@ -31,7 +31,7 @@ namespace zrcs {
 // ─────────────────────────────────────────────────────────────────────────────
 
 inline constexpr size_t   kAxisMax       = 64;
-inline constexpr size_t   kCmdQueueCap   = 2048; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
+inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'

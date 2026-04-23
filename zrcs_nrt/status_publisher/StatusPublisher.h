@@ -5,6 +5,7 @@
 #include <atomic>
 #include <fstream>
 #include <chrono>
+#include <cmath>
 #include <deque>
 #include <mutex>
 #include <vector>
@@ -101,19 +102,37 @@ private:
             axisLog << "time_ms,"
                     << "plat_x,plat_y,"
                     << "galvo_x,galvo_y,"
-                    << "plat_x_cmd,plat_y_cmd,"
-                    << "galvo_x_cmd,galvo_y_cmd,"
-                    << "plat_x_vel,plat_y_vel,"
-                    << "galvo_x_vel,galvo_y_vel\n";
+                    << "plat_speed,"
+                    << "galvo_speed\n";
         }
         auto startTime = std::chrono::steady_clock::now();
 
         while (running_) {
             zrcs::AxisFeedbackData feedback{};
-            const bool gotFeedback = bridge_->readLatestAxisFeedback(feedback);
-            if (gotFeedback) {
+            bool gotFeedback = false;
+            while (bridge_->readLatestAxisFeedback(feedback)) {
+                gotFeedback = true;
                 latestFeedback = feedback;
                 hasFeedback = true;
+
+                // 写入平台轴（0/1）和振镜轴（2/3）数据到 CSV，逐帧记录避免中间帧丢失
+                const uint8_t count = bridge_->axisCount();
+                if (axisLog.is_open() && count >= 4) {
+                    auto elapsed = std::chrono::steady_clock::now() - startTime;
+                    double ms = std::chrono::duration<double, std::milli>(elapsed).count();
+                    const double platSpeed = std::hypot(feedback.velocity[0], feedback.velocity[1]);
+                    const double galvoSpeed = std::hypot(feedback.velocity[2], feedback.velocity[3]);
+                    axisLog << ms << ","
+                            // 平台实际位置
+                            << feedback.position[0] << ","
+                            << feedback.position[1] << ","
+                            // 振镜实际位置
+                            << feedback.position[2] << ","
+                            << feedback.position[3] << ","
+                            // 平台/振镜合速度
+                            << platSpeed << ","
+                            << galvoSpeed << "\n";
+                }
             }
 
             auto rtLogs = drainPendingRtLogs();
@@ -128,34 +147,10 @@ private:
                         axis->set_axis_id(i);
                         axis->set_position(latestFeedback.position[i]);
                         axis->set_cmd_position(latestFeedback.cmdPosition[i]);
+                        axis->set_cmd_velocity(latestFeedback.cmdVelocity[i]);
                         axis->set_velocity(latestFeedback.velocity[i]);
                         axis->set_torque(latestFeedback.torque[i]);
                     }
-                }
-
-                // 写入平台轴（0/1）和振镜轴（2/3）数据到 CSV
-                if (gotFeedback && axisLog.is_open() && count >= 4) {
-                    auto elapsed = std::chrono::steady_clock::now() - startTime;
-                    double ms = std::chrono::duration<double, std::milli>(elapsed).count();
-                    axisLog << ms << ","
-                            // 平台实际位置
-                            << feedback.position[0] << ","
-                            << feedback.position[1] << ","
-                            // 振镜实际位置
-                            << feedback.position[2] << ","
-                            << feedback.position[3] << ","
-                            // 平台指令位置
-                            << feedback.cmdPosition[0] << ","
-                            << feedback.cmdPosition[1] << ","
-                            // 振镜指令位置
-                            << feedback.cmdPosition[2] << ","
-                            << feedback.cmdPosition[3] << ","
-                            // 平台速度
-                            << feedback.velocity[0] << ","
-                            << feedback.velocity[1] << ","
-                            // 振镜速度
-                            << feedback.velocity[2] << ","
-                            << feedback.velocity[3] << "\n";
                 }
 
                 status.set_heartbeat(bridge_->heartbeat());

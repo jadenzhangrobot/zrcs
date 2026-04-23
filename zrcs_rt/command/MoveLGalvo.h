@@ -25,9 +25,9 @@ using namespace ruckig;
 class MoveLGalvo : public TrajectoryCmd
 {
 private:
-    std::unique_ptr<Ruckig<DynamicDOFs>>         otg_;
-    std::unique_ptr<InputParameter<DynamicDOFs>> input_;
-    std::unique_ptr<OutputParameter<DynamicDOFs>>output_;
+    Ruckig<1>        otg_;
+    InputParameter<1> input_;
+    OutputParameter<1>output_;
 
     // 线段几何缓存
     Eigen::Vector3d startPos_;
@@ -49,5 +49,4 @@ protected:
 
 public:
     MoveLGalvo();
-    void run() override;
 };

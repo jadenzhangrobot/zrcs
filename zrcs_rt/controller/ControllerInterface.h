@@ -115,6 +115,10 @@ public:
    {
          axisPosCmd_=axisPosCmd;
    }
+   void setAxis‌VelocityCmd(double axisVelCmd)
+   {
+       axisVelCmd_=axisVelCmd;
+   }
 
    void syncCmdHistory()
    {

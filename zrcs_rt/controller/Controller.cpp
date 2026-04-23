@@ -9,11 +9,11 @@ void Controller::sendData()
 {
     for(auto& it : axiss)
     {
-        if (!it->cmdsProcessing(1000.0 / cycletime))
-        {
-            it->setAxisState(mcErrorStop);
-            continue;
-        }
+        // if (!it->cmdsProcessing(1000.0 / cycletime))
+        // {
+        //     it->setAxisState(mcErrorStop);
+        //     continue;
+        // }
         it->updateMotionCmdsToServo();
     }
     if (hardwareBus_) {
