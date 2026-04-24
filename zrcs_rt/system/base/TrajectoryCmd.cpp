@@ -32,6 +32,15 @@ void TrajectoryCmd::runStandard()
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
+Result TrajectoryCmd::updateTrajectory()
+{
+    return otg_->update(*input_, *output_);
+}
+
+void TrajectoryCmd::passOutputToInput()
+{
+    output_->pass_to_input(*input_);
+}
 
 void TrajectoryCmd::init()
 {

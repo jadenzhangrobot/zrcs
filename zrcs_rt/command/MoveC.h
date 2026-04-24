@@ -35,9 +35,9 @@ private:
 
 protected:
     bool initTrajectory() override;
-    Result updateTrajectory() override;
+    
     void applyOutput() override;
-    void passOutputToInput() override;
+  
     void applyDeltaTime(double dt) override;
 
 public:

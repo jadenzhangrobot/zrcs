@@ -10,9 +10,9 @@ MoveL::MoveL() : dof_(0), cartDist_(0), firstSegment_(true)
     std::strcpy(nodeName_, "MoveL");
 }
 
-Result MoveL::updateTrajectory() { return otg_->update(*input_, *output_); }
+
 void MoveL::applyOutput() {}  // run() 中手动处理
-void MoveL::passOutputToInput() { output_->pass_to_input(*input_); }
+
 void MoveL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveL::initTrajectory()

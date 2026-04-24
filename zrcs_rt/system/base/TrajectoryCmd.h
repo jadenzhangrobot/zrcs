@@ -9,6 +9,7 @@
 #include "system/base/BaseNodeInterface.h"
 #include "config/Parameter.h"
 #include <ruckig/ruckig.hpp>
+#include <memory>
 
 using namespace ruckig;
 
@@ -16,8 +17,10 @@ class TrajectoryCmd : public zrcsSystem::CmdNode
 {
 protected:
     double baseDeltaTime_;  // 原始周期 = cycletime * 0.001
+    std::unique_ptr<Ruckig<DynamicDOFs>>          otg_;    // 子类在 initTrajectory() 中 make_unique
+    std::unique_ptr<InputParameter<DynamicDOFs>>  input_;
+    std::unique_ptr<OutputParameter<DynamicDOFs>> output_;
 
-    // --- 子类必须实现 ---
 
     /// 设置 Ruckig 参数（current/target/max_velocity 等），返回 false 表示失败
     virtual bool initTrajectory() = 0;
@@ -26,13 +29,13 @@ protected:
     virtual void applyDeltaTime(double dt) = 0;
 
     /// 调用 otg.update()，返回 Result
-    virtual Result updateTrajectory() = 0;
+   Result updateTrajectory() ;
 
     /// 将 Ruckig output 的位置写入轴位置指令
     virtual void applyOutput() = 0;
 
     /// output.pass_to_input(input)
-    virtual void passOutputToInput() = 0;
+     void passOutputToInput() ;
 
     // --- 基类提供的辅助方法 ---
 

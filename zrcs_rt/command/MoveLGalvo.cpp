@@ -13,8 +13,8 @@ MoveLGalvo::MoveLGalvo() :otg_(cycletime * 0.001)
     std::strcpy(nodeName_, "MoveLGalvo");
 }
 
-Result MoveLGalvo::updateTrajectory() { return otg_.update(input_, output_); }
-void   MoveLGalvo::passOutputToInput() { output_.pass_to_input(input_); }
+
+
 void   MoveLGalvo::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveLGalvo::initTrajectory()

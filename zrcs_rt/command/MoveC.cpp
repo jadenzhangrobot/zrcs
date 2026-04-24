@@ -1,12 +1,11 @@
 /*
- * @Description: 圆弧运动（ABB MoveC）�?三点定弧，经IK解算
+ * @Description: 圆弧运动（ABB MoveC）�?三点定弧，经IK解算
  */
 #include "command/MoveC.h"
 
 MoveC::MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0) { std::strcpy(nodeName_, "MoveC"); }
-Result MoveC::updateTrajectory() { return otg_->update(*input_, *output_); }
 void MoveC::applyOutput() {}
-void MoveC::passOutputToInput() { output_->pass_to_input(*input_); }
+
 void MoveC::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveC::initTrajectory()
@@ -20,7 +19,7 @@ bool MoveC::initTrajectory()
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
-        ERROR_PRINT("MoveC: 未找到模�?id=0)\n");
+        ERROR_PRINT("MoveC: 未找到模�?id=0)\n");
         return false;
     }
 

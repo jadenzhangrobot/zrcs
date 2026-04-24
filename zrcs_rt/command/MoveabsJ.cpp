@@ -1,11 +1,11 @@
 /*
- * @Description: 绝对关节位置运动（ABB MoveAbsJ）�?多轴同步，不经IK
+ * @Description: 绝对关节位置运动（ABB MoveAbsJ）�?多轴同步，不经IK
  */
 #include "command/MoveabsJ.h"
 
 MoveAbsJ::MoveAbsJ() : dof_(0) { std::strcpy(nodeName_, "MoveAbsJ"); }
-Result MoveAbsJ::updateTrajectory() { return otg_->update(*input_, *output_); }
-void MoveAbsJ::passOutputToInput() { output_->pass_to_input(*input_); }
+
+
 void MoveAbsJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveAbsJ::initTrajectory()
@@ -19,7 +19,7 @@ bool MoveAbsJ::initTrajectory()
     RobotModel* model = registry->getModel(0);
     if (!model)
     {
-        ERROR_PRINT("MoveAbsJ: 未找到模�?id=0)\n");
+        ERROR_PRINT("MoveAbsJ: 未找到模�?id=0)\n");
         return false;
     }
 
