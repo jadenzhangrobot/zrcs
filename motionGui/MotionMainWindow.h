@@ -24,10 +24,13 @@ private slots:
     void onZmqError(const QString& error);
     void onStatusUpdated(const QVector<AxisStatusData>& axes, quint64 heartbeat);
     void saveSettings();
+    void connectToConfiguredHost();
 
 private:
     void setupUi();
     void connectSignals();
+    void createTransport(const QString& host);
+    void destroyTransport();
     void sendCommand(const QString& cmd, const QVector<double>& args = {});
 
     void enableAxis(int axisId);
@@ -128,11 +131,13 @@ private:
     QPushButton* btnHomeAll_ = nullptr;
 
     // Settings tab
+    QLineEdit* editServerIp_ = nullptr;
     QLineEdit* editXRatio_ = nullptr;
     QLineEdit* editYRatio_ = nullptr;
     QLineEdit* editZRatio_ = nullptr;
     QLineEdit* editARatio_ = nullptr;
     QLineEdit* editBRatio_ = nullptr;
+    QPushButton* btnConnect_ = nullptr;
     QPushButton* btnSave_      = nullptr;
 
     // Status bar

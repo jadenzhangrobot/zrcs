@@ -1518,6 +1518,94 @@ QWidget#widget_3{
             </spacer>
            </item>
            <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_serverIp">
+             <item>
+              <spacer name="horizontalSpacer_serverIpLeft">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>260</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_serverIp">
+               <property name="font">
+                <font>
+                 <pointsize>25</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>IP地址</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="lineEdit_serverIp">
+               <property name="font">
+                <font>
+                 <pointsize>25</pointsize>
+                </font>
+               </property>
+               <property name="placeholderText">
+                <string>localhost 或 192.168.1.10</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+                            <spacer name="horizontalSpacer_serverIpConnect">
+                             <property name="orientation">
+                                <enum>Qt::Horizontal</enum>
+                             </property>
+                             <property name="sizeType">
+                                <enum>QSizePolicy::Fixed</enum>
+                             </property>
+                             <property name="sizeHint" stdset="0">
+                                <size>
+                                 <width>20</width>
+                                 <height>20</height>
+                                </size>
+                             </property>
+                            </spacer>
+                         </item>
+                         <item>
+                            <widget class="QPushButton" name="pushButton_connect">
+                             <property name="font">
+                                <font>
+                                 <pointsize>25</pointsize>
+                                </font>
+                             </property>
+                             <property name="text">
+                                <string>连接</string>
+                             </property>
+                            </widget>
+                         </item>
+                         <item>
+                            <spacer name="horizontalSpacer_serverIpRight">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>260</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_19">
              <item>
               <spacer name="horizontalSpacer_19">

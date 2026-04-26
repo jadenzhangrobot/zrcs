@@ -8,20 +8,17 @@ MotionMainWindow::MotionMainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     setupUi();
-
-    zmqClient_ = new MotionZmqClient("localhost", 5555, 5000, this);
-    statusSub_ = new MotionStatusSubscriber("localhost", 5556, this);
-
     connectSignals();
 
-    zmqClient_->connectToServer();
-    statusSub_->start();
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+    createTransport(host);
 }
 
 MotionMainWindow::~MotionMainWindow()
 {
-    if (statusSub_) statusSub_->stop();
-    if (zmqClient_) zmqClient_->disconnectFromServer();
+    destroyTransport();
 }
 
 void MotionMainWindow::setupUi()
@@ -110,11 +107,13 @@ void MotionMainWindow::setupUi()
     btnHomeAll_ = findChild<QPushButton*>("pushButton_22");
 
     // Settings
+    editServerIp_ = findChild<QLineEdit*>("lineEdit_serverIp");
     editXRatio_ = findChild<QLineEdit*>("lineEdit");
     editYRatio_ = findChild<QLineEdit*>("lineEdit_2");
     editZRatio_ = findChild<QLineEdit*>("lineEdit_3");
     editARatio_ = findChild<QLineEdit*>("lineEdit_4");
     editBRatio_ = findChild<QLineEdit*>("lineEdit_5");
+    btnConnect_ = findChild<QPushButton*>("pushButton_connect");
     btnSave_      = findChild<QPushButton*>("pushButton_6");
 
     // Status bar widgets
@@ -130,6 +129,7 @@ void MotionMainWindow::setupUi()
 
     // Load saved settings
     QSettings settings("ZRCS", "MotionGui");
+    if (editServerIp_) editServerIp_->setText(settings.value("network/host", "localhost").toString());
     if (editXRatio_) editXRatio_->setText(settings.value("encoder/x", "").toString());
     if (editYRatio_) editYRatio_->setText(settings.value("encoder/y", "").toString());
     if (editZRatio_) editZRatio_->setText(settings.value("encoder/z", "").toString());
@@ -139,14 +139,6 @@ void MotionMainWindow::setupUi()
 
 void MotionMainWindow::connectSignals()
 {
-    // ZMQ client
-    connect(zmqClient_, &MotionZmqClient::connected, this, &MotionMainWindow::onZmqConnected);
-    connect(zmqClient_, &MotionZmqClient::disconnected, this, &MotionMainWindow::onZmqDisconnected);
-    connect(zmqClient_, &MotionZmqClient::errorOccurred, this, &MotionMainWindow::onZmqError);
-
-    // Status subscriber
-    connect(statusSub_, &MotionStatusSubscriber::statusUpdated, this, &MotionMainWindow::onStatusUpdated);
-
     // Axis enable/disable/reset buttons
     auto wireAxisButtons = [this](QPushButton* enable, QPushButton* disable,
                                    QPushButton* errorClear, QPushButton* reset, int axisId) {
@@ -243,6 +235,7 @@ void MotionMainWindow::connectSignals()
     if (btnHomeAll_) connect(btnHomeAll_, &QPushButton::clicked, this, &MotionMainWindow::homeAllAxes);
 
     // Settings save
+    if (btnConnect_)   connect(btnConnect_,   &QPushButton::clicked, this, &MotionMainWindow::connectToConfiguredHost);
     if (btnSave_)      connect(btnSave_,      &QPushButton::clicked, this, &MotionMainWindow::saveSettings);
 
     // Per-axis set-origin buttons
@@ -251,6 +244,43 @@ void MotionMainWindow::connectSignals()
     if (btnOriginZ_) connect(btnOriginZ_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(2); });
     if (btnOriginA_) connect(btnOriginA_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(3); });
     if (btnOriginB_) connect(btnOriginB_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(4); });
+}
+
+void MotionMainWindow::createTransport(const QString& host)
+{
+    const QString normalizedHost = host.trimmed().isEmpty() ? QStringLiteral("localhost") : host.trimmed();
+
+    destroyTransport();
+
+    zmqClient_ = new MotionZmqClient(normalizedHost, 5555, 5000, this);
+    statusSub_ = new MotionStatusSubscriber(normalizedHost, 5556, this);
+
+    connect(zmqClient_, &MotionZmqClient::connected, this, &MotionMainWindow::onZmqConnected);
+    connect(zmqClient_, &MotionZmqClient::disconnected, this, &MotionMainWindow::onZmqDisconnected);
+    connect(zmqClient_, &MotionZmqClient::errorOccurred, this, &MotionMainWindow::onZmqError);
+    connect(statusSub_, &MotionStatusSubscriber::statusUpdated, this, &MotionMainWindow::onStatusUpdated);
+
+    if (zmqStatusLabel_) {
+        zmqStatusLabel_->setText(QString("ZMQ: Connecting to %1").arg(normalizedHost));
+    }
+
+    zmqClient_->connectToServer();
+    statusSub_->start();
+}
+
+void MotionMainWindow::destroyTransport()
+{
+    if (statusSub_) {
+        statusSub_->stop();
+        delete statusSub_;
+        statusSub_ = nullptr;
+    }
+
+    if (zmqClient_) {
+        zmqClient_->disconnectFromServer();
+        delete zmqClient_;
+        zmqClient_ = nullptr;
+    }
 }
 
 // ============================================================================
@@ -419,11 +449,38 @@ void MotionMainWindow::onStatusUpdated(const QVector<AxisStatusData>& axes, quin
 void MotionMainWindow::saveSettings()
 {
     QSettings settings("ZRCS", "MotionGui");
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+
+    if (editServerIp_) {
+        editServerIp_->setText(host);
+        settings.setValue("network/host", host);
+    }
     if (editXRatio_) settings.setValue("encoder/x", editXRatio_->text());
     if (editYRatio_) settings.setValue("encoder/y", editYRatio_->text());
     if (editZRatio_) settings.setValue("encoder/z", editZRatio_->text());
     if (editARatio_) settings.setValue("encoder/alpha", editARatio_->text());
     if (editBRatio_) settings.setValue("encoder/beta", editBRatio_->text());
 
-    statusBar()->showMessage("Settings saved", 2000);
+    createTransport(host);
+
+    statusBar()->showMessage(QString("Settings saved, reconnecting to %1").arg(host), 3000);
+}
+
+void MotionMainWindow::connectToConfiguredHost()
+{
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+
+    if (editServerIp_) {
+        editServerIp_->setText(host);
+    }
+
+    QSettings settings("ZRCS", "MotionGui");
+    settings.setValue("network/host", host);
+
+    createTransport(host);
+    statusBar()->showMessage(QString("Connecting to %1").arg(host), 3000);
 }
