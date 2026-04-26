@@ -9,13 +9,7 @@ using namespace ruckig;
 
 class MoveAbs : public TrajectoryCmd
 {
-public:
-   
-
 private:
-    Ruckig<1> otg_;
-    InputParameter<1> input_;
-    OutputParameter<1> output_;
     int axisId_;
 
 protected:

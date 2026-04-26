@@ -41,7 +41,117 @@
        <attribute name="title">
         <string>控制</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,1">
+       <layout class="QVBoxLayout" name="verticalLayout_tab">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_jogMode">
+          <item>
+           <widget class="QLabel" name="label_jogMode">
+            <property name="font">
+             <font>
+              <pointsize>25</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>运行模式:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBox_jogMode">
+            <property name="font">
+             <font>
+              <pointsize>25</pointsize>
+             </font>
+            </property>
+            <item>
+             <property name="text">
+              <string>连动</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>点动</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_mode">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_overrideRatio">
+            <property name="font">
+             <font>
+              <pointsize>25</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>倍率(%):</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="slider_overrideRatio">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_overrideValue">
+            <property name="font">
+             <font>
+              <pointsize>25</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>100%</string>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_origin">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,1">
         <item>
          <widget class="QWidget" name="widget_4" native="true">
           <property name="styleSheet">
@@ -116,7 +226,29 @@ QWidget#widget_4{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_origin_x">
+               <property name="text">
+                <string>设为原点</string>
+               </property>
+              </widget>
+             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_pos_x">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40); color: white; border: 1px solid rgb(80, 80, 80); border-radius: 4px; padding: 4px 8px;</string>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>X: ---</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label_36">
@@ -158,7 +290,29 @@ QWidget#widget_4{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_origin_y">
+               <property name="text">
+                <string>设为原点</string>
+               </property>
+              </widget>
+             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_pos_y">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40); color: white; border: 1px solid rgb(80, 80, 80); border-radius: 4px; padding: 4px 8px;</string>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Y: ---</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_4">
@@ -384,240 +538,57 @@ QWidget#widget_4{
             </spacer>
            </item>
            <item>
-            <widget class="QSlider" name="horizontalSlider">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="sizeIncrement">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>11</pointsize>
-              </font>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QSlider#horizontalSlider{
-	background-color: rgb(222, 221, 218);
-}
-QSlider::groove:horizontal {
-    height: 20px;
-    margin: 0px;
-    border-radius: 6px;
-    background: #e87f44; /* 橙色槽 */
-}
-
-QSlider::sub-page:horizontal {
-    background: transparent;
-}
-
-QSlider::add-page:horizontal {
-    background: transparent;
-}
-
-/* 三角形 handle — 使用 border 形成三角 */
-QSlider::handle:horizontal {
-    width: 0px;
-    height: 0px;
-    margin-top: -20px; /* 把三角形顶端向上移动，覆盖到槽上方 */
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 30px solid #000000; /* 三角颜色，黑色 */
-}
-</string>
-             </property>
-             <property name="maximum">
-              <number>5</number>
-             </property>
-             <property name="pageStep">
-              <number>1</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <layout class="QHBoxLayout" name="horizontalLayout_dist_xy">
              <item>
-              <widget class="QWidget" name="widget_5" native="true">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+              <widget class="QLabel" name="label_dist_xy">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
                </property>
-               <property name="styleSheet">
-                <string notr="true">background-color: rgb(222, 221, 218);</string>
+               <property name="text">
+                <string>步长:</string>
                </property>
-               <widget class="QLabel" name="label">
-                <property name="geometry">
-                 <rect>
-                  <x>2</x>
-                  <y>4</y>
-                  <width>16</width>
-                  <height>19</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_2">
-                <property name="geometry">
-                 <rect>
-                  <x>52</x>
-                  <y>4</y>
-                  <width>16</width>
-                  <height>19</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_3">
-                <property name="geometry">
-                 <rect>
-                  <x>102</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_4">
-                <property name="geometry">
-                 <rect>
-                  <x>118</x>
-                  <y>-4</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_5">
-                <property name="geometry">
-                 <rect>
-                  <x>172</x>
-                  <y>-4</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>3</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_6">
-                <property name="geometry">
-                 <rect>
-                  <x>156</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_7">
-                <property name="geometry">
-                 <rect>
-                  <x>208</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_8">
-                <property name="geometry">
-                 <rect>
-                  <x>224</x>
-                  <y>-4</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>4</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_9">
-                <property name="geometry">
-                 <rect>
-                  <x>256</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_10">
-                <property name="geometry">
-                 <rect>
-                  <x>272</x>
-                  <y>-4</y>
-                  <width>10</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>5</string>
-                </property>
-               </widget>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="slider_dist_xy">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>7</number>
+               </property>
+               <property name="value">
+                <number>3</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_dist_xy_val">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>1 um</string>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>0</height>
+                </size>
+               </property>
               </widget>
              </item>
             </layout>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_11">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(222, 221, 218);</string>
-             </property>
-             <property name="text">
-              <string>XY轴步长（nm）</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignHCenter|Qt::AlignTop</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_7">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Fixed</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>100</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>
@@ -694,7 +665,29 @@ QWidget#widget_2{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_origin_z">
+               <property name="text">
+                <string>设为原点</string>
+               </property>
+              </widget>
+             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_pos_z">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40); color: white; border: 1px solid rgb(80, 80, 80); border-radius: 4px; padding: 4px 8px;</string>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Z: ---</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_5">
@@ -847,171 +840,57 @@ QWidget#widget_2{
             </spacer>
            </item>
            <item>
-            <widget class="QSlider" name="horizontalSlider_2">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QSlider#horizontalSlider_2{
-	background-color: rgb(222, 221, 218);
-}
-QSlider::groove:horizontal {
-    height: 20px;
-    margin: 0px;
-    border-radius: 6px;
-    background: #e87f44; /* 橙色槽 */
-}
-
-QSlider::sub-page:horizontal {
-    background: transparent;
-}
-
-QSlider::add-page:horizontal {
-    background: transparent;
-}
-
-/* 三角形 handle — 使用 border 形成三角 */
-QSlider::handle:horizontal {
-    width: 0px;
-    height: 0px;
-    margin-top: -20px; /* 把三角形顶端向上移动，覆盖到槽上方 */
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 30px solid #000000; /* 三角颜色，黑色 */
-}
-</string>
-             </property>
-             <property name="maximum">
-              <number>3</number>
-             </property>
-             <property name="pageStep">
-              <number>1</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
+            <layout class="QHBoxLayout" name="horizontalLayout_dist_z">
              <item>
-              <widget class="QWidget" name="widget_6" native="true">
-               <property name="styleSheet">
-                <string notr="true">background-color: rgb(222, 221, 218);</string>
+              <widget class="QLabel" name="label_dist_z">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
                </property>
-               <widget class="QLabel" name="label_14">
-                <property name="geometry">
-                 <rect>
-                  <x>94</x>
-                  <y>4</y>
-                  <width>16</width>
-                  <height>19</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_16">
-                <property name="geometry">
-                 <rect>
-                  <x>2</x>
-                  <y>4</y>
-                  <width>16</width>
-                  <height>19</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_17">
-                <property name="geometry">
-                 <rect>
-                  <x>288</x>
-                  <y>-4</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>3</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_19">
-                <property name="geometry">
-                 <rect>
-                  <x>188</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_20">
-                <property name="geometry">
-                 <rect>
-                  <x>204</x>
-                  <y>-4</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_21">
-                <property name="geometry">
-                 <rect>
-                  <x>272</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </widget>
+               <property name="text">
+                <string>步长:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="slider_dist_z">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>7</number>
+               </property>
+               <property name="value">
+                <number>3</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_dist_z_val">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>1 um</string>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>0</height>
+                </size>
+               </property>
               </widget>
              </item>
             </layout>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_12">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(222, 221, 218);</string>
-             </property>
-             <property name="text">
-              <string>Z轴步长（nm）</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignHCenter|Qt::AlignTop</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_9">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Fixed</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>100</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>
@@ -1100,7 +979,29 @@ QWidget#widget_3{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_origin_a">
+               <property name="text">
+                <string>设为原点</string>
+               </property>
+              </widget>
+             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_pos_a">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40); color: white; border: 1px solid rgb(80, 80, 80); border-radius: 4px; padding: 4px 8px;</string>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>α: ---</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label_38">
@@ -1142,7 +1043,29 @@ QWidget#widget_3{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_origin_b">
+               <property name="text">
+                <string>设为原点</string>
+               </property>
+              </widget>
+             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_pos_b">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40); color: white; border: 1px solid rgb(80, 80, 80); border-radius: 4px; padding: 4px 8px;</string>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>β: ---</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_6">
@@ -1314,135 +1237,62 @@ QWidget#widget_3{
             </spacer>
            </item>
            <item>
-            <widget class="QSlider" name="horizontalSlider_3">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">QSlider#horizontalSlider_3{
-	background-color: rgb(222, 221, 218);
-}
-QSlider::groove:horizontal {
-    height: 20px;
-    margin: 0px;
-    border-radius: 6px;
-    background: #e87f44; /* 橙色槽 */
-}
-
-QSlider::sub-page:horizontal {
-    background: transparent;
-}
-
-QSlider::add-page:horizontal {
-    background: transparent;
-}
-
-/* 三角形 handle — 使用 border 形成三角 */
-QSlider::handle:horizontal {
-    width: 0px;
-    height: 0px;
-    margin-top: -20px; /* 把三角形顶端向上移动，覆盖到槽上方 */
-    border-left: 12px solid transparent;
-    border-right: 12px solid transparent;
-    border-bottom: 30px solid #000000; /* 三角颜色，黑色 */
-}
-</string>
-             </property>
-             <property name="maximum">
-              <number>2</number>
-             </property>
-             <property name="pageStep">
-              <number>1</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
+            <layout class="QHBoxLayout" name="horizontalLayout_angle_ab">
              <item>
-              <widget class="QWidget" name="widget_7" native="true">
-               <property name="styleSheet">
-                <string notr="true">background-color: rgb(222, 221, 218);</string>
+              <widget class="QLabel" name="label_angle_ab">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
                </property>
-               <widget class="QLabel" name="label_29">
-                <property name="geometry">
-                 <rect>
-                  <x>2</x>
-                  <y>6</y>
-                  <width>33</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>0.01</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_32">
-                <property name="geometry">
-                 <rect>
-                  <x>142</x>
-                  <y>6</y>
-                  <width>25</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>0.1</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_34">
-                <property name="geometry">
-                 <rect>
-                  <x>286</x>
-                  <y>6</y>
-                  <width>16</width>
-                  <height>16</height>
-                 </rect>
-                </property>
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </widget>
+               <property name="text">
+                <string>步长:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="slider_angle_ab">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>3</number>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_angle_ab_val">
+               <property name="font">
+                <font>
+                 <pointsize>20</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>0.1 deg</string>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
               </widget>
              </item>
             </layout>
            </item>
-           <item>
-            <widget class="QLabel" name="label_13">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(222, 221, 218);</string>
-             </property>
-             <property name="text">
-              <string>转角步长（度）</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignHCenter|Qt::AlignTop</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_10">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Fixed</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>100</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
           </layout>
          </widget>
+        </item>
+       </layout>
         </item>
        </layout>
       </widget>

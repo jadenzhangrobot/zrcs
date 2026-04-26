@@ -3,14 +3,13 @@
  */
 #include "command/JogJ.h"
 
-JogJ::JogJ() : otg_(cycletime * 0.001)
+JogJ::JogJ()
 {
     std::strcpy(nodeName_, "JogJ");
 }
 
-
-void JogJ::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
-void JogJ::applyDeltaTime(double dt) { otg_.delta_time = dt; }
+void JogJ::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
+void JogJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool JogJ::initTrajectory()
 {
@@ -23,15 +22,19 @@ bool JogJ::initTrajectory()
         return false;
     }
 
-    input_.current_position[0] = controller_->axiss[axisId_]->actualPos();
-    input_.current_velocity[0] = 0;
-    input_.current_acceleration[0] = 0;
-    input_.target_position[0] = position_ + controller_->axiss[axisId_]->actualPos();
-    input_.target_velocity[0] = 0;
-    input_.target_acceleration[0] = 0;
-    input_.max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity();
-    input_.max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
-    input_.max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
+    otg_    = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_  = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+
+    input_->current_position[0] = controller_->axiss[axisId_]->actualPos();
+    input_->current_velocity[0] = 0;
+    input_->current_acceleration[0] = 0;
+    input_->target_position[0] = position_ + controller_->axiss[axisId_]->actualPos();
+    input_->target_velocity[0] = 0;
+    input_->target_acceleration[0] = 0;
+    input_->max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity();
+    input_->max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
+    input_->max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
     return true;
 }
 

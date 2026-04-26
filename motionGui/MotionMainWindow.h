@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QComboBox>
 #include <QLineEdit>
 #include <QVector>
 #include "ui_MainWindow.h"
@@ -37,6 +38,15 @@ private:
     void jogStop();
     void homeAxis(int axisId);
     void homeAllAxes();
+    void setCurrentAsOrigin();
+    void setAxisAsOrigin(int axisId);
+
+    bool isStepJogMode() const;
+    double stepDistance(int axisId) const;
+    QString stepDistanceText(int value) const;
+    QString angleStepText(int value) const;
+    void stepJog(int axisId, bool positive);
+    void setOverrideRatio(int percent);
 
 
     MotionZmqClient* zmqClient_ = nullptr;
@@ -68,24 +78,46 @@ private:
     QPushButton* btnBErrorClear_ = nullptr;
     QPushButton* btnBReset_ = nullptr;
 
+    // Per-axis set-origin buttons
+    QPushButton* btnOriginX_ = nullptr;
+    QPushButton* btnOriginY_ = nullptr;
+    QPushButton* btnOriginZ_ = nullptr;
+    QPushButton* btnOriginA_ = nullptr;
+    QPushButton* btnOriginB_ = nullptr;
+
+    // Per-axis position labels
+    QLabel* lblPosX_ = nullptr;
+    QLabel* lblPosY_ = nullptr;
+    QLabel* lblPosZ_ = nullptr;
+    QLabel* lblPosA_ = nullptr;
+    QLabel* lblPosB_ = nullptr;
+
     // Control tab - XY jog
     QPushButton* btnJogNegX_ = nullptr;
     QPushButton* btnJogPosX_ = nullptr;
     QPushButton* btnJogNegY_ = nullptr;
     QPushButton* btnJogPosY_ = nullptr;
-    QSlider* xyStepSlider_ = nullptr;
 
     // Control tab - Z jog
     QPushButton* btnJogPosZ_ = nullptr;
     QPushButton* btnJogNegZ_ = nullptr;
-    QSlider* zStepSlider_ = nullptr;
 
     // Control tab - alpha/beta jog
     QPushButton* btnJogNegA_ = nullptr;
     QPushButton* btnJogPosA_ = nullptr;
     QPushButton* btnJogNegB_ = nullptr;
     QPushButton* btnJogPosB_ = nullptr;
-    QSlider* angleStepSlider_ = nullptr;
+
+    // Jog mode and controls
+    QComboBox* jogModeCombo_     = nullptr;
+    QSlider*   overrideSlider_   = nullptr;
+    QLabel*    overrideLabel_    = nullptr;
+    QSlider*   stepDistXySlider_ = nullptr;
+    QLabel*    stepDistXyLabel_  = nullptr;
+    QSlider*   stepDistZSlider_  = nullptr;
+    QLabel*    stepDistZLabel_   = nullptr;
+    QSlider*   angleAbSlider_    = nullptr;
+    QLabel*    angleAbLabel_     = nullptr;
 
     // Homing tab
     QPushButton* btnHomeX_ = nullptr;
@@ -101,7 +133,7 @@ private:
     QLineEdit* editZRatio_ = nullptr;
     QLineEdit* editARatio_ = nullptr;
     QLineEdit* editBRatio_ = nullptr;
-    QPushButton* btnSave_ = nullptr;
+    QPushButton* btnSave_      = nullptr;
 
     // Status bar
     QLabel* positionLabel_ = nullptr;
