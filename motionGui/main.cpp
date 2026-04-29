@@ -17,3 +17,15 @@ int main(int argc, char* argv[])
 
     return app.exec();
 }
+
+// Qt6::Widgets on MinGW injects -Wl,-subsystem,windows which requires WinMain.
+// Provide a WinMain bridge so we can keep using int main().
+#ifdef _WIN32
+#include <windows.h>
+extern int __argc;
+extern char** __argv;
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+{
+    return main(__argc, __argv);
+}
+#endif

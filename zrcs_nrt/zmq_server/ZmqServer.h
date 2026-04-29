@@ -232,6 +232,30 @@ private:
             } else {
                 sendReply("ERROR: SYS_SET_MULTIPLIER requires 1 arg (percent)");
             }
+        } else if (name == "SYS_SET_ORIGIN") {
+            // SetZero all axes: pass axisId = axisCount as sentinel
+            double sentinel = static_cast<double>(bridge_->axisCount());
+            auto [send_result, seq] = bridge_->sendCommand("SetZero", std::vector<double>{sentinel});
+            if (send_result == RtBridge::SendResult::OK) {
+                spdlog::info("[ZMQServer] SYS_SET_ORIGIN -> SetZero(all) seq={}", seq);
+                sendReply("OK");
+            } else {
+                spdlog::error("[ZMQServer] SYS_SET_ORIGIN failed");
+                sendReply("ERROR: Queue full");
+            }
+        } else if (name == "SYS_SET_AXIS_ORIGIN") {
+            if (args.size() >= 1) {
+                auto [send_result, seq] = bridge_->sendCommand("SetZero", std::vector<double>(args));
+                if (send_result == RtBridge::SendResult::OK) {
+                    spdlog::info("[ZMQServer] SYS_SET_AXIS_ORIGIN -> SetZero(axis={}) seq={}", static_cast<int>(args[0]), seq);
+                    sendReply("OK");
+                } else {
+                    spdlog::error("[ZMQServer] SYS_SET_AXIS_ORIGIN failed");
+                    sendReply("ERROR: Queue full");
+                }
+            } else {
+                sendReply("ERROR: SYS_SET_AXIS_ORIGIN requires 1 arg (axisId)");
+            }
         } else {
             auto [send_result, seq] = bridge_->sendCommand(name, args);
             if (send_result == RtBridge::SendResult::OK) {

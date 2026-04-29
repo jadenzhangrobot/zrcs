@@ -2,25 +2,23 @@
 #include <QSettings>
 #include <QHBoxLayout>
 #include <QDebug>
+#include <cmath>
 
 MotionMainWindow::MotionMainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     setupUi();
-
-    zmqClient_ = new MotionZmqClient("localhost", 5555, 5000, this);
-    statusSub_ = new MotionStatusSubscriber("localhost", 5556, this);
-
     connectSignals();
 
-    zmqClient_->connectToServer();
-    statusSub_->start();
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+    createTransport(host);
 }
 
 MotionMainWindow::~MotionMainWindow()
 {
-    if (statusSub_) statusSub_->stop();
-    if (zmqClient_) zmqClient_->disconnectFromServer();
+    destroyTransport();
 }
 
 void MotionMainWindow::setupUi()
@@ -59,24 +57,46 @@ void MotionMainWindow::setupUi()
     btnBErrorClear_ = findChild<QPushButton*>("pushButton_32");
     btnBReset_      = findChild<QPushButton*>("pushButton_33");
 
+    // Per-axis set-origin buttons
+    btnOriginX_ = findChild<QPushButton*>("btn_origin_x");
+    btnOriginY_ = findChild<QPushButton*>("btn_origin_y");
+    btnOriginZ_ = findChild<QPushButton*>("btn_origin_z");
+    btnOriginA_ = findChild<QPushButton*>("btn_origin_a");
+    btnOriginB_ = findChild<QPushButton*>("btn_origin_b");
+
+    // Per-axis position labels
+    lblPosX_ = findChild<QLabel*>("lbl_pos_x");
+    lblPosY_ = findChild<QLabel*>("lbl_pos_y");
+    lblPosZ_ = findChild<QLabel*>("lbl_pos_z");
+    lblPosA_ = findChild<QLabel*>("lbl_pos_a");
+    lblPosB_ = findChild<QLabel*>("lbl_pos_b");
+
     // XY jog
     btnJogNegX_ = findChild<QPushButton*>("pushButton_4");
     btnJogPosX_ = findChild<QPushButton*>("pushButton");
     btnJogNegY_ = findChild<QPushButton*>("pushButton_2");
     btnJogPosY_ = findChild<QPushButton*>("pushButton_3");
-    xyStepSlider_ = findChild<QSlider*>("horizontalSlider");
 
     // Z jog
     btnJogPosZ_ = findChild<QPushButton*>("pushButton_5");
     btnJogNegZ_ = findChild<QPushButton*>("pushButton_11");
-    zStepSlider_ = findChild<QSlider*>("horizontalSlider_2");
 
     // alpha/beta jog
     btnJogNegA_ = findChild<QPushButton*>("pushButton_15");
     btnJogPosA_ = findChild<QPushButton*>("pushButton_13");
     btnJogNegB_ = findChild<QPushButton*>("pushButton_14");
     btnJogPosB_ = findChild<QPushButton*>("pushButton_16");
-    angleStepSlider_ = findChild<QSlider*>("horizontalSlider_3");
+
+    // Jog mode and controls
+    jogModeCombo_     = findChild<QComboBox*>("comboBox_jogMode");
+    overrideSlider_   = findChild<QSlider*>("slider_overrideRatio");
+    overrideLabel_    = findChild<QLabel*>("label_overrideValue");
+    stepDistXySlider_ = findChild<QSlider*>("slider_dist_xy");
+    stepDistXyLabel_  = findChild<QLabel*>("label_dist_xy_val");
+    stepDistZSlider_  = findChild<QSlider*>("slider_dist_z");
+    stepDistZLabel_   = findChild<QLabel*>("label_dist_z_val");
+    angleAbSlider_    = findChild<QSlider*>("slider_angle_ab");
+    angleAbLabel_     = findChild<QLabel*>("label_angle_ab_val");
 
     // Homing
     btnHomeX_   = findChild<QPushButton*>("pushButton_17");
@@ -87,12 +107,14 @@ void MotionMainWindow::setupUi()
     btnHomeAll_ = findChild<QPushButton*>("pushButton_22");
 
     // Settings
+    editServerIp_ = findChild<QLineEdit*>("lineEdit_serverIp");
     editXRatio_ = findChild<QLineEdit*>("lineEdit");
     editYRatio_ = findChild<QLineEdit*>("lineEdit_2");
     editZRatio_ = findChild<QLineEdit*>("lineEdit_3");
     editARatio_ = findChild<QLineEdit*>("lineEdit_4");
     editBRatio_ = findChild<QLineEdit*>("lineEdit_5");
-    btnSave_    = findChild<QPushButton*>("pushButton_6");
+    btnConnect_ = findChild<QPushButton*>("pushButton_connect");
+    btnSave_      = findChild<QPushButton*>("pushButton_6");
 
     // Status bar widgets
     positionLabel_ = new QLabel("X: --  Y: --  Z: --  a: --  b: --");
@@ -100,8 +122,14 @@ void MotionMainWindow::setupUi()
     statusBar()->addWidget(zmqStatusLabel_);
     statusBar()->addPermanentWidget(positionLabel_);
 
+    // Initialize: send default override ratio
+    if (overrideSlider_ && overrideSlider_->value() == 100) {
+        setOverrideRatio(100);
+    }
+
     // Load saved settings
     QSettings settings("ZRCS", "MotionGui");
+    if (editServerIp_) editServerIp_->setText(settings.value("network/host", "localhost").toString());
     if (editXRatio_) editXRatio_->setText(settings.value("encoder/x", "").toString());
     if (editYRatio_) editYRatio_->setText(settings.value("encoder/y", "").toString());
     if (editZRatio_) editZRatio_->setText(settings.value("encoder/z", "").toString());
@@ -111,14 +139,6 @@ void MotionMainWindow::setupUi()
 
 void MotionMainWindow::connectSignals()
 {
-    // ZMQ client
-    connect(zmqClient_, &MotionZmqClient::connected, this, &MotionMainWindow::onZmqConnected);
-    connect(zmqClient_, &MotionZmqClient::disconnected, this, &MotionMainWindow::onZmqDisconnected);
-    connect(zmqClient_, &MotionZmqClient::errorOccurred, this, &MotionMainWindow::onZmqError);
-
-    // Status subscriber
-    connect(statusSub_, &MotionStatusSubscriber::statusUpdated, this, &MotionMainWindow::onStatusUpdated);
-
     // Axis enable/disable/reset buttons
     auto wireAxisButtons = [this](QPushButton* enable, QPushButton* disable,
                                    QPushButton* errorClear, QPushButton* reset, int axisId) {
@@ -134,11 +154,21 @@ void MotionMainWindow::connectSignals()
     wireAxisButtons(btnAEnable_, btnADisable_, btnAErrorClear_, btnAReset_, 3);
     wireAxisButtons(btnBEnable_, btnBDisable_, btnBErrorClear_, btnBReset_, 4);
 
-    // XY jog (pressed = start, released = stop)
+    // Jog buttons: mode-aware (连动/点动)
     auto wireJogButton = [this](QPushButton* btn, int axisId, bool positive) {
         if (!btn) return;
-        connect(btn, &QPushButton::pressed, this, [this, axisId, positive]() { jogStart(axisId, positive); });
-        connect(btn, &QPushButton::released, this, [this]() { jogStop(); });
+        connect(btn, &QPushButton::pressed, this, [this, axisId, positive]() {
+            if (isStepJogMode()) {
+                stepJog(axisId, positive);
+            } else {
+                jogStart(axisId, positive);
+            }
+        });
+        connect(btn, &QPushButton::released, this, [this]() {
+            if (!isStepJogMode()) {
+                jogStop();
+            }
+        });
     };
 
     wireJogButton(btnJogNegX_, 0, false);
@@ -156,6 +186,46 @@ void MotionMainWindow::connectSignals()
     wireJogButton(btnJogNegB_, 4, false);
     wireJogButton(btnJogPosB_, 4, true);
 
+    // Jog mode ComboBox
+    if (jogModeCombo_) {
+        connect(jogModeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+            jogStop();  // safety: stop continuous motion when switching modes
+            bool stepMode = (index == 1);
+            if (stepDistXySlider_) stepDistXySlider_->setEnabled(stepMode);
+            if (stepDistXyLabel_)  stepDistXyLabel_->setEnabled(stepMode);
+            if (stepDistZSlider_)  stepDistZSlider_->setEnabled(stepMode);
+            if (stepDistZLabel_)   stepDistZLabel_->setEnabled(stepMode);
+            if (angleAbSlider_)    angleAbSlider_->setEnabled(stepMode);
+            if (angleAbLabel_)     angleAbLabel_->setEnabled(stepMode);
+        });
+    }
+
+    // Override ratio slider
+    if (overrideSlider_) {
+        connect(overrideSlider_, &QSlider::valueChanged, this, [this](int value) {
+            if (overrideLabel_) overrideLabel_->setText(QString::number(value) + "%");
+            setOverrideRatio(value);
+        });
+    }
+
+    // Step distance sliders
+    if (stepDistXySlider_) {
+        connect(stepDistXySlider_, &QSlider::valueChanged, this, [this](int value) {
+            if (stepDistXyLabel_) stepDistXyLabel_->setText(stepDistanceText(value));
+        });
+    }
+    if (stepDistZSlider_) {
+        connect(stepDistZSlider_, &QSlider::valueChanged, this, [this](int value) {
+            if (stepDistZLabel_) stepDistZLabel_->setText(stepDistanceText(value));
+        });
+    }
+    if (angleAbSlider_) {
+        connect(angleAbSlider_, &QSlider::valueChanged, this, [this](int value) {
+            if (angleAbLabel_) angleAbLabel_->setText(angleStepText(value));
+        });
+    }
+
     // Homing
     if (btnHomeX_)   connect(btnHomeX_,   &QPushButton::clicked, this, [this]() { homeAxis(0); });
     if (btnHomeY_)   connect(btnHomeY_,   &QPushButton::clicked, this, [this]() { homeAxis(1); });
@@ -165,7 +235,52 @@ void MotionMainWindow::connectSignals()
     if (btnHomeAll_) connect(btnHomeAll_, &QPushButton::clicked, this, &MotionMainWindow::homeAllAxes);
 
     // Settings save
-    if (btnSave_) connect(btnSave_, &QPushButton::clicked, this, &MotionMainWindow::saveSettings);
+    if (btnConnect_)   connect(btnConnect_,   &QPushButton::clicked, this, &MotionMainWindow::connectToConfiguredHost);
+    if (btnSave_)      connect(btnSave_,      &QPushButton::clicked, this, &MotionMainWindow::saveSettings);
+
+    // Per-axis set-origin buttons
+    if (btnOriginX_) connect(btnOriginX_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(0); });
+    if (btnOriginY_) connect(btnOriginY_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(1); });
+    if (btnOriginZ_) connect(btnOriginZ_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(2); });
+    if (btnOriginA_) connect(btnOriginA_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(3); });
+    if (btnOriginB_) connect(btnOriginB_, &QPushButton::clicked, this, [this]() { setAxisAsOrigin(4); });
+}
+
+void MotionMainWindow::createTransport(const QString& host)
+{
+    const QString normalizedHost = host.trimmed().isEmpty() ? QStringLiteral("localhost") : host.trimmed();
+
+    destroyTransport();
+
+    zmqClient_ = new MotionZmqClient(normalizedHost, 5555, 5000, this);
+    statusSub_ = new MotionStatusSubscriber(normalizedHost, 5556, this);
+
+    connect(zmqClient_, &MotionZmqClient::connected, this, &MotionMainWindow::onZmqConnected);
+    connect(zmqClient_, &MotionZmqClient::disconnected, this, &MotionMainWindow::onZmqDisconnected);
+    connect(zmqClient_, &MotionZmqClient::errorOccurred, this, &MotionMainWindow::onZmqError);
+    connect(statusSub_, &MotionStatusSubscriber::statusUpdated, this, &MotionMainWindow::onStatusUpdated);
+
+    if (zmqStatusLabel_) {
+        zmqStatusLabel_->setText(QString("ZMQ: Connecting to %1").arg(normalizedHost));
+    }
+
+    zmqClient_->connectToServer();
+    statusSub_->start();
+}
+
+void MotionMainWindow::destroyTransport()
+{
+    if (statusSub_) {
+        statusSub_->stop();
+        delete statusSub_;
+        statusSub_ = nullptr;
+    }
+
+    if (zmqClient_) {
+        zmqClient_->disconnectFromServer();
+        delete zmqClient_;
+        zmqClient_ = nullptr;
+    }
 }
 
 // ============================================================================
@@ -201,7 +316,6 @@ void MotionMainWindow::errorClearAxis(int axisId)
 
 void MotionMainWindow::jogStart(int axisId, bool positive)
 {
-    // args: [axisId, direction] — direction > 0 = positive, 0 = negative
     sendCommand("SYS_JOG_START", {static_cast<double>(axisId), positive ? 1.0 : 0.0});
 }
 
@@ -218,6 +332,70 @@ void MotionMainWindow::homeAxis(int axisId)
 void MotionMainWindow::homeAllAxes()
 {
     sendCommand("Movehome", {});
+}
+
+void MotionMainWindow::setCurrentAsOrigin()
+{
+    sendCommand("SYS_SET_ORIGIN", {});
+}
+
+void MotionMainWindow::setAxisAsOrigin(int axisId)
+{
+    sendCommand("SYS_SET_AXIS_ORIGIN", {static_cast<double>(axisId)});
+}
+
+// ============================================================================
+// Jog mode helpers
+// ============================================================================
+
+bool MotionMainWindow::isStepJogMode() const
+{
+    return jogModeCombo_ && jogModeCombo_->currentIndex() == 1;
+}
+
+double MotionMainWindow::stepDistance(int axisId) const
+{
+    QSlider* s = (axisId <= 1) ? stepDistXySlider_
+               : (axisId == 2) ? stepDistZSlider_
+               :                  angleAbSlider_;
+    if (!s) return 0.0;
+    int v = s->value();
+    // Rotation axes (3,4): 10^(v-2) degrees (0.01 to 10 deg)
+    // Linear axes:         10^(v-6) mm  (1nm=0.000001mm .. 10mm), RT user unit = mm
+    return (axisId >= 3) ? std::pow(10.0, v - 2) : std::pow(10.0, v - 6);
+}
+
+QString MotionMainWindow::stepDistanceText(int value) const
+{
+    // value 0-7 maps to 1nm .. 10mm
+    if (value <= 2) {
+        return QString("%1 nm").arg(static_cast<int>(std::pow(10, value)));
+    } else if (value <= 5) {
+        return QString("%1 um").arg(static_cast<int>(std::pow(10, value - 3)));
+    } else {
+        return QString("%1 mm").arg(static_cast<int>(std::pow(10, value - 6)));
+    }
+}
+
+QString MotionMainWindow::angleStepText(int value) const
+{
+    // value 0-3 maps to 0.01, 0.1, 1, 10 degrees
+    const QStringList labels = {"0.01 deg", "0.1 deg", "1 deg", "10 deg"};
+    if (value >= 0 && value < labels.size()) return labels.at(value);
+    return QString::number(static_cast<int>(std::pow(10, value - 2))) + " deg";
+}
+
+void MotionMainWindow::stepJog(int axisId, bool positive)
+{
+    double dist = stepDistance(axisId);
+    if (dist <= 0.0) return;
+    double distance = positive ? dist : -dist;
+    sendCommand("JogJ", {static_cast<double>(axisId), distance});
+}
+
+void MotionMainWindow::setOverrideRatio(int percent)
+{
+    sendCommand("SYS_SET_MULTIPLIER", {static_cast<double>(percent)});
 }
 
 // ============================================================================
@@ -244,14 +422,24 @@ void MotionMainWindow::onStatusUpdated(const QVector<AxisStatusData>& axes, quin
 {
     Q_UNUSED(heartbeat);
 
-    if (!positionLabel_) return;
-
-    QStringList parts;
-    const QString names[] = {"X", "Y", "Z", "a", "b"};
-    for (int i = 0; i < axes.size() && i < 5; ++i) {
-        parts << QString("%1: %2").arg(names[i]).arg(axes[i].position, 0, 'f', 3);
+    // Status bar summary
+    if (positionLabel_) {
+        QStringList parts;
+        const QString names[] = {"X", "Y", "Z", "a", "b"};
+        for (int i = 0; i < axes.size() && i < 5; ++i)
+            parts << QString("%1: %2").arg(names[i]).arg(axes[i].position, 0, 'f', 3);
+        positionLabel_->setText(parts.join("  "));
     }
-    positionLabel_->setText(parts.join("  "));
+
+    // Per-axis labels in panels
+    QLabel* const panelLabels[] = {lblPosX_, lblPosY_, lblPosZ_, lblPosA_, lblPosB_};
+    const QString units[]       = {" mm",   " mm",   " mm",   " deg",  " deg"};
+    const QString prefixes[]    = {"X: ",   "Y: ",   "Z: ",   "α: ",   "β: "};
+    for (int i = 0; i < axes.size() && i < 5; ++i) {
+        if (panelLabels[i])
+            panelLabels[i]->setText(
+                prefixes[i] + QString::number(axes[i].position, 'f', 3) + units[i]);
+    }
 }
 
 // ============================================================================
@@ -261,11 +449,38 @@ void MotionMainWindow::onStatusUpdated(const QVector<AxisStatusData>& axes, quin
 void MotionMainWindow::saveSettings()
 {
     QSettings settings("ZRCS", "MotionGui");
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+
+    if (editServerIp_) {
+        editServerIp_->setText(host);
+        settings.setValue("network/host", host);
+    }
     if (editXRatio_) settings.setValue("encoder/x", editXRatio_->text());
     if (editYRatio_) settings.setValue("encoder/y", editYRatio_->text());
     if (editZRatio_) settings.setValue("encoder/z", editZRatio_->text());
     if (editARatio_) settings.setValue("encoder/alpha", editARatio_->text());
     if (editBRatio_) settings.setValue("encoder/beta", editBRatio_->text());
 
-    statusBar()->showMessage("Settings saved", 2000);
+    createTransport(host);
+
+    statusBar()->showMessage(QString("Settings saved, reconnecting to %1").arg(host), 3000);
+}
+
+void MotionMainWindow::connectToConfiguredHost()
+{
+    const QString host = (editServerIp_ && !editServerIp_->text().trimmed().isEmpty())
+        ? editServerIp_->text().trimmed()
+        : QStringLiteral("localhost");
+
+    if (editServerIp_) {
+        editServerIp_->setText(host);
+    }
+
+    QSettings settings("ZRCS", "MotionGui");
+    settings.setValue("network/host", host);
+
+    createTransport(host);
+    statusBar()->showMessage(QString("Connecting to %1").arg(host), 3000);
 }

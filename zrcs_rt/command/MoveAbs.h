@@ -9,9 +9,6 @@ using namespace ruckig;
 
 class MoveAbs : public TrajectoryCmd
 {
-public:
-   
-
 private:
     int axisId_;
 

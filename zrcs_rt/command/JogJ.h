@@ -10,9 +10,6 @@ using namespace ruckig;
 
 class JogJ : public TrajectoryCmd
 {
-public:
-   
-
 private:
     int axisId_;
     double position_;

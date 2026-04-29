@@ -11,7 +11,6 @@ JogabsJ::JogabsJ()
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
-
 void JogabsJ::applyOutput() 
 { 
     controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); 

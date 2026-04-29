@@ -20,6 +20,7 @@ ZRCS_VERSION_QUAD="2.0.0.0"   # 4-part version for Windows VIProductVersion
 ZRCS_NAME="ZRCS"
 ZRCS_PUBLISHER="ZRCS Project"
 EXE_NAME="zrcsgui.exe"
+EXTRA_EXES=("motiongui.exe" "zrcsnrt.exe" "zrcsrt.exe")
 ICON_FILE=""                   # set to .ico path if available, e.g. "resources/zrcs.ico"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -167,8 +168,10 @@ collect_dlls() {
         done
     }
 
-    # 扫描主 exe
-    collect_for_binary "$staging/$EXE_NAME"
+    # 扫描 staging 中所有 exe，确保附属程序的运行时依赖也被收集
+    for exe in "$staging"/*.exe; do
+        [[ -f "$exe" ]] && collect_for_binary "$exe"
+    done
 
     # 扫描 staging 中所有已有的 DLL (windeployqt 复制的)
     for dll in "$staging"/*.dll; do
@@ -200,8 +203,8 @@ stage_files() {
     # ldd 递归收集剩余 DLL
     collect_dlls "$STAGING_DIR"
 
-    # 复制附属可执行文件 (非实时控制端也可能需要随 GUI 一起部署)
-    for extra_exe in zrcsnrt.exe zrcsrt.exe; do
+    # 复制附属可执行文件 (随主 GUI 一起部署的工具/后端)
+    for extra_exe in "${EXTRA_EXES[@]}"; do
         if [[ -f "$BUILD_BIN/$extra_exe" ]]; then
             info "Copying $extra_exe..."
             cp "$BUILD_BIN/$extra_exe" "$STAGING_DIR/"
@@ -248,9 +251,11 @@ generate_nsis() {
         error "NSIS template not found: $NSIS_TEMPLATE"
     fi
 
-    local staging_win output_win
+    local staging_win output_win nsis_template_win nsis_script_win
     staging_win=$(cygpath -w "$STAGING_DIR" | sed 's/\\/\\\\/g')
     output_win=$(cygpath -w "$OUTPUT_DIR" | sed 's/\\/\\\\/g')
+    nsis_template_win=$(cygpath -w "$NSIS_TEMPLATE")
+    nsis_script_win=$(cygpath -w "$NSIS_SCRIPT")
 
     # Prepare icon defines (NSIS !define lines)
     local icon_defines=""
@@ -291,33 +296,43 @@ generate_nsis() {
         warn "No LICENSE file found, skipping license page"
     fi
 
-    # 使用 PowerShell 生成脚本，保证 UTF-8 编码和正确的行尾
-    powershell -NoProfile -Command "
-        \$template = Get-Content '$NSIS_TEMPLATE' -Encoding UTF8 -Raw
-        \$script = \$template `
-            -replace '@ZRCS_VERSION@', '$ZRCS_VERSION' `
-            -replace '@ZRCS_VERSION_QUAD@', '$ZRCS_VERSION_QUAD' `
-            -replace '@ZRCS_NAME@', '$ZRCS_NAME' `
-            -replace '@ZRCS_PUBLISHER@', '$ZRCS_PUBLISHER' `
-            -replace '@STAGING_DIR@', '$staging_win' `
-            -replace '@OUTPUT_DIR@', '$output_win' `
-            -replace '@EXE_NAME@', '$EXE_NAME' `
-            -replace '@ICON_DEFINES@', @'
-$icon_defines
-'@ `
-            -replace '@ICON_REG@', @'
-$icon_reg
-'@ `
-            -replace '@LICENSE_PAGE@', @'
-$license_page
-'@
-        # 写入文件，使用 UTF8 编码（不带 BOM）
-        [IO.File]::WriteAllText('$NSIS_SCRIPT', \$script, (New-Object System.Text.UTF8Encoding \$false))
-    " 2>&1
+    # 使用 PowerShell 生成脚本，避免 MSYS2 bash 对内联反引号的错误解析
+    local ps_script="$STAGING_DIR/generate_installer.ps1"
+    cat > "$ps_script" <<'EOF'
+$template = Get-Content $env:NSIS_TEMPLATE -Encoding UTF8 -Raw
+$script = $template `
+    -replace '@ZRCS_VERSION@', $env:ZRCS_VERSION `
+    -replace '@ZRCS_VERSION_QUAD@', $env:ZRCS_VERSION_QUAD `
+    -replace '@ZRCS_NAME@', $env:ZRCS_NAME `
+    -replace '@ZRCS_PUBLISHER@', $env:ZRCS_PUBLISHER `
+    -replace '@STAGING_DIR@', $env:STAGING_WIN `
+    -replace '@OUTPUT_DIR@', $env:OUTPUT_WIN `
+    -replace '@EXE_NAME@', $env:EXE_NAME `
+    -replace '@ICON_DEFINES@', $env:ICON_DEFINES `
+    -replace '@ICON_REG@', $env:ICON_REG `
+    -replace '@LICENSE_PAGE@', $env:LICENSE_PAGE
+[IO.File]::WriteAllText($env:NSIS_SCRIPT, $script, (New-Object System.Text.UTF8Encoding $true))
+EOF
+
+    NSIS_TEMPLATE="$nsis_template_win" \
+    NSIS_SCRIPT="$nsis_script_win" \
+    ZRCS_VERSION="$ZRCS_VERSION" \
+    ZRCS_VERSION_QUAD="$ZRCS_VERSION_QUAD" \
+    ZRCS_NAME="$ZRCS_NAME" \
+    ZRCS_PUBLISHER="$ZRCS_PUBLISHER" \
+    STAGING_WIN="$staging_win" \
+    OUTPUT_WIN="$output_win" \
+    EXE_NAME="$EXE_NAME" \
+    ICON_DEFINES="$icon_defines" \
+    ICON_REG="$icon_reg" \
+    LICENSE_PAGE="$license_page" \
+    powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$ps_script")" 2>&1
     
     if [[ $? -ne 0 ]]; then
         error "Failed to generate NSIS script with PowerShell"
     fi
+
+    rm -f "$ps_script"
 
     info "NSIS script generated: $NSIS_SCRIPT"
 }
