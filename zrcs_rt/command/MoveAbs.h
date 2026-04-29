@@ -13,9 +13,6 @@ public:
    
 
 private:
-    Ruckig<1> otg_;
-    InputParameter<1> input_;
-    OutputParameter<1> output_;
     int axisId_;
 
 protected:
@@ -23,7 +20,6 @@ protected:
   
     void applyOutput() override;
 
-    void applyDeltaTime(double dt) override;
 
 public:
     MoveAbs();

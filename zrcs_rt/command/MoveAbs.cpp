@@ -2,15 +2,17 @@
  * @Description: 通用单轴绝对定位（带可选速度/加速度/加加速度参数�? */
 #include "command/MoveAbs.h"
 
-MoveAbs::MoveAbs() : otg_(cycletime * 0.001)
+MoveAbs::MoveAbs()
 {
     std::strcpy(nodeName_, "MoveAbs");
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
 
-void MoveAbs::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); }
+void MoveAbs::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
 
-void MoveAbs::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveAbs::initTrajectory()
 {
@@ -26,16 +28,16 @@ bool MoveAbs::initTrajectory()
         return false;
     }
 
-    input_.current_position[0] = controller_->axiss[axisId_]->actualPos();
-    input_.current_velocity[0] = 0;
-    input_.current_acceleration[0] = 0;
-    input_.target_position[0] = position;
-    input_.target_velocity[0] = 0;
-    input_.target_acceleration[0] = 0;
+input_->current_position[0] = controller_->axiss[axisId_]->actualPos();
+    input_->current_velocity[0] = 0;
+    input_->current_acceleration[0] = 0;
+    input_->target_position[0] = position;
+    input_->target_velocity[0] = 0;
+    input_->target_acceleration[0] = 0;
 
-    input_.max_velocity[0] = vel > 0 ? vel : controller_->axiss[axisId_]->getMaxVelocity();
-    input_.max_acceleration[0] = acc > 0 ? acc : controller_->axiss[axisId_]->getMaxAcceleration();
-    input_.max_jerk[0] = jerk > 0 ? jerk : controller_->axiss[axisId_]->getMaxJerk();
+    input_->max_velocity[0] = vel > 0 ? vel : controller_->axiss[axisId_]->getMaxVelocity();
+    input_->max_acceleration[0] = acc > 0 ? acc : controller_->axiss[axisId_]->getMaxAcceleration();
+    input_->max_jerk[0] = jerk > 0 ? jerk : controller_->axiss[axisId_]->getMaxJerk();
     return true;
 }
 

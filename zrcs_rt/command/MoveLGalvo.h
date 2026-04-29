@@ -25,9 +25,6 @@ using namespace ruckig;
 class MoveLGalvo : public TrajectoryCmd
 {
 private:
-    Ruckig<1>        otg_;
-    InputParameter<1> input_;
-    OutputParameter<1>output_;
 
     // 线段几何缓存
     Eigen::Vector3d startPos_;
@@ -44,8 +41,7 @@ protected:
     bool   initTrajectory()   override;
 
     void   applyOutput()      override;
-  
-    void   applyDeltaTime(double dt) override;
+
 
 public:
     MoveLGalvo();

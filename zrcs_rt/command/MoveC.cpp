@@ -6,7 +6,6 @@
 MoveC::MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0) { std::strcpy(nodeName_, "MoveC"); }
 void MoveC::applyOutput() {}
 
-void MoveC::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveC::initTrajectory()
 {

@@ -26,7 +26,7 @@ protected:
     virtual bool initTrajectory() = 0;
 
     /// 设置 otg.delta_time（子类持有具体的 Ruckig 对象，需转发）
-    virtual void applyDeltaTime(double dt) = 0;
+    void applyDeltaTime(double dt);
 
     /// 调用 otg.update()，返回 Result
    Result updateTrajectory() ;

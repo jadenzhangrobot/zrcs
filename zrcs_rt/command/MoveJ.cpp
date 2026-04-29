@@ -5,7 +5,6 @@
 
 MoveJ::MoveJ() : dof_(0) { std::strcpy(nodeName_, "MoveJ"); }
 
-void MoveJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool MoveJ::initTrajectory()
 {

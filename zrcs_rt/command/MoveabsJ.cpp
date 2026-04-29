@@ -6,8 +6,6 @@
 MoveAbsJ::MoveAbsJ() : dof_(0) { std::strcpy(nodeName_, "MoveAbsJ"); }
 
 
-void MoveAbsJ::applyDeltaTime(double dt) { otg_->delta_time = dt; }
-
 bool MoveAbsJ::initTrajectory()
 {
     auto* registry = modelRegistry_;

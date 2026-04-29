@@ -15,13 +15,8 @@ using namespace ruckig;
 
 class MoveL : public TrajectoryCmd
 {
-public:
-    
 
 private:
-    std::unique_ptr<Ruckig<DynamicDOFs>> otg_;
-    std::unique_ptr<InputParameter<DynamicDOFs>> input_;
-    std::unique_ptr<OutputParameter<DynamicDOFs>> output_;
     int dof_;
     std::vector<int> axisIds_;
 
@@ -38,7 +33,6 @@ protected:
    
     void applyOutput() override;
   
-    void applyDeltaTime(double dt) override;
 
 public:
     MoveL();

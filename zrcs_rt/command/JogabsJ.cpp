@@ -3,18 +3,19 @@
  */
 #include "command/JogabsJ.h"
 
-JogabsJ::JogabsJ() : otg_(cycletime * 0.001)
+JogabsJ::JogabsJ()
 {
     std::strcpy(nodeName_, "JogabsJ");
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
 
 void JogabsJ::applyOutput() 
 { 
-    controller_->axiss[axisId_]->setAxisPositionCmd(output_.new_position[0]); 
+    controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); 
 }
-
-void JogabsJ::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool JogabsJ::initTrajectory()
 {
@@ -27,15 +28,15 @@ bool JogabsJ::initTrajectory()
         return false;
     }
 
-    input_.current_position[0] = controller_->axiss[axisId_]->actualPos();
-    input_.current_velocity[0] = 0;
-    input_.current_acceleration[0] = 0;
-    input_.target_position[0] = position_;
-    input_.target_velocity[0] = 0;
-    input_.target_acceleration[0] = 0;
-    input_.max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity();
-    input_.max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
-    input_.max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
+input_->current_position[0] = controller_->axiss[axisId_]->actualPos();
+    input_->current_velocity[0] = 0;
+    input_->current_acceleration[0] = 0;
+    input_->target_position[0] = position_;
+    input_->target_velocity[0] = 0;
+    input_->target_acceleration[0] = 0;
+    input_->max_velocity[0] = controller_->axiss[axisId_]->getMaxVelocity();
+    input_->max_acceleration[0] = controller_->axiss[axisId_]->getMaxAcceleration();
+    input_->max_jerk[0] = controller_->axiss[axisId_]->getMaxJerk();
     return true;
 }
 

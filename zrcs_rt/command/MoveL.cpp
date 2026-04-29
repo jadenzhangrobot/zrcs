@@ -13,8 +13,6 @@ MoveL::MoveL() : dof_(0), cartDist_(0), firstSegment_(true)
 
 void MoveL::applyOutput() {}  // run() 中手动处理
 
-void MoveL::applyDeltaTime(double dt) { otg_->delta_time = dt; }
-
 bool MoveL::initTrajectory()
 {
     auto* registry = modelRegistry_;

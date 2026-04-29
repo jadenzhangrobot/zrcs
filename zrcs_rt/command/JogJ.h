@@ -14,9 +14,6 @@ public:
    
 
 private:
-    Ruckig<1> otg_;
-    InputParameter<1> input_;
-    OutputParameter<1> output_;
     int axisId_;
     double position_;
 
@@ -25,7 +22,6 @@ protected:
   
     void applyOutput() override;
     
-    void applyDeltaTime(double dt) override;
 
 public:
     JogJ();

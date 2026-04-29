@@ -6,16 +6,13 @@
 #include "command/MoveLGalvo.h"
 #include "shared_memory/ShmLayout.h"
 
-MoveLGalvo::MoveLGalvo() :otg_(cycletime * 0.001)
-    ,cartDist_(0), firstSegment_(true),
+MoveLGalvo::MoveLGalvo() : cartDist_(0), firstSegment_(true),
       lpfConfigured_(false), lastCutoffHz_(0.0)
 {
     std::strcpy(nodeName_, "MoveLGalvo");
 }
 
 
-
-void   MoveLGalvo::applyDeltaTime(double dt) { otg_.delta_time = dt; }
 
 bool MoveLGalvo::initTrajectory()
 {
@@ -37,18 +34,23 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
+    // 设置 Ruckig 轨迹规划
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+
     double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
    
 
-    input_.target_position[0]     = cartDist_;
-    input_.target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
-    input_.target_acceleration[0] = 0;
-    input_.max_velocity[0]        = maxVel;
-    input_.max_acceleration[0]    = maxAccel;
-    input_.max_jerk[0]            = maxJerk;
+    input_->target_position[0]     = cartDist_;
+    input_->target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
+    input_->target_acceleration[0] = 0;
+    input_->max_velocity[0]        = maxVel;
+    input_->max_acceleration[0]    = maxAccel;
+    input_->max_jerk[0]            = maxJerk;
 
     // 配置 LPF（仅在截止频率变化时重新配置，避免重置状态）
     double cutoffHz = shm()->galvoCfg.cutoffHz.load(std::memory_order_acquire);
@@ -66,8 +68,8 @@ bool MoveLGalvo::initTrajectory()
 void MoveLGalvo::applyOutput()
 {
         updateOverride();
-        double s = output_.new_position[0];
-        double vel=output_.new_velocity[0];
+        double s = output_->new_position[0];
+        double vel=output_->new_velocity[0];
         controller_->axiss[0]->setAxis‌VelocityCmd(vel);
 
 

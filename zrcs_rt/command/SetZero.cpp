@@ -1,5 +1,5 @@
 /*
- * @Description: 设置当前位置为零�? */
+ * @Description: 设置当前位置为零�? */
 #include "command/SetZero.h"
 
 void SetZero::init()
@@ -30,7 +30,7 @@ void SetZero::run(void)
     }
     else
     {
-        ERROR_PRINT("SetZero: 轴索�?%d 超出范围\n", axisId_);
+        ERROR_PRINT("SetZero: 轴索�?%d 超出范围\n", axisId_);
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }

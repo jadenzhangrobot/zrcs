@@ -5,7 +5,6 @@
 
 Movehome::Movehome() : dof_(0) { std::strcpy(nodeName_, "Movehome"); }
 
-void Movehome::applyDeltaTime(double dt) { otg_->delta_time = dt; }
 
 bool Movehome::initTrajectory()
 {
