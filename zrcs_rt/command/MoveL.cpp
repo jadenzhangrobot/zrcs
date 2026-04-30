@@ -11,7 +11,57 @@ MoveL::MoveL() : dof_(0), cartDist_(0), firstSegment_(true)
 }
 
 
-void MoveL::applyOutput() {}  // run() 中手动处理
+void MoveL::applyOutput() 
+{
+     updateOverride();
+
+    auto* registry = modelRegistry_;
+    RobotModel* model = registry->getModel(0);
+
+    auto result = otg_->update(*input_, *output_);
+    if (result == Result::Working || result == Result::Finished)
+    {
+        double s = output_->new_position[0];
+
+        // 线性插值得到当前笛卡尔位姿
+        double u = s / cartDist_;
+        if (u < 0) u = 0;
+        if (u > 1) u = 1;
+
+          Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
+          controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
+          controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
+          controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
+
+        if (result == Result::Finished)
+        {
+            output_->pass_to_input(*input_);
+            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        }
+        else
+        {
+            output_->pass_to_input(*input_);
+        }
+    }
+    else
+    {
+        ERROR_PRINT(
+            "MoveL invalid input: result=%d, dist=%.4f, curVel=%.4f, curAcc=%.4f, "
+            "tgtVel=%.4f, tgtAcc=%.4f, maxVel=%.4f, maxAcc=%.4f, maxJerk=%.4f\n",
+            static_cast<int>(result),
+            cartDist_,
+            input_->current_velocity[0],
+            input_->current_acceleration[0],
+            input_->target_velocity[0],
+            input_->target_acceleration[0],
+            input_->max_velocity[0],
+            input_->max_acceleration[0],
+            input_->max_jerk[0]
+        );
+
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+    }
+} 
 
 bool MoveL::initTrajectory()
 {
@@ -103,85 +153,4 @@ bool MoveL::initTrajectory()
 
     return true;
 }
-
-void MoveL::run()
-{
-    updateOverride();
-
-    auto* registry = modelRegistry_;
-    RobotModel* model = registry->getModel(0);
-
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working || result == Result::Finished)
-    {
-        double s = output_->new_position[0];
-
-        // 线性插值得到当前笛卡尔位姿
-        double u = s / cartDist_;
-        if (u < 0) u = 0;
-        if (u > 1) u = 1;
-
-        Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
-       // Eigen::Vector3d rpy = startRpy_ + u * (targetRpy_ - startRpy_);
-
-        // Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
-        //     pos.x(), pos.y(), pos.z(),
-        //     rpy.x(), rpy.y(), rpy.z());
-
-        // // 当前关节位置作为 IK seed
-        // Eigen::VectorXd currentJoint(dof_);
-        // for (int i = 0; i < dof_; i++)
-        // {
-        //     currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
-        // }
-
-        // // IK 求解
-        // Eigen::VectorXd targetJoint(dof_);
-        // if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
-        // {
-        //     ERROR_PRINT("MoveL: IK 求解失败 (s=%.2f)\n", s);
-        //     setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        //     return;
-        // }
-
-        // // 写入关节指令
-        // for (int i = 0; i < dof_; i++)
-        // {
-        //     controller_->axiss[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
-        // }
-
-          controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
-          controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
-          controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
-
-        if (result == Result::Finished)
-        {
-            output_->pass_to_input(*input_);
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-        }
-        else
-        {
-            output_->pass_to_input(*input_);
-        }
-    }
-    else
-    {
-        ERROR_PRINT(
-            "MoveL invalid input: result=%d, dist=%.4f, curVel=%.4f, curAcc=%.4f, "
-            "tgtVel=%.4f, tgtAcc=%.4f, maxVel=%.4f, maxAcc=%.4f, maxJerk=%.4f\n",
-            static_cast<int>(result),
-            cartDist_,
-            input_->current_velocity[0],
-            input_->current_acceleration[0],
-            input_->target_velocity[0],
-            input_->target_acceleration[0],
-            input_->max_velocity[0],
-            input_->max_acceleration[0],
-            input_->max_jerk[0]
-        );
-
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-    }
-}
-
 CMD_REGISTER(MoveL);
