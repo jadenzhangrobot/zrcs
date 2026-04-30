@@ -12,7 +12,6 @@ MoveAbs::MoveAbs()
 
 void MoveAbs::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
 
-void MoveAbs::applyOutput() { controller_->axiss[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
 
 
 bool MoveAbs::initTrajectory()
@@ -35,7 +34,6 @@ input_->current_position[0] = controller_->axiss[axisId_]->actualPos();
     input_->target_position[0] = position;
     input_->target_velocity[0] = 0;
     input_->target_acceleration[0] = 0;
-
     input_->max_velocity[0] = vel > 0 ? vel : controller_->axiss[axisId_]->getMaxVelocity();
     input_->max_acceleration[0] = acc > 0 ? acc : controller_->axiss[axisId_]->getMaxAcceleration();
     input_->max_jerk[0] = jerk > 0 ? jerk : controller_->axiss[axisId_]->getMaxJerk();

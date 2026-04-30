@@ -27,10 +27,6 @@ if(NOT TARGET absl::base)
 endif()
 
 cmake_policy(SET CMP0144 NEW)
-set(OPENCASCADE_ROOT "${CMAKE_SOURCE_DIR}/3rdParty/OpenCASCADE")
-if(EXISTS "${OPENCASCADE_ROOT}")
-    list(APPEND CMAKE_PREFIX_PATH "${OPENCASCADE_ROOT}")
-endif()
 find_package(VTK QUIET COMPONENTS
     CommonCore
     RenderingCore
