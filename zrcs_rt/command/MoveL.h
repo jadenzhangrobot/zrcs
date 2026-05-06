@@ -36,5 +36,4 @@ protected:
 
 public:
     MoveL();
-    void run() override;
 };
