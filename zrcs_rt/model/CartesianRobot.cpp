@@ -89,7 +89,7 @@ bool CartesianRobot::inverseKinematics(
         else // REVOLUTE — 从旋转矩阵提取角度
         {
             Eigen::Matrix3d R = internalPose.block<3,3>(0,0);
-            Eigen::Vector3d euler = R.eulerAngles(2, 1, 0); // ZYX顺序
+            Eigen::Vector3d euler = R.canonicalEulerAngles(2, 1, 0); // ZYX顺序
 
             switch (j.axis)
             {

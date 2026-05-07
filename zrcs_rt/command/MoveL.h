@@ -17,14 +17,14 @@ class MoveL : public TrajectoryCmd
 {
 
 private:
-    int dof_;
-    std::vector<int> axisIds_;
+    std::vector<int> axisIds_;      // 构造函数中预分配，RT 只读
+    bool modelInited_ = false;
 
     // 线段几何缓存
     Eigen::Vector3d startPos_;
     Eigen::Vector3d targetPos_;
-    Eigen::Vector3d startRpy_;
-    Eigen::Vector3d targetRpy_;
+    Eigen::Quaterniond startQuat_;
+    Eigen::Quaterniond targetQuat_;
     double cartDist_;
     bool firstSegment_;
 

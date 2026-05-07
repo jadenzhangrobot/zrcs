@@ -3,27 +3,25 @@
  */
 #include "command/MoveJ.h"
 
-MoveJ::MoveJ() : dof_(0) { std::strcpy(nodeName_, "MoveJ"); }
+MoveJ::MoveJ() : dof_(0) {
+    std::strcpy(nodeName_, "MoveJ");
+    axisIds_.reserve(zrcs::kAxisMax);
+
+}
 
 
 bool MoveJ::initTrajectory()
 {
-    // 获取运动学模型
     auto* registry = modelRegistry_;
-    if (!registry)
-    {
-        ERROR_PRINT("MoveJ: 模型注册表未初始化\n");
-        return false;
-    }
+    if (!registry) { ERROR_PRINT("MoveJ: 模型注册表未初始化\n"); return false;}
     RobotModel* model = registry->getModel(0);
-    if (!model)
-    {
-        ERROR_PRINT("MoveJ: 未找到模型(id=0)\n");
-        return false;
-    }
+    if (!model) { ERROR_PRINT("MoveJ: 未找到模型(id=0)\n"); return false;}
 
-    dof_ = model->getDof();
-    axisIds_ = model->getAxisIds();
+    if (axisIds_.empty())
+    {
+        dof_ = model->getDof();
+        axisIds_ = model->getAxisIds();     // const ref → copy into pre-reserved buffer, zero realloc
+    }
 
     // 构建目标位姿
     Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(

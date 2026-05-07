@@ -76,10 +76,10 @@ enum class MoveAbsArg : std::size_t { AxisId = 0, Position, Vel, Acc, Jerk };
 enum class MoveRelArg : std::size_t { AxisId = 0, Distance, Vel, Acc, Jerk };
 enum class MoveAbsJArg : std::size_t { Count = 0, J1, J2, J3, J4, J5, J6 };
 enum class MoveJArg : std::size_t { X = 0, Y, Z, RX, RY, RZ, Vel };
-enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentRX, CurrentRY, CurrentRZ,X, Y, Z, RX, RY, RZ, Vel, CurrentVel, CurrentAcc, TargetVel, TargetAcc};
+enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, CurrentVel, CurrentAcc, TargetVel, TargetAcc};
 enum class MoveCArg : std::size_t { ViaX = 0, ViaY, ViaZ, EndX, EndY, EndZ, Vel };
 enum class SetBaseArg : std::size_t { X = 0, Y, Z, RX, RY, RZ };
-enum class MoveLGalvoArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentRX, CurrentRY, CurrentRZ,X, Y, Z, RX, RY, RZ, Vel, CurrentVel, CurrentAcc, TargetVel, TargetAcc};
+enum class MoveLGalvoArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, CurrentVel, CurrentAcc, TargetVel, TargetAcc};
 
 
 

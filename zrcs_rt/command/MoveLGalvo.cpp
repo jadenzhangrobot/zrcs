@@ -1,7 +1,7 @@
 /*
- * @Description: 振镜-平台联动直线运动（MoveLGalvo�?
- *               �?MoveL 使用相同�?Ruckig 1D 弧长插补方案�?
- *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量�?
+ * @Description: 振镜-平台联动直线运动（MoveLGalvo）
+ *               MoveL 使用相同的 Ruckig 1D 弧长插补方案
+ *               输出通过 IIR LPF 分解为平台低频分量和振镜高频偏移量
  */
 #include "command/MoveLGalvo.h"
 #include "shared_memory/ShmLayout.h"
@@ -43,8 +43,6 @@ bool MoveLGalvo::initTrajectory()
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
-   
-
     input_->target_position[0]     = cartDist_;
     input_->target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
     input_->target_acceleration[0] = 0;
@@ -74,7 +72,7 @@ void MoveLGalvo::applyOutput()
 
 
 
-        // 线性插值得到当前全局笛卡尔位�?
+        // 线性插值得到当前全局笛卡尔位?
         double u = s / cartDist_;
         if (u < 0.0) u = 0.0;
         if (u > 1.0) u = 1.0;
@@ -87,7 +85,7 @@ void MoveLGalvo::applyOutput()
         double galvoX = pos.x() - platX;
         double galvoY = pos.y() - platY;
 
-        // 读取�?ID（运行时可由 NRT 侧动态配置）
+        // 读取ID（运行时可由 NRT 侧动态配置）
         int pXId = shm()->galvoCfg.platXId.load(std::memory_order_acquire);
         int pYId = shm()->galvoCfg.platYId.load(std::memory_order_acquire);
         int gXId = shm()->galvoCfg.galvoXId.load(std::memory_order_acquire);

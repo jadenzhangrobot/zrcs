@@ -5,100 +5,53 @@
 #include "command/MoveL.h"
 #include "shared_memory/ShmLayout.h"
 
-MoveL::MoveL() : dof_(0), cartDist_(0), firstSegment_(true)
+MoveL::MoveL() : cartDist_(0), firstSegment_(true)
 {
     std::strcpy(nodeName_, "MoveL");
+    // 构造函数在静态初始化阶段（NRT）执行，提前预分配缓冲区
+    axisIds_.reserve(zrcs::kAxisMax);
 }
-
-
-void MoveL::applyOutput() 
-{
-     updateOverride();
-
-    auto* registry = modelRegistry_;
-    RobotModel* model = registry->getModel(0);
-
-    auto result = otg_->update(*input_, *output_);
-    if (result == Result::Working || result == Result::Finished)
-    {
-        double s = output_->new_position[0];
-
-        // 线性插值得到当前笛卡尔位姿
-        double u = s / cartDist_;
-        if (u < 0) u = 0;
-        if (u > 1) u = 1;
-
-          Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
-          controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
-          controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
-          controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
-
-        if (result == Result::Finished)
-        {
-            output_->pass_to_input(*input_);
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
-        }
-        else
-        {
-            output_->pass_to_input(*input_);
-        }
-    }
-    else
-    {
-        ERROR_PRINT(
-            "MoveL invalid input: result=%d, dist=%.4f, curVel=%.4f, curAcc=%.4f, "
-            "tgtVel=%.4f, tgtAcc=%.4f, maxVel=%.4f, maxAcc=%.4f, maxJerk=%.4f\n",
-            static_cast<int>(result),
-            cartDist_,
-            input_->current_velocity[0],
-            input_->current_acceleration[0],
-            input_->target_velocity[0],
-            input_->target_acceleration[0],
-            input_->max_velocity[0],
-            input_->max_acceleration[0],
-            input_->max_jerk[0]
-        );
-
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-    }
-} 
-
 bool MoveL::initTrajectory()
 {
-    auto* registry = modelRegistry_;
-    if (!registry)
+    // 首次进入时从模型缓存读取轴映射（零分配：RobotModel 已预缓存，axisIds_ 已预分配）
+    if (!modelInited_)
     {
-        ERROR_PRINT("MoveL: 模型注册表未初始化\n");
-        return false;
+        auto* registry = modelRegistry_;
+        if (!registry)
+        {
+            ERROR_PRINT("MoveL: 模型注册表未初始化\n");
+            return false;
+        }
+        RobotModel* model = registry->getModel(0);
+        if (!model)
+        {
+            ERROR_PRINT("MoveL: 未找到模型(id=0)\n");
+            return false;
+        }
+        axisIds_ = model->getAxisIds();  // const ref → copy into pre-reserved buffer, zero realloc
+        modelInited_ = true;
     }
-    RobotModel* model = registry->getModel(0);
-    if (!model)
-    {
-        ERROR_PRINT("MoveL: 未找到模型(id=0)\n");
-        return false;
-    }
-
-    dof_ = model->getDof();
-    axisIds_ = model->getAxisIds();
 
     // 从命令参数构建起点和终点位姿
     startPos_ = Eigen::Vector3d(
         command_->args[static_cast<size_t>(MoveLArg::CurrentX)],
         command_->args[static_cast<size_t>(MoveLArg::CurrentY)],
         command_->args[static_cast<size_t>(MoveLArg::CurrentZ)]);
-    startRpy_ = Eigen::Vector3d(
-        command_->args[static_cast<size_t>(MoveLArg::CurrentRX)],
-        command_->args[static_cast<size_t>(MoveLArg::CurrentRY)],
-        command_->args[static_cast<size_t>(MoveLArg::CurrentRZ)]);
+    startQuat_ = Eigen::Quaterniond(
+        command_->args[static_cast<size_t>(MoveLArg::CurrentQ1)],  // w
+        command_->args[static_cast<size_t>(MoveLArg::CurrentQ2)],  // x
+        command_->args[static_cast<size_t>(MoveLArg::CurrentQ3)],  // y
+        command_->args[static_cast<size_t>(MoveLArg::CurrentQ4)]); // z
 
     targetPos_ = Eigen::Vector3d(
         command_->args[static_cast<size_t>(MoveLArg::X)],
         command_->args[static_cast<size_t>(MoveLArg::Y)],
         command_->args[static_cast<size_t>(MoveLArg::Z)]);
-    targetRpy_ = Eigen::Vector3d(
-        command_->args[static_cast<size_t>(MoveLArg::RX)],
-        command_->args[static_cast<size_t>(MoveLArg::RY)],
-        command_->args[static_cast<size_t>(MoveLArg::RZ)]);
+    targetQuat_ = Eigen::Quaterniond(
+        command_->args[static_cast<size_t>(MoveLArg::Q1)],  // w
+        command_->args[static_cast<size_t>(MoveLArg::Q2)],  // x
+        command_->args[static_cast<size_t>(MoveLArg::Q3)],  // y
+        command_->args[static_cast<size_t>(MoveLArg::Q4)]); // z
 
     // 计算线段长度
     cartDist_ = (targetPos_ - startPos_).norm();
@@ -153,4 +106,66 @@ bool MoveL::initTrajectory()
 
     return true;
 }
+
+
+void MoveL::applyOutput()
+{
+     updateOverride();
+
+    auto result = otg_->update(*input_, *output_);
+    if (result == Result::Working || result == Result::Finished)
+    {
+        double s = output_->new_position[0];
+
+        // 线性插值得到当前笛卡尔位姿
+        double u = s / cartDist_;
+        if (u < 0) u = 0;
+        if (u > 1) u = 1;
+
+          Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
+          controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
+          controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
+          controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
+
+          // 四元数球面线性插补 (SLERP) — 含最短路径 + 小角度保护
+          Eigen::Quaterniond qInterp = startQuat_.slerp(u, targetQuat_);
+          if (axisIds_.size() >= 6)
+          {
+              Eigen::Vector3d euler = qInterp.toRotationMatrix().canonicalEulerAngles(2, 1, 0);
+              controller_->axiss[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
+              controller_->axiss[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
+              controller_->axiss[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
+          }
+
+        if (result == Result::Finished)
+        {
+            output_->pass_to_input(*input_);
+            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        }
+        else
+        {
+            output_->pass_to_input(*input_);
+        }
+    }
+    else
+    {
+        ERROR_PRINT(
+            "MoveL invalid input: result=%d, dist=%.4f, curVel=%.4f, curAcc=%.4f, "
+            "tgtVel=%.4f, tgtAcc=%.4f, maxVel=%.4f, maxAcc=%.4f, maxJerk=%.4f\n",
+            static_cast<int>(result),
+            cartDist_,
+            input_->current_velocity[0],
+            input_->current_acceleration[0],
+            input_->target_velocity[0],
+            input_->target_acceleration[0],
+            input_->max_velocity[0],
+            input_->max_acceleration[0],
+            input_->max_jerk[0]
+        );
+
+        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+    }
+} 
+
+
 CMD_REGISTER(MoveL);

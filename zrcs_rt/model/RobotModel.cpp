@@ -56,15 +56,17 @@ double RobotModel::manipulability(const Eigen::VectorXd& jointPos) const
     return std::sqrt(std::abs(JJt.determinant()));
 }
 
-std::vector<int> RobotModel::getAxisIds() const
+const std::vector<int>& RobotModel::getAxisIds() const
 {
-    std::vector<int> ids;
-    ids.reserve(joints_.size());
-    for (const auto& j : joints_)
+    if (axisIdsCache_.empty())
     {
-        ids.push_back(j.axisId);
+        axisIdsCache_.reserve(joints_.size());
+        for (const auto& j : joints_)
+        {
+            axisIdsCache_.push_back(j.axisId);
+        }
     }
-    return ids;
+    return axisIdsCache_;
 }
 
 Eigen::Matrix4d RobotModel::poseFromXYZRPY(double x, double y, double z,

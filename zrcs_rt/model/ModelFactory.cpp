@@ -42,6 +42,8 @@ void ModelRegistry::loadFromConfig(const ModelConfig& config)
         auto model = ModelFactory::create(param);
         if (model)
         {
+            // Eager: 在 NRT 上下文中预计算缓存，RT 路径零分配读取
+            (void)model->getAxisIds();
             nameMap_[model->getName()] = model.get();
             models_.push_back(std::move(model));
         }

@@ -64,6 +64,9 @@ protected:
     Eigen::Matrix4d toolTf_  = Eigen::Matrix4d::Identity();  // 工具坐标系(TCP)偏移
     double payloadMass_ = 0;  // 末端负载质量(kg)
 
+    // 缓存: 预计算并在 NRT 中填充，RT 路径零分配读取
+    mutable std::vector<int> axisIdsCache_{};
+
 public:
     RobotModel(const std::string& name, const std::string& type, int dof)
         : name_(name), type_(type), dof_(dof)
@@ -145,7 +148,7 @@ public:
     double getPayload() const { return payloadMass_; }
 
     // --- 属性访问 ---
-    std::vector<int> getAxisIds() const;
+    const std::vector<int>& getAxisIds() const;
 
     int getDof() const { return dof_; }
     const std::string& getName() const { return name_; }
