@@ -79,12 +79,14 @@ message TypedCommand {
 // ===== 状态消息 =====
 
 message AxisStatus {
+    
     int32 axis_id = 1;
     double position = 2;
     double cmd_position = 3;
     double cmd_velocity = 4;
     double velocity = 5;
     double torque = 6;
+    double planner_velocity = 7;
 }
 
 message RtLogStatus {

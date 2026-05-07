@@ -14,6 +14,7 @@
 #include <atomic>
 #include <string>
 #include <filesystem>
+#include <cmath>
 #include "NrtLogger.h"
 #include "BtEngine.h"
 #include "RtLogConsumer.h"
@@ -304,7 +305,80 @@ int main(int argc, char **argv)
 
         MotionPreprocessor motion_preprocessor(&bridge);
 
-        // ── 测试：蝴蝶图案路径（振镜-平台联动模式）────────────────────────
+        // ── 测试：连续 N 段 MOVEL（检测段间是否存在间隙）────────────────────────
+        {
+            spdlog::info("[Test] Starting MOVEL gap detection test...");
+
+            constexpr double vel      = 0.5;      // mm/s 目标速度
+            constexpr double acc      = 5.0;      // mm/s² 加速度
+            constexpr double jerk     = 10.0;     // mm/s³ 加加速度
+            constexpr int    N        = 200;      // 段数
+            constexpr double step     = 0.5;      // mm/段（第 2..N 段）
+            constexpr double firstLen = 5.0;      // mm 第 1 段长度
+
+            // dAcc = vel²/(2*acc) = 0.9mm — 第 1 段需至少 0.9mm 从 0→vel
+            // firstLen=5.0 >> 0.9，确保第 1 段结束前 OTG 已到达 vel
+            // 后续段 CurrentVel=vel，OTG 无需额外加速，理论上 0mm 即可连续
+            static_assert(firstLen * acc > 0.5 * vel * vel,
+                          "firstLen too short for acceleration to vel");
+
+            // 设 RT 端 Ruckig 加速度/加加速度上限
+            bridge.setPathMoveConfig(vel, acc, jerk);
+
+            int sendOk = 0, queueFull = 0;
+            uint32_t lastSeq = 0;
+
+            auto testStart = std::chrono::steady_clock::now();
+            double pos = 100.0;
+
+            for (int i = 0; i < N && g_running; ++i) {
+                const bool  isFirst = (i == 0);
+                const double segLen = isFirst ? firstLen : step;
+                const double x0 = pos;
+                const double x1 = pos + segLen;
+
+                double args[19] = {};
+                args[static_cast<size_t>(MoveLArg::CurrentX)]  = x0;
+                args[static_cast<size_t>(MoveLArg::CurrentY)]  = x0;
+                args[static_cast<size_t>(MoveLArg::CurrentZ)]  = 0.0;
+                args[static_cast<size_t>(MoveLArg::CurrentQ1)] = 1.0;
+                args[static_cast<size_t>(MoveLArg::CurrentQ2)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::CurrentQ3)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::CurrentQ4)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::X)]  = x1;
+
+                
+
+                args[static_cast<size_t>(MoveLArg::Y)]  = x1;
+                args[static_cast<size_t>(MoveLArg::Z)]  = 0.0;
+                args[static_cast<size_t>(MoveLArg::Q1)] = 1.0;
+                args[static_cast<size_t>(MoveLArg::Q2)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::Q3)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::Q4)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::Vel)]        = vel;
+                args[static_cast<size_t>(MoveLArg::CurrentVel)] = isFirst ? 0.0 : vel;
+                args[static_cast<size_t>(MoveLArg::CurrentAcc)] = 0.0;
+                args[static_cast<size_t>(MoveLArg::TargetVel)]  = vel;
+                args[static_cast<size_t>(MoveLArg::TargetAcc)]  = 0.0;
+
+                auto [result, seq] = bridge.sendCommand("MoveL", args, 19);
+                if (result == RtBridge::SendResult::OK) {
+                    ++sendOk;
+                    lastSeq = seq;
+                    pos = x1;
+                } else if (result == RtBridge::SendResult::QUEUE_FULL) {
+                    ++queueFull;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    --i;
+                    continue;
+                } else {
+                    spdlog::warn("[Test] sendCommand failed");
+                    break;
+                }
+            }
+
+            
+        }
         // 配置振镜参数：平台 X/Y = 轴 0/1，振镜 X/Y = 轴 2/3，截止频率 5Hz
         // bridge.setGalvoConfig(0, 1, 2, 3, 0.3);  // 0.3Hz: 平台只跟极低频包络，振镜补偿高频细齿
         // {

@@ -26,7 +26,6 @@ private:
     Eigen::Quaterniond startQuat_;
     Eigen::Quaterniond targetQuat_;
     double cartDist_;
-    bool firstSegment_;
 
 protected:
     bool initTrajectory() override;

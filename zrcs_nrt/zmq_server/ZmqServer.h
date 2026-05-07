@@ -60,14 +60,14 @@ public:
         if (!running_.exchange(false)) {
             return; // Already stopped
         }
-        // 等待服务线程退出（recv 超时后会自然退出循环）
-        if (server_thread_.joinable()) {
-            server_thread_.join();
-        }
-        // 显式关闭 socket 和 context，释放端口
+        // 先关闭 socket，中断阻塞中的 recv，使服务线程立即退出
         if (socket_) {
             socket_->close();
             socket_.reset();
+        }
+        // 等待服务线程退出（此时 recv 已被中断，不会等超时）
+        if (server_thread_.joinable()) {
+            server_thread_.join();
         }
         context_.close();
 

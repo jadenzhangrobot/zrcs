@@ -14,6 +14,7 @@ void DataPub::run()
         fb.position[i]    = controller_->axiss[i]->actualPos();
         fb.cmdPosition[i] = controller_->axiss[i]->actualposCmd();
         fb.cmdVelocity[i] = controller_->axiss[i]->actualVelCmd();
+        fb.plannerVelocity[i] = controller_->axiss[i]->actualPlannerVelCmd();
         fb.velocity[i] = controller_->axiss[i]->actualVel();
 
 

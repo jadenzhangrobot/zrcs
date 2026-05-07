@@ -148,6 +148,7 @@ private:
                         axis->set_position(latestFeedback.position[i]);
                         axis->set_cmd_position(latestFeedback.cmdPosition[i]);
                         axis->set_cmd_velocity(latestFeedback.cmdVelocity[i]);
+                        axis->set_planner_velocity(latestFeedback.plannerVelocity[i]);
                         axis->set_velocity(latestFeedback.velocity[i]);
                         axis->set_torque(latestFeedback.torque[i]);
                     }

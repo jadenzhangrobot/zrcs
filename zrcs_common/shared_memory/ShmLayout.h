@@ -35,7 +35,7 @@ inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容�
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 9;            // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 10;           // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -111,6 +111,7 @@ struct AxisFeedbackData
     double position[kAxisMax];
     double cmdPosition[kAxisMax];
     double cmdVelocity[kAxisMax];
+    double plannerVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
 };

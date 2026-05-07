@@ -29,6 +29,7 @@ void TrajectoryCmd::runStandard()
     else if (result == Result::Finished)
     {
         applyOutput();
+        passOutputToInput();
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
     else
