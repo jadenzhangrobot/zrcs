@@ -127,9 +127,8 @@ private:
             spdlog::info("[ZMQServer] SYS_RESET: TaskScheduling -> RESET");
             sendReply("OK");
         } else if (name == "SYS_ESTOP") {
-            bridge_->sendCommand("EmergStop");
             bridge_->requestStop();
-            spdlog::warn("[ZMQServer] SYS_ESTOP: EmergStop + STOP");
+            spdlog::warn("[ZMQServer] SYS_ESTOP: STOP");
             sendReply("OK");
         } else if (name == "SYS_JOG_START") {
             if (args.size() >= 2) {
