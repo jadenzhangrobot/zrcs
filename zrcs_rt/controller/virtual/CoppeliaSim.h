@@ -3,13 +3,14 @@
 #ifndef REALTIME
 #ifdef SIMULATION
 #include "controller/ControllerInterface.h"
+#include "system/log/RtLog.h"
 #include <cstdint>
 #include <thread>
 #include <chrono>
 #include <vector>
 #include <string>
-#include <iostream>
 #include <memory>
+#include <stdexcept>
 
 extern "C" {
     #include "extApi.h"
@@ -49,14 +50,14 @@ namespace ZrcsHardware
             if (clientID_ != -1)
             {
                 connected_ = true;
-                std::cout << "Connected to CoppeliaSim remote API server" << std::endl;
+                ZRCS_CONTROLLER_PRINTF("Connected to CoppeliaSim remote API server\n");
 
                 // 获取场景中的对象数量
                 int objectCount;
                 int* objectHandles;
                 int ret = simxGetObjects(clientID_, sim_handle_all, &objectCount, &objectHandles, simx_opmode_blocking);
                 if (ret == simx_return_ok)
-                    std::cout << "Number of objects in the scene: " << objectCount << std::endl;
+                    ZRCS_CONTROLLER_PRINTF("Number of objects in the scene: %d\n", objectCount);
                 else
                     throw std::runtime_error("Remote API call failed, error code: " + std::to_string(ret));
 
@@ -69,7 +70,8 @@ namespace ZrcsHardware
                         throw std::runtime_error("Error: Unable to get joint handle, error code: " + std::to_string(returnCode));
                         connected_ = false;
                     } else {
-                        std::cout << "Successfully got handle: " << jointNames_[i] << " -> " << jointHandles_[i] << std::endl;
+                        ZRCS_CONTROLLER_PRINTF("Successfully got handle: %s -> %d\n",
+                            jointNames_[i].c_str(), jointHandles_[i]);
                     }
                 }
                 
@@ -141,13 +143,13 @@ namespace ZrcsHardware
                 {
                     return MC_SERVO_CODE::SERVONOERROR;
                 } else {
-                   std::cerr << "Failed to set joint position, error code: " << ret << std::endl;
+                   ZRCS_CONTROLLER_PRINTF("Failed to set joint position, error code: %d\n", ret);
                    return MC_SERVO_CODE::SERVONOERROR;
                 }
             } 
             else 
             {
-                std::cerr << "Invalid slave ID: " << slaveId_ << std::endl;
+                ZRCS_CONTROLLER_PRINTF("Invalid slave ID: %d\n", slaveId_);
                  return MC_SERVO_CODE::SERVONOERROR;
              }
              

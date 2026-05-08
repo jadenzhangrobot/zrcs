@@ -6,6 +6,10 @@
 MoveJ::MoveJ() : dof_(0) {
     std::strcpy(nodeName_, "MoveJ");
     axisIds_.reserve(zrcs::kAxisMax);
+    // 设置 Ruckig 轨迹规划
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
 
 }
 
@@ -47,10 +51,7 @@ bool MoveJ::initTrajectory()
         return false;
     }
 
-    // 设置 Ruckig 轨迹规划
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
-    input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
-    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+    
 
     double velScale = command_->args[static_cast<size_t>(MoveJArg::Vel)];
     if (velScale <= 0) velScale = 1.0;

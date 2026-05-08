@@ -2,8 +2,8 @@
  * @Description: 多轴回零命令
  */
 #pragma once
-#include "system/base/TrajectoryCmd.h"
-#include "system/NodeFactory.h"
+#include "system/node/TrajectoryCmd.h"
+#include "system/node/NodeFactory.h"
 #include <memory>
 #include <ruckig/ruckig.hpp>
 

@@ -2,8 +2,8 @@
  * @Description: 设置伺服控制模式命令
  */
 #pragma once
-#include "system/base/BaseNodeInterface.h"
-#include "system/NodeFactory.h"
+#include "system/node/BaseNodeInterface.h"
+#include "system/node/NodeFactory.h"
 
 class Setmode : public zrcsSystem::CmdNode
 {

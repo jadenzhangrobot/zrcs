@@ -7,16 +7,14 @@
  */
 #pragma once
 
-#include "system/base/BaseNodeInterface.h"
-#include "system/centre.h"
-#include "system/classfactory.h"
+#include "system/node/BaseNodeInterface.h"
 #include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <ostream>
 #include <ruckig/ruckig.hpp>
-class MoveSine : public ZrcsSystem::Basenode {
+class MoveSine : public zrcsSystem::CmdNode {
 public:
   
   double currentPosition[6];

@@ -6,14 +6,18 @@
 #include "command/MoveLGalvo.h"
 #include "shared_memory/ShmLayout.h"
 
-MoveLGalvo::MoveLGalvo() : cartDist_(0), firstSegment_(true),
+MoveLGalvo::MoveLGalvo() : cartDist_(0),
       lpfConfigured_(false), lastCutoffHz_(0.0)
 {
     std::strcpy(nodeName_, "MoveLGalvo");
     // 设置 Ruckig 轨迹规划
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
-    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
-    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+    if (!otg_)
+    {
+        otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+        input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+        output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+    }
+    input_->duration_discretization = DurationDiscretization::Discrete;
 }
 
 
@@ -38,7 +42,10 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
- 
+    // Ruckig 弧长参数化起始状态
+    input_->current_position[0]      = 0.0;
+    input_->current_velocity[0]      = command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentVel)];
+    input_->current_acceleration[0]  = command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentAcc)];
 
     double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
@@ -66,17 +73,11 @@ bool MoveLGalvo::initTrajectory()
 
 void MoveLGalvo::applyOutput()
 {
-        updateOverride();
         double s = output_->new_position[0];
-        double vel=output_->new_velocity[0];
-        controller_->axiss[0]->setAxis‌VelocityCmd(vel);
 
-
-
-        // 线性插值得到当前全局笛卡尔位?
+        // 线性插值得到当前全局笛卡尔位置
         double u = s / cartDist_;
-       // if (u < 0.0) u = 0.0;
-       // if (u > 1.0) u = 1.0;
+        //u = std::clamp(u, 0.0, 1.0);
 
         Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
 

@@ -12,10 +12,9 @@
 #include "shared_memory/ShmLayout.h"
 #include "controller/ControllerInterface.h"
 #include "system/NodeManager.h"
-#include "system/RtLog.h"
+#include "system/log/RtLog.h"
 #include "config/ProjectConfig.h"
 #include <thread>
-#include <iostream>
 #include "command/CmdHead.h"
 
 #ifdef __linux__
@@ -35,23 +34,23 @@ int main(int argc, char **argv)
 {
 #ifdef __linux__
     if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-        fprintf(stderr, "Error: mlockall failed: %s\n", strerror(errno));
+        WARN_PRINT("[RT] mlockall failed: %s\n", strerror(errno));
         // 在生产环境中，实时性无法保证时应退出
         // exit(EXIT_FAILURE);
     }
-    printf("Memory successfully locked.\n");
+    INFO_PRINT("[RT] Memory successfully locked.\n");
 #endif
 
 #ifdef ZRCS_PLATFORM_WINDOWS
     SetConsoleOutputCP(CP_UTF8);
-    std::cout << "[RT] Running on Windows platform (no memory locking)" << std::endl;
+    INFO_PRINT("[RT] Running on Windows platform (no memory locking)\n");
 #endif
 
     try
     {
         std::string projectName = zrcs::ProjectConfig::resolve();
         if (!projectName.empty()) {
-            std::cout << "[RT] Active project: " << projectName << std::endl;
+            INFO_PRINT("[RT] Active project: %s\n", projectName.c_str());
         }
 
         zrcsSystem::NodeManager nodeManager(projectName);
@@ -62,7 +61,6 @@ int main(int argc, char **argv)
         while (true) {
             if (sharedBlock->taskSched.load(std::memory_order_acquire) == zrcs::TaskScheduling::SHUTDOWN) {
                 INFO_PRINT("[RT] 收到 SHUTDOWN 信号, 正在退出...\n");
-                std::cout << "[RT] Received SHUTDOWN from NRT, exiting..." << std::endl;
                 nodeManager.stop();
                 break;
             }
@@ -72,7 +70,6 @@ int main(int argc, char **argv)
     catch (const std::exception& e)
     {
         ERROR_PRINT("[RT] 致命异常: %s\n", e.what());
-        std::cerr << "[RT] Exception caught: " << e.what() << std::endl;
     }
     return 0;
 }

@@ -10,6 +10,7 @@
 
 #include "controller/ControllerInterface.h"
 #include "controller/ethercat/EthercatMaster.h"
+#include "system/log/RtLog.h"
 #include <alchemy/timer.h> 
 #include <alchemy/task.h> 
 #include <cstddef>
@@ -52,7 +53,7 @@ namespace ZrcsHardware
        int err =rt_task_create(&task_desc,"task_desc",0,99,0); 
         if(err<0) 
         { 
-          printf("rt_task_create : %s\n", strerror(errno));  
+          ERROR_PRINT("rt_task_create: %s\n", strerror(errno));
 
         }
             int cpu_id =7;                // 需要绑定的cpu
@@ -65,7 +66,7 @@ namespace ZrcsHardware
         if(err<0) 
         { 
 
-            printf("rt_task_start : %s\n", strerror(errno));   
+            ERROR_PRINT("rt_task_start: %s\n", strerror(errno));
         }
      }
   
@@ -94,5 +95,4 @@ namespace ZrcsHardware
 
 
 }
-
 

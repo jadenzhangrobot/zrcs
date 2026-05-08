@@ -12,7 +12,9 @@
       "Bash(find /c/Users/64989/Desktop/zrcs-dev -maxdepth 3 -type f -name *.cfg -o -name *.conf -o -name *.xml -o -name *.json)",
       "Bash(ls -la /c/Users/64989/Desktop/zrcs-dev/*.md)",
       "Bash(ldd /c/Users/64989/Desktop/zrcs-dev/build/bin/zrcsnrt.exe)",
-      "WebFetch(domain:scholar.google.com)"
+      "WebFetch(domain:scholar.google.com)",
+      "Bash(find / -name \"tinyfsm*\" -type f 2>/dev/null | head -20)",
+      "Read(//e//**)"
     ]
   }
 }

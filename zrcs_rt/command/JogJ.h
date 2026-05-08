@@ -2,8 +2,8 @@
  * @Description: 关节运动相对位置指令
  */
 #pragma once
-#include "system/base/TrajectoryCmd.h"
-#include "system/NodeFactory.h"
+#include "system/node/TrajectoryCmd.h"
+#include "system/node/NodeFactory.h"
 #include <ruckig/ruckig.hpp>
 
 using namespace ruckig;

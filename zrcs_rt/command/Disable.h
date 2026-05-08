@@ -6,8 +6,8 @@
  * @Description: 电机失能指令
  */
 #pragma once
-#include "system/base/BaseNodeInterface.h"
-#include "system/NodeFactory.h"
+#include "system/node/BaseNodeInterface.h"
+#include "system/node/NodeFactory.h"
 
 class Disable : public zrcsSystem::CmdNode
 {

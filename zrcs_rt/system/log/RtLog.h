@@ -19,6 +19,14 @@
 #define RT_PRINTF printf
 #endif
 
+#ifdef ZRCS_ENABLE_CONTROLLER_CONSOLE_LOG
+#define ZRCS_CONTROLLER_PRINTF(fmt, ...) \
+    do { RT_PRINTF(fmt, ##__VA_ARGS__); } while (0)
+#else
+#define ZRCS_CONTROLLER_PRINTF(fmt, ...) \
+    do { } while (0)
+#endif
+
 namespace zrcs {
 namespace rtlog {
 
@@ -78,10 +86,23 @@ inline void logPush(Level level, const char* file, uint16_t line, const char* ms
         if (zrcs::rtlog::g_logQueue) { \
             zrcs::rtlog::logPush(level, __FILE__, \
                 static_cast<uint16_t>(__LINE__), rt_log_buf_); \
+        } \
+    } while (0)
+
+#ifdef ZRCS_ENABLE_RT_CONSOLE_FALLBACK
+#undef RT_LOG_IMPL_
+#define RT_LOG_IMPL_(level, fmt, ...) \
+    do { \
+        char rt_log_buf_[192]; \
+        std::snprintf(rt_log_buf_, sizeof(rt_log_buf_), fmt, ##__VA_ARGS__); \
+        if (zrcs::rtlog::g_logQueue) { \
+            zrcs::rtlog::logPush(level, __FILE__, \
+                static_cast<uint16_t>(__LINE__), rt_log_buf_); \
         } else { \
             RT_PRINTF("%s", rt_log_buf_); \
         } \
     } while (0)
+#endif
 
 #define INFO_PRINT(fmt, ...) \
     RT_LOG_IMPL_(zrcs::rtlog::Level::INFO, fmt, ##__VA_ARGS__)

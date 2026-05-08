@@ -2,8 +2,8 @@
  * @Description: 绝对关节位置运动（ABB MoveAbsJ）�?多轴同步，不经IK
  */
 #pragma once
-#include "system/base/TrajectoryCmd.h"
-#include "system/NodeFactory.h"
+#include "system/node/TrajectoryCmd.h"
+#include "system/node/NodeFactory.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>

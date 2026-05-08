@@ -2,8 +2,8 @@
  * @Description: 笛卡尔直线运动（ABB MoveL）�?1D 弧长参数�?+ 每周�?IK
  */
 #pragma once
-#include "system/base/TrajectoryCmd.h"
-#include "system/NodeFactory.h"
+#include "system/node/TrajectoryCmd.h"
+#include "system/node/NodeFactory.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>

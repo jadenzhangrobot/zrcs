@@ -1,7 +1,7 @@
 /**
  * @Description: 轨迹规划基类实现
  */
-#include "system/base/TrajectoryCmd.h"
+#include "system/node/TrajectoryCmd.h"
 
 TrajectoryCmd::TrajectoryCmd() : baseDeltaTime_(cycletime * 0.001) {}
 

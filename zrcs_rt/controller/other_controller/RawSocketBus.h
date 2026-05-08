@@ -20,6 +20,7 @@
 #include <net/ethernet.h>
 #include <netinet/if_ether.h>
 #include "controller/controller_interface.h"
+#include "system/log/RtLog.h"
 #include <atomic>
 #include <cstddef>
 #define joints 1
@@ -110,7 +111,7 @@ class Glrbus
                if( sockhandle < 0 )
                 {
                      //LOGGER_INFO("glrbus socket error");
-                     printf("socket error : %s\n", strerror(errno));   
+                     ZRCS_CONTROLLER_PRINTF("socket error : %s\n", strerror(errno));
                   
                   
                 }
@@ -123,7 +124,7 @@ class Glrbus
               // strcpy(ifr.ifr_name, interface);
               if(ioctl(sockhandle, SIOCGIFINDEX, &ifr))
               {
-                      printf("ioctl1 : %s\n", strerror(errno));   
+                      ZRCS_CONTROLLER_PRINTF("ioctl1 : %s\n", strerror(errno));
 
               }
              
@@ -138,14 +139,14 @@ class Glrbus
               /* reset flags of NIC interface */
               if(ioctl(sockhandle, SIOCGIFFLAGS, &ifr1))
               {
-                  printf("ioctl2: %s\n", strerror(errno)); 
+                  ZRCS_CONTROLLER_PRINTF("ioctl2: %s\n", strerror(errno));
 
               }
               /* set flags of NIC interface, here promiscuous and broadcast */
               ifr1.ifr_flags = ifr1.ifr_flags | IFF_PROMISC | IFF_BROADCAST;
               if(ioctl(sockhandle, SIOCSIFFLAGS, &ifr1))
               {
-                  printf("ioctl3: %s\n", strerror(errno)); 
+                  ZRCS_CONTROLLER_PRINTF("ioctl3: %s\n", strerror(errno));
               }
                 sa.sll_family=AF_PACKET ;
                 sa.sll_protocol =htons(ETH_P_ALL);
@@ -155,7 +156,7 @@ class Glrbus
                 ret=bind( sockhandle,(const struct sockaddr *)&sa, sizeof(sa));
                 if( ret < 0 )
                  {
-                        perror("bind");
+                        ZRCS_CONTROLLER_PRINTF("bind: %s\n", strerror(errno));
                         //LOGGER_INFO("glrbus bind error");
                       //  LOGGER_INFO(strerror(errno));
 
@@ -198,7 +199,7 @@ class Glrbus
                }
 
               
-               printf("%ld\n",count);
+               ZRCS_CONTROLLER_PRINTF("%ld\n", count);
                count++;
             } 
 
@@ -258,7 +259,7 @@ class Glrbus
              
                if(ret<0)
                {
-                   printf("Failed to open file: %s\n", strerror(errno));      
+                   ZRCS_CONTROLLER_PRINTF("Failed to open file: %s\n", strerror(errno));
                   // LOGGER_INFO("glrbus send error");
                   // LOGGER_INFO(strerror(errno));
                   return -1;
@@ -277,7 +278,6 @@ class Glrbus
           
             //  if(buff[12]==0xff&&buff[13]==0x00)
             // {
-            //    //std::cout<<"hhhh"<<std::endl;
             //   // if(buff[17]==1)
             //   // {
             //        rt_sendflag=1;
@@ -287,9 +287,7 @@ class Glrbus
                
             //   for(int i=0;i<28;i++)
             //   {
-            //     printf("%02x ",mypacket_receive_init[i].load());          
             //   }
-            //  printf("\n");
             // }
              
             //  if(buff[12]==0xff&&buff[13]==0x01)
@@ -311,7 +309,6 @@ class Glrbus
              
             //          static uint32_t a=0;
             //          a++;
-            //         std::cout<<a<<std::endl;
 
             //   }
              

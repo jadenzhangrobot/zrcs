@@ -1,9 +1,20 @@
 #include "command/DataPub.h"
 
+
+   DataPub::DataPub()
+  {
+      std::strcpy(nodeName_, "DataPub");
+  }
+
+void DataPub::onRegistered()
+{
+    producer_ = std::make_unique<zrcs::ShmSPSCProducer<zrcs::AxisFeedbackData, zrcs::kLogQueueCap>>(
+        shm()->axisFeedbackQueue);
+}
+
 void DataPub::init()
 {
-    producer_ = new zrcs::ShmSPSCProducer<zrcs::AxisFeedbackData, zrcs::kLogQueueCap>(
-        shm()->axisFeedbackQueue);
+   
 }
 
 void DataPub::run()
@@ -19,7 +30,9 @@ void DataPub::run()
 
         // fb.torque[i] — Axis 暂无 torque 接口，默认 0
     }
-    producer_->push(fb);
+    if (producer_) {
+        producer_->push(fb);
+    }
 
     // 同时写 LFL（兼容 RtBridge::readLatestAxisPositions）
     zrcs::JointPosData pos{};

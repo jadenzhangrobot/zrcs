@@ -10,9 +10,9 @@
  * 多段连续路径�?Ruckig 状态和 LPF 状态均保持连续（同一实例复用）�?
  */
 #pragma once
-#include "system/base/TrajectoryCmd.h"
-#include "system/NodeFactory.h"
-#include "system/base/RtLowPassFilter.h"
+#include "system/node/TrajectoryCmd.h"
+#include "system/node/NodeFactory.h"
+#include "Algorithm/RtLowPassFilter.h"
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>
@@ -30,7 +30,6 @@ private:
     Eigen::Vector3d startPos_;
     Eigen::Vector3d targetPos_;
     double          cartDist_;
-    bool            firstSegment_;
 
     // LPF 状态跨段持久（同一实例复用，不重置�?
     RtLowPassFilter lpf_;

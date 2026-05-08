@@ -1,4 +1,4 @@
-#include "system/NodeFactory.h"
+#include "system/node/NodeFactory.h"
 #include "config/CmdDefine.h"
 #include <cstring>
 

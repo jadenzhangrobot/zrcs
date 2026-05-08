@@ -1,4 +1,4 @@
-#include "system/base/BaseNodeInterface.h"
+#include "system/node/BaseNodeInterface.h"
 
 namespace zrcsSystem {
 
@@ -35,21 +35,27 @@ void CmdNode::execute()
     }
 
     // EXECUTING → 执行轨迹
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::EXECUTING)
+     if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::EXECUTING)
     {
         run();
     }
 
     // EXIT → 清理，推进到 COMPLETED（同一拍完成，不等下一个周期）
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::EXIT)
+     if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::EXIT)
     {
         exit();
         INFO_PRINT("%s 执行成功\n", nodeName_);
         cmdStatus_.store(CmdStatus::COMPLETED, std::memory_order_release);
     }
-    else if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::FAILED)
+     else if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::FAILED)
     {
         ERROR_PRINT("%s(seq=%u) 执行失败\n", nodeName_, command_ ? command_->seq : 0);
+        shm()->taskSched.store(zrcs::TaskScheduling::ERROR_STATE, std::memory_order_release);
+    }
+     else
+    {
+        ERROR_PRINT("%s(seq=%u) 状态异常: %d\n", nodeName_, command_ ? command_->seq : 0,
+                    static_cast<int>(cmdStatus_.load(std::memory_order_acquire)));
         shm()->taskSched.store(zrcs::TaskScheduling::ERROR_STATE, std::memory_order_release);
     }
 }

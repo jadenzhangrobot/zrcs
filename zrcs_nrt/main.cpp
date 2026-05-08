@@ -38,24 +38,35 @@
 static std::atomic<bool> g_running{true};
 static ZMQServer* g_zmq_server = nullptr;
 
+// 统一信号处理（Ctrl+C / SIGTERM），两平台共用
+// 注意：信号处理器和 consoleCtrlHandler 中不可调用 spdlog 等可能持锁的函数
+static void signalHandler(int signum) {
+    std::fprintf(stdout, "[main] Received signal %d, shutting down...\n", signum);
+    g_running = false;
+    if (g_zmq_server) {
+        g_zmq_server->stop();
+    }
+}
+
 #ifdef _WIN32
 static HANDLE g_rt_process = nullptr;
 
-// Windows 控制台事件处理（捕获关闭窗口、Ctrl+C 等）
+// Windows 控制台事件处理——仅处理关闭窗口/注销/关机等 std::signal 无法捕获的事件
+// Ctrl+C 由 signalHandler(SIGINT) 统一处理，控制台返回 FALSE 让默认行为触发 SIGINT
 // 注意：此回调在系统线程中执行，不可调用 spdlog 等可能持锁的函数
 static BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
     switch (ctrlType) {
-    case CTRL_C_EVENT:
-    case CTRL_BREAK_EVENT:
     case CTRL_CLOSE_EVENT:
     case CTRL_LOGOFF_EVENT:
     case CTRL_SHUTDOWN_EVENT:
+        // 关闭窗口/注销/关机：进程即将被系统强杀（~5s 超时），必须在此处清理 RT
         g_running = false;
         if (g_zmq_server) {
             g_zmq_server->stop();
         }
-        // 关闭窗口时必须在此处终止 RT，因为之后进程可能被强杀
         if (g_rt_process) {
+            // 先给 RT 500ms 自行退出，超时再强杀
+            WaitForSingleObject(g_rt_process, 500);
             TerminateProcess(g_rt_process, 0);
             WaitForSingleObject(g_rt_process, 3000);
             CloseHandle(g_rt_process);
@@ -63,20 +74,13 @@ static BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
         }
         return TRUE;
     default:
+        // CTRL_C_EVENT / CTRL_BREAK_EVENT 不处理，让默认行为触发 SIGINT 走 signalHandler
         return FALSE;
     }
 }
 #else
 static pid_t g_rt_pid = -1;
 #endif
-
-static void signalHandler(int signum) {
-    spdlog::warn("Received signal {}, shutting down...", signum);
-    g_running = false;
-    if (g_zmq_server) {
-        g_zmq_server->stop();
-    }
-}
 
 
 // 启动 RT 子进程，返回是否成功
@@ -204,14 +208,17 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
 
 int main(int argc, char **argv)
 {
-    // 注册信号处理
+    // std::signal 两平台共用，统一处理 Ctrl+C / SIGTERM
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 #ifdef _WIN32
     // Windows 控制台设置为 UTF-8 输出，避免中文日志乱码
     SetConsoleOutputCP(CP_UTF8);
-    // Windows 下必须用 SetConsoleCtrlHandler 捕获关闭窗口事件
+    // 额外注册控制台事件处理器，捕获关闭窗口等 std::signal 无法处理的事件
     SetConsoleCtrlHandler(consoleCtrlHandler, TRUE);
+#else
+    // Linux：关闭终端窗口时内核发送 SIGHUP，需要优雅清理 RT 子进程
+    std::signal(SIGHUP, signalHandler);
 #endif
 
     std::cout << "ZRCS Non-Real-Time Process Started" << std::endl;

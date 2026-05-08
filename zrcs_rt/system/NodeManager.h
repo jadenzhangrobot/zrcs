@@ -1,9 +1,8 @@
 #pragma once
 
-#include "system/base/BaseNodeInterface.h"
+#include "system/node/BaseNodeInterface.h"
 #include "controller/Controller.h"
-#include "NodeCommunication.h"
-#include "NodeFactory.h"
+#include "node/NodeFactory.h"
 #include "model/ModelConfig.h"
 #include "model/ModelFactory.h"
 #include "controller/HardwareFactory.h"

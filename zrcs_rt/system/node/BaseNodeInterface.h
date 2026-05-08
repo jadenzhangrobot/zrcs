@@ -10,7 +10,7 @@
 #include "shared_memory/RtProcess.h"   // zrcs::RtProcess / RTProcess, SharedBlock
 #include "config/CmdDefine.h"
 #include "controller/Controller.h"
-#include "system/RtLog.h"
+#include "system/log/RtLog.h"
 #include "config/Parameter.h"
 #include <atomic>
 #include <cstdint>
@@ -21,6 +21,9 @@ class ModelRegistry;
 namespace zrcsSystem {
 
 class Basenode {
+protected:
+    virtual void onRegistered() {}
+
 public:
     uint64_t nodeCount_;
     char nodeName_[32];
@@ -42,12 +45,14 @@ public:
         controller_    = ct;
         rtProcess_     = rtProcess;
         command_       = command;
+        onRegistered();
     }
 
     void registered(ZrcsHardware::Controller* ct, RTProcess *rtProcess)
     {
         controller_ = ct;
         rtProcess_  = rtProcess;
+        onRegistered();
     }
 
     // 直接返回 SharedBlock 指针，调用方通过 shm()->field 访问

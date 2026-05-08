@@ -10,9 +10,9 @@
 
 //#include "controller/controller_interface.h"
 #include "controller/controller_interface.h"
+#include "system/log/RtLog.h"
 #include "../lib/innfos/include/actuatorcontroller.h"
 #include <boost/iterator/iterator_concepts.hpp>
-#include <iostream>
 
 
   namespace controller
@@ -67,7 +67,7 @@
             
             if(If.pController->enableActuator(motor_id+1))
             {
-                std::cout << "Enable actuator " << motor_id+1 << " successfully!" << std::endl;
+                ZRCS_CONTROLLER_PRINTF("Enable actuator %d successfully!\n", motor_id + 1);
                 return 1; 
             }
             return 0;
@@ -76,7 +76,7 @@
         {
             if(If.pController->disableActuator(motor_id+1))
             {
-                std::cout << "Disable actuator " << motor_id+1 << " successfully!" << endl;
+                ZRCS_CONTROLLER_PRINTF("Disable actuator %d successfully!\n", motor_id + 1);
                 return 1; 
             }
             return 0;
@@ -146,4 +146,3 @@
   } 
   
   
-

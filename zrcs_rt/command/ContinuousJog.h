@@ -7,11 +7,11 @@
  */
 #pragma once
 
-#include "system/base/BaseNodeInterface.h"
+#include "system/node/BaseNodeInterface.h"
 #include <array>
 #include <ruckig/ruckig.hpp>
 #include <vector>
-#include "system/NodeFactory.h"
+#include "system/node/NodeFactory.h"
 
 using namespace ruckig;
 
