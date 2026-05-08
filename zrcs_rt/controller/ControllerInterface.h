@@ -73,7 +73,6 @@ private:
   double axisPosCmd_=0;
   double lastAxisPosCmd_=0;
   double axisVelCmd_=0;
-  double axisPlannerVelCmd_=0;
   double lastAxisVelCmd_=0;
   double axisTorCmd_=0;
   int32_t overflowCount_=0;
@@ -120,11 +119,6 @@ public:
    {
        axisVelCmd_=axisVelCmd;
    }
-     void setAxisPlannerVelocityCmd(double axisVelCmd)
-     {
-       axisPlannerVelCmd_ = axisVelCmd;
-     }
-
    void syncCmdHistory()
    {
          lastAxisPosCmd_ = axisPosCmd_;
@@ -176,10 +170,6 @@ public:
   auto actualVelCmd()->double
   {
     return axisVelCmd_;
-  }
-  auto actualPlannerVelCmd()->double
-  {
-    return axisPlannerVelCmd_;
   }
   MC_AXIS_STATES getAxisState(void)
   {

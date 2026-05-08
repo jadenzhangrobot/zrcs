@@ -37,8 +37,10 @@ void* platformShmOpen(const char* name, size_t size, bool create,
 {
     try {
         if (create) {
+            // 使用 open_or_create 而非 create_only：如果前一次运行崩溃导致内核对象残留，
+            // open_or_create 会打开已有对象而非报错，后续 memset(0) 确保数据清零。
             bip::windows_shared_memory shm_obj(
-                bip::create_only, name, bip::read_write,
+                bip::open_or_create, name, bip::read_write,
                 static_cast<bip::offset_t>(size));
             bip::mapped_region region(shm_obj, bip::read_write);
 
@@ -46,7 +48,7 @@ void* platformShmOpen(const char* name, size_t size, bool create,
 
             void* addr = region.get_address();
             std::fprintf(stdout,
-                "[ShmPlatform] windows_shared_memory create('%s') ok, addr=%p, size=%zu\n",
+                "[ShmPlatform] windows_shared_memory open_or_create('%s') ok, addr=%p, size=%zu\n",
                 name, addr, region.get_size());
 
             auto* h = new ShmHandle{std::move(shm_obj), std::move(region)};

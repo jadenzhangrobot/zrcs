@@ -15,9 +15,8 @@
 #include <string>
 #include <filesystem>
 #include <cmath>
-#include "NrtLogger.h"
-#include "BtEngine.h"
-#include "RtLogConsumer.h"
+#include "log/NrtLogger.h"
+#include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
 #include "status_publisher/StatusPublisher.h"
 #include "terminal/TerminalConsole.h"
@@ -79,16 +78,10 @@ static void signalHandler(int signum) {
     }
 }
 
-static void cleanupSharedMemory()
-{
-    // Shared memory cleanup is handled by RtProcess (the creator).
-    // NRT side only detaches; nothing to unlink here.
-}
 
 // 启动 RT 子进程，返回是否成功
 static bool launchRTProcess()
 {
-    cleanupSharedMemory();
 
     // 获取当前可执行文件所在目录，RT 进程应在同一目录
 #ifdef _WIN32
@@ -207,7 +200,6 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
     }
 #endif
 
-    cleanupSharedMemory();
 }
 
 int main(int argc, char **argv)
@@ -265,12 +257,8 @@ int main(int argc, char **argv)
         rtLogConsumer.start();
         spdlog::info("RT log consumer started");
 
-        // 初始化行为树引擎
-        BTEngine bt_engine(&bridge);
-        spdlog::info("BTEngine initialized");
-
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(&bridge, &bt_engine);
+        ZMQServer zmq_server(&bridge);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {
@@ -292,7 +280,7 @@ int main(int argc, char **argv)
         }
 
         // 初始化终端控制台
-        TerminalConsole terminal(&bridge, &bt_engine, g_running);
+        TerminalConsole terminal(&bridge, g_running);
         if (terminal.initialize()) {
             terminal.start();
             spdlog::info("Terminal console started");
@@ -304,187 +292,6 @@ int main(int argc, char **argv)
 
 
         MotionPreprocessor motion_preprocessor(&bridge);
-
-        // ── 测试：连续 N 段 MOVEL（检测段间是否存在间隙）────────────────────────
-        {
-            spdlog::info("[Test] Starting MOVEL gap detection test...");
-
-            constexpr double vel      = 0.5;      // mm/s 目标速度
-            constexpr double acc      = 5.0;      // mm/s² 加速度
-            constexpr double jerk     = 10.0;     // mm/s³ 加加速度
-            constexpr int    N        = 200;      // 段数
-            constexpr double step     = 0.5;      // mm/段（第 2..N 段）
-            constexpr double firstLen = 5.0;      // mm 第 1 段长度
-
-            // dAcc = vel²/(2*acc) = 0.9mm — 第 1 段需至少 0.9mm 从 0→vel
-            // firstLen=5.0 >> 0.9，确保第 1 段结束前 OTG 已到达 vel
-            // 后续段 CurrentVel=vel，OTG 无需额外加速，理论上 0mm 即可连续
-            static_assert(firstLen * acc > 0.5 * vel * vel,
-                          "firstLen too short for acceleration to vel");
-
-            // 设 RT 端 Ruckig 加速度/加加速度上限
-            bridge.setPathMoveConfig(vel, acc, jerk);
-
-            int sendOk = 0, queueFull = 0;
-            uint32_t lastSeq = 0;
-
-            auto testStart = std::chrono::steady_clock::now();
-            double pos = 100.0;
-
-            for (int i = 0; i < N && g_running; ++i) {
-                const bool  isFirst = (i == 0);
-                const double segLen = isFirst ? firstLen : step;
-                const double x0 = pos;
-                const double x1 = pos + segLen;
-
-                double args[19] = {};
-                args[static_cast<size_t>(MoveLArg::CurrentX)]  = x0;
-                args[static_cast<size_t>(MoveLArg::CurrentY)]  = x0;
-                args[static_cast<size_t>(MoveLArg::CurrentZ)]  = 0.0;
-                args[static_cast<size_t>(MoveLArg::CurrentQ1)] = 1.0;
-                args[static_cast<size_t>(MoveLArg::CurrentQ2)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::CurrentQ3)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::CurrentQ4)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::X)]  = x1;
-
-                
-
-                args[static_cast<size_t>(MoveLArg::Y)]  = x1;
-                args[static_cast<size_t>(MoveLArg::Z)]  = 0.0;
-                args[static_cast<size_t>(MoveLArg::Q1)] = 1.0;
-                args[static_cast<size_t>(MoveLArg::Q2)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::Q3)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::Q4)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::Vel)]        = vel;
-                args[static_cast<size_t>(MoveLArg::CurrentVel)] = isFirst ? 0.0 : vel;
-                args[static_cast<size_t>(MoveLArg::CurrentAcc)] = 0.0;
-                args[static_cast<size_t>(MoveLArg::TargetVel)]  = vel;
-                args[static_cast<size_t>(MoveLArg::TargetAcc)]  = 0.0;
-
-                auto [result, seq] = bridge.sendCommand("MoveL", args, 19);
-                if (result == RtBridge::SendResult::OK) {
-                    ++sendOk;
-                    lastSeq = seq;
-                    pos = x1;
-                } else if (result == RtBridge::SendResult::QUEUE_FULL) {
-                    ++queueFull;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                    --i;
-                    continue;
-                } else {
-                    spdlog::warn("[Test] sendCommand failed");
-                    break;
-                }
-            }
-
-            
-        }
-        // 配置振镜参数：平台 X/Y = 轴 0/1，振镜 X/Y = 轴 2/3，截止频率 5Hz
-        // bridge.setGalvoConfig(0, 1, 2, 3, 0.3);  // 0.3Hz: 平台只跟极低频包络，振镜补偿高频细齿
-        // {
-        //     // 蝴蝶轮廓：平滑骨架 + 全轮廓高频细齿
-        //     // addTeeth: 在骨架两点之间按 pitch 步长插入 ±amp 垂直偏移的锯齿点
-        //     //   左侧法向（相对行进方向）为 +amp 方向
-        //     //   骨架端点本身不偏移，齿点从第 1 步开始
-        //     double PITCH = 0.5;  // mm，齿距（小齿距 → 高齿频 → 平台充分平滑）
-        //     double AMP   = 5.0;  // mm，半幅（峰-骨线距离）
-
-        //     std::vector<Point3D> testWaypoints;
-        //     testWaypoints.reserve(256);
-
-        //     auto addTeeth = [&](double x1, double y1) {
-        //         if (testWaypoints.empty()) {
-        //             testWaypoints.push_back({x1, y1, 0.0});
-        //             return;
-        //         }
-        //         double x0 = testWaypoints.back().x;
-        //         double y0 = testWaypoints.back().y;
-        //         double dx = x1 - x0, dy = y1 - y0;
-        //         double len = std::sqrt(dx*dx + dy*dy);
-        //         if (len < 1e-6) return;
-        //         // 左侧法向（逆时针 90°）
-        //         double nx = -dy / len, ny = dx / len;
-        //         int n = std::max(1, static_cast<int>(std::round(len / PITCH)));
-        //         for (int i = 1; i < n; ++i) {
-        //             double t    = static_cast<double>(i) / n;
-        //             double bx   = x0 + t * dx;
-        //             double by   = y0 + t * dy;
-        //             double side = (i % 2 == 1) ? AMP : -AMP;
-        //             testWaypoints.push_back({bx + side * nx, by + side * ny, 0.0});
-        //         }
-        //         testWaypoints.push_back({x1, y1, 0.0});  // 骨架端点（无偏移）
-        //     };
-
-        //     // ── 平滑骨架（约 20 点，每段 ~10mm）─────────────────────────
-        //     // 右前翼（顺时针：中心 → 上缘 → 翼尖 → 燕尾凹口）
-        //     addTeeth(100.0, 50.0);  // 身体中心
-        //     addTeeth(114.0, 62.0);
-        //     addTeeth(128.0, 74.0);
-        //     addTeeth(142.0, 82.0);  // 上缘峰
-        //     addTeeth(158.0, 78.0);
-        //     addTeeth(170.0, 66.0);
-        //     addTeeth(177.0, 52.0);  // 翼最右端
-        //     addTeeth(172.0, 38.0);
-        //     addTeeth(166.0, 30.0);  // 燕尾凹口
-
-        //     // 右后翼（顺时针：凹口 → 后翼底 → 翼根）
-        //     addTeeth(170.0, 22.0);
-        //     addTeeth(160.0, 12.0);
-        //     addTeeth(148.0,  6.0);  // 后翼底
-        //     addTeeth(136.0, 12.0);
-        //     addTeeth(124.0, 22.0);
-        //     addTeeth(112.0, 36.0);
-        //     addTeeth(102.0, 48.0);
-
-        //     // 身体中心
-        //     addTeeth(100.0, 50.0);
-
-        //     // 左后翼（逆时针镜像）
-        //     addTeeth( 98.0, 48.0);
-        //     addTeeth( 88.0, 36.0);
-        //     addTeeth( 76.0, 22.0);
-        //     addTeeth( 64.0, 12.0);
-        //     addTeeth( 52.0,  6.0);  // 后翼底
-        //     addTeeth( 40.0, 12.0);
-        //     addTeeth( 30.0, 22.0);
-
-        //     // 左燕尾凹口
-        //     addTeeth( 34.0, 30.0);
-        //     addTeeth( 28.0, 38.0);
-
-        //     // 左前翼（逆时针：翼尖 → 上缘 → 中心）
-        //     addTeeth( 23.0, 52.0);  // 翼最左端
-        //     addTeeth( 30.0, 66.0);
-        //     addTeeth( 42.0, 78.0);
-        //     addTeeth( 58.0, 82.0);  // 上缘峰
-        //     addTeeth( 72.0, 74.0);
-        //     addTeeth( 86.0, 62.0);
-
-        //     addTeeth(100.0, 50.0);  // 回到身体中心（闭合）
-
-        //     // 姿态保持不变（简化测试）
-        //     double rx = 0.0, ry = 0.0, rz = 0.0;
-
-        //     // 配置运动参数（需匹配 config/3axis/axis.xml 限制：maxVel=10, maxAcc=20, maxJerk=30）
-        //     MotionPreprocessor::Config cfg;
-        //     cfg.maxVel    = 8.0;    // mm/s  （轴限速 10，留余量）
-        //     cfg.maxAccel  = 15.0;   // mm/s² （轴限加速度 20）
-        //     cfg.maxJerk   = 25.0;   // mm/s³ （轴限加加速度 30）
-        //     cfg.stepSize  = 1.0;    // mm，重采样步长（仅影响 Bezier 弧采样）
-        //     cfg.cornerTol = 3.0;    // mm，拐角偏差容限（蝴蝶翅尖圆弧过渡）
-        //     cfg.galvoMode = true;   // 启用振镜-平台联动分解
-
-        //     spdlog::info("[Test] Starting butterfly path test with {} waypoints",
-        //                  testWaypoints.size());
-
-        //     bool ok = motion_preprocessor.process(testWaypoints, rx, ry, rz, cfg);
-        //     if (ok) {
-        //         spdlog::info("[Test] Butterfly galvo path PASSED — MoveLGalvo commands sent");
-        //     } else {
-        //         spdlog::error("[Test] Butterfly galvo path FAILED");
-        //     }
-        // }
-        // ── 测试结束 ────────────────────────────────────────────────
 
         // 主循环：监控共享内存状态
         while (g_running) {

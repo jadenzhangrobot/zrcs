@@ -112,9 +112,6 @@ void MoveL::applyOutput()
     controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
     controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
-    controller_->axiss[axisIds_[0]]->setAxisPlannerVelocityCmd(pathDir.x() * pathVelocity);
-    controller_->axiss[axisIds_[1]]->setAxisPlannerVelocityCmd(pathDir.y() * pathVelocity);
-    controller_->axiss[axisIds_[2]]->setAxisPlannerVelocityCmd(pathDir.z() * pathVelocity);
 
     // 四元数球面线性插补 (SLERP) — 含最短路径 + 小角度保护
     Eigen::Quaterniond qInterp = startQuat_.slerp(u, targetQuat_);
@@ -124,9 +121,6 @@ void MoveL::applyOutput()
         controller_->axiss[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
         controller_->axiss[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
         controller_->axiss[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
-        controller_->axiss[axisIds_[3]]->setAxisPlannerVelocityCmd(0.0);
-        controller_->axiss[axisIds_[4]]->setAxisPlannerVelocityCmd(0.0);
-        controller_->axiss[axisIds_[5]]->setAxisPlannerVelocityCmd(0.0);
     }
 } 
 

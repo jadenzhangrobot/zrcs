@@ -111,7 +111,6 @@ struct AxisFeedbackData
     double position[kAxisMax];
     double cmdPosition[kAxisMax];
     double cmdVelocity[kAxisMax];
-    double plannerVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
 };

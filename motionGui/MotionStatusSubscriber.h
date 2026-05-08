@@ -12,7 +12,6 @@ struct AxisStatusData {
     int axisId = 0;
     double position = 0.0;
     double cmdPosition = 0.0;
-    double plannerVelocity = 0.0;
     double velocity = 0.0;
     double torque = 0.0;
 };

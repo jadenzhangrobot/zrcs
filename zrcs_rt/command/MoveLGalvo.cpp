@@ -10,6 +10,10 @@ MoveLGalvo::MoveLGalvo() : cartDist_(0), firstSegment_(true),
       lpfConfigured_(false), lastCutoffHz_(0.0)
 {
     std::strcpy(nodeName_, "MoveLGalvo");
+    // 设置 Ruckig 轨迹规划
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
 
@@ -34,10 +38,7 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
-    // 设置 Ruckig 轨迹规划
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
-    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
-    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+ 
 
     double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
@@ -74,8 +75,8 @@ void MoveLGalvo::applyOutput()
 
         // 线性插值得到当前全局笛卡尔位?
         double u = s / cartDist_;
-        if (u < 0.0) u = 0.0;
-        if (u > 1.0) u = 1.0;
+       // if (u < 0.0) u = 0.0;
+       // if (u > 1.0) u = 1.0;
 
         Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
 

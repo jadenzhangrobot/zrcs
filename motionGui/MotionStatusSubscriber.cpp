@@ -64,7 +64,6 @@ void MotionStatusWorker::pollLoop()
                 d.axisId = i;
                 d.position = ax.position();
                 d.cmdPosition = ax.cmd_position();
-                d.plannerVelocity = ax.planner_velocity();
                 d.velocity = ax.velocity();
                 d.torque = ax.torque();
                 axes.append(d);

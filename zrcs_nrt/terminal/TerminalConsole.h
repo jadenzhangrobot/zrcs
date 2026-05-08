@@ -4,7 +4,6 @@
  * @file terminalConsole.h
  * @brief 终端控制台，允许操作员通过 stdin 直接输入命令
  * @details 运动命令通过 RtBridge 直接发送到 RT 进程
- *          BT 命令通过 BTEngine 本地处理
  *          与 ZMQ 完全解耦，各走各的通道
  */
 
@@ -12,25 +11,22 @@
 #include <atomic>
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <spdlog/spdlog.h>
 #include "rt_bridge/RtBridge.h"
-#include "BtEngine.h"
 
 class TerminalConsole {
 private:
     std::thread console_thread_;
     std::atomic<bool> running_;
     RtBridge* bridge_;
-    BTEngine* bt_engine_;
+
     std::atomic<bool>& app_running_;
 
 public:
-    TerminalConsole(RtBridge* bridge, BTEngine* bt_engine, std::atomic<bool>& app_running)
-        : running_(false), bridge_(bridge),
-          bt_engine_(bt_engine), app_running_(app_running) {}
+    TerminalConsole(RtBridge* bridge, std::atomic<bool>& app_running)
+        : running_(false), bridge_(bridge), app_running_(app_running) {}
 
     ~TerminalConsole() {
         stop();
@@ -103,61 +99,8 @@ private:
             return;
         }
 
-        // BT 命令（本地处理）
-        if (cmd == "bt") {
-            handleBTCommand(tokens);
-            return;
-        }
-
         // 运动命令（通过 RtBridge 直接发送到 RT）
         handleMotionCommand(tokens);
-    }
-
-    void handleBTCommand(const std::vector<std::string>& tokens) {
-        if (tokens.size() < 2) {
-            std::cout << "Usage: bt <status|start|stop|load <file>>" << std::endl;
-            return;
-        }
-
-        const auto& action = tokens[1];
-
-        if (action == "status") {
-            std::cout << "BT State: " << bt_engine_->getStateString()
-                      << ", Active Node: " << bt_engine_->getCurrentNodeName()
-                      << std::endl;
-        } else if (action == "start") {
-            if (bt_engine_->start()) {
-                std::cout << "BT started" << std::endl;
-            } else {
-                std::cout << "BT start failed (no tree loaded or already running)" << std::endl;
-            }
-        } else if (action == "stop") {
-            bt_engine_->stop();
-            std::cout << "BT stopped" << std::endl;
-        } else if (action == "load") {
-            if (tokens.size() < 3) {
-                std::cout << "Usage: bt load <filepath>" << std::endl;
-                return;
-            }
-            std::ifstream ifs(tokens[2]);
-            if (!ifs.is_open()) {
-                std::cout << "Error: cannot open file: " << tokens[2] << std::endl;
-                return;
-            }
-            std::string xml((std::istreambuf_iterator<char>(ifs)),
-                             std::istreambuf_iterator<char>());
-            ifs.close();
-
-            std::string err = bt_engine_->loadTree(xml);
-            if (err.empty()) {
-                std::cout << "BT tree loaded (" << xml.size() << " bytes)" << std::endl;
-            } else {
-                std::cout << "BT load error: " << err << std::endl;
-            }
-        } else {
-            std::cout << "Unknown bt action: " << action << std::endl;
-            std::cout << "Usage: bt <status|start|stop|load <file>>" << std::endl;
-        }
     }
 
     void handleMotionCommand(const std::vector<std::string>& tokens) {
@@ -212,12 +155,6 @@ private:
             "  ContinuousJog <axisId> <dir>   Continuous jog\n"
             "  Show                           Show status\n"
             "  <command> [args...]             Any RT command\n"
-            "\n"
-            "BT Commands:\n"
-            "  bt status                      Show behavior tree state\n"
-            "  bt start                       Start behavior tree\n"
-            "  bt stop                        Stop behavior tree\n"
-            "  bt load <filepath>             Load BT from XML file\n"
             "\n"
             "System Commands:\n"
             "  help                           Show this message\n"
