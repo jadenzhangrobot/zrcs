@@ -101,7 +101,8 @@ void NodeManager::run()
                     }
                 }
                 // cmdNode_ == nullptr: 立刻尝试取下一条命令
-                if (cmdNode_ == nullptr) {
+                if (cmdNode_ == nullptr) 
+                {
                     if (cmdConsumer_->pop(cmd_))
                     {
                         const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);

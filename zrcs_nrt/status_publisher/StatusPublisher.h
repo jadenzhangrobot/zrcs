@@ -155,6 +155,17 @@ private:
 
                 status.set_heartbeat(bridge_->heartbeat());
                 status.set_dropped_commands(bridge_->droppedCount());
+
+                // 写入 taskSched 状态供 GUI 显示
+                auto ts = bridge_->getTaskScheduling();
+                switch (ts) {
+                    case zrcs::TaskScheduling::START:       status.set_system_state("START"); break;
+                    case zrcs::TaskScheduling::RUN:         status.set_system_state("RUN"); break;
+                    case zrcs::TaskScheduling::STOP:        status.set_system_state("STOP"); break;
+                    case zrcs::TaskScheduling::ERROR_STATE: status.set_system_state("ERROR"); break;
+                    case zrcs::TaskScheduling::RESET:       status.set_system_state("RESET"); break;
+                    case zrcs::TaskScheduling::SHUTDOWN:    status.set_system_state("SHUTDOWN"); break;
+                }
                 for (const auto& entry : rtLogs) {
                     auto* log = status.add_rt_logs();
                     log->set_timestamp_us(entry.timestamp_us);

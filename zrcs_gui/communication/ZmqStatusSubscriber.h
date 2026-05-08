@@ -26,6 +26,7 @@ public slots:
 signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
+    void taskSchedulingUpdated(QString state);
     void errorOccurred(const QString& error);
 
 private:
@@ -57,6 +58,7 @@ public:
 signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
+    void taskSchedulingUpdated(QString state);
     void errorOccurred(const QString& error);
 
 private:

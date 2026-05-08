@@ -35,6 +35,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     statusSubscriber = new ZMQStatusSubscriber(commCfg2.zmqHost, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
+            this, &MainWindowRefactored::onTaskSchedulingUpdated);
     statusSubscriber->start();
 
     // 连接命令面板信号
@@ -95,6 +97,7 @@ void MainWindowRefactored::setupUI()
     etherCATStatusLabel = new QLabel("EtherCAT: 未连接");
     homedLabel = new QLabel("归零: 否");
     servoLabel = new QLabel("伺服: 关");
+    schedStateLabel = new QLabel("状态: --");
 
     // 连接控件
     const auto& commCfg = ZrcsConfig::Config::instance().comm;
@@ -110,6 +113,7 @@ void MainWindowRefactored::setupUI()
     statusBar()->addWidget(new QLabel("IP:"));
     statusBar()->addWidget(ipInput);
     statusBar()->addWidget(connectBtn);
+    statusBar()->addPermanentWidget(schedStateLabel);
     statusBar()->addPermanentWidget(zmqStatusLabel);
     statusBar()->addPermanentWidget(etherCATStatusLabel);
     statusBar()->addPermanentWidget(homedLabel);
@@ -205,6 +209,7 @@ void MainWindowRefactored::createQuickActions()
     });
 
     auto *btnPause = addQuickAction("暂停");
+    btnPause->setProperty("kind", "warning");
     connect(btnPause, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_STOP");
     });
@@ -227,6 +232,7 @@ void MainWindowRefactored::createQuickActions()
     });
 
     auto *btnReset = addQuickAction("复位");
+    btnReset->setProperty("kind", "info");
     connect(btnReset, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_RESET");
     });
@@ -342,6 +348,20 @@ void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
     }
 }
 
+void MainWindowRefactored::onTaskSchedulingUpdated(const QString &state)
+{
+    schedStateLabel->setText(QString("状态: %1").arg(state));
+
+    // 同步 StatusIndicator
+    if (state == "RUN") {
+        globalStatus->setState(StatusIndicator::Running);
+    } else if (state == "ERROR") {
+        globalStatus->setState(StatusIndicator::Alarm);
+    } else {
+        globalStatus->setState(StatusIndicator::Idle);
+    }
+}
+
 void MainWindowRefactored::onConnectClicked()
 {
     if (zmqClient && zmqClient->isConnected()) {
@@ -390,5 +410,7 @@ void MainWindowRefactored::onConnectClicked()
     statusSubscriber = new ZMQStatusSubscriber(host, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
+            this, &MainWindowRefactored::onTaskSchedulingUpdated);
     statusSubscriber->start();
 }

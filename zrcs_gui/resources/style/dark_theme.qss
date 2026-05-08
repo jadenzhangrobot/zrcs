@@ -347,6 +347,28 @@ QPushButton[kind="danger"]:hover {
     border-color: #a65569;
 }
 
+QPushButton[kind="warning"] {
+    background: #403820;
+    border-color: #b8963c;
+    color: #ffe082;
+}
+
+QPushButton[kind="warning"]:hover {
+    background: #544a28;
+    border-color: #d4a848;
+}
+
+QPushButton[kind="info"] {
+    background: #1e3a5f;
+    border-color: #4a8bc2;
+    color: #a8d8ff;
+}
+
+QPushButton[kind="info"]:hover {
+    background: #264a78;
+    border-color: #5a9bd2;
+}
+
 QPushButton[kind="accent"] {
     background: #2a4a2a;
     border-color: #58b658;

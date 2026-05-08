@@ -152,6 +152,7 @@ private slots:
 
     // Status
     void onAxisPositionsUpdated(QVector<double> positions);
+    void onTaskSchedulingUpdated(const QString &state);
 
 private:
     void setupUI();
@@ -173,7 +174,7 @@ private:
     // UI Components
     StatusIndicator *globalStatus;
     QLabel *zmqStatusLabel, *etherCATStatusLabel;
-    QLabel *homedLabel, *servoLabel;
+    QLabel *homedLabel, *servoLabel, *schedStateLabel;
     QLineEdit *ipInput;
     QPushButton *connectBtn;
     
