@@ -1,5 +1,5 @@
 /**
- * @file cartesianRobot.cpp
+ * @file CartesianRobot.cpp
  * @brief 笛卡尔/龙门架机器人运动学模型实现
  */
 #include "model/CartesianRobot.h"

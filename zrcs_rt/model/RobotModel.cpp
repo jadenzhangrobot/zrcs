@@ -1,5 +1,5 @@
 /**
- * @file robotModel.cpp
+ * @file RobotModel.cpp
  * @brief 运动学模型基类实现
  */
 #include "model/RobotModel.h"

@@ -1,6 +1,8 @@
 /**
+ * @file ModeInterface.h
  * @brief 模式接口基类，类似机床多通道概念
- * 每个模式可以管理多个轴的协调运动
+ *
+ * 每个模式可以管理多个轴的协调运动。
  *
  * 改造要点:
  * 1. 去掉模板参数 <int AxisNum> → 运行时 DOF (Ruckig DynamicDOFs)
@@ -9,16 +11,17 @@
  */
 #pragma once
 
-#include <ruckig/ruckig.hpp>
 #include "controller/Controller.h"
 #include <controller/ControllerInterface.h>
 #include "model/RobotModel.h"
-
-#include <vector>
-#include <string>
-#include <memory>
 #include "config/Parameter.h"
 #include "shared_memory/ShmLayout.h"
+
+#include <ruckig/ruckig.hpp>
+
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace ruckig;
 using namespace ZrcsHardware;
@@ -86,10 +89,19 @@ public:
     bool jacobian(const Eigen::VectorXd& jointPos,
                    Eigen::MatrixXd& J) const;
 
+    /** @return 自由度数 */
     int getDof() const { return dof_; }
+
+    /** @return 模式名称的常量引用 */
     const std::string& getModeName() const { return modeName_; }
+
+    /** @return 参与运动的轴ID列表的常量引用 */
     const std::vector<int>& getAxisIds() const { return axisIds_; }
+
+    /** @return 关联的运动学模型指针（可为 nullptr） */
     RobotModel* getModel() const { return model_; }
+
+    /** @return 控制器接口指针 */
     Controller* getController() const { return controller_; }
 };
 

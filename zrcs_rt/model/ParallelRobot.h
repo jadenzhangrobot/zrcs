@@ -1,5 +1,5 @@
 /**
- * @file parallelRobot.h
+ * @file ParallelRobot.h
  * @brief Delta并联机器人运动学模型
  *
  * 实现标准3-DOF Delta并联机器人的正逆运动学。

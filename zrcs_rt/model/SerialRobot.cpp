@@ -1,5 +1,5 @@
 /**
- * @file serialRobot.cpp
+ * @file SerialRobot.cpp
  * @brief 串联机械臂运动学模型实现
  */
 #include "model/SerialRobot.h"

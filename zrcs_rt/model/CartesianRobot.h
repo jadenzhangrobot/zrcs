@@ -1,5 +1,5 @@
 /**
- * @file cartesianRobot.h
+ * @file CartesianRobot.h
  * @brief 笛卡尔/龙门架机器人运动学模型
  *
  * XYZ直角坐标系机器人，关节位置直接映射为笛卡尔坐标。

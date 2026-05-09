@@ -1,10 +1,10 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-28 15:25:04
- * @LastEditTime: 2023-06-10 15:12:05
- * @Description: 电机失能指令
+/**
+ * @file    Disable.cpp
+ * @brief   电机失能命令实现
+ * @author  zhangyongjing
+ * @date    2023-03-28
  */
+
 #include "command/Disable.h"
 
 void Disable::init()
@@ -12,13 +12,13 @@ void Disable::init()
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(DisableArg::AxisId)]);
 }
 
-void Disable::run(void)
+void Disable::run()
 {
-    if(controller_->axiss.size() > axisId_)
+    if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
-        if(!controller_->axiss[axisId_]->powerOff())
+        if (!controller_->axes_[axisId_]->powerOff())
         {
-            ERROR_PRINT("Disable: �?%d 操作失败\n", axisId_);
+            ERROR_PRINT("Disable: 轴%d 操作失败\n", axisId_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         }
         else
@@ -26,13 +26,13 @@ void Disable::run(void)
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);
         }
     }
-    else if(controller_->axiss.size() == axisId_)
+    else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
         for (int i = 0; i < axisId_; i++)
         {
-            if(!controller_->axiss[i]->powerOff())
+            if (!controller_->axes_[i]->powerOff())
             {
-                ERROR_PRINT("Disable: ?%d 操作失败\n", i);
+                ERROR_PRINT("Disable: 轴%d 操作失败\n", i);
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }
@@ -40,12 +40,13 @@ void Disable::run(void)
     }
     else
     {
-        ERROR_PRINT("Disable: 轴索�?%d 超出范围(max=%zu)\n", axisId_, controller_->axiss.size());
+        ERROR_PRINT("Disable: 轴索引%d 超出范围(max=%zu)\n",
+                     axisId_, controller_->axes_.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
 
-void Disable::exit(void)
+void Disable::exit()
 {
 }
 

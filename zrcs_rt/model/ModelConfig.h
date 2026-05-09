@@ -1,5 +1,5 @@
 /**
- * @file modelConfig.h
+ * @file ModelConfig.h
  * @brief 从 model.xml 解析机器人模型配置
  *
  * 参照 AxisConfig.h 的模式，使用 XmlParsing + TreeNode 解析 XML。
@@ -7,11 +7,11 @@
  */
 #pragma once
 
-#include "xml/XmlParsing.h"
 #include "RobotModel.h"
+#include "xml/XmlParsing.h"
+
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 /**
  * @brief 模型参数结构体

@@ -93,10 +93,10 @@ void MoveLGalvo::applyOutput()
         int gXId = shm()->galvoCfg.galvoXId.load(std::memory_order_acquire);
         int gYId = shm()->galvoCfg.galvoYId.load(std::memory_order_acquire);
 
-        controller_->axiss[pXId]->setAxisPositionCmd(platX);
-        controller_->axiss[pYId]->setAxisPositionCmd(platY);
-        controller_->axiss[gXId]->setAxisPositionCmd(galvoX);
-        controller_->axiss[gYId]->setAxisPositionCmd(galvoY);
+        controller_->axes_[pXId]->setAxisPositionCmd(platX);
+        controller_->axes_[pYId]->setAxisPositionCmd(platY);
+        controller_->axes_[gXId]->setAxisPositionCmd(galvoX);
+        controller_->axes_[gYId]->setAxisPositionCmd(galvoY);
 
  }
 

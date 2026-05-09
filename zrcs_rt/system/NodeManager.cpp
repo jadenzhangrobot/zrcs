@@ -1,6 +1,12 @@
+/**
+ * @file NodeManager.cpp
+ * @brief Implementation of the RT control loop and command scheduler.
+ */
+
 #include "system/NodeManager.h"
+
+#include "command/CmdHead.h"     // IWYU pragma: keep -- triggers REGISTERCMD static initialisers
 #include "config/ProjectConfig.h"
-#include "command/CmdHead.h"  // IWYU pragma: keep — triggers REGISTERCMD static initialisers
 
 namespace zrcsSystem {
 
@@ -10,45 +16,58 @@ void NodeManager::run()
 
     auto* block = shm();
 
-    // 构造进程本地 SPSC 包装器（成员变量，生命周期与 NodeManager 一致，不会悬空）
-    cmdConsumer_ = std::make_unique<zrcs::ShmSPSCConsumer<zrcs::Command,    zrcs::kCmdQueueCap>>(block->cmdQueue);
-    logProducer_ = std::make_unique<zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap>>(block->logQueue);
+    // Construct process-local SPSC wrappers.  Bound to the same lifetime as
+    // NodeManager, therefore the pointers handed out will never dangle.
+    cmdConsumer_ = std::make_unique<
+        zrcs::ShmSPSCConsumer<zrcs::Command, zrcs::kCmdQueueCap>>(
+        block->cmdQueue);
+    logProducer_ = std::make_unique<
+        zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap>>(
+        block->logQueue);
 
-    // 注册日志生产者（RT 循环内 INFO_PRINT 等宏通过此指针写共享内存）
+    // Register the log producer so that INFO_PRINT and friends write through it.
     zrcs::rtlog::setLogQueue(logProducer_.get());
 
-    for (auto& node : factory_.inPutNodes)
+    for (auto& node : factory_.inPutNodes) {
         node->registered(controller_.get(), rtProcess_.get());
+    }
 
-    for (auto& node : factory_.outPutNodes)
+    for (auto& node : factory_.outPutNodes) {
         node->registered(controller_.get(), rtProcess_.get());
+    }
 
     initData();
 
-    // 初始化完成，切换到 RUN 状态，使能命令调度
-    shm()->taskSched.store(zrcs::TaskScheduling::RUN, std::memory_order_release);
+    // Initialisation complete -- switch to RUN so command dispatch is enabled.
+    shm()->taskSched.store(zrcs::TaskScheduling::RUN,
+                           std::memory_order_release);
 
     try {
         modelConfig_ = std::make_unique<ModelConfig>(
             zrcs::ProjectConfig::prefixedFilename(projectName_, "model.xml"));
         modelRegistry_.loadFromConfig(*modelConfig_);
         factory_.modelRegistry = &modelRegistry_;
-        for (auto& node : factory_.inPutNodes)
+        for (auto& node : factory_.inPutNodes) {
             node->modelRegistry_ = &modelRegistry_;
-        for (auto& node : factory_.outPutNodes)
+        }
+        for (auto& node : factory_.outPutNodes) {
             node->modelRegistry_ = &modelRegistry_;
+        }
     } catch (const std::exception& e) {
         WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
-    // 将轴数写入共享内存，供 NRT 启动时读取并初始化模型
-     shm()->axisCount.store(controller_->axiss.size(), std::memory_order_release);
+    // Publish axis count to shared memory so NRT can size its data structures.
+    shm()->axisCount.store(controller_->axes_.size(),
+                           std::memory_order_release);
 
-    // 先注册策略，再启动线程，避免线程启动时 strategy_ 尚为 nullptr
+    // Register the RT callback before starting the thread so that the strategy
+    // pointer is always valid when the first iteration fires.
     controller_->rtos_->real_task([this]()
     {
         controller_->receiveData();
 
+        // ---- Input nodes ----------------------------------------------------
         for (auto& node : factory_.inPutNodes) {
             if (node->getNodeStatus() == NodeStatus::RTINIT) {
                 node->init();
@@ -60,73 +79,81 @@ void NodeManager::run()
             }
         }
 
+        // ---- Command scheduling ---------------------------------------------
         switch (shm()->taskSched.load(std::memory_order_acquire))
         {
             case zrcs::TaskScheduling::RUN:
-                if (cmdNode_ != nullptr) 
-                {
-                    if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
-                     {
-                        shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                        shm()->lastCmdResult.store(0, std::memory_order_release);
-                        INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                if (cmdNode_ != nullptr) {
+                    if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) {
+                        shm()->lastCmdSeq.store(cmd_.seq,
+                                                std::memory_order_release);
+                        shm()->lastCmdResult.store(0,
+                                                   std::memory_order_release);
+                        INFO_PRINT("命令完成: id=%u(seq=%u)\n",
+                                   static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         cmdNode_ = nullptr;
-                        // 不 break，直接 fall through 到 pop 新命令
-                    } 
-                    else
-                    {
+                        // Fall through to pop the next command.
+                    } else {
                         cmdNode_->execute();
-                        if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) 
-                        {
+                        if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) {
                             WARN_PRINT("命令失败: id=%u(seq=%u)\n",
-                                       static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
-                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                            shm()->lastCmdResult.store(1, std::memory_order_release);
+                                       static_cast<unsigned>(cmd_.cmdId),
+                                       cmd_.seq);
+                            shm()->lastCmdSeq.store(cmd_.seq,
+                                                    std::memory_order_release);
+                            shm()->lastCmdResult.store(1,
+                                                       std::memory_order_release);
                         }
-                        // COMPLETED 可能在 execute() 里就到了（状态连跳）
-                        if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) 
-                        {
-                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                            shm()->lastCmdResult.store(0, std::memory_order_release);
-                            INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                        // COMPLETED may have been reached within execute()
+                        // (status leap).  Handle it in the same cycle.
+                        if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) {
+                            shm()->lastCmdSeq.store(cmd_.seq,
+                                                    std::memory_order_release);
+                            shm()->lastCmdResult.store(0,
+                                                       std::memory_order_release);
+                            INFO_PRINT("命令完成: id=%u(seq=%u)\n",
+                                       static_cast<unsigned>(cmd_.cmdId),
+                                       cmd_.seq);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
-                            // 不 break，fall through 到 pop 新命令
-                        } 
-                        else
-                        {
+                            // Fall through to pop the next command.
+                        } else {
                             break;
                         }
                     }
                 }
-                // cmdNode_ == nullptr: 立刻尝试取下一条命令
-                if (cmdNode_ == nullptr) 
-                {
-                    if (cmdConsumer_->pop(cmd_))
-                    {
+                // No active command: try to pop the next one immediately.
+                if (cmdNode_ == nullptr) {
+                    if (cmdConsumer_->pop(cmd_)) {
                         const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);
                         auto nodePtr = factory_.getNodePtr(cmdId);
-                        if (nodePtr) 
-                        {
-                            INFO_PRINT("调度命令: %s(seq=%u)\n",zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
+                        if (nodePtr) {
+                            INFO_PRINT("调度命令: %s(seq=%u)\n",
+                                       zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                             cmdNode_ = nodePtr.get();
-                            cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
+                            cmdNode_->registered(controller_.get(),
+                                                  rtProcess_.get(), &cmd_);
                             cmdNode_->modelRegistry_ = &modelRegistry_;
-                            // 同周期立刻执行 init（甚至第一拍 run）
+                            // Execute init in the same cycle (may also run the
+                            // first trajectory step).
                             cmdNode_->execute();
-                            if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) 
-                            {
-                                WARN_PRINT("命令失败: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
-                                shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                                shm()->lastCmdResult.store(1, std::memory_order_release);
+                            if (cmdNode_->getCmdStatus() == CmdStatus::FAILED) {
+                                WARN_PRINT("命令失败: id=%u(seq=%u)\n",
+                                           static_cast<unsigned>(cmd_.cmdId),
+                                           cmd_.seq);
+                                shm()->lastCmdSeq.store(cmd_.seq,
+                                                        std::memory_order_release);
+                                shm()->lastCmdResult.store(1,
+                                                           std::memory_order_release);
                             }
-                        } 
-                        else 
-                        {
-                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n", zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
-                            shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                            shm()->lastCmdResult.store(1, std::memory_order_release);
+                        } else {
+                            WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n",
+                                       zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
+                            shm()->lastCmdSeq.store(cmd_.seq,
+                                                    std::memory_order_release);
+                            shm()->lastCmdResult.store(1,
+                                                       std::memory_order_release);
                         }
                     }
                 }
@@ -134,28 +161,30 @@ void NodeManager::run()
 
             case zrcs::TaskScheduling::ERROR_STATE:
                 if (cmdNode_ != nullptr) {
-                    WARN_PRINT("错误状态: 清理命令节点 id=%u\n",static_cast<unsigned>(cmd_.cmdId));
+                    WARN_PRINT("错误状态: 清理命令节点 id=%u\n",
+                               static_cast<unsigned>(cmd_.cmdId));
                     cmdNode_->setCmdStatus(CmdStatus::INIT);
                     cmdNode_ = nullptr;
                 }
-                if (cmdConsumer_->pop(cmd_)) 
-                {
+                if (cmdConsumer_->pop(cmd_)) {
                     const CmdId cmdId = static_cast<CmdId>(cmd_.cmdId);
                     auto nodePtr = factory_.getNodePtr(cmdId);
-                    if (nodePtr) 
-                    {
-                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n", zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
+                    if (nodePtr) {
+                        INFO_PRINT("错误恢复: 调度命令 %s(seq=%u)\n",
+                                   zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                         cmdNode_ = nodePtr.get();
-                        cmdNode_->registered(controller_.get(), rtProcess_.get(), &cmd_);
+                        cmdNode_->registered(controller_.get(),
+                                              rtProcess_.get(), &cmd_);
                         cmdNode_->modelRegistry_ = &modelRegistry_;
                         shm()->taskSched.store(zrcs::TaskScheduling::RUN,
                                                std::memory_order_release);
-                    } 
-                    else
-                     {
-                        INFO_PRINT("未注册的命令: %s, 已忽略\n", zrcs::cmdIdToName(cmd_.cmdId));
-                        shm()->lastCmdSeq.store(cmd_.seq, std::memory_order_release);
-                        shm()->lastCmdResult.store(1, std::memory_order_release);
+                    } else {
+                        INFO_PRINT("未注册的命令: %s, 已忽略\n",
+                                   zrcs::cmdIdToName(cmd_.cmdId));
+                        shm()->lastCmdSeq.store(cmd_.seq,
+                                                std::memory_order_release);
+                        shm()->lastCmdResult.store(1,
+                                                   std::memory_order_release);
                     }
                 }
                 break;
@@ -177,6 +206,7 @@ void NodeManager::run()
                 break;
         }
 
+        // ---- Output nodes ---------------------------------------------------
         for (auto& node : factory_.outPutNodes) {
             if (node->getNodeStatus() == NodeStatus::RTINIT) {
                 node->init();
@@ -190,9 +220,10 @@ void NodeManager::run()
 
         controller_->sendData();
 
-        // 更新心跳（仅用于监测 RT 活跃，NRT 不依赖此字段做任何决策）
-        static uint64_t heartbeat = 0;  // 初始化
-        heartbeat++;  
+        // Heartbeat: updated solely for RT liveness monitoring.  NRT does not
+        // depend on this field for any decision-making.
+        static uint64_t heartbeat = 0;
+        heartbeat++;
         zrcs::lfl_write(shm()->heartbeat, heartbeat);
     });
 

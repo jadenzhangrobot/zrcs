@@ -40,7 +40,7 @@ bool MoveJ::initTrajectory()
     Eigen::VectorXd currentJoint(dof_);
     for (int i = 0; i < dof_; i++)
     {
-        currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
+        currentJoint(i) = controller_->axes_[axisIds_[i]]->actualPos();
     }
 
     // 逆运动学求解
@@ -65,9 +65,9 @@ bool MoveJ::initTrajectory()
         input_->target_position[i] = targetJoint(i);
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity() * velScale;
-        input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
-        input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+        input_->max_velocity[i] = controller_->axes_[axisId]->getMaxVelocity() * velScale;
+        input_->max_acceleration[i] = controller_->axes_[axisId]->getMaxAcceleration();
+        input_->max_jerk[i] = controller_->axes_[axisId]->getMaxJerk();
     }
     return true;
 }
@@ -76,7 +76,7 @@ void MoveJ::applyOutput()
 {
     for (int i = 0; i < dof_; i++)
     {
-        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
+        controller_->axes_[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 

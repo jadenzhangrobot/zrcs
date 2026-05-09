@@ -1,10 +1,10 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-28 15:25:04
- * @LastEditTime: 2023-06-10 15:12:05
- * @Description: 复位错误指令
+/**
+ * @file    Reset.cpp
+ * @brief   复位错误命令实现
+ * @author  zhangyongjing
+ * @date    2023-03-28
  */
+
 #include "command/Reset.h"
 
 void Reset::init()
@@ -12,47 +12,50 @@ void Reset::init()
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(ResetArg::AxisId)]);
 }
 
-void Reset::run(void)
+void Reset::run()
 {
-    if(controller_->axiss.size() > axisId_)
+    if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
-        if(!controller_->axiss[axisId_]->resetError())
+        if (!controller_->axes_[axisId_]->resetError())
         {
-            ERROR_PRINT("Reset: �?%d 操作失败\n", axisId_);
+            ERROR_PRINT("Reset: 轴%d 操作失败\n", axisId_);
             setCmdStatus(zrcsSystem::CmdStatus::FAILED);
         }
         else
         {
-            controller_->axiss[axisId_]->setAxisPositionCmd(controller_->axiss[axisId_]->actualPos());
-            controller_->axiss[axisId_]->syncCmdHistory();
+            controller_->axes_[axisId_]->setAxisPositionCmd(
+                controller_->axes_[axisId_]->actualPos());
+            controller_->axes_[axisId_]->syncCmdHistory();
             setCmdStatus(zrcsSystem::CmdStatus::EXIT);
         }
     }
-    else if(controller_->axiss.size() == axisId_)
+    else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
         for (int i = 0; i < axisId_; i++)
         {
-            if(!controller_->axiss[i]->resetError())
+            if (!controller_->axes_[i]->resetError())
             {
-                ERROR_PRINT("Reset: �?%d 操作失败\n", i);
+                ERROR_PRINT("Reset: 轴%d 操作失败\n", i);
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
             else
             {
-                controller_->axiss[i]->setAxisPositionCmd(controller_->axiss[i]->actualPos());
-                controller_->axiss[i]->syncCmdHistory();
+                controller_->axes_[i]->setAxisPositionCmd(
+                    controller_->axes_[i]->actualPos());
+                controller_->axes_[i]->syncCmdHistory();
             }
         }
         setCmdStatus(zrcsSystem::CmdStatus::EXIT);
     }
     else
     {
-        ERROR_PRINT("Reset: 轴索�?%d 超出范围(max=%zu)\n", axisId_, controller_->axiss.size());
+        ERROR_PRINT("Reset: 轴索引%d 超出范围(max=%zu)\n",
+                     axisId_, controller_->axes_.size());
         setCmdStatus(zrcsSystem::CmdStatus::FAILED);
     }
 }
 
-void Reset::exit(void)
+void Reset::exit()
 {
 }
 

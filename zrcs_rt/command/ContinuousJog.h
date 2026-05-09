@@ -44,6 +44,6 @@ public:
     void init() override;
     void accelerate(int axisId);
     void decelerate(int axisId);
-    void run(void) override;
+    void run() override;
 };
 

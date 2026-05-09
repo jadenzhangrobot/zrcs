@@ -28,7 +28,7 @@ bool MoveC::initTrajectory()
     Eigen::VectorXd currentJoint(dof_);
     for (int i = 0; i < dof_; i++)
     {
-        currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
+        currentJoint(i) = controller_->axes_[axisIds_[i]]->actualPos();
     }
 
     // FK: current joint -> start cartesian position
@@ -115,7 +115,7 @@ bool MoveC::initTrajectory()
     return true;
 }
 
-void MoveC::run(void)
+void MoveC::run()
 {
     updateOverride();
 
@@ -134,7 +134,7 @@ void MoveC::run(void)
         Eigen::VectorXd currentJoint(dof_);
         for (int i = 0; i < dof_; i++)
         {
-            currentJoint(i) = controller_->axiss[axisIds_[i]]->actualPos();
+            currentJoint(i) = controller_->axes_[axisIds_[i]]->actualPos();
         }
 
         // build target pose (keep current orientation for simplicity)
@@ -155,7 +155,7 @@ void MoveC::run(void)
 
         for (int i = 0; i < dof_; i++)
         {
-            controller_->axiss[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
+            controller_->axes_[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
         }
 
         if (result == Result::Finished)

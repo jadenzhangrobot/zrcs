@@ -109,18 +109,18 @@ void MoveL::applyOutput()
     Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
     const Eigen::Vector3d pathDir = (targetPos_ - startPos_) / cartDist_;
 
-    controller_->axiss[axisIds_[0]]->setAxisPositionCmd(pos.x());
-    controller_->axiss[axisIds_[1]]->setAxisPositionCmd(pos.y());
-    controller_->axiss[axisIds_[2]]->setAxisPositionCmd(pos.z());
+    controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
+    controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
+    controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
 
     // 四元数球面线性插补 (SLERP) — 含最短路径 + 小角度保护
     Eigen::Quaterniond qInterp = startQuat_.slerp(u, targetQuat_);
     if (axisIds_.size() >= 6)
     {
         Eigen::Vector3d euler = qInterp.toRotationMatrix().canonicalEulerAngles(2, 1, 0);
-        controller_->axiss[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
-        controller_->axiss[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
-        controller_->axiss[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
+        controller_->axes_[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
+        controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
+        controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
     }
 } 
 

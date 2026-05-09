@@ -1,5 +1,5 @@
 /**
- * @file modelFactory.cpp
+ * @file ModelFactory.cpp
  * @brief 模型工厂 + 多模型注册表实现
  */
 #include "model/ModelFactory.h"

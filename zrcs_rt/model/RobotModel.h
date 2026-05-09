@@ -1,5 +1,5 @@
 /**
- * @file robotModel.h
+ * @file RobotModel.h
  * @brief 运动学模型基类，描述多轴之间的几何关系
  *
  * 模型层只关心坐标变换（FK/IK/Jacobian），不涉及：
@@ -26,7 +26,7 @@ enum class JointType
  * @brief 模型层的关节描述
  *
  * 只包含几何信息，不重复 Axis 层的硬件参数。
- * 通过 axisId 引用 Controller::axiss 中的物理轴。
+ * 通过 axisId 引用 Controller::axes_ 中的物理轴。
  */
 struct ModelJoint
 {
@@ -138,21 +138,54 @@ public:
     }
 
     // --- 坐标系管理 ---
+
+    /**
+     * @brief 设置基坐标系偏移变换
+     * @param tf 4x4 齐次变换矩阵，定义机器人基座相对于世界坐标系的位姿
+     */
     void setBaseFrame(const Eigen::Matrix4d& tf) { baseTf_ = tf; }
+
+    /**
+     * @brief 设置工具坐标系(TCP)偏移变换
+     * @param tf 4x4 齐次变换矩阵，定义末端执行器相对于法兰的位姿
+     */
     void setToolFrame(const Eigen::Matrix4d& tf) { toolTf_ = tf; }
+
+    /** @return 基坐标系偏移变换矩阵的常量引用 */
     const Eigen::Matrix4d& getBaseFrame() const { return baseTf_; }
+
+    /** @return 工具坐标系(TCP)偏移变换矩阵的常量引用 */
     const Eigen::Matrix4d& getToolFrame() const { return toolTf_; }
 
     // --- 负载管理 ---
+
+    /**
+     * @brief 设置末端负载质量
+     * @param mass 负载质量，单位 kg
+     */
     void setPayload(double mass) { payloadMass_ = mass; }
+
+    /** @return 末端负载质量 (kg) */
     double getPayload() const { return payloadMass_; }
 
     // --- 属性访问 ---
+
+    /**
+     * @brief 获取所有关节对应的物理轴ID列表
+     * @return 轴ID向量的常量引用（首次调用时从 joints_ 缓存计算，后续零开销）
+     */
     const std::vector<int>& getAxisIds() const;
 
+    /** @return 自由度数量 */
     int getDof() const { return dof_; }
+
+    /** @return 模型名称的常量引用 */
     const std::string& getName() const { return name_; }
+
+    /** @return 模型类型字符串 ("serial" / "delta" / "cartesian") */
     const std::string& getType() const { return type_; }
+
+    /** @return 模型关节列表的常量引用 */
     const std::vector<ModelJoint>& getJoints() const { return joints_; }
 
     /**

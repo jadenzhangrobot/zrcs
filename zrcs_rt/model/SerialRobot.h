@@ -1,5 +1,5 @@
 /**
- * @file serialRobot.h
+ * @file SerialRobot.h
  * @brief 串联机械臂运动学模型
  *
  * 基于标准DH参数的通用串联机器人运动学。

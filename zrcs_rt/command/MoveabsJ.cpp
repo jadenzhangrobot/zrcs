@@ -32,15 +32,15 @@ bool MoveAbsJ::initTrajectory()
     for (int i = 0; i < dof_; i++)
     {
         int axisId = axisIds_[i];
-        input_->current_position[i] = controller_->axiss[axisId]->actualPos();
+        input_->current_position[i] = controller_->axes_[axisId]->actualPos();
         input_->current_velocity[i] = 0;
         input_->current_acceleration[i] = 0;
         input_->target_position[i] = command_->args[static_cast<size_t>(MoveAbsJArg::J1) + i];
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
-        input_->max_velocity[i] = controller_->axiss[axisId]->getMaxVelocity();
-        input_->max_acceleration[i] = controller_->axiss[axisId]->getMaxAcceleration();
-        input_->max_jerk[i] = controller_->axiss[axisId]->getMaxJerk();
+        input_->max_velocity[i] = controller_->axes_[axisId]->getMaxVelocity();
+        input_->max_acceleration[i] = controller_->axes_[axisId]->getMaxAcceleration();
+        input_->max_jerk[i] = controller_->axes_[axisId]->getMaxJerk();
     }
     return true;
 }
@@ -49,7 +49,7 @@ void MoveAbsJ::applyOutput()
 {
     for (int i = 0; i < dof_; i++)
     {
-        controller_->axiss[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
+        controller_->axes_[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
 }
 

@@ -1,7 +1,17 @@
-/*
- * @Description: HardwareFactory class method implementations
+/**
+ * @file HardwareFactory.cpp
+ * @brief HardwareFactory 类方法实现
+ *
+ * createController() 根据编译宏选择硬件栈:
+ * - REALTIME:  创建 xenomai RTOS + EthercatMaster + EthercatMotor/EthercatIo
+ * - SIMULATION: 为每个轴添加 CoppeliaSim 仿真伺服
+ * - STANDARD:   为每个轴添加 virtualServo 虚拟伺服
+ * - 非 REALTIME 时使用 Nativelinux 作为 RTOS
+ *
+ * 组装流程: AxisConfig -> Axis -> Servo (pushServo) -> Controller
  */
 #include "controller/HardwareFactory.h"
+
 #include "config/ProjectConfig.h"
 
 #ifdef REALTIME
@@ -33,7 +43,8 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
 
 #ifdef REALTIME
     rtos = std::make_shared<xenomai>();
-    auto ethercatMaster = std::make_unique<EthercatMaster>(zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
+    auto ethercatMaster = std::make_unique<EthercatMaster>(
+        zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
     void* masterPtr = ethercatMaster.get();
     bus = std::move(ethercatMaster);
 #else
@@ -48,7 +59,8 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
 
 #ifdef REALTIME
         if (masterPtr) {
-            axis->pushServo(std::make_unique<EthercatMotor>(it->slaveId, static_cast<EthercatMaster*>(masterPtr)));
+            axis->pushServo(std::make_unique<EthercatMotor>(
+                it->slaveId, static_cast<EthercatMaster*>(masterPtr)));
         }
 #endif
 

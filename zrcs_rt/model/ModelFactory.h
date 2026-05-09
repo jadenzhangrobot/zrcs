@@ -1,5 +1,5 @@
 /**
- * @file modelFactory.h
+ * @file ModelFactory.h
  * @brief 模型工厂 + 多模型注册表
  *
  * ModelFactory: 根据 XML 配置的 type 字段创建对应的 RobotModel 子类

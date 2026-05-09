@@ -1,5 +1,5 @@
 /**
- * @file parallelRobot.cpp
+ * @file ParallelRobot.cpp
  * @brief Delta并联机器人运动学模型实现
  */
 #include "model/ParallelRobot.h"

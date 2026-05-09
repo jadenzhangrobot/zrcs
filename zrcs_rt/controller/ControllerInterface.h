@@ -26,11 +26,11 @@ public:
   {}
   virtual~Servo() = default;
 
-  virtual bool enable(void)
+  virtual bool enable()
   {
     return true;
   }
-  virtual bool disable(void)
+  virtual bool disable()
   {
     return true;
   }
@@ -40,10 +40,10 @@ public:
   virtual MC_SERVO_CODE setTorque(int32_t torque) = 0;
   virtual MC_SERVO_CODE setMode(Cia402Mode mode) = 0;
 
-  virtual int32_t pos(void)=0;
-  virtual int32_t vel(void)=0;
-  virtual int32_t acc(void)=0;
-  virtual int32_t torque(void) = 0;
+  virtual int32_t pos()=0;
+  virtual int32_t vel()=0;
+  virtual int32_t acc()=0;
+  virtual int32_t torque() = 0;
 
   virtual bool readVal(int index, double& value) { return false; }
   virtual bool writeVal(int index, double value) { return false; }
@@ -53,8 +53,8 @@ public:
   {
     return true;
   }
-  virtual void emergStop(void)=0;
-  virtual void runCycle(void)=0;
+  virtual void emergStop()=0;
+  virtual void runCycle()=0;
 };
 
 class Axis {
@@ -115,7 +115,7 @@ public:
    {
          axisPosCmd_=axisPosCmd;
    }
-   void setAxis‌VelocityCmd(double axisVelCmd)
+   void setAxisVelocityCmd(double axisVelCmd)
    {
        axisVelCmd_=axisVelCmd;
    }
@@ -151,23 +151,23 @@ public:
    */
   void statusSync();
   
-  auto actualPos()->double
+  double actualPos()
   {
     return axisPos_ - zeroOffset_;
   }
-  auto actualVel()->double
+  double actualVel()
   {
     return axisVel_;
   }
-  auto actualAcc()->double
+  double actualAcc()
   {
     return axisAcc_;
   }
-  auto actualposCmd()->double
+  double actualPosCmd()
   {
     return axisPosCmd_;
   }
-  auto actualVelCmd()->double
+  double actualVelCmd()
   {
     return axisVelCmd_;
   }

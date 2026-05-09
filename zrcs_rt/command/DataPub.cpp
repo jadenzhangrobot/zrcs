@@ -20,12 +20,12 @@ void DataPub::init()
 void DataPub::run()
 {
     zrcs::AxisFeedbackData fb{};
-    const size_t count = controller_->axiss.size();
+    const size_t count = controller_->axes_.size();
     for (size_t i = 0; i < count; ++i) {
-        fb.position[i]    = controller_->axiss[i]->actualPos();
-        fb.cmdPosition[i] = controller_->axiss[i]->actualposCmd();
-        fb.cmdVelocity[i] = controller_->axiss[i]->actualVelCmd();
-        fb.velocity[i] = controller_->axiss[i]->actualVel();
+        fb.position[i]    = controller_->axes_[i]->actualPos();
+        fb.cmdPosition[i] = controller_->axes_[i]->actualPosCmd();
+        fb.cmdVelocity[i] = controller_->axes_[i]->actualVelCmd();
+        fb.velocity[i] = controller_->axes_[i]->actualVel();
 
 
         // fb.torque[i] — Axis 暂无 torque 接口，默认 0

@@ -1,8 +1,10 @@
 /**
- * @file modelConfig.cpp
+ * @file ModelConfig.cpp
  * @brief 模型配置解析器实现
  */
 #include "model/ModelConfig.h"
+
+#include <stdexcept>
 
 ModelConfig::ModelConfig(const std::string& xmlFileName) : XmlParsing(xmlFileName)
 {
