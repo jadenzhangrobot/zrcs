@@ -14,7 +14,8 @@
       "Bash(ldd /c/Users/64989/Desktop/zrcs-dev/build/bin/zrcsnrt.exe)",
       "WebFetch(domain:scholar.google.com)",
       "Bash(find / -name \"tinyfsm*\" -type f 2>/dev/null | head -20)",
-      "Read(//e//**)"
+      "Read(//e//**)",
+      "Bash(cmake --build /e/zrcs-dev/build --target zrcsrt)"
     ]
   }
 }

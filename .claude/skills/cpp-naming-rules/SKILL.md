@@ -302,9 +302,12 @@ double ratio = override / 100.0;  // 将百分比转换为 [0,1] 比例
 采用 **K&R 风格**（又称 "One True Brace Style"），与 Qt 源码和大多数现代 C++ 项目一致：
 
 ```cpp
-if (condition) {
+if (condition) 
+{
     doSomething();
-} else {
+} 
+else
+{
     doOther();
 }
 
