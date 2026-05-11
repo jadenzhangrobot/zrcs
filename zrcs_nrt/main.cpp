@@ -25,6 +25,7 @@
 #include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"
 #include "motion/MotionPreprocessor.h"
+#include "behavior_tree/BehaviorTreeRunner.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -258,6 +259,7 @@ int main(int argc, char **argv)
 
         // 创建 RtBridge（NRT→RT 共享内存通信的唯一入口）
         RtBridge bridge(nrt_process.sharedBlock());
+        BehaviorTreeRunner behaviorTreeRunner(&bridge);
 
         // 启动 RT 日志消费者（从共享内存读取 RT 日志并写入 spdlog）
         RtLogConsumer rtLogConsumer(nrt_process.sharedBlock());
@@ -265,7 +267,7 @@ int main(int argc, char **argv)
         spdlog::info("RT log consumer started");
 
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(&bridge);
+        ZMQServer zmq_server(&bridge, &behaviorTreeRunner);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {
@@ -314,6 +316,9 @@ int main(int argc, char **argv)
 
         spdlog::info("Shutting down terminal console...");
         terminal.stop();
+
+        spdlog::info("Stopping behavior tree runner...");
+        behaviorTreeRunner.stop("Process shutdown");
 
         spdlog::info("Shutting down ZMQ server...");
         zmq_server.stop();

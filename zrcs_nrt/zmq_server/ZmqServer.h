@@ -3,8 +3,10 @@
 #include <thread>
 #include <atomic>
 #include <string>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include "message.pb.h"
+#include "behavior_tree/BehaviorTreeRunner.h"
 #include "rtBridge/RtBridge.h"
 
 class ZMQServer {
@@ -14,14 +16,15 @@ private:
     std::atomic<bool> running_;
     std::thread server_thread_;
     RtBridge* bridge_;
+    BehaviorTreeRunner* behaviorTreeRunner_;
 
     static constexpr const char* ENDPOINT = "tcp://*:5555";
     static constexpr int RECV_TIMEOUT = 1000; // ms
 
 public:
-    ZMQServer(RtBridge* bridge)
+    ZMQServer(RtBridge* bridge, BehaviorTreeRunner* behaviorTreeRunner = nullptr)
         : context_(1), socket_(nullptr), running_(false),
-          bridge_(bridge) {}
+          bridge_(bridge), behaviorTreeRunner_(behaviorTreeRunner) {}
 
     ~ZMQServer() {
         stop();
@@ -84,7 +87,13 @@ private:
 
                 spdlog::debug("[ZMQServer] Received message, size={} bytes", request.size());
 
-                // 解析为 MotionCommand
+                zrcs_message::TypedCommand typedCmd;
+                if (typedCmd.ParseFromArray(request.data(), request.size()) && typedCmd.has_bt_command())
+                {
+                    handleBehaviorTreeCommand(typedCmd.bt_command());
+                    continue;
+                }
+
                 zrcs_message::MotionCommand cmd;
                 if (!cmd.ParseFromArray(request.data(), request.size())) {
                     spdlog::error("[ZMQServer] Failed to parse protobuf message, size={}", request.size());
@@ -98,7 +107,6 @@ private:
                     spdlog::debug("[ZMQServer]   arg[{}] = {}", i, cmd.args(i));
                 }
 
-                // 通过路由层分发命令
                 handleMotionCommand(cmd);
 
             } catch (const zmq::error_t& e) {
@@ -186,6 +194,70 @@ private:
                 sendReply("ERROR: Queue full");
             }
         }
+    }
+
+    void handleBehaviorTreeCommand(const zrcs_message::BehaviorTreeCommand& cmd) {
+        if (!behaviorTreeRunner_)
+        {
+            sendReply("ERROR: BehaviorTree runner unavailable");
+            return;
+        }
+
+        const std::string action = cmd.action();
+        if (action == "LOAD")
+        {
+            if (cmd.xml_data().empty())
+            {
+                sendReply("ERROR: LOAD requires xml_data");
+                return;
+            }
+
+            std::string error;
+            if (behaviorTreeRunner_->loadFromXml(cmd.xml_data(), error))
+            {
+                spdlog::info("[ZMQServer] Behavior tree loaded");
+                sendReply("OK");
+            }
+            else
+            {
+                spdlog::error("[ZMQServer] Behavior tree load failed: {}", error);
+                sendReply("ERROR: " + error);
+            }
+            return;
+        }
+
+        if (action == "START")
+        {
+            std::string error;
+            if (behaviorTreeRunner_->start(error))
+            {
+                spdlog::info("[ZMQServer] Behavior tree started");
+                sendReply("OK");
+            }
+            else
+            {
+                sendReply("ERROR: " + error);
+            }
+            return;
+        }
+
+        if (action == "STOP")
+        {
+            behaviorTreeRunner_->stop("Stopped by command");
+            spdlog::info("[ZMQServer] Behavior tree stopped");
+            sendReply("OK");
+            return;
+        }
+
+        if (action == "STATUS")
+        {
+            const auto status = behaviorTreeRunner_->status();
+            std::string reply = "STATE=" + status.treeState + ";NODE=" + status.currentNode + ";MSG=" + status.message;
+            sendReply(reply);
+            return;
+        }
+
+        sendReply("ERROR: Unknown BT action");
     }
 
     void sendReply(const std::string& message) {
