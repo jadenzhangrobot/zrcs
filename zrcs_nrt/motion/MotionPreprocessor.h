@@ -13,7 +13,7 @@
 
 #include "motion/PathPreprocessor.h"
 #include "motion/VelocityPlanner3D.h"
-#include "rt_bridge/RtBridge.h"
+#include "rtRridge/RtBridge.h"
 #include "shared_memory/ShmLayout.h"
 #include <spdlog/spdlog.h>
 

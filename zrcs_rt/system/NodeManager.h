@@ -80,6 +80,7 @@ private:
     NodeFactory                                 factory_;
     CmdNode*                                    cmdNode_{nullptr};
     zrcs::Command                               cmd_;
+    bool                                        stopHandled_{false};
 
     /// SPSC queue wrappers (initialised in run(), same lifetime as NodeManager).
     /// unique_ptr defers construction until the SharedBlock pointer is available.
