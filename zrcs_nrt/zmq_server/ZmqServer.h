@@ -5,7 +5,7 @@
 #include <string>
 #include <spdlog/spdlog.h>
 #include "message.pb.h"
-#include "rtRridge/RtBridge.h"
+#include "rtBridge/RtBridge.h"
 
 class ZMQServer {
 private:

@@ -20,7 +20,7 @@
 #include "zmq_server/ZmqServer.h"
 #include "statusPublisher/StatusPublisher.h"
 #include "terminal/TerminalConsole.h"
-#include "rtRridge/RtBridge.h"
+#include "rtBridge/RtBridge.h"
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"

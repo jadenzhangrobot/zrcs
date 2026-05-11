@@ -13,7 +13,7 @@
 #include <spdlog/spdlog.h>
 
 #include "message.pb.h"
-#include "rtRridge/RtBridge.h"
+#include "rtBridge/RtBridge.h"
 #include "config/Parameter.h"
 
 /**

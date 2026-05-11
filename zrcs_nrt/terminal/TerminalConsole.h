@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include <spdlog/spdlog.h>
-#include "rtRridge/RtBridge.h"
+#include "rtBridge/RtBridge.h"
 
 class TerminalConsole {
 private:
