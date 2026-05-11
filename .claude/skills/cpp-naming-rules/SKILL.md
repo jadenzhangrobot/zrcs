@@ -299,30 +299,55 @@ double ratio = override / 100.0;  // 将百分比转换为 [0,1] 比例
 
 ### 8.1 大括号风格
 
-采用 **K&R 风格**（又称 "One True Brace Style"），与 Qt 源码和大多数现代 C++ 项目一致：
+采用 **Allman 风格**（开大括号单独占一行），以 `NodeManager.cpp` 为基准：
 
 ```cpp
-if (condition) 
+// 控制语句：开大括号换行
+for (auto& node : factory_.inPutNodes)
+{
+    node->registered(controller_.get(), rtProcess_.get());
+}
+
+if (condition)
 {
     doSomething();
-} 
+}
 else
 {
     doOther();
 }
 
+switch (value)
+{
+    case kFoo:
+        break;
+    default:
+        break;
+}
+
+// 函数/方法定义：开大括号换行
+void NodeManager::run()
+{
+    // ...
+}
+
+// Lambda：开大括号换行
+controller_->rtos_->real_task([this]()
+{
+    // ...
+});
+
+// 类/结构体定义：开大括号同行（例外）
 class MyClass {
 public:
-    void method()
-    {
-        // ...
-    }
+    // ...
 };
 ```
 
-- 控制语句（`if`/`for`/`while`）: 开大括号**同行**
-- 函数/方法定义: 开大括号可**同行**也可**换行**（项目内保持一致即可）
-- 类定义: 开大括号**同行**
+- 控制语句（`if`/`else`/`for`/`while`/`switch`）: 开大括号**换行**
+- 函数/方法定义: 开大括号**换行**
+- Lambda 表达式: 开大括号**换行**
+- 类/结构体定义: 开大括号**同行**（唯一例外）
 
 ### 8.2 缩进与空白
 
