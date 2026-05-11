@@ -6,7 +6,6 @@
 #include <QLabel>
 #include <QStyle>
 #include "ui_jog_control_panel.h"
-#include "ui_io_panel.h"
 
 JogControlPanel::JogControlPanel(QWidget *parent)
     : QWidget(parent), axisCount(5), axisPageSize(5)
@@ -147,64 +146,5 @@ void JogControlPanel::setAxisPosition(int axis, double position)
     int localIndex = axis - startAxis;
     if (localIndex >= 0 && localIndex < axisPositionLabels.size()) {
         axisPositionLabels[localIndex]->setText(QString::number(position, 'f', 3));
-    }
-}
-
-IOPanel::IOPanel(QWidget *parent)
-    : QWidget(parent)
-{
-    setupUI();
-}
-
-void IOPanel::setupUI()
-{
-    Ui::IOPanelUi ui;
-    ui.setupUi(this);
-    QGridLayout *inputLayout = findChild<QGridLayout*>("inputGridLayout");
-    QGridLayout *outputLayout = findChild<QGridLayout*>("outputGridLayout");
-    if (!inputLayout || !outputLayout) {
-        return;
-    }
-    
-    QStringList inputNames = {"X限位+", "X限位-", "Y限位+", "Y限位-", "Z限位+", "Z限位-", "急停按钮", "使能开关"};
-    for (int i = 0; i < inputNames.size(); ++i) {
-        QLabel *led = new QLabel("●");
-        led->setObjectName("ioInputLed");
-        led->setProperty("active", false);
-        QLabel *nameLabel = new QLabel(inputNames[i]);
-        
-        inputLEDs.append(led);
-        inputLayout->addWidget(led, i / 4, (i % 4) * 2);
-        inputLayout->addWidget(nameLabel, i / 4, (i % 4) * 2 + 1);
-    }
-
-    QStringList outputNames = {"主轴启动", "冷却液", "气缸1", "气缸2", "继电器1", "继电器2"};
-    for (int i = 0; i < outputNames.size(); ++i) {
-        QPushButton *btn = new QPushButton(outputNames[i]);
-        btn->setCheckable(true);
-        
-        int index = i;
-        connect(btn, &QPushButton::toggled, this, [this, index](bool checked) {
-            emit outputToggled(index, checked);
-        });
-        
-        outputButtons.append(btn);
-        outputLayout->addWidget(btn, i / 3, i % 3);
-    }
-}
-
-void IOPanel::updateInputState(int index, bool state)
-{
-    if (index >= 0 && index < inputLEDs.size()) {
-        inputLEDs[index]->setProperty("active", state);
-        inputLEDs[index]->style()->unpolish(inputLEDs[index]);
-        inputLEDs[index]->style()->polish(inputLEDs[index]);
-    }
-}
-
-void IOPanel::updateOutputState(int index, bool state)
-{
-    if (index >= 0 && index < outputButtons.size()) {
-        outputButtons[index]->setChecked(state);
     }
 }

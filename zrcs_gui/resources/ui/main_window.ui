@@ -142,46 +142,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="gcodeTab">
-       <attribute name="title">
-        <string>G-code 编辑器</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="gcodeLayout">
-        <item>
-         <widget class="GCodePanel" name="gcodePanel"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="ioMonitorTab">
-       <attribute name="title">
-        <string>IO监控</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="ioMonitorLayout">
-        <item>
-         <widget class="IOPanel" name="ioMonitorPanel"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="remoteTab">
-       <attribute name="title">
-        <string>远程监控</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="remoteLayout">
-        <item>
-         <widget class="RemoteMonitorPanel" name="remotePanel"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="pluginTab">
-       <attribute name="title">
-        <string>插件管理</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="pluginLayout">
-        <item>
-         <widget class="PluginPanel" name="pluginPanel"/>
-        </item>
-       </layout>
-      </widget>
       <widget class="QWidget" name="commandTab">
        <attribute name="title">
         <string>命令面板</string>
@@ -228,26 +188,6 @@
    <class>AlarmPanel</class>
    <extends>QWidget</extends>
    <header>core/MainWindow.h</header>
-  </customwidget>
-  <customwidget>
-   <class>GCodePanel</class>
-   <extends>QWidget</extends>
-   <header>gcode/gcodeEditor.h</header>
-  </customwidget>
-  <customwidget>
-   <class>IOPanel</class>
-   <extends>QWidget</extends>
-   <header>core/MainWindow.h</header>
-  </customwidget>
-  <customwidget>
-   <class>RemoteMonitorPanel</class>
-   <extends>QWidget</extends>
-   <header>remote/remoteMonitor.h</header>
-  </customwidget>
-  <customwidget>
-   <class>PluginPanel</class>
-   <extends>QWidget</extends>
-   <header>plugin/pluginManager.h</header>
   </customwidget>
   <customwidget>
    <class>CommandPanel</class>

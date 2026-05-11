@@ -38,20 +38,6 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnImport">
-       <property name="text">
-        <string>导入轨迹文件</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnWireframe">
-       <property name="text">
-        <string>线框叠加</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="btnResetView">
        <property name="text">
         <string>重置视角</string>

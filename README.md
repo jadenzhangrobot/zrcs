@@ -1,4 +1,5 @@
-﻿# ZRCS
+﻿
+# ZRCS
 
 ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++ 工程，采用“GUI / NRT / RT / Common”分层架构，支持标准模式、仿真模式和实时模式，覆盖共享内存通信、ZMQ 通信、机器人模型、轨迹命令、EtherCAT/虚拟控制器接入以及 Qt 上位机界面。
 

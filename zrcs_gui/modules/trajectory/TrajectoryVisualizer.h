@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include <functional>
 
 class TrajectoryVisualizer3D : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
@@ -16,9 +17,7 @@ public:
     ~TrajectoryVisualizer3D();
 
     void setTrajectoryPoints(const QVector<QVector3D> &points);
-    void setModelMesh(const QVector<QVector3D> &triangles, const QVector<QVector3D> &segments);
-    void setModelLineSegments(const QVector<QVector3D> &segments);
-    void setWireframeOverlayEnabled(bool enabled);
+    void setEndEffectorPose(const QVector3D &pos, const QVector3D &rpy);
     void clearTrajectory();
     void setTrajectoryColor(const QColor &color);
     void resetView();
@@ -34,10 +33,16 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
+    void drawGrid(QPainter &painter, const std::function<QPointF(const QVector3D&, bool&)> &projectPoint);
+    void drawAxes(QPainter &painter, const std::function<QPointF(const QVector3D&, bool&)> &projectPoint);
+    void drawTrajectoryPath(QPainter &painter, const std::function<QPointF(const QVector3D&, bool&)> &projectPoint);
+    void drawEEFrame(QPainter &painter, const std::function<QPointF(const QVector3D&, bool&)> &projectPoint);
+
     QVector<QVector3D> trajectoryPoints;
-    QVector<QVector3D> modelTriangles;
-    QVector<QVector3D> modelLineSegments;
-    bool wireframeOverlayEnabled;
+    QVector<QVector3D> trajectoryHistory;  // 实时轨迹历史点 (max ~5000)
+    QVector3D eePos;      // 当前末端位置
+    QVector3D eeRpy;      // 当前末端姿态 (RX, RY, RZ in degrees)
+    bool hasEEPose;       // 是否已收到位姿数据
     QColor trajectoryColor;
     float rotateX;
     float rotateY;
@@ -48,10 +53,6 @@ private:
     Qt::MouseButton activeButton;
 };
 
-/**
- * 轨迹可视化面板
- * 集成 3D 可视化器（支持 2D 俯视）
- */
 class TrajectoryPanel : public QWidget {
     Q_OBJECT
 
@@ -59,28 +60,15 @@ public:
     explicit TrajectoryPanel(QWidget *parent = nullptr);
     ~TrajectoryPanel();
 
-    void loadGCodeFile(const QString &filePath);
-    void loadSTEPFile(const QString &filePath);
-    void addTrajectoryPoints(const QVector<QPointF> &points2D);
-    void switchTo2DView();
-    void switchTo3DView();
     void clearTrajectory();
+    void updateEndEffectorPose(const QVector3D &pos, const QVector3D &rpy);
 
 signals:
     void trajectoryLoaded(int pointCount);
-    void viewModeChanged(const QString &mode);
 
 private:
     void setupUI();
-    void parseGCode(const QString &filePath);
-    void parseSTEP(const QString &filePath);
-    QVector<QVector3D> to3DPoints(const QVector<QPointF> &points2D);
-    QVector<QVector3D> normalize3DPoints(const QVector<QVector3D> &points3D);
-    QVector<QVector3D> extractStepMeshOCC(const QString &filePath, QVector<QVector3D> &trianglesOut, bool &ok);
 
     TrajectoryVisualizer3D *visualizer3D;
-    
-    QVector<QPointF> trajectoryPoints2D;
     QVector<QVector3D> trajectoryPoints3D;
 };
-

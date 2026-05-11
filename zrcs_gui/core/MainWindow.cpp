@@ -11,6 +11,7 @@
 #include <functional>
 #include <QFile>
 #include "ui_main_window.h"
+#include "shared_memory/ShmLayout.h"
 
 MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     : QMainWindow(parent), useZMQ(true), currentOverride(100.0), currentStepSize(0.0)
@@ -131,9 +132,6 @@ void MainWindowRefactored::setupConnections()
         connect(jogPanel, &JogControlPanel::homeAllRequested, this, &MainWindowRefactored::onHomeAllRequested);
         connect(jogPanel, &JogControlPanel::setCurrentAsOriginRequested, this, &MainWindowRefactored::onSetCurrentAsOriginRequested);
     }
-    if (ioMonitorPanel) {
-        connect(ioMonitorPanel, &IOPanel::outputToggled, this, &MainWindowRefactored::onOutputToggled);
-    }
 }
 
 void MainWindowRefactored::setupStyles()
@@ -166,19 +164,10 @@ void MainWindowRefactored::createAlarmPanel()
     alarmPanel = findChild<AlarmPanel*>("alarmPanel");
 }
 
-void MainWindowRefactored::createIOPanel()
-{
-    ioPanel = findChild<IOPanel*>("ioPanel");
-}
-
 void MainWindowRefactored::createSettingsPanel() {}
 
 void MainWindowRefactored::createAdvancedModules()
 {
-    gcodePanel = findChild<GCodePanel*>("gcodePanel");
-    ioMonitorPanel = findChild<IOPanel*>("ioMonitorPanel");
-    remotePanel = findChild<RemoteMonitorPanel*>("remotePanel");
-    pluginPanel = findChild<PluginPanel*>("pluginPanel");
     behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
     commandPanel = findChild<CommandPanel*>("commandPanel");
 }
@@ -256,7 +245,11 @@ QPushButton* MainWindowRefactored::addQuickAction(const QString &text, const QSt
     return btn;
 }
 
-void MainWindowRefactored::onUpdateTimer() { updateGlobalStatus(); }
+void MainWindowRefactored::onUpdateTimer()
+{
+    updateGlobalStatus();
+    feedPoseToTrajectory();
+}
 void MainWindowRefactored::updateGlobalStatus() {}
 void MainWindowRefactored::updateCommunicationStatus() {}
 void MainWindowRefactored::onJogPressed(int axis, int direction)
@@ -299,10 +292,6 @@ void MainWindowRefactored::onSetCurrentAsOriginRequested(int axis)
     sendMotionCommand("SetZero", {static_cast<double>(axis)});
 }
 
-void MainWindowRefactored::onOutputToggled(int index, bool state)
-{
-    sendMotionCommand("SetDO", {0.0, static_cast<double>(index), state ? 1.0 : 0.0});
-}
 void MainWindowRefactored::onZMQConnected()
 {
     zmqStatusLabel->setText("ZMQ: 已连接");
@@ -413,4 +402,23 @@ void MainWindowRefactored::onConnectClicked()
     connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
     statusSubscriber->start();
+}
+
+void MainWindowRefactored::feedPoseToTrajectory()
+{
+    if (!nrtProcess || !trajectoryPanel) return;
+
+    zrcs::SharedBlock *block = nrtProcess->sharedBlock();
+    if (!block) return;
+
+    zrcs::FkResultData fk;
+    if (zrcs::lfl_read(block->fkResult, fk)) {
+        QVector3D pos(static_cast<float>(fk.pose[0]),
+                      static_cast<float>(fk.pose[1]),
+                      static_cast<float>(fk.pose[2]));
+        QVector3D rpy(static_cast<float>(fk.pose[3]),
+                      static_cast<float>(fk.pose[4]),
+                      static_cast<float>(fk.pose[5]));
+        trajectoryPanel->updateEndEffectorPose(pos, rpy);
+    }
 }

@@ -395,39 +395,6 @@ QLabel#axisPosDisplay {
     color: #9fc8ff;
 }
 
-QLabel#gcodeStatsLabel {
-    color: #00FF00;
-    padding: 5px;
-}
-
-QLabel#gcodeValidationLabel {
-    color: #FFB1B1;
-    padding: 5px;
-}
-
-QLabel#gcodeValidationLabel[state="ok"] {
-    color: #00FF00;
-}
-
-QLabel#gcodeValidationLabel[state="error"] {
-    color: #FF6347;
-}
-
-QPlainTextEdit#gcodeEditor {
-    background-color: #1a1a1a;
-    color: #00FF00;
-    font-family: Courier;
-}
-
-QLabel#ioInputLed {
-    color: #333333;
-    font-size: 20pt;
-}
-
-QLabel#ioInputLed[active="true"] {
-    color: #00FF00;
-}
-
 QLabel#statusLabel {
     color: #FF6347;
     font-weight: bold;

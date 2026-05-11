@@ -38,7 +38,6 @@ find_package(VTK QUIET COMPONENTS
     RenderingOpenGL2
     RenderingGL2PSOpenGL2
 )
-find_package(OpenCASCADE QUIET)
 
 # 启用Qt6的自动MOC、UIC和RCC
 set(CMAKE_AUTOMOC ON)
@@ -72,9 +71,6 @@ set(SOURCES
     communication/ZmqClient.cpp
     communication/ZmqStatusSubscriber.cpp
     modules/trajectory/TrajectoryVisualizer.cpp
-    modules/gcode/GcodeEditor.cpp
-    modules/remote/RemoteMonitor.cpp
-    modules/plugin/PluginManager.cpp
     modules/behavior_tree/BehaviorTreePanel.cpp
     modules/command/CommandPanel.cpp
     ${GUI_PROTO_SRCS}
@@ -89,10 +85,6 @@ set(HEADERS
     config/ZrcsConfig.h
     resources/style/StyleLoader.h
     modules/trajectory/TrajectoryVisualizer.h
-    modules/gcode/GcodeEditor.h
-    modules/remote/RemoteMonitor.h
-    modules/plugin/PluginInterface.h
-    modules/plugin/PluginManager.h
     modules/behavior_tree/BehaviorTreePanel.h
     modules/command/CommandPanel.h
 )
@@ -101,12 +93,7 @@ set(HEADERS
 set(UI_FILES
     resources/ui/main_window.ui
     resources/ui/jog_control_panel.ui
-    resources/ui/io_panel.ui
     resources/ui/alarm_panel.ui
-    resources/ui/gcode_panel.ui
-    resources/ui/remote_data_monitor.ui
-    resources/ui/remote_monitor_panel.ui
-    resources/ui/plugin_panel.ui
     resources/ui/trajectory_panel.ui
 )
 
@@ -122,15 +109,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE NODE_EDITOR_STATIC)
 
-if(OpenCASCADE_FOUND)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_HAS_OPENCASCADE)
-    if(DEFINED OpenCASCADE_INCLUDE_DIR)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIR})
-    endif()
-    if(DEFINED OpenCASCADE_INCLUDE_DIRS)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIRS})
-    endif()
-endif()
 
 # 链接库
 target_link_libraries(${PROJECT_NAME}
@@ -153,23 +131,6 @@ target_link_libraries(${PROJECT_NAME}
     behavior_tree_editor
 )
 
-if(OpenCASCADE_FOUND)
-    set(OCC_LINK_LIBS "")
-    foreach(occ_lib IN LISTS OpenCASCADE_LIBRARIES)
-        if("${occ_lib}" MATCHES "^[A-Za-z0-9_]+::[A-Za-z0-9_]+$")
-            if(TARGET ${occ_lib})
-                list(APPEND OCC_LINK_LIBS ${occ_lib})
-            else()
-                message(WARNING "Skip unresolved OpenCASCADE dependency target: ${occ_lib}")
-            endif()
-        else()
-            list(APPEND OCC_LINK_LIBS ${occ_lib})
-        endif()
-    endforeach()
-    if(OCC_LINK_LIBS)
-        target_link_libraries(${PROJECT_NAME} ${OCC_LINK_LIBS})
-    endif()
-endif()
 
 # 设置输出目录
 set_target_properties(${PROJECT_NAME} PROPERTIES

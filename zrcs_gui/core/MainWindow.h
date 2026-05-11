@@ -23,9 +23,6 @@
 #include "communication/ZmqClient.h"
 #include "communication/ZmqStatusSubscriber.h"
 #include "trajectory/TrajectoryVisualizer.h"
-#include "gcode/GcodeEditor.h"
-#include "remote/RemoteMonitor.h"
-#include "plugin/PluginManager.h"
 #include "command/CommandPanel.h"
 
 class BehaviorTreePanel;
@@ -89,22 +86,6 @@ private:
     int axisPageSize;
 };
 
-class IOPanel : public QWidget {
-    Q_OBJECT
-public:
-    IOPanel(QWidget *parent = nullptr);
-    void updateInputState(int index, bool state);
-    void updateOutputState(int index, bool state);
-
-signals:
-    void outputToggled(int index, bool state);
-
-private:
-    void setupUI();
-    QVector<QLabel*> inputLEDs, outputLEDs;
-    QVector<QPushButton*> outputButtons;
-};
-
 class AlarmPanel : public QWidget {
     Q_OBJECT
 public:
@@ -138,9 +119,6 @@ private slots:
     void onHomeAllRequested();
     void onSetCurrentAsOriginRequested(int axis);
     
-    // IO
-    void onOutputToggled(int index, bool state);
-    
     // Timer
     void onUpdateTimer();
     
@@ -163,7 +141,6 @@ private:
     void createJogControl();
     void createTrajectoryPanel();
     void createAlarmPanel();
-    void createIOPanel();
     void createSettingsPanel();
     void createAdvancedModules();
     void createQuickActions();
@@ -182,16 +159,11 @@ private:
     JogControlPanel *jogPanel;
     QGroupBox *quickActionGroup;
     QGridLayout *quickActionLayout;
-    IOPanel *ioPanel;
-    IOPanel *ioMonitorPanel;
     AlarmPanel *alarmPanel;
     
     // Advanced Modules
     QTabWidget *advancedTabs;
     TrajectoryPanel *trajectoryPanel;
-    GCodePanel *gcodePanel;
-    RemoteMonitorPanel *remotePanel;
-    PluginPanel *pluginPanel;
     BehaviorTreePanel *behaviorTreePanel;
     CommandPanel *commandPanel;
     
@@ -209,5 +181,5 @@ private:
     // Helper methods
     void sendMotionCommand(const QString &command, const QVector<double> &args = {});
     void showConfirmDialog(const QString &title, const QString &message, std::function<void()> onConfirm);
+    void feedPoseToTrajectory();
 };
-
