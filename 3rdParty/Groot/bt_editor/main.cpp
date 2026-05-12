@@ -69,7 +69,8 @@ main(int argc, char *argv[])
     parser.process( app );
 
     QFile styleFile( ":/stylesheet.qss" );
-    styleFile.open( QFile::ReadOnly );
+    if( !styleFile.open( QFile::ReadOnly ) )
+        return 1;
     QString style( styleFile.readAll() );
     app.setStyleSheet( style );
 

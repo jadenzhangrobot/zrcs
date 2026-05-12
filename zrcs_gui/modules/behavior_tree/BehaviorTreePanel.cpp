@@ -165,10 +165,10 @@ void BehaviorTreePanel::setupConnections()
     auto *redoShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), this);
     connect(redoShortcut, &QShortcut::activated, this, &BehaviorTreePanel::onRedoInvoked);
 
-    auto *saveShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
+    auto *saveShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this);
     connect(saveShortcut, &QShortcut::activated, this, &BehaviorTreePanel::onSaveTree);
 
-    auto *arrangeShortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_A), this);
+    auto *arrangeShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_A), this);
     connect(arrangeShortcut, &QShortcut::activated, this, &BehaviorTreePanel::onAutoArrange);
 }
 
@@ -295,12 +295,11 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
 {
     QDomDocument document;
     try {
-        QString errorMsg;
-        int errorLine;
-        if (!document.setContent(xml_text, &errorMsg, &errorLine)) {
+        auto result = document.setContent(xml_text);
+        if (!result) {
             throw std::runtime_error(
                 tr("解析XML错误 (第%1行): %2")
-                    .arg(errorLine).arg(errorMsg).toStdString());
+                    .arg(result.errorLine).arg(result.errorMessage).toStdString());
         }
 
         std::vector<QString> registered_ID;

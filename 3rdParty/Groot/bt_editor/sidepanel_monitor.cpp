@@ -144,7 +144,7 @@ bool SidepanelMonitor::getTreeFromServer()
         zmq::socket_t  zmq_client( _zmq_context, ZMQ_REQ );
         zmq_client.connect( _connection_address_req.c_str() );
 
-        zmq_client.setsockopt(ZMQ_RCVTIMEO, &_load_tree_timeout_ms, sizeof(int) );
+        zmq_client.set(zmq::sockopt::rcvtimeo, _load_tree_timeout_ms);
 
         zmq_client.send(request, zmq::send_flags::none);
 
@@ -236,8 +236,8 @@ void SidepanelMonitor::on_Connect()
                 _zmq_subscriber.connect( _connection_address_pub.c_str() );
 
                 int timeout_ms = 1;
-                _zmq_subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
-                _zmq_subscriber.setsockopt(ZMQ_RCVTIMEO, &timeout_ms, sizeof(int) );
+                _zmq_subscriber.set(zmq::sockopt::subscribe, "");
+                _zmq_subscriber.set(zmq::sockopt::rcvtimeo, timeout_ms);
 
                 if( !getTreeFromServer() )
                 {

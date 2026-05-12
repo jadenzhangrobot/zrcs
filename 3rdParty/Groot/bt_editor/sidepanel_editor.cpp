@@ -383,11 +383,10 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
         return {};
     }
 
-    QString errorMsg;
-    int errorLine;
-    if( ! doc.setContent(file, &errorMsg, &errorLine ) )
+    auto result = doc.setContent(file);
+    if( !result )
     {
-        auto error = tr("解析XML错误 (第%1行): %2").arg(errorLine).arg(errorMsg);
+        auto error = tr("解析XML错误 (第%1行): %2").arg(result.errorLine).arg(result.errorMessage);
         QMessageBox::warning(this,QString::fromUtf8("\u52A0\u8F7D\u8282\u70B9\u6A21\u578B\u51FA\u9519"), error);
         file->close();
         return {};

@@ -133,7 +133,7 @@ MainWindow::MainWindow(GraphicMode initial_mode,
 
     dynamic_cast<QVBoxLayout*>(ui->leftFrame->layout())->setStretch(1,1);
 
-    auto arrange_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_A), this);
+    auto arrange_shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_A), this);
 
     connect( arrange_shortcut, &QShortcut::activated,
             this,   &MainWindow::onAutoArrange  );
@@ -147,7 +147,7 @@ MainWindow::MainWindow(GraphicMode initial_mode,
     QShortcut* redo_shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), this);
     connect( redo_shortcut, &QShortcut::activated, this, &MainWindow::onRedoInvoked );
 
-    QShortcut* save_shortcut = new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this);
+    QShortcut* save_shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this);
 
     connect( _editor_widget, &SidepanelEditor::nodeModelEdited,
             this, &MainWindow::onTreeNodeEdited);
@@ -299,11 +299,10 @@ void MainWindow::loadFromXML(const QString& xml_text)
 {
     QDomDocument document;
     try{
-        QString errorMsg;
-        int errorLine;
-        if( ! document.setContent(xml_text, &errorMsg, &errorLine ) )
+        auto result = document.setContent(xml_text);
+        if( !result )
         {
-            throw std::runtime_error( tr("Error parsing XML (line %1): %2").arg(errorLine).arg(errorMsg).toStdString() );
+            throw std::runtime_error( tr("Error parsing XML (line %1): %2").arg(result.errorLine).arg(result.errorMessage).toStdString() );
         }
         //---------------
         std::vector<QString> registered_ID;
