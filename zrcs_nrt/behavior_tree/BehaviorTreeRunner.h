@@ -1,177 +1,38 @@
 #pragma once
+/**
+ * @file BehaviorTreeRunner.h
+ * @brief 行为树生命周期管理器。
+ *
+ * 负责加载 / 启动 / 停止 BehaviorTree XML，管理 tick 线程，
+ * 并注册所有可用的 RT 命令节点（SendCommandNode + TypedSendCommandNode）。
+ *
+ * 使用方式 :
+ *   1. loadFromXml(xmlText)  加载 XML 并编译为 BT::Tree
+ *   2. start()               启动 tick 线程开始执行
+ *   3. stop()                停止执行并 join 线程
+ *   4. status()              获取当前运行状态快照
+ */
 
 #include <atomic>
-#include <chrono>
 #include <memory>
 #include <mutex>
-#include <sstream>
 #include <string>
 #include <thread>
 
 #include <behaviortree_cpp_v3/bt_factory.h>
-#include <spdlog/spdlog.h>
 
-#include "rtBridge/RtBridge.h"
+#include "BtCommandNodes.h"  // SendCommandNode, TypedSendCommandNode<>, btArgDefaultFor()
 
-class BehaviorTreeRunner;
-
-namespace zrcs_bt {
-
-struct SharedState {
-    RtBridge* bridge = nullptr;
-    mutable std::mutex mutex;
-    std::string currentNode;
-    std::string message;
-
-    void setCurrentNode(const std::string& nodeName, const std::string& text)
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        currentNode = nodeName;
-        message = text;
-    }
-
-    std::pair<std::string, std::string> snapshot() const
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        return {currentNode, message};
-    }
-};
-
-class LogMessageNode : public BT::SyncActionNode 
-{
-public:
-    LogMessageNode(const std::string& name,
-                   const BT::NodeConfiguration& config,
-                   std::shared_ptr<SharedState> sharedState)
-        : BT::SyncActionNode(name, config)
-        , sharedState_(std::move(sharedState))
-    {
-    }
-
-    static BT::PortsList providedPorts()
-    {
-        return {BT::InputPort<std::string>("message")};
-    }
-
-    BT::NodeStatus tick() override
-    {
-        auto message = getInput<std::string>("message");
-        if (!message)
-        {
-            throw BT::RuntimeError("missing required input [message]: ", message.error());
-        }
-
-        sharedState_->setCurrentNode(name(), *message);
-        spdlog::info("[BehaviorTree] {}", *message);
-        return BT::NodeStatus::SUCCESS;
-    }
-
-private:
-    std::shared_ptr<SharedState> sharedState_;
-};
-
-class SendCommandNode : public BT::StatefulActionNode 
-{
-public:
-    SendCommandNode(const std::string& name,
-                    const BT::NodeConfiguration& config,
-                    std::shared_ptr<SharedState> sharedState,
-                    std::string fixedCommandName = {})
-        : BT::StatefulActionNode(name, config)
-        , sharedState_(std::move(sharedState))
-        , fixedCommandName_(std::move(fixedCommandName))
-    {
-    }
-
-    static BT::PortsList providedPorts()
-    {
-        return 
-        {
-            BT::InputPort<std::string>("command"),
-            BT::InputPort<std::string>("args", "")
-        };
-    }
-
-    static BT::PortsList aliasPorts()
-    {
-        return 
-        {
-            BT::InputPort<std::string>("args", "")
-        };
-    }
-
-    BT::NodeStatus onStart() override
-    {
-        std::string commandName = fixedCommandName_;
-        if (commandName.empty())
-        {
-            auto command = getInput<std::string>("command");
-            if (!command)
-            {
-                throw BT::RuntimeError("missing required input [command]: ", command.error());
-            }
-            commandName = *command;
-        }
-
-        const auto args = getInput<std::string>("args");
-        const std::string csvArgs = args ? *args : std::string();
-
-        sharedState_->setCurrentNode(name(), "send command=" + commandName);
-
-        const auto [result, seq] = sharedState_->bridge->sendCommand(commandName, csvArgs);
-        if (result != RtBridge::SendResult::OK)
-        {
-            std::ostringstream oss;
-            oss << "sendCommand failed: " << static_cast<int>(result);
-            sharedState_->setCurrentNode(name(), oss.str());
-            spdlog::error("[BehaviorTree] {}", oss.str());
-            return BT::NodeStatus::FAILURE;
-        }
-
-        pendingSeq_ = seq;
-        sharedState_->setCurrentNode(name(), "waiting seq=" + std::to_string(seq));
-        return BT::NodeStatus::RUNNING;
-    }
-
-    BT::NodeStatus onRunning() override
-    {
-        if (!sharedState_->bridge->isCommandCompleted(pendingSeq_))
-        {
-            return BT::NodeStatus::RUNNING;
-        }
-
-        const auto completion = sharedState_->bridge->lastCompletion();
-        const bool success = completion.seq == pendingSeq_ ? completion.success : completion.success;
-        if (success)
-        {
-            sharedState_->setCurrentNode(name(), "completed seq=" + std::to_string(pendingSeq_));
-            return BT::NodeStatus::SUCCESS;
-        }
-
-        sharedState_->setCurrentNode(name(), "failed seq=" + std::to_string(pendingSeq_));
-        return BT::NodeStatus::FAILURE;
-    }
-
-    void onHalted() override
-    {
-        sharedState_->bridge->requestStop();
-        sharedState_->setCurrentNode(name(), "halted");
-    }
-
-private:
-    std::shared_ptr<SharedState> sharedState_;
-    std::string fixedCommandName_;
-    uint32_t pendingSeq_{0};
-};
-
-} // namespace zrcs_bt
+// ============================================================================
+// BehaviorTreeRunner
+// ============================================================================
 
 class BehaviorTreeRunner {
 public:
     struct StatusSnapshot {
-        std::string treeState;
-        std::string currentNode;
-        std::string message;
+        std::string treeState;     ///< IDLE / LOADED / RUNNING / SUCCESS / FAILURE / HALTED
+        std::string currentNode;   ///< 当前正在执行的节点名
+        std::string message;       ///< 当前节点的描述文本
     };
 
     explicit BehaviorTreeRunner(RtBridge* bridge)
@@ -188,6 +49,13 @@ public:
         stop("Runner destroyed");
     }
 
+    // -- 树生命周期 -------------------------------------------------------------
+
+    /**
+     * @brief 加载并编译 BehaviorTree XML。
+     * @return true 成功，false 时 error 包含编译错误信息。
+     * @note 加载前会先 stop() 当前正在运行的树。
+     */
     bool loadFromXml(const std::string& xmlText, std::string& error)
     {
         stop("Reload tree");
@@ -210,6 +78,11 @@ public:
         }
     }
 
+    /**
+     * @brief 启动行为树 tick 循环。
+     * @return true 成功，false 时 error 说明原因。
+     * @note 若上次运行已完成但线程未 join，会先 join 再创建新线程。
+     */
     bool start(std::string& error)
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -224,12 +97,20 @@ public:
             return false;
         }
 
+        if (tickThread_.joinable())
+            tickThread_.join();
         running_.store(true, std::memory_order_release);
         tickThread_ = std::thread(&BehaviorTreeRunner::tickLoop, this);
         setStatus("RUNNING", "", "Tree started");
         return true;
     }
 
+    /**
+     * @brief 停止行为树执行。
+     *
+     * 设置停止标志 → 暂停树 → 等待 tick 线程退出 → join。
+     * 可从任意线程调用，与 tickLoop 之间通过 mutex_ 同步。
+     */
     void stop(const std::string& reason = "Stopped")
     {
         running_.store(false, std::memory_order_release);
@@ -253,6 +134,7 @@ public:
         }
     }
 
+    /// 获取线程安全的当前状态快照。
     StatusSnapshot status() const
     {
         std::lock_guard<std::mutex> lock(statusMutex_);
@@ -260,15 +142,18 @@ public:
     }
 
 private:
+    // -- 节点注册 ---------------------------------------------------------------
+
+    /**
+     * @brief 向 BT 工厂注册所有可用的命令节点。
+     *
+     * 包括 :
+     *   - "SendCommand" : 通用 CSV args 节点（兼容旧 XML）
+     *   - 每个 CmdId 对应的 TypedSendCommandNode<ArgEnum> 别名节点
+     */
     void registerNodes()
     {
-        factory_.registerBuilder<zrcs_bt::LogMessageNode>(
-            "LogMessage",
-            [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
-            {
-                return std::make_unique<zrcs_bt::LogMessageNode>(name, config, sharedState);
-            });
-
+        // 通用 SendCommand 节点（旧 CSV 格式，兼容现有 XML）
         factory_.registerBuilder<zrcs_bt::SendCommandNode>(
             "SendCommand",
             [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
@@ -276,31 +161,73 @@ private:
                 return std::make_unique<zrcs_bt::SendCommandNode>(name, config, sharedState);
             });
 
+        // 为每个已实现的 CmdId 注册 TypedSendCommandNode 别名
         registerCommandAliasNodes();
     }
 
+    /**
+     * @brief 遍历 CmdId 枚举，为每个命令注册带命名输入端口的别名节点。
+     *
+     * switch 分派将运行时 CmdId 映射到编译期 ArgEnum 类型，
+     * 然后调用 registerTypedAlias<ArgEnum>() 完成注册。
+     */
     void registerCommandAliasNodes()
     {
         for (int value = Enable; value < SENTINEL; ++value)
         {
             const auto commandId = static_cast<CmdId>(value);
             const std::string commandName = zrcs::cmdIdToName(commandId);
-            const BT::TreeNodeManifest manifest{
-                BT::NodeType::ACTION,
-                commandName,
-                zrcs_bt::SendCommandNode::aliasPorts(),
-                "ZRCS RT command"
-            };
 
-            factory_.registerBuilder(
-                manifest,
-                [sharedState = sharedState_, commandName](const std::string& name, const BT::NodeConfiguration& config)
-                {
-                    return std::make_unique<zrcs_bt::SendCommandNode>(name, config, sharedState, commandName);
-                });
+            switch (commandId)
+            {
+            case CmdId::Enable:     registerTypedAlias<EnableArg>(commandName);     break;
+            case CmdId::Disable:    registerTypedAlias<DisableArg>(commandName);    break;
+            case CmdId::Reset:      registerTypedAlias<ResetArg>(commandName);      break;
+            case CmdId::Setmode:    registerTypedAlias<SetmodeArg>(commandName);    break;
+            case CmdId::SetZero:    registerTypedAlias<SetZeroArg>(commandName);    break;
+            case CmdId::JogabsJ:    registerTypedAlias<JogabsJArg>(commandName);    break;
+            case CmdId::JogJ:       registerTypedAlias<JogJArg>(commandName);       break;
+            case CmdId::MoveAbs:    registerTypedAlias<MoveAbsArg>(commandName);    break;
+            case CmdId::MoveAbsJ:   registerTypedAlias<MoveAbsJArg>(commandName);   break;
+            case CmdId::MoveJ:      registerTypedAlias<MoveJArg>(commandName);      break;
+            case CmdId::MoveL:      registerTypedAlias<MoveLArg>(commandName);      break;
+            case CmdId::MoveC:      registerTypedAlias<MoveCArg>(commandName);      break;
+            case CmdId::Movehome:   registerTypedAlias<void>(commandName);          break;
+            case CmdId::MoveLGalvo: registerTypedAlias<MoveLGalvoArg>(commandName); break;
+            default: break;
+            }
         }
     }
 
+    /// 为单个命令注册 TypedSendCommandNode<ArgEnum> 别名节点。
+    template <typename ArgEnum>
+    void registerTypedAlias(const std::string& commandName)
+    {
+        BT::TreeNodeManifest manifest{
+            BT::NodeType::ACTION,
+            commandName,
+            zrcs_bt::TypedSendCommandNode<ArgEnum>::providedPorts(),
+            "ZRCS RT command"
+        };
+
+        factory_.registerBuilder(
+            manifest,
+            [sharedState = sharedState_, commandName](
+                const std::string& name, const BT::NodeConfiguration& config)
+            {
+                return std::make_unique<zrcs_bt::TypedSendCommandNode<ArgEnum>>(
+                    name, config, sharedState, commandName);
+            });
+    }
+
+    // -- tick 循环 ---------------------------------------------------------------
+
+    /**
+     * @brief 行为树主循环（运行在独立线程）。
+     *
+     * 每 20ms tick 一次树根节点，直到树返回 SUCCESS / FAILURE 或 running_ 被 stop() 置为 false。
+     * 通过 sharedState_ 同步当前执行节点信息给 UI。
+     */
     void tickLoop()
     {
         while (running_.load(std::memory_order_acquire))
@@ -345,6 +272,7 @@ private:
         }
     }
 
+    /// 线程安全地更新状态快照。
     void setStatus(const std::string& treeState,
                    const std::string& currentNode,
                    const std::string& message)
@@ -355,13 +283,15 @@ private:
         status_.message = message;
     }
 
+    // -- 成员变量 ---------------------------------------------------------------
+
     RtBridge* bridge_;
     BT::BehaviorTreeFactory factory_;
     std::shared_ptr<zrcs_bt::SharedState> sharedState_;
     std::unique_ptr<BT::Tree> tree_;
     std::atomic<bool> running_{false};
     std::thread tickThread_;
-    mutable std::mutex mutex_;
-    mutable std::mutex statusMutex_;
+    mutable std::mutex mutex_;        ///< 保护 tree_ 和 tick 同步
+    mutable std::mutex statusMutex_;  ///< 保护 status_
     StatusSnapshot status_;
 };

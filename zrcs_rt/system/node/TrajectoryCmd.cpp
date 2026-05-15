@@ -30,7 +30,7 @@ void TrajectoryCmd::runStandard()
     {
         applyOutput();
         passOutputToInput();
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
     }
     else
     {

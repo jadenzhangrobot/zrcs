@@ -154,7 +154,7 @@ void NodeManager::run()
                                 cmdNode_ = nullptr;
                             }
                         } 
-                        else
+                        else if (cmdId != CmdId::INVALID)
                         {
                             WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n",zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
                             shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);

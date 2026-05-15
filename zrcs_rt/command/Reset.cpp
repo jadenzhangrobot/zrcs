@@ -26,7 +26,7 @@ void Reset::run()
             controller_->axes_[axisId_]->setAxisPositionCmd(
                 controller_->axes_[axisId_]->actualPos());
             controller_->axes_[axisId_]->syncCmdHistory();
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
         }
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
@@ -45,7 +45,7 @@ void Reset::run()
                 controller_->axes_[i]->syncCmdHistory();
             }
         }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
     }
     else
     {

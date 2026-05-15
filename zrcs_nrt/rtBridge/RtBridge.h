@@ -53,7 +53,7 @@ public:
         if (!block_) return {SendResult::NOT_CONNECTED, 0};
 
         const auto cmdId = zrcs::cmdNameToId(name);
-        if (!cmdId.has_value())
+        if (!cmdId.has_value() || *cmdId == CmdId::INVALID)
         {
             spdlog::error("[RtBridge] Unknown command '{}', not registered in cmdNameToId", name);
             return {SendResult::UNKNOWN_CMD, 0};

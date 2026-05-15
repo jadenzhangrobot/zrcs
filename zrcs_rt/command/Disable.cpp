@@ -23,7 +23,7 @@ void Disable::run()
         }
         else
         {
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
         }
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
@@ -36,7 +36,7 @@ void Disable::run()
                 setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
     }
     else
     {

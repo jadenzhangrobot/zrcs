@@ -160,7 +160,7 @@ void MoveC::run()
 
         if (result == Result::Finished)
         {
-            setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
         }
         else
         {

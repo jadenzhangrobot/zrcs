@@ -18,7 +18,7 @@ void Setmode::run()
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
         controller_->axes_[axisId_]->setModeOfOperation(cia402_mode);
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -26,7 +26,7 @@ void Setmode::run()
         {
             controller_->axes_[i]->setModeOfOperation(cia402_mode);
         }
-        setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
     }
     else
     {

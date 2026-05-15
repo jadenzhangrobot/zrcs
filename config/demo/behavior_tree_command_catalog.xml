@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<root BTCPP_format="4" main_tree_to_execute="CommandCatalog">
+<root BTCPP_format="4" main_tree_to_execute="Cmd_JogabsJ">
     <!--
       命令行为树节点目录
       说明:
       1. 主树 CommandCatalog 只打印说明，不执行任何实际运动。
       2. 每个 BehaviorTree ID 对应一个 zrcs_rt 命令动作节点示例子树。
-      3. args 使用逗号分隔的数值示例；实际使用时请按设备/工艺参数修改。
+      3. 参数名与 CmdDefine.h 中 Arg 枚举成员名一致，类型为 double。
       4. 可在 GUI/Groot 中加载本文件，再切换 main_tree_to_execute 或复制对应子树使用。
     -->
 
@@ -16,375 +16,203 @@
         <Action ID="SetTaskState">
             <input_port name="state" type="std::string">Task state: RUN/STOP/RESET/START/SHUTDOWN</input_port>
         </Action>
-        <Action ID="Enable"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Disable"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Reset"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Stop"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="EmergStop"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Setmode"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetOverride"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="ActUnit"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="DeactUnit"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetZero"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetDO"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetGO"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetAO"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="PulseDO"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="IORead"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Wait"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="WaitDI"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="WaitUntil"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="JogabsJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="JogJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveAbs"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveRel"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveAbsJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveL"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveC"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SearchL"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="TriggJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="TriggL"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Movehome"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetTCP"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetBase"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetPayload"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="ConfJ"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="ConfL"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SingArea"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetPosLimit"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SetVelLimit"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="GetFK"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="GetJointPos"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="SyncMove"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="CamMove"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="Probe"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="PosCapture"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="PosCompare"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="HelixMove"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="BufMove"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="PathMove"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="LaserSet"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="GalvoMarkL"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="GalvoBufMark"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
-        <Action ID="MoveLGalvo"><input_port name="args" type="std::string" default="">Comma separated arguments</input_port></Action>
+        <!-- ===== Typed command nodes (one port per Arg enum member) ===== -->
+        <Action ID="Enable">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID (0=all axes)</input_port>
+        </Action>
+        <Action ID="Disable">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID (0=all axes)</input_port>
+        </Action>
+        <Action ID="Reset">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID (0=all axes)</input_port>
+        </Action>
+        <Action ID="Setmode">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID</input_port>
+            <input_port name="Mode" type="double" default="0.0">Operation mode</input_port>
+        </Action>
+        <Action ID="SetZero">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID</input_port>
+        </Action>
+        <Action ID="JogabsJ">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID</input_port>
+            <input_port name="TargetPosition" type="double" default="0.0">Target position</input_port>
+        </Action>
+        <Action ID="JogJ">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID</input_port>
+            <input_port name="TargetPosition" type="double" default="0.0">Target position</input_port>
+        </Action>
+        <Action ID="MoveAbs">
+            <input_port name="AxisId" type="double" default="0.0">Axis ID</input_port>
+            <input_port name="Position" type="double" default="0.0">Target position</input_port>
+            <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
+            <input_port name="Acc" type="double" default="100.0">Max acceleration</input_port>
+            <input_port name="Jerk" type="double" default="500.0">Max jerk</input_port>
+        </Action>
+        <Action ID="MoveAbsJ">
+            <input_port name="Count" type="double" default="6.0">Active joint count</input_port>
+            <input_port name="J1" type="double" default="0.0">Joint 1 target</input_port>
+            <input_port name="J2" type="double" default="0.0">Joint 2 target</input_port>
+            <input_port name="J3" type="double" default="0.0">Joint 3 target</input_port>
+            <input_port name="J4" type="double" default="0.0">Joint 4 target</input_port>
+            <input_port name="J5" type="double" default="0.0">Joint 5 target</input_port>
+            <input_port name="J6" type="double" default="0.0">Joint 6 target</input_port>
+        </Action>
+        <Action ID="MoveJ">
+            <input_port name="X" type="double" default="0.0">Target X (mm)</input_port>
+            <input_port name="Y" type="double" default="0.0">Target Y (mm)</input_port>
+            <input_port name="Z" type="double" default="0.0">Target Z (mm)</input_port>
+            <input_port name="RX" type="double" default="0.0">Target RX (deg)</input_port>
+            <input_port name="RY" type="double" default="0.0">Target RY (deg)</input_port>
+            <input_port name="RZ" type="double" default="0.0">Target RZ (deg)</input_port>
+            <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
+        </Action>
+        <Action ID="MoveL">
+            <input_port name="CurrentX" type="double" default="0.0">Start X</input_port>
+            <input_port name="CurrentY" type="double" default="0.0">Start Y</input_port>
+            <input_port name="CurrentZ" type="double" default="0.0">Start Z</input_port>
+            <input_port name="CurrentQ1" type="double" default="1.0">Start Qw</input_port>
+            <input_port name="CurrentQ2" type="double" default="0.0">Start Qx</input_port>
+            <input_port name="CurrentQ3" type="double" default="0.0">Start Qy</input_port>
+            <input_port name="CurrentQ4" type="double" default="0.0">Start Qz</input_port>
+            <input_port name="X" type="double" default="0.0">Target X</input_port>
+            <input_port name="Y" type="double" default="0.0">Target Y</input_port>
+            <input_port name="Z" type="double" default="0.0">Target Z</input_port>
+            <input_port name="Q1" type="double" default="1.0">Target Qw</input_port>
+            <input_port name="Q2" type="double" default="0.0">Target Qx</input_port>
+            <input_port name="Q3" type="double" default="0.0">Target Qy</input_port>
+            <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
+            <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
+            <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
+            <input_port name="CurrentAcc" type="double" default="0.0">Start acceleration</input_port>
+            <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
+            <input_port name="TargetAcc" type="double" default="100.0">End acceleration</input_port>
+        </Action>
+        <Action ID="MoveC">
+            <input_port name="ViaX" type="double" default="0.0">Via point X</input_port>
+            <input_port name="ViaY" type="double" default="0.0">Via point Y</input_port>
+            <input_port name="ViaZ" type="double" default="0.0">Via point Z</input_port>
+            <input_port name="EndX" type="double" default="0.0">End point X</input_port>
+            <input_port name="EndY" type="double" default="0.0">End point Y</input_port>
+            <input_port name="EndZ" type="double" default="0.0">End point Z</input_port>
+            <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
+        </Action>
+        <Action ID="Movehome">
+            <!-- No input ports: Movehome takes zero parameters -->
+        </Action>
+        <Action ID="MoveLGalvo">
+            <input_port name="CurrentX" type="double" default="0.0">Start X</input_port>
+            <input_port name="CurrentY" type="double" default="0.0">Start Y</input_port>
+            <input_port name="CurrentZ" type="double" default="0.0">Start Z</input_port>
+            <input_port name="CurrentQ1" type="double" default="1.0">Start Qw</input_port>
+            <input_port name="CurrentQ2" type="double" default="0.0">Start Qx</input_port>
+            <input_port name="CurrentQ3" type="double" default="0.0">Start Qy</input_port>
+            <input_port name="CurrentQ4" type="double" default="0.0">Start Qz</input_port>
+            <input_port name="X" type="double" default="0.0">Target X</input_port>
+            <input_port name="Y" type="double" default="0.0">Target Y</input_port>
+            <input_port name="Z" type="double" default="0.0">Target Z</input_port>
+            <input_port name="Q1" type="double" default="1.0">Target Qw</input_port>
+            <input_port name="Q2" type="double" default="0.0">Target Qx</input_port>
+            <input_port name="Q3" type="double" default="0.0">Target Qy</input_port>
+            <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
+            <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
+            <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
+            <input_port name="CurrentAcc" type="double" default="0.0">Start acceleration</input_port>
+            <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
+            <input_port name="TargetAcc" type="double" default="100.0">End acceleration</input_port>
+        </Action>
     </TreeNodesModel>
 
-    <BehaviorTree ID="CommandCatalog">
+    <BehaviorTree ID="Cmd_JogabsJ">
         <Sequence>
-            <Action ID="LogMessage" message="BehaviorTree command catalog loaded. Select a subtree example by ID before execution."/>
+            <Action ID="JogabsJ" AxisId="0" TargetPosition="10"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_Enable">
         <Sequence>
-            <Action ID="Enable" args="0"/>
+            <Action ID="Enable" AxisId="0"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_Disable">
         <Sequence>
-            <Action ID="Disable" args="0"/>
+            <Action ID="Disable" AxisId="0"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_Reset">
         <Sequence>
-            <Action ID="Reset" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_Stop">
-        <Sequence>
-            <Action ID="Stop" args=""/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_EmergStop">
-        <Sequence>
-            <Action ID="EmergStop" args=""/>
+            <Action ID="Reset" AxisId="0"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_Setmode">
         <Sequence>
-            <Action ID="Setmode" args="0,1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetOverride">
-        <Sequence>
-            <Action ID="SetOverride" args="100"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_ActUnit">
-        <Sequence>
-            <Action ID="ActUnit" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_DeactUnit">
-        <Sequence>
-            <Action ID="DeactUnit" args="0"/>
+            <Action ID="Setmode" AxisId="0" Mode="1"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_SetZero">
         <Sequence>
-            <Action ID="SetZero" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetDO">
-        <Sequence>
-            <Action ID="SetDO" args="0,0,1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetGO">
-        <Sequence>
-            <Action ID="SetGO" args="0,1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetAO">
-        <Sequence>
-            <Action ID="SetAO" args="0,0,1.0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_PulseDO">
-        <Sequence>
-            <Action ID="PulseDO" args="0,0,100"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_IORead">
-        <Sequence>
-            <Action ID="IORead" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_Wait">
-        <Sequence>
-            <Action ID="Wait" args="1000"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_WaitDI">
-        <Sequence>
-            <Action ID="WaitDI" args="0,0,1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_WaitUntil">
-        <Sequence>
-            <Action ID="WaitUntil" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_JogabsJ">
-        <Sequence>
-            <Action ID="JogabsJ" args="0,10"/>
+            <Action ID="SetZero" AxisId="0"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_JogJ">
         <Sequence>
-            <Action ID="JogJ" args="0,5"/>
+            <Action ID="JogJ" AxisId="0" TargetPosition="5"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveAbs">
         <Sequence>
-            <Action ID="MoveAbs" args="0,100,50,100,500"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_MoveRel">
-        <Sequence>
-            <Action ID="MoveRel" args="0,10,50,100,500"/>
+            <Action ID="MoveAbs" AxisId="0" Position="100" Vel="50" Acc="100" Jerk="500"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveAbsJ">
         <Sequence>
-            <Action ID="MoveAbsJ" args="6,0,10,20,30,40,50"/>
+            <Action ID="MoveAbsJ" Count="6" J1="0" J2="10" J3="20" J4="30" J5="40" J6="50"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveJ">
         <Sequence>
-            <Action ID="MoveJ" args="100,0,100,0,0,0,0.5"/>
+            <Action ID="MoveJ" X="100" Y="0" Z="100" RX="0" RY="0" RZ="0" Vel="0.5"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveL">
         <Sequence>
-            <Action ID="MoveL" args="0,0,0,1,0,0,0,100,0,0,1,0,0,0,100,0,0,0,0"/>
+            <Action ID="MoveL"
+                CurrentX="0" CurrentY="0" CurrentZ="0"
+                CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0"
+                X="100" Y="0" Z="0"
+                Q1="1" Q2="0" Q3="0" Q4="0"
+                Vel="100"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveC">
         <Sequence>
-            <Action ID="MoveC" args="50,50,0,100,0,0,50"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SearchL">
-        <Sequence>
-            <Action ID="SearchL" args="0,0,0,100,0,0,50"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_TriggJ">
-        <Sequence>
-            <Action ID="TriggJ" args="0,0,0,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_TriggL">
-        <Sequence>
-            <Action ID="TriggL" args="0,0,0,100,0,0"/>
+            <Action ID="MoveC" ViaX="50" ViaY="50" ViaZ="0" EndX="100" EndY="0" EndZ="0" Vel="50"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_Movehome">
         <Sequence>
-            <Action ID="Movehome" args=""/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetTCP">
-        <Sequence>
-            <Action ID="SetTCP" args="0,0,100,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetBase">
-        <Sequence>
-            <Action ID="SetBase" args="0,0,0,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetPayload">
-        <Sequence>
-            <Action ID="SetPayload" args="1.0,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_ConfJ">
-        <Sequence>
-            <Action ID="ConfJ" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_ConfL">
-        <Sequence>
-            <Action ID="ConfL" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SingArea">
-        <Sequence>
-            <Action ID="SingArea" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetPosLimit">
-        <Sequence>
-            <Action ID="SetPosLimit" args="0,-100,100"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SetVelLimit">
-        <Sequence>
-            <Action ID="SetVelLimit" args="0,100"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_GetFK">
-        <Sequence>
-            <Action ID="GetFK" args="0,0,0,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_GetJointPos">
-        <Sequence>
-            <Action ID="GetJointPos" args="100,0,100,0,0,0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_SyncMove">
-        <Sequence>
-            <Action ID="SyncMove" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_CamMove">
-        <Sequence>
-            <Action ID="CamMove" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_Probe">
-        <Sequence>
-            <Action ID="Probe" args="0,0,0,100,0,0,10"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_PosCapture">
-        <Sequence>
-            <Action ID="PosCapture" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_PosCompare">
-        <Sequence>
-            <Action ID="PosCompare" args="0,100"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_HelixMove">
-        <Sequence>
-            <Action ID="HelixMove" args="0,0,0,100,0,50,20"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_BufMove">
-        <Sequence>
-            <Action ID="BufMove" args="0"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_PathMove">
-        <Sequence>
-            <Action ID="PathMove" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_LaserSet">
-        <Sequence>
-            <Action ID="LaserSet" args="1"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_GalvoMarkL">
-        <Sequence>
-            <Action ID="GalvoMarkL" args="0,0,100,0,500"/>
-        </Sequence>
-    </BehaviorTree>
-
-    <BehaviorTree ID="Cmd_GalvoBufMark">
-        <Sequence>
-            <Action ID="GalvoBufMark" args="1"/>
+            <Action ID="Movehome"/>
         </Sequence>
     </BehaviorTree>
 
     <BehaviorTree ID="Cmd_MoveLGalvo">
         <Sequence>
-            <Action ID="MoveLGalvo" args="0,0,0,1,0,0,0,100,0,0,1,0,0,0,100,0,0,0,0"/>
+            <Action ID="MoveLGalvo"
+                CurrentX="0" CurrentY="0" CurrentZ="0"
+                CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0"
+                X="100" Y="0" Z="0"
+                Q1="1" Q2="0" Q3="0" Q4="0"
+                Vel="100"/>
         </Sequence>
     </BehaviorTree>
 </root>

@@ -97,14 +97,13 @@ public:
  * @brief Execution status of a CmdNode.
  *
  * State transitions:
- *   INIT -> EXECUTING -> EXIT -> COMPLETED
+ *   INIT -> EXECUTING -> COMPLETED
  *   Any state can jump to FAILED on error.
  */
 enum class CmdStatus {
     START,      ///< Reserved, not yet in use.
     INIT,       ///< Initialising trajectory parameters.
     EXECUTING,  ///< Running the trajectory step by step.
-    EXIT,       ///< Final cleanup step.
     COMPLETED,  ///< Terminal: command finished successfully.
     FAILED      ///< Terminal: command encountered an unrecoverable error.
 };
@@ -113,7 +112,7 @@ enum class CmdStatus {
  * @brief Command-driven node with a built-in state machine.
  *
  * Subclasses implement init() / run() / exit() to drive the command through
- * INIT -> EXECUTING -> EXIT -> COMPLETED.  The base execute() method reads
+ * INIT -> EXECUTING -> COMPLETED.  The base execute() method reads
  * the current status and dispatches to the appropriate virtual.
  *
  * The status is stored in an atomic to allow lock-free reads from the NRT
