@@ -37,7 +37,8 @@ struct SharedState {
     }
 };
 
-class LogMessageNode : public BT::SyncActionNode {
+class LogMessageNode : public BT::SyncActionNode 
+{
 public:
     LogMessageNode(const std::string& name,
                    const BT::NodeConfiguration& config,
@@ -69,66 +70,8 @@ private:
     std::shared_ptr<SharedState> sharedState_;
 };
 
-class SetTaskStateNode : public BT::SyncActionNode {
-public:
-    SetTaskStateNode(const std::string& name,
-                     const BT::NodeConfiguration& config,
-                     std::shared_ptr<SharedState> sharedState)
-        : BT::SyncActionNode(name, config)
-        , sharedState_(std::move(sharedState))
-    {
-    }
-
-    static BT::PortsList providedPorts()
-    {
-        return {BT::InputPort<std::string>("state")};
-    }
-
-    BT::NodeStatus tick() override
-    {
-        auto state = getInput<std::string>("state");
-        if (!state)
-        {
-            throw BT::RuntimeError("missing required input [state]: ", state.error());
-        }
-
-        const std::string normalized = BT::convertFromString<std::string>(*state);
-        sharedState_->setCurrentNode(name(), "set state=" + normalized);
-
-        if (normalized == "RUN")
-        {
-            sharedState_->bridge->requestRun();
-        }
-        else if (normalized == "STOP")
-        {
-            sharedState_->bridge->requestStop();
-        }
-        else if (normalized == "RESET")
-        {
-            sharedState_->bridge->requestReset();
-        }
-        else if (normalized == "START")
-        {
-            sharedState_->bridge->requestStart();
-        }
-        else if (normalized == "SHUTDOWN")
-        {
-            sharedState_->bridge->requestShutdown();
-        }
-        else
-        {
-            spdlog::error("[BehaviorTree] Unknown task state '{}'", normalized);
-            return BT::NodeStatus::FAILURE;
-        }
-
-        return BT::NodeStatus::SUCCESS;
-    }
-
-private:
-    std::shared_ptr<SharedState> sharedState_;
-};
-
-class SendCommandNode : public BT::StatefulActionNode {
+class SendCommandNode : public BT::StatefulActionNode 
+{
 public:
     SendCommandNode(const std::string& name,
                     const BT::NodeConfiguration& config,
@@ -142,7 +85,8 @@ public:
 
     static BT::PortsList providedPorts()
     {
-        return {
+        return 
+        {
             BT::InputPort<std::string>("command"),
             BT::InputPort<std::string>("args", "")
         };
@@ -150,7 +94,8 @@ public:
 
     static BT::PortsList aliasPorts()
     {
-        return {
+        return 
+        {
             BT::InputPort<std::string>("args", "")
         };
     }
@@ -322,13 +267,6 @@ private:
             [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
             {
                 return std::make_unique<zrcs_bt::LogMessageNode>(name, config, sharedState);
-            });
-
-        factory_.registerBuilder<zrcs_bt::SetTaskStateNode>(
-            "SetTaskState",
-            [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
-            {
-                return std::make_unique<zrcs_bt::SetTaskStateNode>(name, config, sharedState);
             });
 
         factory_.registerBuilder<zrcs_bt::SendCommandNode>(
