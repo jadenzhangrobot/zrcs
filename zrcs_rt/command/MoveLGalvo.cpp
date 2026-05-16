@@ -45,7 +45,7 @@ bool MoveLGalvo::initTrajectory()
     // Ruckig 弧长参数化起始状态
     input_->current_position[0]      = 0.0;
     input_->current_velocity[0]      = command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentVel)];
-    input_->current_acceleration[0]  = command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentAcc)];
+    input_->current_acceleration[0]  = 0.0;
 
     double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);

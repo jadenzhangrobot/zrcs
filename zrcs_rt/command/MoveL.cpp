@@ -80,7 +80,7 @@ bool MoveL::initTrajectory()
     // 段首状态以命令参数为准，避免依赖上一条命令在对象内残留的 Ruckig 状态。
     input_->current_position[0] = 0.0;
     input_->current_velocity[0] = command_->args[static_cast<size_t>(MoveLArg::CurrentVel)];
-    input_->current_acceleration[0] = command_->args[static_cast<size_t>(MoveLArg::CurrentAcc)];
+    input_->current_acceleration[0] = 0.0;
 
     // 只更新目标和限制
     input_->target_position[0]      = cartDist_;

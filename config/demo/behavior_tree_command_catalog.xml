@@ -83,9 +83,7 @@
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
             <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
-            <input_port name="CurrentAcc" type="double" default="0.0">Start acceleration</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
-            <input_port name="TargetAcc" type="double" default="100.0">End acceleration</input_port>
         </Action>
         <Action ID="MoveC">
             <input_port name="ViaX" type="double" default="0.0">Via point X</input_port>
@@ -116,9 +114,7 @@
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
             <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
-            <input_port name="CurrentAcc" type="double" default="0.0">Start acceleration</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
-            <input_port name="TargetAcc" type="double" default="100.0">End acceleration</input_port>
         </Action>
     </TreeNodesModel>
 

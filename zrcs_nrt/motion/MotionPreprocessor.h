@@ -88,12 +88,10 @@ public:
                 rz,                    // RZ
                 segmentMaxVel,         // Vel
                 start.velocity,        // CurrentVel
-                0.0,                   // CurrentAcc
-                end.velocity,          // TargetVel
-                0.0                    // TargetAcc
+                end.velocity           // TargetVel
             };
 
-            auto [result, seq] = bridge_->sendCommand(cfg.galvoMode ? "MoveLGalvo" : "MoveL", args, 17);
+            auto [result, seq] = bridge_->sendCommand(cfg.galvoMode ? "MoveLGalvo" : "MoveL", args, 15);
             if (result != RtBridge::SendResult::OK) {
                 spdlog::error("[MotionPreprocessor] sendCommand MoveL failed at segment {}/{}",
                               i, planned.size() - 1);
