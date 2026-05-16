@@ -29,8 +29,6 @@ TrajectoryVisualizer3D::TrajectoryVisualizer3D(QWidget *parent)
     panY(-18.0f),
       activeButton(Qt::NoButton)
 {
-    setMinimumHeight(360);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setMouseTracking(true);
 }
 

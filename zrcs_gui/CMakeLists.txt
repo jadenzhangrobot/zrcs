@@ -95,6 +95,8 @@ set(UI_FILES
     resources/ui/jog_control_panel.ui
     resources/ui/alarm_panel.ui
     resources/ui/trajectory_panel.ui
+    resources/ui/command_panel.ui
+    resources/ui/behavior_tree_panel.ui
 )
 
 # Groot 资源文件

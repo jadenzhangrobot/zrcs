@@ -30,90 +30,227 @@
     <property name="spacing">
      <number>14</number>
     </property>
-    <item>
-     <widget class="QScrollArea" name="leftScrollArea">
-      <property name="minimumSize">
-       <size>
-        <width>480</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>620</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <widget class="QWidget" name="leftPanelContainer">
-       <layout class="QVBoxLayout" name="leftPanelLayout">
-        <property name="leftMargin">
-         <number>8</number>
-        </property>
-        <property name="topMargin">
-         <number>8</number>
-        </property>
-        <property name="rightMargin">
-         <number>8</number>
-        </property>
-        <property name="bottomMargin">
-         <number>8</number>
-        </property>
-        <property name="spacing">
-         <number>12</number>
-        </property>
-        <item>
-         <widget class="StatusIndicator" name="globalStatusIndicator"/>
-        </item>
-        <item>
-         <widget class="JogControlPanel" name="jogPanel"/>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="quickActionGroup">
-          <property name="title">
-           <string>快捷操作</string>
-          </property>
-          <layout class="QGridLayout" name="quickActionLayout">
-           <property name="leftMargin">
-            <number>8</number>
-           </property>
-           <property name="topMargin">
-            <number>8</number>
-           </property>
-           <property name="rightMargin">
-            <number>8</number>
-           </property>
-           <property name="bottomMargin">
-            <number>8</number>
-           </property>
-           <property name="spacing">
-            <number>6</number>
-           </property>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <spacer name="leftBottomSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
+      <item>
+       <widget class="QWidget" name="leftSidebarHost">
+        <layout class="QHBoxLayout" name="leftSidebarLayout">
+         <property name="leftMargin">
+            <number>0</number>
+         </property>
+         <property name="topMargin">
+            <number>0</number>
+         </property>
+         <property name="rightMargin">
+            <number>0</number>
+         </property>
+         <property name="bottomMargin">
+            <number>0</number>
+         </property>
+         <property name="spacing">
+            <number>0</number>
+         </property>
+         <item>
+            <widget class="QScrollArea" name="leftScrollArea">
+             <property name="minimumSize">
+              <size>
+               <width>480</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>620</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <property name="horizontalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOff</enum>
+             </property>
+             <widget class="QWidget" name="leftPanelContainer">
+              <layout class="QVBoxLayout" name="leftPanelLayout">
+               <property name="leftMargin">
+                  <number>6</number>
+               </property>
+               <property name="topMargin">
+                  <number>6</number>
+               </property>
+               <property name="rightMargin">
+                  <number>6</number>
+               </property>
+               <property name="bottomMargin">
+                  <number>6</number>
+               </property>
+               <property name="spacing">
+                  <number>8</number>
+               </property>
+               <item>
+                  <widget class="StatusIndicator" name="globalStatusIndicator">
+                   <property name="minimumSize">
+                    <size>
+                     <width>96</width>
+                     <height>96</height>
+                    </size>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+               </item>
+               <item>
+                  <widget class="JogControlPanel" name="jogPanel"/>
+               </item>
+               <item>
+                  <widget class="QGroupBox" name="quickActionGroup">
+                   <property name="title">
+                    <string>快捷操作</string>
+                   </property>
+                   <layout class="QGridLayout" name="quickActionLayout">
+                    <property name="leftMargin">
+                     <number>8</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>8</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>8</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>8</number>
+                    </property>
+                    <property name="spacing">
+                     <number>6</number>
+                    </property>
+                    <item row="0" column="0">
+                     <widget class="QPushButton" name="btnQuickServo">
+                        <property name="text">
+                         <string>伺服使能</string>
+                        </property>
+                        <property name="checkable">
+                         <bool>true</bool>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QPushButton" name="btnQuickRun">
+                        <property name="text">
+                         <string>运行程序</string>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QPushButton" name="btnQuickPause">
+                        <property name="text">
+                         <string>暂停</string>
+                        </property>
+                        <property name="kind" stdset="0">
+                         <string>warning</string>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QPushButton" name="btnQuickStop">
+                        <property name="text">
+                         <string>停止</string>
+                        </property>
+                        <property name="kind" stdset="0">
+                         <string>danger</string>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="1">
+                     <widget class="QPushButton" name="btnQuickEStop">
+                        <property name="text">
+                         <string>急停</string>
+                        </property>
+                        <property name="kind" stdset="0">
+                         <string>danger</string>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2">
+                     <widget class="QPushButton" name="btnQuickReset">
+                        <property name="text">
+                         <string>复位</string>
+                        </property>
+                        <property name="kind" stdset="0">
+                         <string>info</string>
+                        </property>
+                        <property name="quickAction" stdset="0">
+                         <bool>true</bool>
+                        </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+               </item>
+               <item>
+                  <spacer name="leftBottomSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                  </spacer>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+         </item>
+         <item>
+            <widget class="QPushButton" name="btnControlPanelToggle">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+                <width>2</width>
+                   <height>100</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+                <width>2</width>
+                   <height>100</height>
+              </size>
+             </property>
+             <property name="text">
+                     <string/>
+             </property>
+             <property name="toolTip">
+              <string>隐藏控制界面</string>
+             </property>
+            </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
     <item>
      <widget class="QTabWidget" name="mainTabs">
       <property name="documentMode">
@@ -166,7 +303,51 @@
     </item>
    </layout>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+       <widget class="QStatusBar" name="statusbar">
+        <property name="sizeGripEnabled">
+              <bool>false</bool>
+        </property>
+        <widget class="QLabel" name="statusBarIpLabel">
+              <property name="text">
+               <string>IP:</string>
+              </property>
+        </widget>
+        <widget class="QLineEdit" name="statusBarIpInput">
+              <property name="placeholderText">
+               <string>192.168.x.x</string>
+              </property>
+        </widget>
+        <widget class="QPushButton" name="statusBarConnectBtn">
+              <property name="text">
+               <string>连接</string>
+              </property>
+        </widget>
+        <widget class="QLabel" name="schedStateLabel">
+              <property name="text">
+               <string>状态: --</string>
+              </property>
+        </widget>
+        <widget class="QLabel" name="zmqStatusLabel">
+              <property name="text">
+               <string>ZMQ: 未连接</string>
+              </property>
+        </widget>
+        <widget class="QLabel" name="etherCATStatusLabel">
+              <property name="text">
+               <string>EtherCAT: 未连接</string>
+              </property>
+        </widget>
+        <widget class="QLabel" name="homedLabel">
+              <property name="text">
+               <string>归零: 否</string>
+              </property>
+        </widget>
+        <widget class="QLabel" name="servoLabel">
+              <property name="text">
+               <string>伺服: 关</string>
+              </property>
+        </widget>
+       </widget>
  </widget>
  <customwidgets>
   <customwidget>

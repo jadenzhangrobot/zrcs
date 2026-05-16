@@ -1,4 +1,5 @@
 #include "behavior_tree/BehaviorTreePanel.h"
+#include "ui_behavior_tree_panel.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -18,15 +19,10 @@
 #include <nodes/NodeStyle>
 #include <nodes/FlowView>
 
-#include "bt_editor/editor_flowscene.h"
 #include "bt_editor/utils.h"
-#include "bt_editor/XML_utilities.hpp"
-#include "bt_editor/models/RootNodeModel.hpp"
 #include "bt_editor/models/SubtreeNodeModel.hpp"
 
 using QtNodes::DataModelRegistry;
-using QtNodes::FlowView;
-using QtNodes::FlowScene;
 
 BehaviorTreePanel::BehaviorTreePanel(QWidget *parent)
     : QWidget(parent)
@@ -74,28 +70,33 @@ void BehaviorTreePanel::initializeNodeModels()
 
 void BehaviorTreePanel::setupUI()
 {
-    _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0, 0, 0, 0);
-    _mainLayout->setSpacing(4);
+    Ui::BehaviorTreePanelUi ui;
+    ui.setupUi(this);
 
-    // Toolbar
-    _toolbar = new QToolBar(this);
-    _toolbar->setIconSize(QSize(20, 20));
+    _toolbar = findChild<QToolBar*>("toolBar");
+    _splitter = findChild<QSplitter*>("mainSplitter");
+    _treeTabWidget = findChild<QTabWidget*>("treeTabWidget");
+    auto *editorHost = findChild<QWidget*>("editorHost");
 
-    auto *btnNew = _toolbar->addAction(QIcon(":/icons/svg/list_add.svg"), QString::fromUtf8("新建"));
-    auto *btnLoad = _toolbar->addAction(QIcon(":/icons/svg/folder.svg"), QString::fromUtf8("加载"));
-    auto *btnSave = _toolbar->addAction(QIcon(":/icons/svg/save_dark.svg"), QString::fromUtf8("保存"));
-    _toolbar->addSeparator();
-    auto *btnArrange = _toolbar->addAction(QIcon(":/icons/svg/magic-wand.svg"), QString::fromUtf8("自动排列"));
-    auto *btnCenter = _toolbar->addAction(QIcon(":/icons/svg/zoom_home.svg"), QString::fromUtf8("居中视图"));
-    auto *btnLayout = _toolbar->addAction(QIcon(":/icons/BT-vertical.png"), QString::fromUtf8("切换布局"));
-    _toolbar->addSeparator();
-    auto *btnSvg = _toolbar->addAction(QIcon(":/icons/svg/download.svg"), QString::fromUtf8("导出SVG"));
+    if (!_toolbar || !_splitter || !_treeTabWidget || !editorHost) {
+        return;
+    }
 
-    _toolbar->addSeparator();
-    auto *btnSend = _toolbar->addAction(QIcon(":/icons/svg/save_dark.svg"), QString::fromUtf8("下发到控制器"));
-    auto *btnStart = _toolbar->addAction(QIcon(":/icons/svg/play.svg"), QString::fromUtf8("启动执行"));
-    auto *btnStop = _toolbar->addAction(QIcon(":/icons/svg/stop.svg"), QString::fromUtf8("停止执行"));
+    auto *btnNew = findChild<QAction*>("actionNewTree");
+    auto *btnLoad = findChild<QAction*>("actionLoadTree");
+    auto *btnSave = findChild<QAction*>("actionSaveTree");
+    auto *btnArrange = findChild<QAction*>("actionAutoArrange");
+    auto *btnCenter = findChild<QAction*>("actionCenterView");
+    auto *btnLayout = findChild<QAction*>("actionToggleLayout");
+    auto *btnSvg = findChild<QAction*>("actionSaveSvg");
+    auto *btnSend = findChild<QAction*>("actionSendToController");
+    auto *btnStart = findChild<QAction*>("actionStartExecution");
+    auto *btnStop = findChild<QAction*>("actionStopExecution");
+
+    if (!btnNew || !btnLoad || !btnSave || !btnArrange || !btnCenter || !btnLayout ||
+        !btnSvg || !btnSend || !btnStart || !btnStop) {
+        return;
+    }
 
     connect(btnNew, &QAction::triggered, this, &BehaviorTreePanel::onNewTree);
     connect(btnLoad, &QAction::triggered, this, &BehaviorTreePanel::onLoadTree);
@@ -108,21 +109,16 @@ void BehaviorTreePanel::setupUI()
     connect(btnStart, &QAction::triggered, this, &BehaviorTreePanel::onStartExecution);
     connect(btnStop, &QAction::triggered, this, &BehaviorTreePanel::onStopExecution);
 
-    _mainLayout->addWidget(_toolbar);
-
     // Splitter: side panel | tree tab widget
-    _splitter = new QSplitter(Qt::Horizontal, this);
-
     _editorWidget = new SidepanelEditor(_modelRegistry.get(), _treenodeModels, this);
-    _treeTabWidget = new QTabWidget(this);
     _treeTabWidget->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    _splitter->addWidget(_editorWidget);
-    _splitter->addWidget(_treeTabWidget);
+    if (auto *editorHostLayout = qobject_cast<QVBoxLayout*>(editorHost->layout())) {
+        editorHostLayout->addWidget(_editorWidget);
+    }
+
     _splitter->setStretchFactor(0, 1);
     _splitter->setStretchFactor(1, 4);
-
-    _mainLayout->addWidget(_splitter);
 }
 
 void BehaviorTreePanel::setupConnections()

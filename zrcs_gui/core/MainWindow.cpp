@@ -8,15 +8,21 @@
 #include <QFont>
 #include <QScrollArea>
 #include <QFrame>
+#include <QDateTime>
 #include <functional>
 #include <QFile>
 #include "ui_main_window.h"
 #include "shared_memory/ShmLayout.h"
 
 MainWindowRefactored::MainWindowRefactored(QWidget *parent)
-    : QMainWindow(parent), useZMQ(true), currentOverride(100.0), currentStepSize(0.0)
+    : QMainWindow(parent),
+      useZMQ(true),
+      controlPanelExpanded_(true),
+      currentOverride(100.0),
+      currentStepSize(0.0)
 {
     setWindowTitle("ZRCS 机器人控制系统 v2.0");
+    setProperty("currentAxisCount", 0);
     
     setupUI();
     setupConnections();
@@ -43,7 +49,7 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     // 连接命令面板信号
     if (commandPanel) {
         connect(commandPanel, &CommandPanel::commandRequested,
-                this, &MainWindowRefactored::sendMotionCommand);
+                this, &MainWindowRefactored::onCommandPanelCommandRequested);
     }
 
     // 连接行为树面板信号到 ZMQ 客户端
@@ -82,43 +88,92 @@ void MainWindowRefactored::setupUI()
 
     QHBoxLayout *mainLayout = findChild<QHBoxLayout*>("mainLayout");
     advancedTabs = findChild<QTabWidget*>("mainTabs");
+    controlSidebarHost = findChild<QWidget*>("leftSidebarHost");
+    controlScrollArea = findChild<QScrollArea*>("leftScrollArea");
+    controlPanelToggleButton = findChild<QPushButton*>("btnControlPanelToggle");
     if (mainLayout) {
         mainLayout->setStretch(0, 0);
         mainLayout->setStretch(1, 1);
     }
     globalStatus = findChild<StatusIndicator*>("globalStatusIndicator");
     jogPanel = findChild<JogControlPanel*>("jogPanel");
+    auto *statusBarIpLabel = findChild<QLabel*>("statusBarIpLabel");
+    ipInput = findChild<QLineEdit*>("statusBarIpInput");
+    connectBtn = findChild<QPushButton*>("statusBarConnectBtn");
+    schedStateLabel = findChild<QLabel*>("schedStateLabel");
+    zmqStatusLabel = findChild<QLabel*>("zmqStatusLabel");
+    etherCATStatusLabel = findChild<QLabel*>("etherCATStatusLabel");
+    homedLabel = findChild<QLabel*>("homedLabel");
+    servoLabel = findChild<QLabel*>("servoLabel");
+
     createJogControl();
     createQuickActions();
     createTrajectoryPanel();
     createAlarmPanel();
     createAdvancedModules();
 
-    zmqStatusLabel = new QLabel("ZMQ: 未连接");
-    etherCATStatusLabel = new QLabel("EtherCAT: 未连接");
-    homedLabel = new QLabel("归零: 否");
-    servoLabel = new QLabel("伺服: 关");
-    schedStateLabel = new QLabel("状态: --");
-
-    // 连接控件
     const auto& commCfg = ZrcsConfig::Config::instance().comm;
-    ipInput = new QLineEdit(commCfg.zmqHost);
-    ipInput->setPlaceholderText("192.168.x.x");
-    ipInput->setFixedWidth(140);
+    if (ipInput) {
+        ipInput->setText(commCfg.zmqHost);
+    }
 
-    connectBtn = new QPushButton("连接");
-    connectBtn->setFixedWidth(60);
-    connect(connectBtn, &QPushButton::clicked, this, &MainWindowRefactored::onConnectClicked);
+    if (connectBtn) {
+        connect(connectBtn, &QPushButton::clicked, this, &MainWindowRefactored::onConnectClicked);
+    }
 
-    statusBar()->setSizeGripEnabled(false);
-    statusBar()->addWidget(new QLabel("IP:"));
-    statusBar()->addWidget(ipInput);
-    statusBar()->addWidget(connectBtn);
-    statusBar()->addPermanentWidget(schedStateLabel);
-    statusBar()->addPermanentWidget(zmqStatusLabel);
-    statusBar()->addPermanentWidget(etherCATStatusLabel);
-    statusBar()->addPermanentWidget(homedLabel);
-    statusBar()->addPermanentWidget(servoLabel);
+    if (controlPanelToggleButton) {
+        connect(controlPanelToggleButton, &QPushButton::clicked, this, [this]() {
+            setControlPanelExpanded(!controlPanelExpanded_);
+        });
+    }
+
+    setControlPanelExpanded(true);
+
+    if (statusBar() && statusBarIpLabel && ipInput && connectBtn && schedStateLabel &&
+        zmqStatusLabel && etherCATStatusLabel && homedLabel && servoLabel) {
+        statusBar()->addWidget(statusBarIpLabel);
+        statusBar()->addWidget(ipInput);
+        statusBar()->addWidget(connectBtn);
+        statusBar()->addPermanentWidget(schedStateLabel);
+        statusBar()->addPermanentWidget(zmqStatusLabel);
+        statusBar()->addPermanentWidget(etherCATStatusLabel);
+        statusBar()->addPermanentWidget(homedLabel);
+        statusBar()->addPermanentWidget(servoLabel);
+    }
+}
+
+void MainWindowRefactored::setControlPanelExpanded(bool expanded)
+{
+    controlPanelExpanded_ = expanded;
+
+    auto *mainLayout = findChild<QHBoxLayout*>("mainLayout");
+    auto *sidebarLayout = findChild<QHBoxLayout*>("leftSidebarLayout");
+    const int collapsedWidth = 28;
+
+    if (controlScrollArea) {
+        controlScrollArea->setVisible(expanded);
+        controlScrollArea->setMinimumWidth(expanded ? 480 : 0);
+        controlScrollArea->setMaximumWidth(expanded ? 620 : 0);
+    }
+
+    if (controlSidebarHost) {
+        controlSidebarHost->setMinimumWidth(expanded ? 0 : collapsedWidth);
+        controlSidebarHost->setMaximumWidth(expanded ? QWIDGETSIZE_MAX : collapsedWidth);
+    }
+
+    if (sidebarLayout) {
+        sidebarLayout->setContentsMargins(expanded ? 0 : 6, 0, expanded ? 0 : 6, 0);
+        sidebarLayout->setSpacing(expanded ? 0 : 0);
+    }
+
+    if (mainLayout) {
+        mainLayout->setSpacing(expanded ? 0 : 8);
+    }
+
+    if (controlPanelToggleButton) {
+        controlPanelToggleButton->setText(QString());
+        controlPanelToggleButton->setToolTip(expanded ? "隐藏控制界面" : "显示控制界面");
+    }
 }
 
 void MainWindowRefactored::setupConnections()
@@ -142,11 +197,6 @@ void MainWindowRefactored::setupStyles()
     } else {
         setStyleSheet("");
     }
-}
-
-void MainWindowRefactored::createPositionDisplay()
-{
-    // 已在 setupUI 中实现
 }
 
 void MainWindowRefactored::createJogControl()
@@ -175,15 +225,24 @@ void MainWindowRefactored::createAdvancedModules()
 void MainWindowRefactored::createQuickActions()
 {
     quickActionGroup = findChild<QGroupBox*>("quickActionGroup");
-    quickActionLayout = findChild<QGridLayout*>("quickActionLayout");
-    if (!quickActionGroup || !quickActionLayout) return;
+    auto *btnServo = findChild<QPushButton*>("btnQuickServo");
+    auto *btnRun = findChild<QPushButton*>("btnQuickRun");
+    auto *btnPause = findChild<QPushButton*>("btnQuickPause");
+    auto *btnStop = findChild<QPushButton*>("btnQuickStop");
+    auto *btnEStop = findChild<QPushButton*>("btnQuickEStop");
+    auto *btnReset = findChild<QPushButton*>("btnQuickReset");
+    if (!quickActionGroup || !btnServo || !btnRun || !btnPause || !btnStop || !btnEStop || !btnReset) {
+        return;
+    }
 
-    // 添加默认按钮
-    auto *btnServo = addQuickAction("伺服使能");
-    btnServo->setCheckable(true);
     connect(btnServo, &QPushButton::toggled, this, [this](bool on) {
         servoLabel->setText(on ? "伺服: 开" : "伺服: 关");
-        int axisCount = ZrcsConfig::Config::instance().ui.axisCount;
+        const int axisCount = property("currentAxisCount").toInt();
+        if (axisCount <= 0) {
+            qWarning() << "Axis count not received from RT status yet";
+            return;
+        }
+
         if (on) {
             sendMotionCommand("SYS_RUN");
             sendMotionCommand("Enable", {static_cast<double>(axisCount)});
@@ -192,26 +251,19 @@ void MainWindowRefactored::createQuickActions()
         }
     });
 
-    auto *btnRun = addQuickAction("运行程序");
     connect(btnRun, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_RUN");
     });
 
-    auto *btnPause = addQuickAction("暂停");
-    btnPause->setProperty("kind", "warning");
     connect(btnPause, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_STOP");
     });
 
-    auto *btnStop = addQuickAction("停止");
-    btnStop->setProperty("kind", "danger");
     connect(btnStop, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_JOG_STOP");
         sendMotionCommand("SYS_STOP");
     });
 
-    auto *btnEStop = addQuickAction("急停");
-    btnEStop->setProperty("kind", "danger");
     connect(btnEStop, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_ESTOP");
         // 同步伺服按钮状态
@@ -220,29 +272,9 @@ void MainWindowRefactored::createQuickActions()
         }
     });
 
-    auto *btnReset = addQuickAction("复位");
-    btnReset->setProperty("kind", "info");
     connect(btnReset, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_RESET");
     });
-}
-
-QPushButton* MainWindowRefactored::addQuickAction(const QString &text, const QString &iconPath)
-{
-    if (!quickActionLayout) return nullptr;
-
-    auto *btn = new QPushButton(text, quickActionGroup);
-    btn->setMinimumHeight(36);
-    if (!iconPath.isEmpty()) {
-        btn->setIcon(QIcon(iconPath));
-    }
-
-    int count = quickActionLayout->count();
-    int cols = 3;
-    int row = count / cols;
-    int col = count % cols;
-    quickActionLayout->addWidget(btn, row, col);
-    return btn;
 }
 
 void MainWindowRefactored::onUpdateTimer()
@@ -332,9 +364,35 @@ void MainWindowRefactored::showConfirmDialog(const QString &title, const QString
 void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
 {
     if (!jogPanel) return;
+
+    const int axisCount = positions.size();
+    if (axisCount > 0 && property("currentAxisCount").toInt() != axisCount) {
+        setProperty("currentAxisCount", axisCount);
+        jogPanel->setAxisCount(axisCount);
+    }
+
     for (int i = 0; i < positions.size(); ++i) {
         jogPanel->setAxisPosition(i, positions[i]);
     }
+}
+
+void MainWindowRefactored::onCommandPanelCommandRequested(const QString &cmd, const QVector<double> &args)
+{
+    QStringList argTexts;
+    argTexts.reserve(args.size());
+    for (double arg : args) {
+        argTexts.append(QString::number(arg, 'f', 3));
+    }
+
+    if (alarmPanel) {
+        alarmPanel->appendOperationLog(
+            QString("[%1] %2(%3)")
+                .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                .arg(cmd)
+                .arg(argTexts.join(", ")));
+    }
+
+    sendMotionCommand(cmd, args);
 }
 
 void MainWindowRefactored::onTaskSchedulingUpdated(const QString &state)
@@ -383,9 +441,9 @@ void MainWindowRefactored::onConnectClicked()
     // 重连命令面板
     if (commandPanel) {
         disconnect(commandPanel, &CommandPanel::commandRequested,
-                   this, &MainWindowRefactored::sendMotionCommand);
+                   this, &MainWindowRefactored::onCommandPanelCommandRequested);
         connect(commandPanel, &CommandPanel::commandRequested,
-                this, &MainWindowRefactored::sendMotionCommand);
+                this, &MainWindowRefactored::onCommandPanelCommandRequested);
     }
 
     zmqClient->connectToServer();

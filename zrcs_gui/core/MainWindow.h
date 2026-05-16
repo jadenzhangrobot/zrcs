@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QScrollBar>
 #include <QTableWidget>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -14,6 +15,7 @@
 #include <QComboBox>
 #include <QProgressBar>
 #include <QTextEdit>
+#include <QScrollArea>
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QGridLayout>
@@ -42,20 +44,6 @@ private:
     QColor getColor() const;
 };
 
-class AxisPositionDisplay : public QWidget {
-    Q_OBJECT
-public:
-    AxisPositionDisplay(const QString &axisName, QWidget *parent = nullptr);
-    void updatePosition(double machine, double absolute, double relative);
-    void updateDynamics(double velocity, double acceleration);
-    void updateServoData(double torque, double followError, double temperature);
-
-private:
-    QLabel *machineLabel, *absoluteLabel, *relativeLabel;
-    QLabel *velocityLabel, *accelerationLabel;
-    QLabel *torqueLabel, *followErrorLabel, *tempLabel;
-};
-
 class JogControlPanel : public QWidget {
     Q_OBJECT
 public:
@@ -78,8 +66,10 @@ private:
     QVector<QPushButton*> plusButtons, minusButtons, homeButtons;
     QVector<QPushButton*> originButtons;
     QVector<QLabel*> axisPositionLabels;
+    QVector<double> axisPositions;
     QComboBox *stepSizeCombo;
     QComboBox *axisGroupCombo;
+    QScrollBar *axisScrollBar;
     QSlider *overrideSlider;
     QLabel *overrideLabel;
     int axisCount;
@@ -91,7 +81,7 @@ class AlarmPanel : public QWidget {
 public:
     AlarmPanel(QWidget *parent = nullptr);
     void addAlarm(const QString &message, const QString &timestamp);
-    void clearAlarms();
+    void appendOperationLog(const QString &message);
 
 private:
     QTableWidget *alarmTable;
@@ -127,26 +117,23 @@ private slots:
     void onZMQDisconnected();
     void onZMQError(const QString &error);
     void onConnectClicked();
+    void onCommandPanelCommandRequested(const QString &cmd, const QVector<double> &args);
 
     // Status
     void onAxisPositionsUpdated(QVector<double> positions);
     void onTaskSchedulingUpdated(const QString &state);
 
 private:
+    void setControlPanelExpanded(bool expanded);
     void setupUI();
     void setupConnections();
     void setupStyles();
-    void createDashboard();
-    void createPositionDisplay();
     void createJogControl();
     void createTrajectoryPanel();
     void createAlarmPanel();
     void createSettingsPanel();
     void createAdvancedModules();
     void createQuickActions();
-
-    // Quick action helper
-    QPushButton* addQuickAction(const QString &text, const QString &iconPath = QString());
     
     // UI Components
     StatusIndicator *globalStatus;
@@ -154,11 +141,12 @@ private:
     QLabel *homedLabel, *servoLabel, *schedStateLabel;
     QLineEdit *ipInput;
     QPushButton *connectBtn;
-    
-    QVector<AxisPositionDisplay*> axisDisplays;
+    QWidget *controlSidebarHost;
+    QScrollArea *controlScrollArea;
+    QPushButton *controlPanelToggleButton;
+
     JogControlPanel *jogPanel;
     QGroupBox *quickActionGroup;
-    QGridLayout *quickActionLayout;
     AlarmPanel *alarmPanel;
     
     // Advanced Modules
@@ -175,6 +163,7 @@ private:
     
     // State
     bool useZMQ;
+    bool controlPanelExpanded_;
     double currentOverride;
     double currentStepSize;
     

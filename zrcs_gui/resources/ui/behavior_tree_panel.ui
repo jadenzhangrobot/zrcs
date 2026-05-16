@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BehaviorTreePanelUi</class>
+ <widget class="QWidget" name="behaviorTreePanel">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>960</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>4</number>
+   </property>
+   <item>
+    <widget class="QToolBar" name="toolBar">
+     <property name="iconSize">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+         <addaction name="actionNewTree"/>
+         <addaction name="actionLoadTree"/>
+         <addaction name="actionSaveTree"/>
+         <addaction name="actionToolbarSeparator1"/>
+         <addaction name="actionAutoArrange"/>
+         <addaction name="actionCenterView"/>
+         <addaction name="actionToggleLayout"/>
+         <addaction name="actionToolbarSeparator2"/>
+         <addaction name="actionSaveSvg"/>
+         <addaction name="actionToolbarSeparator3"/>
+         <addaction name="actionSendToController"/>
+         <addaction name="actionStartExecution"/>
+         <addaction name="actionStopExecution"/>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSplitter" name="mainSplitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <widget class="QWidget" name="editorHost">
+      <layout class="QVBoxLayout" name="editorHostLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+     <widget class="QTabWidget" name="treeTabWidget"/>
+    </widget>
+   </item>
+  </layout>
+    <action name="actionNewTree">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/list_add.svg</normaloff>:/icons/svg/list_add.svg</iconset>
+     </property>
+     <property name="text">
+        <string>新建</string>
+     </property>
+    </action>
+    <action name="actionLoadTree">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/folder.svg</normaloff>:/icons/svg/folder.svg</iconset>
+     </property>
+     <property name="text">
+        <string>加载</string>
+     </property>
+    </action>
+    <action name="actionSaveTree">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/save_dark.svg</normaloff>:/icons/svg/save_dark.svg</iconset>
+     </property>
+     <property name="text">
+        <string>保存</string>
+     </property>
+    </action>
+    <action name="actionToolbarSeparator1">
+     <property name="separator">
+        <bool>true</bool>
+     </property>
+    </action>
+    <action name="actionAutoArrange">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/magic-wand.svg</normaloff>:/icons/svg/magic-wand.svg</iconset>
+     </property>
+     <property name="text">
+        <string>自动排列</string>
+     </property>
+    </action>
+    <action name="actionCenterView">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/zoom_home.svg</normaloff>:/icons/svg/zoom_home.svg</iconset>
+     </property>
+     <property name="text">
+        <string>居中视图</string>
+     </property>
+    </action>
+    <action name="actionToggleLayout">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/BT-vertical.png</normaloff>:/icons/BT-vertical.png</iconset>
+     </property>
+     <property name="text">
+        <string>切换布局</string>
+     </property>
+    </action>
+    <action name="actionToolbarSeparator2">
+     <property name="separator">
+        <bool>true</bool>
+     </property>
+    </action>
+    <action name="actionSaveSvg">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/download.svg</normaloff>:/icons/svg/download.svg</iconset>
+     </property>
+     <property name="text">
+        <string>导出SVG</string>
+     </property>
+    </action>
+    <action name="actionToolbarSeparator3">
+     <property name="separator">
+        <bool>true</bool>
+     </property>
+    </action>
+    <action name="actionSendToController">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/save_dark.svg</normaloff>:/icons/svg/save_dark.svg</iconset>
+     </property>
+     <property name="text">
+        <string>下发到控制器</string>
+     </property>
+    </action>
+    <action name="actionStartExecution">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/play.svg</normaloff>:/icons/svg/play.svg</iconset>
+     </property>
+     <property name="text">
+        <string>启动执行</string>
+     </property>
+    </action>
+    <action name="actionStopExecution">
+     <property name="icon">
+        <iconset resource="../../../3rdParty/Groot/bt_editor/resources/icons.qrc">
+         <normaloff>:/icons/svg/stop.svg</normaloff>:/icons/svg/stop.svg</iconset>
+     </property>
+     <property name="text">
+        <string>停止执行</string>
+     </property>
+    </action>
+ </widget>
+ <resources>
+    <include location="../../../3rdParty/Groot/bt_editor/resources/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

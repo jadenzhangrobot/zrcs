@@ -21,12 +21,21 @@ void JogControlPanel::setupUI()
 
     stepSizeCombo = findChild<QComboBox*>("stepSizeCombo");
     axisGroupCombo = findChild<QComboBox*>("axisGroupCombo");
+    axisScrollBar = findChild<QScrollBar*>("axisScrollBar");
     overrideSlider = findChild<QSlider*>("overrideSlider");
     overrideLabel = findChild<QLabel*>("overrideLabel");
     QGridLayout *jogLayout = findChild<QGridLayout*>("jogGridLayout");
-    if (!stepSizeCombo || !axisGroupCombo || !overrideSlider || !overrideLabel || !jogLayout) {
+    if (!stepSizeCombo || !axisGroupCombo || !axisScrollBar || !overrideSlider || !overrideLabel || !jogLayout) {
         return;
     }
+
+    if (auto *axisGroupLabel = findChild<QLabel*>("axisGroupLabel")) {
+        axisGroupLabel->setVisible(false);
+    }
+    axisGroupCombo->setVisible(false);
+    axisScrollBar->hide();
+    axisScrollBar->setSingleStep(1);
+    axisScrollBar->setPageStep(1);
 
     stepSizeCombo->clear();
     stepSizeCombo->addItems({"连续", "10mm", "1mm", "0.1mm", "0.01mm"});
@@ -35,7 +44,7 @@ void JogControlPanel::setupUI()
         double sizes[] = {0, 10, 1, 0.1, 0.01};
         emit stepSizeChanged(sizes[index]);
     });
-    connect(axisGroupCombo, &QComboBox::currentIndexChanged, this, [this](int) {
+    connect(axisScrollBar, &QScrollBar::valueChanged, this, [this](int) {
         refreshAxisButtons();
     });
     overrideSlider->setRange(0, 100);
@@ -67,27 +76,27 @@ void JogControlPanel::setupUI()
         minusBtn->setProperty("compact", true);
         posLabel->setObjectName("axisPosDisplay");
         connect(plusBtn, &QPushButton::pressed, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit jogPressed(axis, 1);
         });
         connect(plusBtn, &QPushButton::released, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit jogReleased(axis);
         });
         connect(minusBtn, &QPushButton::pressed, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit jogPressed(axis, -1);
         });
         connect(minusBtn, &QPushButton::released, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit jogReleased(axis);
         });
         connect(homeBtn, &QPushButton::clicked, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit homeRequested(axis);
         });
         connect(originBtn, &QPushButton::clicked, this, [this, i]() {
-            int axis = axisGroupCombo->currentData().toInt() + i;
+            int axis = (axisScrollBar ? axisScrollBar->value() : 0) + i;
             if (axis < axisCount) emit setCurrentAsOriginRequested(axis);
         });
         plusButtons.append(plusBtn);
@@ -107,25 +116,25 @@ void JogControlPanel::setupUI()
 void JogControlPanel::setAxisCount(int count)
 {
     axisCount = qMax(1, count);
-    int groupCount = (axisCount + axisPageSize - 1) / axisPageSize;
-    axisGroupCombo->blockSignals(true);
-    axisGroupCombo->clear();
-    for (int g = 0; g < groupCount; ++g) {
-        int start = g * axisPageSize + 1;
-        int end = qMin(axisCount, (g + 1) * axisPageSize);
-        axisGroupCombo->addItem(QString("J%1-J%2").arg(start).arg(end), g * axisPageSize);
+    axisPositions.resize(axisCount);
+    if (axisScrollBar) {
+        const int maxOffset = qMax(0, axisCount - plusButtons.size());
+        axisScrollBar->blockSignals(true);
+        axisScrollBar->setRange(0, maxOffset);
+        axisScrollBar->setPageStep(1);
+        axisScrollBar->setValue(qMin(axisScrollBar->value(), maxOffset));
+        axisScrollBar->setVisible(maxOffset > 0);
+        axisScrollBar->blockSignals(false);
     }
-    axisGroupCombo->setCurrentIndex(0);
-    axisGroupCombo->blockSignals(false);
     refreshAxisButtons();
 }
 
 void JogControlPanel::refreshAxisButtons()
 {
-    int startAxis = axisGroupCombo ? axisGroupCombo->currentData().toInt() : 0;
+    const int startAxis = axisScrollBar ? axisScrollBar->value() : 0;
     for (int i = 0; i < plusButtons.size(); ++i) {
-        int axis = startAxis + i;
-        bool enabled = axis < axisCount;
+        const int axis = startAxis + i;
+        const bool enabled = axis >= 0 && axis < axisCount;
         plusButtons[i]->setVisible(enabled);
         minusButtons[i]->setVisible(enabled);
         homeButtons[i]->setVisible(enabled);
@@ -136,14 +145,24 @@ void JogControlPanel::refreshAxisButtons()
             minusButtons[i]->setText(QString("J%1 -").arg(axis + 1));
             homeButtons[i]->setText(QString("J%1 回零").arg(axis + 1));
             originButtons[i]->setText(QString("J%1 设原点").arg(axis + 1));
+            axisPositionLabels[i]->setText(QString::number(axisPositions.value(axis), 'f', 3));
         }
     }
 }
 
 void JogControlPanel::setAxisPosition(int axis, double position)
 {
-    int startAxis = axisGroupCombo ? axisGroupCombo->currentData().toInt() : 0;
-    int localIndex = axis - startAxis;
+    if (axis < 0 || axis >= axisCount) {
+        return;
+    }
+
+    if (axis >= axisPositions.size()) {
+        axisPositions.resize(axis + 1);
+    }
+    axisPositions[axis] = position;
+
+    const int startAxis = axisScrollBar ? axisScrollBar->value() : 0;
+    const int localIndex = axis - startAxis;
     if (localIndex >= 0 && localIndex < axisPositionLabels.size()) {
         axisPositionLabels[localIndex]->setText(QString::number(position, 'f', 3));
     }

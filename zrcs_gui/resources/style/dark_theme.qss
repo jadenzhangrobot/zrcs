@@ -255,10 +255,35 @@ QMessageBox QLabel {
     background: #0c0f14;
 }
 
+QWidget#leftSidebarHost {
+    background: transparent;
+}
+
 QScrollArea#leftScrollArea {
     background: transparent;
     border: 1px solid #242b38;
     border-radius: 10px;
+}
+
+QPushButton#btnControlPanelToggle {
+    background: transparent;
+    border: none;
+    border-left: 1px solid #f3f6fb;
+    border-radius: 0;
+    padding: 0;
+    min-width: 2px;
+    max-width: 2px;
+}
+
+QPushButton#btnControlPanelToggle:hover {
+    background: transparent;
+    border-left-color: #ffffff;
+}
+
+QPushButton#btnControlPanelToggle:pressed,
+QPushButton#btnControlPanelToggle:focus {
+    background: transparent;
+    border-left: 1px solid #ffffff;
 }
 
 QScrollArea#leftScrollArea > QWidget > QWidget {
@@ -296,6 +321,20 @@ QPushButton {
     border-radius: 8px;
     padding: 8px 12px;
     font-weight: 500;
+}
+
+QGroupBox#quickActionGroup QPushButton[quickAction="true"] {
+    min-height: 36px;
+}
+
+QStatusBar QLineEdit#statusBarIpInput {
+    min-width: 140px;
+    max-width: 140px;
+}
+
+QStatusBar QPushButton#statusBarConnectBtn {
+    min-width: 60px;
+    max-width: 60px;
 }
 
 QPushButton:hover {
@@ -404,30 +443,7 @@ QLabel#statusLabel[state="connected"] {
     color: #00FF00;
 }
 
-#axisPositionDisplay {
-    background: #141b26;
-    border: 1px solid #2d3748;
-    border-radius: 10px;
-}
-
-QLabel#axisDisplayTitleLabel {
-    color: #c9d6e8;
-    font-size: 10pt;
-    font-weight: 600;
-}
-
-QLabel#axisDisplayPosLabel {
-    color: #7cc7ff;
-    font-family: Consolas;
-    font-size: 10pt;
-}
-
-QLabel#axisDisplayDynLabel {
-    color: #9db4cd;
-    font-family: Consolas;
-}
-
-QLabel#axisDisplayServoLabel {
-    color: #f7a072;
-    font-family: Consolas;
+StatusIndicator#globalStatusIndicator {
+    color: #f3f6fb;
+    font: 700 10pt "Microsoft YaHei UI";
 }

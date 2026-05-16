@@ -4,7 +4,6 @@
 #include <QSplitter>
 #include <QToolBar>
 #include <QTabWidget>
-#include <QVBoxLayout>
 #include <QShortcut>
 #include <QTransform>
 #include <QRectF>
@@ -25,9 +24,6 @@
 #include "bt_editor/bt_editor_base.h"
 #include "bt_editor/graphic_container.h"
 #include "bt_editor/sidepanel_editor.h"
-#include "bt_editor/editor_flowscene.h"
-#include "bt_editor/XML_utilities.hpp"
-#include "bt_editor/models/SubtreeNodeModel.hpp"
 
 class BehaviorTreePanel : public QWidget
 {
@@ -118,7 +114,6 @@ private:
     void recursivelySaveNodeCanonically(QXmlStreamWriter &stream, const QDomNode &parent_node) const;
 
     // Layout
-    QVBoxLayout *_mainLayout;
     QToolBar *_toolbar;
     QSplitter *_splitter;
     QTabWidget *_treeTabWidget;

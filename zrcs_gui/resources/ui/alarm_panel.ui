@@ -48,13 +48,6 @@
    <item>
     <layout class="QHBoxLayout" name="buttonLayout">
      <item>
-      <widget class="QPushButton" name="clearAlarmsBtn">
-       <property name="text">
-        <string>清除报警</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="exportLogBtn">
        <property name="text">
         <string>导出日志</string>

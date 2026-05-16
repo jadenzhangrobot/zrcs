@@ -1,7 +1,10 @@
 #include "core/MainWindow.h"
+#include <QFile>
+#include <QFileDialog>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QMessageBox>
 #include <QPushButton>
 #include "ui_alarm_panel.h"
 
@@ -13,7 +16,6 @@ AlarmPanel::AlarmPanel(QWidget *parent)
 
     alarmTable = findChild<QTableWidget*>("alarmTable");
     logDisplay = findChild<QTextEdit*>("logDisplay");
-    QPushButton *clearAlarmsBtn = findChild<QPushButton*>("clearAlarmsBtn");
     QPushButton *exportLogBtn = findChild<QPushButton*>("exportLogBtn");
 
     if (alarmTable) {
@@ -24,12 +26,60 @@ AlarmPanel::AlarmPanel(QWidget *parent)
     if (logDisplay) {
         logDisplay->setReadOnly(true);
     }
-    if (clearAlarmsBtn) {
-        clearAlarmsBtn->setProperty("kind", "danger");
-        connect(clearAlarmsBtn, &QPushButton::clicked, this, &AlarmPanel::clearAlarms);
-    }
     if (exportLogBtn) {
         exportLogBtn->setProperty("kind", "secondary");
+        connect(exportLogBtn, &QPushButton::clicked, this, [this]() {
+            const QString filePath = QFileDialog::getSaveFileName(
+                this,
+                QStringLiteral("导出日志"),
+                QStringLiteral("alarm_log.txt"),
+                QStringLiteral("Text Files (*.txt);;All Files (*)"));
+            if (filePath.isEmpty()) {
+                return;
+            }
+
+            QFile file(filePath);
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+                QMessageBox::warning(this,
+                                     QStringLiteral("导出失败"),
+                                     QStringLiteral("无法写入日志文件。"));
+                return;
+            }
+
+            QString content;
+            content += QStringLiteral("[实时报警]\n");
+            if (alarmTable && alarmTable->rowCount() > 0) {
+                for (int row = 0; row < alarmTable->rowCount(); ++row) {
+                    QStringList columns;
+                    columns.reserve(alarmTable->columnCount());
+                    for (int column = 0; column < alarmTable->columnCount(); ++column) {
+                        auto *item = alarmTable->item(row, column);
+                        columns.append(item ? item->text() : QString());
+                    }
+                    content += columns.join(QStringLiteral(" | "));
+                    content += QLatin1Char('\n');
+                }
+            } else {
+                content += QStringLiteral("无报警记录\n");
+            }
+
+            content += QStringLiteral("\n[操作日志]\n");
+            if (logDisplay && !logDisplay->toPlainText().isEmpty()) {
+                content += logDisplay->toPlainText();
+                if (!content.endsWith(QLatin1Char('\n'))) {
+                    content += QLatin1Char('\n');
+                }
+            } else {
+                content += QStringLiteral("无操作日志\n");
+            }
+
+            file.write(content.toUtf8());
+            file.close();
+
+            QMessageBox::information(this,
+                                     QStringLiteral("导出成功"),
+                                     QStringLiteral("日志已导出到:\n%1").arg(filePath));
+        });
     }
 }
 
@@ -55,7 +105,9 @@ void AlarmPanel::addAlarm(const QString &message, const QString &timestamp)
     logDisplay->append(QString("[%1] %2").arg(timestamp, message));
 }
 
-void AlarmPanel::clearAlarms()
+void AlarmPanel::appendOperationLog(const QString &message)
 {
-    alarmTable->setRowCount(0);
+    if (logDisplay) {
+        logDisplay->append(message);
+    }
 }
