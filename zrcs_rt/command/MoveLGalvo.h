@@ -30,6 +30,7 @@ private:
     Eigen::Vector3d startPos_;
     Eigen::Vector3d targetPos_;
     double          cartDist_;
+    double          arcOffset_ = 0.0;
 
     // LPF 状态跨段持久（同一实例复用，不重置�?
     RtLowPassFilter lpf_;

@@ -26,6 +26,7 @@ private:
     Eigen::Quaterniond startQuat_;
     Eigen::Quaterniond targetQuat_;
     double cartDist_;
+    double arcOffset_ = 0.0;  // 当前段起点的累积弧长，Ruckig 状态接力用
 
 protected:
     bool initTrajectory() override;

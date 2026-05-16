@@ -281,6 +281,8 @@ sudo apt install libzmq3-dev
 sudo apt install nlohmann-json3-dev
 sudo apt install libeigen3-dev
 sudo apt install libabsl-dev
+sudo apt install libprotobuf-dev protobuf-compiler
+sudo apt install libboost-dev
 sudo apt install qt6-multimedia-dev
 sudo apt install libqt6svg6-dev qt6-base-dev
 sudo apt install libncurses-dev libncursesw5-dev

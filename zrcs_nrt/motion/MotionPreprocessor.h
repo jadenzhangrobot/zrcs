@@ -20,9 +20,9 @@
 class MotionPreprocessor {
 public:
     struct Config {
-        double maxVel    = 100.0;   // mm/s
-        double maxAccel  = 500.0;   // mm/s²
-        double maxJerk   = 2000.0;  // mm/s³
+        double maxVel    = 10.0;    // mm/s（与轴配置 motion/maxVel 一致）
+        double maxAccel  = 20.0;    // mm/s²（与轴配置 motion/maxAcc 一致）
+        double maxJerk   = 30.0;    // mm/s³（与轴配置 motion/maxJerk 一致）
         double stepSize  = 1.0;     // mm，重采样步长（仅用于角点 Bezier 采样，不影响 MoveL 段数）
         double cornerTol = 0.5;     // mm，拐角偏差容限
         bool   galvoMode = false;   // true: 使用 MoveLGalvo（振镜-平台分解）而非 MoveL

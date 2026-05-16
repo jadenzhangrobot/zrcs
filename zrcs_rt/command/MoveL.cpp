@@ -16,7 +16,6 @@ MoveL::MoveL() : cartDist_(0)
         input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
         output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
     }
-    input_->duration_discretization = DurationDiscretization::Discrete;
 }
 
 bool MoveL::initTrajectory()
@@ -69,6 +68,11 @@ bool MoveL::initTrajectory()
         return false;
     }
 
+    // Ruckig 状态接力：current_position/velocity/acceleration 全部由上一段
+    // passOutputToInput() 携带，initTrajectory 只更新目标和限制，不覆盖当前状态。
+    // 这样 Ruckig 内部状态与 input 一致，不会触发重新规划，速度天然连续。
+    arcOffset_ = input_->current_position[0];
+
     // 读取笛卡尔标量边界条件
     double maxVel = command_->args[static_cast<size_t>(MoveLArg::Vel)];
     double tgtVel = command_->args[static_cast<size_t>(MoveLArg::TargetVel)];
@@ -77,15 +81,9 @@ bool MoveL::initTrajectory()
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
-    // 段首状态以命令参数为准，避免依赖上一条命令在对象内残留的 Ruckig 状态。
-    input_->current_position[0] = 0.0;
-    input_->current_velocity[0] = command_->args[static_cast<size_t>(MoveLArg::CurrentVel)];
-    input_->current_acceleration[0] = 0.0;
-
-    // 只更新目标和限制
-    input_->target_position[0]      = cartDist_;
+    // 目标和限制使用累积弧长
+    input_->target_position[0]      = arcOffset_ + cartDist_;
     input_->target_velocity[0]      = tgtVel;
-    input_->target_acceleration[0]  = 0;
     input_->max_velocity[0]         = maxVel;
     input_->max_acceleration[0]     = maxAccel;
     input_->max_jerk[0]             = maxJerk;
@@ -103,7 +101,7 @@ void MoveL::applyOutput()
     const double pathVelocity = output_->new_velocity[0];
 
     // 线性插值得到当前笛卡尔位姿
-    double u = s / cartDist_;
+    double u = (s - arcOffset_) / cartDist_;
     //u = std::clamp(u, 0.0, 1.0);
 
     Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
@@ -113,6 +111,11 @@ void MoveL::applyOutput()
     controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
 
+    // 速度前馈：将弧长速度按路径方向分解到各平动轴，减少伺服跟踪滞后
+   // controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
+    //controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
+    //controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
+
     // 四元数球面线性插补 (SLERP) — 含最短路径 + 小角度保护
     Eigen::Quaterniond qInterp = startQuat_.slerp(u, targetQuat_);
     if (axisIds_.size() >= 6)
@@ -121,6 +124,9 @@ void MoveL::applyOutput()
         controller_->axes_[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
         controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
         controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
+        //controller_->axes_[axisIds_[3]]->setAxisVelocityCmd(0.0);
+       // controller_->axes_[axisIds_[4]]->setAxisVelocityCmd(0.0);
+       // controller_->axes_[axisIds_[5]]->setAxisVelocityCmd(0.0);
     }
 } 
 

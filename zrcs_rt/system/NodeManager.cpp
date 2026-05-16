@@ -98,7 +98,7 @@ void NodeManager::run()
                         INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                         cmdNode_->setCmdStatus(CmdStatus::INIT);
                         cmdNode_ = nullptr;
-                        // Fall through to pop the next command.
+                        
                     }
                     else 
                     {
@@ -110,7 +110,7 @@ void NodeManager::run()
                             shm()->lastCmdResult.store(1,std::memory_order_release);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
-                            break;
+                            
                         }
                         // COMPLETED may have been reached within execute()
                         // (status leap).  Handle it in the same cycle.
@@ -121,7 +121,7 @@ void NodeManager::run()
                             INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
-                            // Fall through to pop the next command.
+                            break;
                         }
                         else
                         {

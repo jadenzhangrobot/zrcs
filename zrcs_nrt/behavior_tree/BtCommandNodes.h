@@ -240,4 +240,138 @@ private:
     uint32_t pendingSeq_{0};
 };
 
+// ============================================================================
+// BatchCmdNode — 批量命令节点，一次性发送多段到 RT 队列实现无缝衔接
+// ============================================================================
+
+/**
+ * @brief 批量发送同类型命令的节点。
+ *
+ * 输入端 :
+ *   - "command"  (std::string) : 命令名，如 "MoveL"、"MoveLGalvo"
+ *   - "segments" (std::string) : | 分隔的多段参数，每段为逗号分隔的 double 值
+ *
+ * onStart() 中一次性将所有段推入 RT 命令队列，仅轮询最后一段的完成状态。
+ * 适用于测试多段轨迹的段间连续性。
+ */
+class BatchCmdNode : public BT::StatefulActionNode
+{
+public:
+    BatchCmdNode(const std::string& name,
+                 const BT::NodeConfiguration& config,
+                 std::shared_ptr<SharedState> sharedState)
+        : BT::StatefulActionNode(name, config)
+        , sharedState_(std::move(sharedState))
+    {}
+
+    static BT::PortsList providedPorts()
+    {
+        return
+        {
+            BT::InputPort<std::string>("command"),
+            BT::InputPort<std::string>("segments")
+        };
+    }
+
+    BT::NodeStatus onStart() override
+    {
+        auto cmdOpt = getInput<std::string>("command");
+        if (!cmdOpt || cmdOpt->empty())
+        {
+            throw BT::RuntimeError("BatchCmd: missing required input [command]");
+        }
+        const std::string& commandName = *cmdOpt;
+
+        auto segOpt = getInput<std::string>("segments");
+        if (!segOpt || segOpt->empty())
+        {
+            throw BT::RuntimeError("BatchCmd: missing required input [segments]");
+        }
+        const std::string& segStr = *segOpt;
+
+        // 按 | 拆分各段
+        std::vector<std::string> segParts;
+        {
+            std::istringstream iss(segStr);
+            std::string part;
+            while (std::getline(iss, part, '|'))
+            {
+                // 去除首尾空白
+                size_t b = 0, e = part.size();
+                while (b < e && std::isspace(static_cast<unsigned char>(part[b]))) ++b;
+                while (e > b && std::isspace(static_cast<unsigned char>(part[e - 1]))) --e;
+                if (b < e)
+                    segParts.emplace_back(part.substr(b, e - b));
+            }
+        }
+
+        if (segParts.empty())
+        {
+            throw BT::RuntimeError("BatchCmd: segments is empty");
+        }
+
+        // 逐段发送，记录最后一条的 seq
+        uint32_t lastSeq = 0;
+        for (const auto& seg : segParts)
+        {
+            std::vector<double> args;
+            {
+                std::istringstream iss(seg);
+                std::string token;
+                while (std::getline(iss, token, ','))
+                {
+                    args.push_back(std::stod(token));
+                }
+            }
+
+            if (args.empty()) continue;
+
+            const auto [result, seq] = sharedState_->bridge->sendCommand(
+                commandName, args.data(), args.size());
+
+            if (result != RtBridge::SendResult::OK)
+            {
+                std::ostringstream oss;
+                oss << "BatchCmd sendCommand failed: " << static_cast<int>(result);
+                sharedState_->setCurrentNode(name(), oss.str());
+                spdlog::error("[BehaviorTree] {}", oss.str());
+                return BT::NodeStatus::FAILURE;
+            }
+            lastSeq = seq;
+        }
+
+        pendingSeq_ = lastSeq;
+        sharedState_->setCurrentNode(name(),
+            "batch sent " + std::to_string(segParts.size()) + " segments, waiting seq=" + std::to_string(lastSeq));
+        return BT::NodeStatus::RUNNING;
+    }
+
+    BT::NodeStatus onRunning() override
+    {
+        if (!sharedState_->bridge->isCommandCompleted(pendingSeq_))
+            return BT::NodeStatus::RUNNING;
+
+        const auto completion = sharedState_->bridge->lastCompletion();
+        const bool success = completion.seq == pendingSeq_ ? completion.success : completion.success;
+        if (success)
+        {
+            sharedState_->setCurrentNode(name(), "batch completed seq=" + std::to_string(pendingSeq_));
+            return BT::NodeStatus::SUCCESS;
+        }
+
+        sharedState_->setCurrentNode(name(), "batch failed seq=" + std::to_string(pendingSeq_));
+        return BT::NodeStatus::FAILURE;
+    }
+
+    void onHalted() override
+    {
+        sharedState_->bridge->requestStop();
+        sharedState_->setCurrentNode(name(), "halted");
+    }
+
+private:
+    std::shared_ptr<SharedState> sharedState_;
+    uint32_t pendingSeq_{0};
+};
+
 } // namespace zrcs_bt

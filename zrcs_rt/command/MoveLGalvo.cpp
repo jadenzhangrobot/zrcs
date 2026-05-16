@@ -17,7 +17,7 @@ MoveLGalvo::MoveLGalvo() : cartDist_(0),
         input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
         output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
     }
-    input_->duration_discretization = DurationDiscretization::Discrete;
+    
 }
 
 
@@ -42,16 +42,14 @@ bool MoveLGalvo::initTrajectory()
         return false;
     }
 
-    // Ruckig 弧长参数化起始状态
-    input_->current_position[0]      = 0.0;
-    input_->current_velocity[0]      = command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentVel)];
-    input_->current_acceleration[0]  = 0.0;
+    // Ruckig 状态接力：current_* 全部由上一段 passOutputToInput() 携带，不覆盖
+    arcOffset_ = input_->current_position[0];
 
     double maxVel   = command_->args[static_cast<size_t>(MoveLGalvoArg::Vel)];
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
-    input_->target_position[0]     = cartDist_;
+    input_->target_position[0]     = arcOffset_ + cartDist_;
     input_->target_velocity[0]     = command_->args[static_cast<size_t>(MoveLGalvoArg::TargetVel)];
     input_->target_acceleration[0] = 0;
     input_->max_velocity[0]        = maxVel;
@@ -76,7 +74,7 @@ void MoveLGalvo::applyOutput()
         double s = output_->new_position[0];
 
         // 线性插值得到当前全局笛卡尔位置
-        double u = s / cartDist_;
+        double u = (s - arcOffset_) / cartDist_;
         //u = std::clamp(u, 0.0, 1.0);
 
         Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
@@ -97,6 +95,14 @@ void MoveLGalvo::applyOutput()
         controller_->axes_[pYId]->setAxisPositionCmd(platY);
         controller_->axes_[gXId]->setAxisPositionCmd(galvoX);
         controller_->axes_[gYId]->setAxisPositionCmd(galvoY);
+
+        // 速度前馈：平台轴按路径方向分解，振镜轴高频补偿不设前馈
+        const double pathVelocity = output_->new_velocity[0];
+        const Eigen::Vector3d pathDir = (targetPos_ - startPos_) / cartDist_;
+        controller_->axes_[pXId]->setAxisVelocityCmd(pathVelocity * pathDir.x());
+        controller_->axes_[pYId]->setAxisVelocityCmd(pathVelocity * pathDir.y());
+        controller_->axes_[gXId]->setAxisVelocityCmd(0.0);
+        controller_->axes_[gYId]->setAxisVelocityCmd(0.0);
 
  }
 

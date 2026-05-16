@@ -335,9 +335,9 @@ struct alignas(64) SharedBlock {
     alignas(64) std::atomic<bool>   pathMoveActive{false};  // 使能标志
 
     struct alignas(64) PathMoveConfig {
-        std::atomic<double> maxVel{100.0};    // mm/s
-        std::atomic<double> maxAccel{500.0};  // mm/s²
-        std::atomic<double> maxJerk{2000.0};  // mm/s³
+        std::atomic<double> maxVel{10.0};    // mm/s（与轴配置 motion/maxVel 一致）
+        std::atomic<double> maxAccel{20.0};  // mm/s²（与轴配置 motion/maxAcc 一致）
+        std::atomic<double> maxJerk{30.0};   // mm/s³（与轴配置 motion/maxJerk 一致）
     };
     PathMoveConfig pathMoveCfg;
 

@@ -161,6 +161,14 @@ private:
                 return std::make_unique<zrcs_bt::SendCommandNode>(name, config, sharedState);
             });
 
+        // BatchCmd: 批量发送同类型命令，测试段间连续性
+        factory_.registerBuilder<zrcs_bt::BatchCmdNode>(
+            "BatchCmd",
+            [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
+            {
+                return std::make_unique<zrcs_bt::BatchCmdNode>(name, config, sharedState);
+            });
+
         // 为每个已实现的 CmdId 注册 TypedSendCommandNode 别名
         registerCommandAliasNodes();
     }
