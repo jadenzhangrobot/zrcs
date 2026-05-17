@@ -85,7 +85,7 @@
   <customwidget>
    <class>TrajectoryVisualizer3D</class>
    <extends>QOpenGLWidget</extends>
-   <header>trajectory/trajectoryVisualizer.h</header>
+    <header>trajectory/TrajectoryVisualizer.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

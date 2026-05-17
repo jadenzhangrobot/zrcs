@@ -261,7 +261,7 @@
       </property>
       <widget class="QWidget" name="trajectoryTab">
        <attribute name="title">
-        <string>轨迹可视化</string>
+            <string>轨迹可视化</string>
        </attribute>
        <layout class="QVBoxLayout" name="trajectoryLayout">
         <item>
@@ -324,27 +324,27 @@
         </widget>
         <widget class="QLabel" name="schedStateLabel">
               <property name="text">
-               <string>状态: --</string>
+            <string>状态: --</string>
               </property>
         </widget>
         <widget class="QLabel" name="zmqStatusLabel">
               <property name="text">
-               <string>ZMQ: 未连接</string>
+            <string>ZMQ: 未连接</string>
               </property>
         </widget>
         <widget class="QLabel" name="etherCATStatusLabel">
               <property name="text">
-               <string>EtherCAT: 未连接</string>
+            <string>EtherCAT: 未连接</string>
               </property>
         </widget>
         <widget class="QLabel" name="homedLabel">
               <property name="text">
-               <string>归零: 否</string>
+            <string>归零: 否</string>
               </property>
         </widget>
         <widget class="QLabel" name="servoLabel">
               <property name="text">
-               <string>伺服: 关</string>
+            <string>伺服: 否</string>
               </property>
         </widget>
        </widget>
@@ -363,7 +363,7 @@
   <customwidget>
    <class>TrajectoryPanel</class>
    <extends>QWidget</extends>
-   <header>trajectory/trajectoryVisualizer.h</header>
+   <header>trajectory/TrajectoryVisualizer.h</header>
   </customwidget>
   <customwidget>
    <class>AlarmPanel</class>
@@ -373,12 +373,12 @@
   <customwidget>
    <class>CommandPanel</class>
    <extends>QWidget</extends>
-   <header>command/commandPanel.h</header>
+   <header>command/CommandPanel.h</header>
   </customwidget>
   <customwidget>
    <class>BehaviorTreePanel</class>
    <extends>QWidget</extends>
-   <header>behavior_tree/behaviorTreePanel.h</header>
+   <header>behavior_tree/BehaviorTreePanel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
