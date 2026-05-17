@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QSettings>
+#include <QtGlobal>
 
 SidepanelEditor::SidepanelEditor(QtNodes::DataModelRegistry *registry,
                                  NodeModels &tree_nodes_model,
@@ -383,6 +384,7 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
         return {};
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     auto result = doc.setContent(file);
     if( !result )
     {
@@ -391,6 +393,20 @@ NodeModels SidepanelEditor::importFromXML(QFile* file)
         file->close();
         return {};
     }
+#else
+    QString errorMessage;
+    int errorLine = 0;
+    int errorColumn = 0;
+    const bool result = doc.setContent(file, &errorMessage, &errorLine, &errorColumn);
+    Q_UNUSED(errorColumn);
+    if( !result )
+    {
+        auto error = tr("解析XML错误 (第%1行): %2").arg(errorLine).arg(errorMessage);
+        QMessageBox::warning(this,QString::fromUtf8("\u52A0\u8F7D\u8282\u70B9\u6A21\u578B\u51FA\u9519"), error);
+        file->close();
+        return {};
+    }
+#endif
     file->close();
 
     NodeModels custom_models;
