@@ -11,8 +11,10 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 endif()
 
-set(CMAKE_PREFIX_PATH "D:/msys2/ucrt64")
-set(Qt6_DIR "D:/msys2/ucrt64/lib/cmake/Qt6")
+if(WIN32)
+    set(CMAKE_PREFIX_PATH "D:/msys2/ucrt64")
+    set(Qt6_DIR "D:/msys2/ucrt64/lib/cmake/Qt6")
+endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 find_package(Protobuf REQUIRED)

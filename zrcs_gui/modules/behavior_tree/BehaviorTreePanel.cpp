@@ -291,12 +291,24 @@ void BehaviorTreePanel::loadFromXML(const QString &xml_text)
 {
     QDomDocument document;
     try {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         auto result = document.setContent(xml_text);
         if (!result) {
             throw std::runtime_error(
                 tr("解析XML错误 (第%1行): %2")
                     .arg(result.errorLine).arg(result.errorMessage).toStdString());
         }
+#else
+        QString errorMessage;
+        int errorLine = 0, errorColumn = 0;
+        const bool result = document.setContent(xml_text, &errorMessage, &errorLine, &errorColumn);
+        Q_UNUSED(errorColumn);
+        if (!result) {
+            throw std::runtime_error(
+                tr("解析XML错误 (第%1行): %2")
+                    .arg(errorLine).arg(errorMessage).toStdString());
+        }
+#endif
 
         std::vector<QString> registered_ID;
         for (const auto &it : _treenodeModels) {

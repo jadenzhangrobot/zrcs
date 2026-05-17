@@ -13,9 +13,11 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 endif()
 
-# 设置Qt6路径为UCRT64版本
-set(CMAKE_PREFIX_PATH "D:/msys2/ucrt64")
-set(Qt6_DIR "D:/msys2/ucrt64/lib/cmake/Qt6")
+# 设置Qt6路径为UCRT64版本（仅Windows）
+if(WIN32)
+    set(CMAKE_PREFIX_PATH "D:/msys2/ucrt64")
+    set(Qt6_DIR "D:/msys2/ucrt64/lib/cmake/Qt6")
+endif()
 
 # 查找库
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL OpenGLWidgets Multimedia Xml Svg Gui)
