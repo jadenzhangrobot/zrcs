@@ -16,8 +16,7 @@ void Enable::run()
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
         controller_->axes_[axisId_]->setModeOfOperation();
-        controller_->axes_[axisId_]->setAxisPositionCmd(
-            controller_->axes_[axisId_]->actualPos());
+        controller_->axes_[axisId_]->setAxisPositionCmd(controller_->axes_[axisId_]->actualPos());
         controller_->axes_[axisId_]->syncCmdHistory();
         if (!controller_->axes_[axisId_]->powerOn())
         {
@@ -34,8 +33,7 @@ void Enable::run()
         for (int i = 0; i < axisId_; i++)
         {
             controller_->axes_[i]->setModeOfOperation();
-            controller_->axes_[i]->setAxisPositionCmd(
-                controller_->axes_[i]->actualPos());
+            controller_->axes_[i]->setAxisPositionCmd(controller_->axes_[i]->actualPos());
             controller_->axes_[i]->syncCmdHistory();
             if (!controller_->axes_[i]->powerOn())
             {

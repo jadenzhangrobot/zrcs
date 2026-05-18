@@ -2,6 +2,7 @@
  * @Description: virtualServo class method implementations
  */
 #include "controller/virtual/VirtualServo.h"
+#include "Parameter.h"
 
 namespace ZrcsHardware {
 
@@ -38,13 +39,13 @@ int32_t virtualServo::pos(void)
 int32_t virtualServo::vel(void)
 {
     lastVelocity_=velocity_;
-    velocity_=(position_-lastPosition_)*1000;
+    velocity_=(position_-lastPosition_)*1000/cycletime;
     return velocity_;
 }
 
 int32_t virtualServo::acc(void)
 {
-    acceleration_=(velocity_-lastVelocity_)*1000;
+    acceleration_=(velocity_-lastVelocity_)*1000/cycletime;
     return acceleration_;
 }
 
