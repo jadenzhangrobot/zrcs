@@ -71,6 +71,10 @@ void MotionStatusWorker::pollLoop()
 
             emit statusUpdated(axes, status.heartbeat());
 
+            if (!status.system_state().empty()) {
+                emit taskSchedulingUpdated(QString::fromStdString(status.system_state()));
+            }
+
         } catch (const zmq::error_t& e) {
             if (running_ && e.num() != EAGAIN) {
                 emit errorOccurred(QString("SUB recv error: %1").arg(e.what()));
@@ -99,6 +103,8 @@ MotionStatusSubscriber::MotionStatusSubscriber(const QString& host, int port, QO
 
     connect(worker_, &MotionStatusWorker::statusUpdated,
             this, &MotionStatusSubscriber::statusUpdated);
+        connect(worker_, &MotionStatusWorker::taskSchedulingUpdated,
+            this, &MotionStatusSubscriber::taskSchedulingUpdated);
     connect(worker_, &MotionStatusWorker::errorOccurred,
             this, &MotionStatusSubscriber::errorOccurred);
 

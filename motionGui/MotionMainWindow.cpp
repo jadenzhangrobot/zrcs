@@ -91,6 +91,10 @@ void MotionMainWindow::setupUi()
     jogModeCombo_     = findChild<QComboBox*>("comboBox_jogMode");
     overrideSlider_   = findChild<QSlider*>("slider_overrideRatio");
     overrideLabel_    = findChild<QLabel*>("label_overrideValue");
+    taskSchedStateLabel_ = findChild<QLabel*>("label_taskSchedState");
+    btnTaskRun_       = findChild<QPushButton*>("pushButton_taskRun");
+    btnTaskStop_      = findChild<QPushButton*>("pushButton_taskStop");
+    btnTaskReset_     = findChild<QPushButton*>("pushButton_taskReset");
     stepDistXySlider_ = findChild<QSlider*>("slider_dist_xy");
     stepDistXyLabel_  = findChild<QLabel*>("label_dist_xy_val");
     stepDistZSlider_  = findChild<QSlider*>("slider_dist_z");
@@ -126,6 +130,8 @@ void MotionMainWindow::setupUi()
     if (overrideSlider_ && overrideSlider_->value() == 100) {
         setOverrideRatio(100);
     }
+
+    updateTaskSchedulingDisplay(QStringLiteral("--"), false);
 
     // Load saved settings
     QSettings settings("ZRCS", "MotionGui");
@@ -209,6 +215,22 @@ void MotionMainWindow::connectSignals()
         });
     }
 
+    if (btnTaskRun_) {
+        connect(btnTaskRun_, &QPushButton::clicked, this, [this]() {
+            sendCommand("SYS_RUN", {});
+        });
+    }
+    if (btnTaskStop_) {
+        connect(btnTaskStop_, &QPushButton::clicked, this, [this]() {
+            sendCommand("SYS_STOP", {});
+        });
+    }
+    if (btnTaskReset_) {
+        connect(btnTaskReset_, &QPushButton::clicked, this, [this]() {
+            sendCommand("SYS_RESET", {});
+        });
+    }
+
     // Step distance sliders
     if (stepDistXySlider_) {
         connect(stepDistXySlider_, &QSlider::valueChanged, this, [this](int value) {
@@ -259,10 +281,13 @@ void MotionMainWindow::createTransport(const QString& host)
     connect(zmqClient_, &MotionZmqClient::disconnected, this, &MotionMainWindow::onZmqDisconnected);
     connect(zmqClient_, &MotionZmqClient::errorOccurred, this, &MotionMainWindow::onZmqError);
     connect(statusSub_, &MotionStatusSubscriber::statusUpdated, this, &MotionMainWindow::onStatusUpdated);
+    connect(statusSub_, &MotionStatusSubscriber::taskSchedulingUpdated,
+            this, &MotionMainWindow::onTaskSchedulingUpdated);
 
     if (zmqStatusLabel_) {
         zmqStatusLabel_->setText(QString("ZMQ: Connecting to %1").arg(normalizedHost));
     }
+    updateTaskSchedulingDisplay(QStringLiteral("连接中"), false);
 
     zmqClient_->connectToServer();
     statusSub_->start();
@@ -405,16 +430,19 @@ void MotionMainWindow::setOverrideRatio(int percent)
 void MotionMainWindow::onZmqConnected()
 {
     if (zmqStatusLabel_) zmqStatusLabel_->setText("ZMQ: Connected");
+    updateTaskSchedulingDisplay(QStringLiteral("等待状态"), true);
 }
 
 void MotionMainWindow::onZmqDisconnected()
 {
     if (zmqStatusLabel_) zmqStatusLabel_->setText("ZMQ: Disconnected");
+    updateTaskSchedulingDisplay(QStringLiteral("未连接"), false);
 }
 
 void MotionMainWindow::onZmqError(const QString& error)
 {
     if (zmqStatusLabel_) zmqStatusLabel_->setText("ZMQ: Error");
+    updateTaskSchedulingDisplay(QStringLiteral("错误"), false);
     statusBar()->showMessage(error, 3000);
 }
 
@@ -439,6 +467,28 @@ void MotionMainWindow::onStatusUpdated(const QVector<AxisStatusData>& axes, quin
         if (panelLabels[i])
             panelLabels[i]->setText(
                 prefixes[i] + QString::number(axes[i].position, 'f', 3) + units[i]);
+    }
+}
+
+void MotionMainWindow::onTaskSchedulingUpdated(const QString& state)
+{
+    updateTaskSchedulingDisplay(state, true);
+}
+
+void MotionMainWindow::updateTaskSchedulingDisplay(const QString& state, bool connected)
+{
+    if (taskSchedStateLabel_) {
+        taskSchedStateLabel_->setText(state);
+    }
+
+    if (btnTaskRun_) {
+        btnTaskRun_->setEnabled(connected && state != "RUN");
+    }
+    if (btnTaskStop_) {
+        btnTaskStop_->setEnabled(connected && state != "STOP");
+    }
+    if (btnTaskReset_) {
+        btnTaskReset_->setEnabled(connected && state != "RESET");
     }
 }
 

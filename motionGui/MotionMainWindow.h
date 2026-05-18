@@ -23,6 +23,7 @@ private slots:
     void onZmqDisconnected();
     void onZmqError(const QString& error);
     void onStatusUpdated(const QVector<AxisStatusData>& axes, quint64 heartbeat);
+    void onTaskSchedulingUpdated(const QString& state);
     void saveSettings();
     void connectToConfiguredHost();
 
@@ -50,6 +51,7 @@ private:
     QString angleStepText(int value) const;
     void stepJog(int axisId, bool positive);
     void setOverrideRatio(int percent);
+    void updateTaskSchedulingDisplay(const QString& state, bool connected);
 
 
     MotionZmqClient* zmqClient_ = nullptr;
@@ -115,6 +117,10 @@ private:
     QComboBox* jogModeCombo_     = nullptr;
     QSlider*   overrideSlider_   = nullptr;
     QLabel*    overrideLabel_    = nullptr;
+    QLabel*    taskSchedStateLabel_ = nullptr;
+    QPushButton* btnTaskRun_     = nullptr;
+    QPushButton* btnTaskStop_    = nullptr;
+    QPushButton* btnTaskReset_   = nullptr;
     QSlider*   stepDistXySlider_ = nullptr;
     QLabel*    stepDistXyLabel_  = nullptr;
     QSlider*   stepDistZSlider_  = nullptr;
