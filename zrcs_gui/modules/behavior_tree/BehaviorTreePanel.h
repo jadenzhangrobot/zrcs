@@ -1,5 +1,6 @@
 #pragma once
 
+#include "behavior_tree/BehaviorTreePanel.h"
 #include <QWidget>
 #include <QSplitter>
 #include <QToolBar>
