@@ -115,7 +115,7 @@ bool MoveC::initTrajectory()
     return true;
 }
 
-void MoveC::run()
+zrcsSystem::RunResult MoveC::run()
 {
     updateOverride();
 
@@ -149,8 +149,7 @@ void MoveC::run()
         if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
         {
             ERROR_PRINT("MoveC: IK 求解失败\n");
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-            return;
+            return zrcsSystem::RunResult::FAILED;
         }
 
         for (int i = 0; i < dof_; i++)
@@ -160,17 +159,18 @@ void MoveC::run()
 
         if (result == Result::Finished)
         {
-            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+            return zrcsSystem::RunResult::SUCCESS;
         }
         else
         {
             output_->pass_to_input(*input_);
+            return zrcsSystem::RunResult::EXECUTING;
         }
     }
     else
     {
         ERROR_PRINT("MoveC: 轨迹规划失败\n");
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return zrcsSystem::RunResult::FAILED;
     }
 }
 

@@ -159,7 +159,7 @@ private:
                 // 写入 taskSched 状态供 GUI 显示
                 auto ts = bridge_->getTaskScheduling();
                 switch (ts) {
-                    case zrcs::TaskScheduling::START:       status.set_system_state("START"); break;
+                    case zrcs::TaskScheduling::IDLE:       status.set_system_state("IDLE"); break;
                     case zrcs::TaskScheduling::RUN:         status.set_system_state("RUN"); break;
                     case zrcs::TaskScheduling::STOP:        status.set_system_state("STOP"); break;
                     case zrcs::TaskScheduling::ERROR_STATE: status.set_system_state("ERROR"); break;

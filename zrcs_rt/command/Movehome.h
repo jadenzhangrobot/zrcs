@@ -9,7 +9,7 @@
 
 using namespace ruckig;
 
-class Movehome : public TrajectoryCmd
+class Movehome : public zrcsSystem::TrajectoryCmd
 {
 
 private:

@@ -8,7 +8,7 @@
 
 using namespace ruckig;
 
-class JogJ : public TrajectoryCmd
+class JogJ : public zrcsSystem::TrajectoryCmd
 {
 private:
     int axisId_;

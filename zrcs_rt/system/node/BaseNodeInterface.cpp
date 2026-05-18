@@ -12,44 +12,57 @@ namespace zrcsSystem {
 
 void CmdNode::execute()
 {
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::INIT)
-    {
-        init();
+     // 1. 周期开始时，只做一次原子读取，赋值给局部变量
 
-        if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::INIT)
+        if (cmdStatus_ == CmdStatus::INIT)
         {
-            INFO_PRINT("%s 初始化成功\n", nodeName_);
-            cmdStatus_.store(CmdStatus::EXECUTING, std::memory_order_release);
+            if(init())
+            {
+                INFO_PRINT("%s 初始化指令成功\n", nodeName_);
+                // 直接修改局部变量，这样下一个 if 就能立刻接住
+                cmdStatus_ = CmdStatus::RUNNING; 
+            }
+            else
+            {     
+                ERROR_PRINT("%s(seq=%u) 初始化指令失败\n", nodeName_, command_ ? command_->seq : 0);
+                cmdStatus_ = CmdStatus::FAILED;
+            }
         }
-        else
+
+        // 因为上面 currentStatus 可能被改成了 RUNNING，所以这里立刻就会被判定为 true
+        if (cmdStatus_ == CmdStatus::RUNNING)
         {
-            if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::COMPLETED)
+            RunResult result = run();
+            if (result == RunResult::EXECUTING)
             {
-                INFO_PRINT("%s 执行成功\n", nodeName_);
             }
-            else if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::FAILED)
+            else if (result == RunResult::SUCCESS)
             {
-                ERROR_PRINT("%s(seq=%u) 执行失败\n", nodeName_, command_ ? command_->seq : 0);
-                shm()->taskSched.store(zrcs::TaskScheduling::ERROR_STATE,std::memory_order_release);
+                INFO_PRINT("%s 执行指令成功\n", nodeName_);
+                cmdStatus_ = CmdStatus::EXIT;
             }
-            return;
+            else
+            {
+                ERROR_PRINT("%s 执行指令失败\n", nodeName_);
+                cmdStatus_ = CmdStatus::FAILED;
+            }
         }
-    }
 
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::EXECUTING)
-    {
-        run();
-    }
-
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::COMPLETED)
-    {
-        INFO_PRINT("%s 执行成功\n", nodeName_);
-    }
-    if (cmdStatus_.load(std::memory_order_acquire) == CmdStatus::FAILED)
-    {
-        ERROR_PRINT("%s(seq=%u) 执行失败\n", nodeName_,command_ ? command_->seq : 0);
-        shm()->taskSched.store(zrcs::TaskScheduling::ERROR_STATE,std::memory_order_release);
-    }
+        if (cmdStatus_ == CmdStatus::EXIT)
+        {
+            if (exit())
+            {
+                INFO_PRINT("%s 退出指令成功\n", nodeName_);
+                // 假设有个结束状态
+                cmdStatus_ = CmdStatus::COMPLETED; // 或 DONE
+            }
+            else 
+            { 
+                ERROR_PRINT("%s 退出指令失败\n", nodeName_);
+                cmdStatus_ = CmdStatus::FAILED;  
+            }
+        }
+    
 }
 
 void OutputNode::execute()

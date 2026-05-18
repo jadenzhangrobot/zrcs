@@ -44,13 +44,32 @@
        <layout class="QVBoxLayout" name="verticalLayout_tab">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_jogMode">
+          <property name="spacing">
+           <number>14</number>
+          </property>
+          <property name="leftMargin">
+           <number>18</number>
+          </property>
+          <property name="topMargin">
+           <number>16</number>
+          </property>
+          <property name="rightMargin">
+           <number>18</number>
+          </property>
+          <property name="bottomMargin">
+           <number>16</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_jogMode">
             <property name="font">
              <font>
-              <pointsize>25</pointsize>
+            <pointsize>22</pointsize>
+            <bold>true</bold>
              </font>
             </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgb(36, 55, 61); background: transparent;</string>
+          </property>
             <property name="text">
              <string>运行模式:</string>
             </property>
@@ -58,11 +77,44 @@
           </item>
           <item>
            <widget class="QComboBox" name="comboBox_jogMode">
+          <property name="minimumSize">
+           <size>
+            <width>138</width>
+            <height>54</height>
+           </size>
+          </property>
             <property name="font">
              <font>
-              <pointsize>25</pointsize>
+            <pointsize>20</pointsize>
+            <bold>true</bold>
              </font>
             </property>
+          <property name="styleSheet">
+           <string notr="true">QComboBox {
+      background-color: rgb(245, 248, 247);
+      color: rgb(37, 54, 58);
+      border: 1px solid rgb(141, 173, 176);
+      border-radius: 14px;
+      padding: 8px 18px;
+    }
+    QComboBox::drop-down {
+      border: none;
+      width: 28px;
+    }
+    QComboBox::down-arrow {
+      image: none;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid rgb(78, 104, 111);
+      margin-right: 10px;
+    }
+    QComboBox QAbstractItemView {
+      background-color: rgb(250, 252, 251);
+      color: rgb(37, 54, 58);
+      border: 1px solid rgb(141, 173, 176);
+      selection-background-color: rgb(207, 227, 227);
+    }</string>
+          </property>
             <item>
              <property name="text">
               <string>连动</string>
@@ -92,8 +144,12 @@
            <widget class="QLabel" name="label_overrideRatio">
             <property name="font">
              <font>
-              <pointsize>25</pointsize>
+              <pointsize>22</pointsize>
+              <bold>true</bold>
              </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(36, 55, 61); background: transparent;</string>
             </property>
             <property name="text">
              <string>倍率(%):</string>
@@ -102,6 +158,33 @@
           </item>
           <item>
            <widget class="QSlider" name="slider_overrideRatio">
+            <property name="minimumSize">
+             <size>
+              <width>320</width>
+              <height>34</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QSlider::groove:horizontal {
+        border: none;
+        height: 10px;
+        background: rgb(175, 199, 201);
+        border-radius: 5px;
+      }
+      QSlider::sub-page:horizontal {
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                      stop:0 rgb(58, 146, 167),
+                      stop:1 rgb(102, 174, 178));
+        border-radius: 5px;
+      }
+      QSlider::handle:horizontal {
+        background: rgb(248, 251, 250);
+        border: 2px solid rgb(82, 133, 145);
+        width: 20px;
+        margin: -6px 0;
+        border-radius: 10px;
+      }</string>
+            </property>
             <property name="minimum">
              <number>0</number>
             </property>
@@ -118,22 +201,200 @@
           </item>
           <item>
            <widget class="QLabel" name="label_overrideValue">
+            <property name="minimumSize">
+             <size>
+              <width>104</width>
+              <height>54</height>
+             </size>
+            </property>
             <property name="font">
              <font>
-              <pointsize>25</pointsize>
+              <pointsize>20</pointsize>
+              <bold>true</bold>
              </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgb(244, 248, 247); color: rgb(41, 58, 63); border: 1px solid rgb(145, 173, 176); border-radius: 16px; padding: 6px 14px;</string>
             </property>
             <property name="text">
              <string>100%</string>
             </property>
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>0</height>
-             </size>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
+               <item>
+                <spacer name="horizontalSpacer_taskSchedLeft">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                     <width>20</width>
+                     <height>20</height>
+                   </size>
+                  </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_taskSchedTitle">
+                  <property name="font">
+                   <font>
+                     <pointsize>22</pointsize>
+                     <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(36, 55, 61); background: transparent;</string>
+                  </property>
+                  <property name="text">
+                   <string>下位机状态:</string>
+                  </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_taskSchedState">
+                  <property name="minimumSize">
+                   <size>
+                     <width>170</width>
+                     <height>58</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                     <pointsize>22</pointsize>
+                     <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgb(38, 44, 52); color: rgb(248, 250, 252); border: 1px solid rgb(77, 92, 106); border-radius: 18px; padding: 8px 18px;</string>
+                  </property>
+                  <property name="text">
+                   <string>--</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_taskRun">
+                  <property name="minimumSize">
+                   <size>
+                    <width>118</width>
+                    <height>56</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                     <pointsize>18</pointsize>
+                     <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton {
+    background-color: rgb(229, 242, 232);
+    color: rgb(36, 96, 63);
+    border: 1px solid rgb(135, 179, 147);
+    border-radius: 16px;
+    padding: 8px 22px;
+}
+QPushButton:hover {
+    background-color: rgb(214, 235, 220);
+}
+QPushButton:pressed {
+    background-color: rgb(194, 220, 202);
+}
+QPushButton:disabled {
+    background-color: rgb(233, 238, 234);
+    color: rgb(148, 156, 151);
+    border: 1px solid rgb(206, 214, 209);
+}</string>
+                  </property>
+                  <property name="text">
+                   <string>运行</string>
+                  </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_taskStop">
+                  <property name="minimumSize">
+                   <size>
+                    <width>118</width>
+                    <height>56</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                     <pointsize>18</pointsize>
+                     <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton {
+    background-color: rgb(248, 236, 217);
+    color: rgb(133, 86, 19);
+    border: 1px solid rgb(214, 179, 126);
+    border-radius: 16px;
+    padding: 8px 22px;
+}
+QPushButton:hover {
+    background-color: rgb(243, 226, 198);
+}
+QPushButton:pressed {
+    background-color: rgb(232, 209, 172);
+}
+QPushButton:disabled {
+    background-color: rgb(239, 236, 230);
+    color: rgb(157, 151, 140);
+    border: 1px solid rgb(214, 209, 199);
+}</string>
+                  </property>
+                  <property name="text">
+                   <string>停止</string>
+                  </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_taskReset">
+                  <property name="minimumSize">
+                   <size>
+                    <width>118</width>
+                    <height>56</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                     <pointsize>18</pointsize>
+                     <bold>true</bold>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton {
+    background-color: rgb(226, 236, 247);
+    color: rgb(43, 87, 137);
+    border: 1px solid rgb(136, 171, 209);
+    border-radius: 16px;
+    padding: 8px 22px;
+}
+QPushButton:hover {
+    background-color: rgb(212, 227, 243);
+}
+QPushButton:pressed {
+    background-color: rgb(192, 213, 235);
+}
+QPushButton:disabled {
+    background-color: rgb(232, 236, 241);
+    color: rgb(149, 154, 161);
+    border: 1px solid rgb(209, 214, 220);
+}</string>
+                  </property>
+                  <property name="text">
+                   <string>复位</string>
+                  </property>
+                </widget>
+               </item>
           <item>
            <spacer name="horizontalSpacer_origin">
             <property name="orientation">

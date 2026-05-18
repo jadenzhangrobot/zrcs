@@ -189,7 +189,7 @@ public:
     void requestRun()      { setTaskScheduling(zrcs::TaskScheduling::RUN); }
     void requestStop()     { setTaskScheduling(zrcs::TaskScheduling::STOP); }
     void requestReset()    { setTaskScheduling(zrcs::TaskScheduling::RESET); }
-    void requestStart()    { setTaskScheduling(zrcs::TaskScheduling::START); }
+    void requestStart()    { setTaskScheduling(zrcs::TaskScheduling::IDLE);}
     void requestShutdown() { setTaskScheduling(zrcs::TaskScheduling::SHUTDOWN); }
 
     // ─────────────────────────────────────────────────────────────────

@@ -79,7 +79,7 @@ enum class TaskScheduling : uint32_t {
     ERROR_STATE,
     STOP,
     RESET,
-    START,
+    IDLE,
     SHUTDOWN
 };
 
@@ -293,7 +293,7 @@ struct alignas(64) SharedBlock {
     ShmSPSC<AxisFeedbackData, kLogQueueCap> axisFeedbackQueue;  // 额外的队列，用于高频轴状态反馈（可选）
 
     // ── 任务调度控制（双向，原子读写）────────────────────────────────────
-    alignas(64) std::atomic<TaskScheduling> taskSched{TaskScheduling::START};
+    alignas(64) std::atomic<TaskScheduling> taskSched{TaskScheduling::IDLE};
   
 
     // ── 系统配置（NRT 写，RT 读）──────────────────────────────────────────

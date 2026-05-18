@@ -231,25 +231,13 @@ void MainWindowRefactored::createQuickActions()
     auto *btnStop = findChild<QPushButton*>("btnQuickStop");
     auto *btnEStop = findChild<QPushButton*>("btnQuickEStop");
     auto *btnReset = findChild<QPushButton*>("btnQuickReset");
-    if (!quickActionGroup || !btnServo || !btnRun || !btnPause || !btnStop || !btnEStop || !btnReset) {
+    if (!quickActionGroup || !btnRun || !btnPause || !btnEStop || !btnReset) {
         return;
     }
 
-    connect(btnServo, &QPushButton::toggled, this, [this](bool on) {
-        servoLabel->setText(on ? "伺服: 开" : "伺服: 关");
-        const int axisCount = property("currentAxisCount").toInt();
-        if (axisCount <= 0) {
-            qWarning() << "Axis count not received from RT status yet";
-            return;
-        }
-
-        if (on) {
-            sendMotionCommand("SYS_RUN");
-            sendMotionCommand("Enable", {static_cast<double>(axisCount)});
-        } else {
-            sendMotionCommand("Disable", {static_cast<double>(axisCount)});
-        }
-    });
+    // 隐藏不用的按钮 — 快捷操作只保留 taskSched 状态切换
+    if (btnServo) { btnServo->hide(); }
+    if (btnStop)  { btnStop->hide(); }
 
     connect(btnRun, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_RUN");
@@ -259,17 +247,8 @@ void MainWindowRefactored::createQuickActions()
         sendMotionCommand("SYS_STOP");
     });
 
-    connect(btnStop, &QPushButton::clicked, this, [this]() {
-        sendMotionCommand("SYS_JOG_STOP");
-        sendMotionCommand("SYS_STOP");
-    });
-
     connect(btnEStop, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_ESTOP");
-        // 同步伺服按钮状态
-        for (auto *btn : quickActionGroup->findChildren<QPushButton*>()) {
-            if (btn->isCheckable()) { btn->setChecked(false); break; }
-        }
     });
 
     connect(btnReset, &QPushButton::clicked, this, [this]() {

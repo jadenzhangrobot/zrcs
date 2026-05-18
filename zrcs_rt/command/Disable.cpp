@@ -6,25 +6,24 @@
  */
 
 #include "command/Disable.h"
+#include "system/node/BaseNodeInterface.h"
 
-void Disable::init()
+bool Disable::init()
 {
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(DisableArg::AxisId)]);
+    return true;
 }
 
-void Disable::run()
+zrcsSystem::RunResult Disable::run()
 {
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
         if (!controller_->axes_[axisId_]->powerOff())
         {
             ERROR_PRINT("Disable: 轴%d 操作失败\n", axisId_);
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+            return zrcsSystem::RunResult::FAILED;
         }
-        else
-        {
-            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
-        }
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -33,21 +32,21 @@ void Disable::run()
             if (!controller_->axes_[i]->powerOff())
             {
                 ERROR_PRINT("Disable: 轴%d 操作失败\n", i);
-                setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else
     {
         ERROR_PRINT("Disable: 轴索引%d 超出范围(max=%zu)\n",
                      axisId_, controller_->axes_.size());
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return zrcsSystem::RunResult::FAILED;
     }
 }
 
-void Disable::exit()
+bool Disable::exit()
 {
+    return true;
 }
 
 CMD_REGISTER(Disable);

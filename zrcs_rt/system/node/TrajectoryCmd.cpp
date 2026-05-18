@@ -2,7 +2,10 @@
  * @Description: 轨迹规划基类实现
  */
 #include "system/node/TrajectoryCmd.h"
+#include <Eigen/Core>
 
+namespace zrcsSystem 
+{
 TrajectoryCmd::TrajectoryCmd() : baseDeltaTime_(cycletime * 0.001) {}
 
 void TrajectoryCmd::applyDeltaTime(double dt)
@@ -16,28 +19,6 @@ void TrajectoryCmd::updateOverride()
     applyDeltaTime(baseDeltaTime_ * override);
 }
 
-void TrajectoryCmd::runStandard()
-{
-    updateOverride();
-
-    auto result = updateTrajectory();
-    if (result == Result::Working)
-    {
-        applyOutput();
-        passOutputToInput();
-    }
-    else if (result == Result::Finished)
-    {
-        applyOutput();
-        passOutputToInput();
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
-    }
-    else
-    {
-        ERROR_PRINT("%s: 轨迹规划失败\n", nodeName_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-    }
-}
 Result TrajectoryCmd::updateTrajectory()
 {
     return otg_->update(*input_, *output_);
@@ -48,19 +29,40 @@ void TrajectoryCmd::passOutputToInput()
     output_->pass_to_input(*input_);
 }
 
-void TrajectoryCmd::init()
+bool TrajectoryCmd::init()
 {
     if (!initTrajectory())
     {
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
-        return;
+        return false;
     }
     updateOverride();
+    return true;
 }
 
-void TrajectoryCmd::run()
+RunResult TrajectoryCmd::run()
 {
-    runStandard();
+    updateOverride();
+    auto result = updateTrajectory();
+    if (result == Result::Working)
+    {
+        
+        applyOutput();
+        passOutputToInput();
+        return runResult_= RunResult::EXECUTING;
+    }
+    else if (result == Result::Finished)
+    {
+        applyOutput();
+        passOutputToInput();
+        return runResult_= RunResult::SUCCESS;    
+    }
+    else
+    {
+        ERROR_PRINT("%s: 轨迹规划失败\n", nodeName_);
+        return runResult_= RunResult::FAILED;
+    }
+    return runResult_;
 }
 
-void TrajectoryCmd::exit() {}
+ bool TrajectoryCmd::exit() { return true; }
+}

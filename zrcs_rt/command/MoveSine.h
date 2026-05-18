@@ -43,15 +43,16 @@ public:
        
        }
 
-  void init() override {
+  bool init() override {
 
-   
+
     for (int i = 0; i < control->motors.size(); i++) {
       currentPosition[i] = control->motors[i]->actualPos();
     }
     amplitude = port_input.get<double>("amplitude");
     frequency = port_input.get<double>("frequency");
     node_status = RUNNING;
+    return true;
   }
 
   void excuteRt(void) override {
@@ -72,7 +73,7 @@ public:
       node_status = SUCCESS;
     }
   }
-  void exit()override{}
+  bool exit()override{ return true; }
 };
 
 CMD_REGISTER(MoveSine);

@@ -13,7 +13,7 @@
 
 using namespace ruckig;
 
-class MoveC : public TrajectoryCmd
+class MoveC : public zrcsSystem::TrajectoryCmd
 {
 
 private:
@@ -38,5 +38,5 @@ protected:
 
 public:
     MoveC();
-    void run() override;
+    zrcsSystem::RunResult run() override;
 };

@@ -12,7 +12,7 @@
 
 using namespace ruckig;
 
-class MoveJ : public TrajectoryCmd
+class MoveJ : public zrcsSystem::TrajectoryCmd
 {
 
 private:

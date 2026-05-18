@@ -5,20 +5,21 @@
 
 #include "command/Setmode.h"
 
-void Setmode::init()
+bool Setmode::init()
 {
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(SetmodeArg::AxisId)]);
     mode_    = static_cast<int>(command_->args[static_cast<size_t>(SetmodeArg::Mode)]);
+    return true;
 }
 
-void Setmode::run()
+zrcsSystem::RunResult Setmode::run()
 {
     auto cia402_mode = static_cast<Cia402Mode>(mode_);
 
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
         controller_->axes_[axisId_]->setModeOfOperation(cia402_mode);
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -26,17 +27,18 @@ void Setmode::run()
         {
             controller_->axes_[i]->setModeOfOperation(cia402_mode);
         }
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else
     {
         ERROR_PRINT("Setmode: 轴索引%d 超出范围\n", axisId_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return zrcsSystem::RunResult::FAILED;
     }
 }
 
-void Setmode::exit()
+bool Setmode::exit()
 {
+    return true;
 }
 
 CMD_REGISTER(Setmode);

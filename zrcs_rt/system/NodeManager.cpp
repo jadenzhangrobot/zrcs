@@ -67,41 +67,29 @@ void NodeManager::run()
     controller_->rtos_->real_task([this]()
     {
         controller_->receiveData();
-
+        taskScheduling_ = shm()->taskSched.load(std::memory_order_acquire);
         // ---- Input nodes ----------------------------------------------------
-        for (auto& node : factory_.inPutNodes) 
-        {
-            if (node->getNodeStatus() == NodeStatus::RTINIT)
+           for (auto& node : factory_.inPutNodes) 
             {
-                node->init();
-                node->setNodeStatus(NodeStatus::EXECUTING);
-            } 
-            else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-            {
-                node->execute();
-            } 
-            else
-            {
-                ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+                if (node->getNodeStatus() == NodeStatus::RTINIT)
+                {
+                    node->init();
+                    node->setNodeStatus(NodeStatus::EXECUTING);
+                } 
+                else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+                {
+                    node->execute();
+                } 
+                else
+                {
+                    ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+                }
             }
-        }
-
-        // ---- Command scheduling ---------------------------------------------
-        switch (shm()->taskSched.load(std::memory_order_acquire))
+        switch (taskScheduling_)
         {
             case zrcs::TaskScheduling::RUN:
-                if (cmdNode_ != nullptr) {
-                    if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) 
-                    {
-                        shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                        shm()->lastCmdResult.store(0,std::memory_order_release);
-                        INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
-                        cmdNode_->setCmdStatus(CmdStatus::INIT);
-                        cmdNode_ = nullptr;
-                        
-                    }
-                    else 
-                    {
+            if (cmdNode_ != nullptr) 
+                {
                         cmdNode_->execute();
                         if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                         {
@@ -110,11 +98,10 @@ void NodeManager::run()
                             shm()->lastCmdResult.store(1,std::memory_order_release);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
-                            
+                            taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
                         }
-                        // COMPLETED may have been reached within execute()
-                        // (status leap).  Handle it in the same cycle.
-                        if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED) 
+                        // COMPLETED may have been reached within execute() (status leap).
+                        else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                         {
                             shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
                             shm()->lastCmdResult.store(0,std::memory_order_release);
@@ -123,14 +110,11 @@ void NodeManager::run()
                             cmdNode_ = nullptr;
                             break;
                         }
-                        else
-                        {
-                            break;
-                        }
-                    }
                 }
+                
                 // No active command: try to pop the next one immediately.
-                if (cmdNode_ == nullptr) 
+                // Skip if we just transitioned to ERROR_STATE — don't re-pop a failing command.
+                if (cmdNode_ == nullptr && taskScheduling_ != zrcs::TaskScheduling::ERROR_STATE)
                 {
                     if (cmdConsumer_->pop(cmd_)) 
                     {
@@ -152,7 +136,17 @@ void NodeManager::run()
                                 shm()->lastCmdResult.store(1,std::memory_order_release);
                                 cmdNode_->setCmdStatus(CmdStatus::INIT);
                                 cmdNode_ = nullptr;
+                                taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
                             }
+                           else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
+                           {
+                            shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
+                            shm()->lastCmdResult.store(0,std::memory_order_release);
+                            INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                            cmdNode_->setCmdStatus(CmdStatus::INIT);
+                            cmdNode_ = nullptr;
+                            break;
+                           }
                         } 
                         else if (cmdId != CmdId::INVALID)
                         {
@@ -161,15 +155,29 @@ void NodeManager::run()
                             shm()->lastCmdResult.store(1,std::memory_order_release);
                         }
                     }
-                }
+                }        
+                for (auto& node : factory_.outPutNodes) 
+                {
+                    if (node->getNodeStatus() == NodeStatus::RTINIT) 
+                    {
+                        node->init();
+                        node->setNodeStatus(NodeStatus::EXECUTING);
+                    } 
+                    else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+                    {
+                        node->execute();
+                    }
+                    else
+                    {
+                        ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+                    }
+                } 
                 break;
-
             case zrcs::TaskScheduling::ERROR_STATE:
                 if (cmdNode_ != nullptr)
                 {
                     WARN_PRINT("错误状态: 清理命令节点 id=%u\n", static_cast<unsigned>(cmd_.cmdId));
-                    cmdNode_->setCmdStatus(CmdStatus::INIT);
-                    cmdNode_ = nullptr;
+                    cmdNode_->setCmdStatus(CmdStatus::COMPLETED);                
                 }
                 // 错误状态下不自动恢复，等待上位机切换至 RESET 后再继续。
                 break;
@@ -179,8 +187,7 @@ void NodeManager::run()
                 {
                     if (cmdNode_ != nullptr)
                     {
-                        cmdNode_->setCmdStatus(CmdStatus::INIT);
-                        cmdNode_ = nullptr;
+                        cmdNode_->setCmdStatus(CmdStatus::COMPLETED);
                     }
                     for (auto& axis : controller_->axes_)
                     {
@@ -193,38 +200,22 @@ void NodeManager::run()
             case zrcs::TaskScheduling::RESET:
                 if (cmdNode_ != nullptr) 
                 {
-                    cmdNode_->setCmdStatus(CmdStatus::INIT);
-                    cmdNode_ = nullptr;
+                    cmdNode_->setCmdStatus(CmdStatus::COMPLETED);
                 }
                 stopHandled_ = false;
                 shm()->taskSched.store(zrcs::TaskScheduling::RUN,std::memory_order_release);
                 break;
-
-            case zrcs::TaskScheduling::START:
+            case zrcs::TaskScheduling::IDLE:
             default:
                 break;
+
+
         }
 
         // ---- Output nodes ---------------------------------------------------
-        for (auto& node : factory_.outPutNodes) 
-        {
-            if (node->getNodeStatus() == NodeStatus::RTINIT) 
-            {
-                node->init();
-                node->setNodeStatus(NodeStatus::EXECUTING);
-            } 
-            else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-            {
-                node->execute();
-            }
-            else
-            {
-                ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
-            }
-        }
-
+        
+        shm()->taskSched.store(taskScheduling_,std::memory_order_acquire);
         controller_->sendData();
-
         // Heartbeat: updated solely for RT liveness monitoring.  NRT does not
         // depend on this field for any decision-making.
         static uint64_t heartbeat = 0;

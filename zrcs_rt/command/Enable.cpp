@@ -6,12 +6,13 @@
  */
 #include "command/Enable.h"
 
-void Enable::init()
+bool Enable::init()
 {
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(EnableArg::AxisId)]);
+    return true;
 }
 
-void Enable::run()
+zrcsSystem::RunResult Enable::run()
 {
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
@@ -21,12 +22,9 @@ void Enable::run()
         if (!controller_->axes_[axisId_]->powerOn())
         {
             ERROR_PRINT("Enable: 轴%d 使能失败\n", axisId_);
-            setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+            return zrcsSystem::RunResult::FAILED;
         }
-        else
-        {
-            setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
-        }
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -38,20 +36,20 @@ void Enable::run()
             if (!controller_->axes_[i]->powerOn())
             {
                 ERROR_PRINT("Enable: 轴%d 使能失败\n", i);
-                setCmdStatus(zrcsSystem::CmdStatus::FAILED);
             }
         }
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else
     {
         ERROR_PRINT("Enable: 轴索引%d 超出范围\n", axisId_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return zrcsSystem::RunResult::FAILED;
     }
 }
 
-void Enable::exit()
+bool Enable::exit()
 {
+    return true;
 }
 
 CMD_REGISTER(Enable);

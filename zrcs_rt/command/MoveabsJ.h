@@ -11,7 +11,7 @@
 
 using namespace ruckig;
 
-class MoveAbsJ : public TrajectoryCmd
+class MoveAbsJ : public zrcsSystem::TrajectoryCmd
 {
 
 private:

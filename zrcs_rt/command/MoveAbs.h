@@ -7,7 +7,7 @@
 
 using namespace ruckig;
 
-class MoveAbs : public TrajectoryCmd
+class MoveAbs : public zrcsSystem::TrajectoryCmd
 {
 private:
     int axisId_;

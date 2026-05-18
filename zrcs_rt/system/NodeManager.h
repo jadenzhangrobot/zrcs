@@ -70,7 +70,7 @@ public:
 private:
     /// @brief Convenience accessor for the shared-memory block.
     zrcs::SharedBlock* shm() const noexcept { return rtProcess_->sharedBlock(); }
-
+    zrcs::TaskScheduling taskScheduling_;
     // ---- Owned objects -------------------------------------------------------
     std::string                                 projectName_;
     std::unique_ptr<RTProcess>                  rtProcess_;

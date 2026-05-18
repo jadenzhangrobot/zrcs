@@ -101,11 +101,18 @@ public:
  *   Any state can jump to FAILED on error.
  */
 enum class CmdStatus {
-    START,      ///< Reserved, not yet in use.
     INIT,       ///< Initialising trajectory parameters.
-    EXECUTING,  ///< Running the trajectory step by step.
+    RUNNING,  ///< Running the trajectory step by step.
+    EXIT,
     COMPLETED,  ///< Terminal: command finished successfully.
     FAILED      ///< Terminal: command encountered an unrecoverable error.
+};
+
+enum class RunResult 
+{
+    SUCCESS,     ///< Not yet initialised or pending initialisation.
+    EXECUTING,  ///< Running normally.
+    FAILED      ///< Terminal: unrecoverable error.
 };
 
 /**
@@ -120,32 +127,35 @@ enum class CmdStatus {
  */
 class CmdNode : public Basenode {
 public:
-    std::atomic<CmdStatus> cmdStatus_;  ///< Current state of the command FSM.
+    CmdStatus cmdStatus_;  ///< Current state of the command FSM.
+  //  RunResult runResult_;   ///< Current run result.
 
     CmdNode() : cmdStatus_(CmdStatus::INIT) {}
     virtual ~CmdNode() = default;
 
     /// Called once when the node first becomes active.  Set up trajectory.
-    virtual void init() = 0;
+    virtual bool init() = 0;
 
     /// Called every control cycle while in EXECUTING state.
-    virtual void run() = 0;
+    virtual RunResult run() = 0;
 
     /// Called once when transitioning to COMPLETED.  Tear down resources.
-    virtual void exit() = 0;
+    virtual bool exit() = 0;
 
     /// State-machine dispatcher.  Reads cmdStatus_ and invokes the
     /// appropriate phase (init / run / exit).
     void execute();
 
     /// @return Current command status (acquire semantics).
-    CmdStatus getCmdStatus() const noexcept {
-        return cmdStatus_.load(std::memory_order_acquire);
+    CmdStatus getCmdStatus() const noexcept 
+    {
+        return cmdStatus_;
     }
 
     /// @param status New command status to set (release semantics).
-    void setCmdStatus(CmdStatus status) {
-        cmdStatus_.store(status, std::memory_order_release);
+    void setCmdStatus(CmdStatus status) 
+    {
+        cmdStatus_ = status;
     }
 };
 

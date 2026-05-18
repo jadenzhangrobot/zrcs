@@ -106,7 +106,7 @@ class RegisterNode {
 public:
     explicit RegisterNode(std::string_view name)
     {
-        NodeFactory::pendingCmds().push_back({name, std::make_shared<T>()});
+        NodeFactory::pendingCmds().push_back(NodeFactory::PendingCmd{name, std::make_shared<T>()});
     }
 };
 
@@ -120,7 +120,7 @@ public:
     explicit RegisterNodeById(CmdId cmdId)
     {
         NodeFactory::pendingCmdsById().push_back(
-            {cmdId, std::make_shared<T>()});
+            NodeFactory::PendingCmdById{cmdId, std::make_shared<T>()});
     }
 };
 

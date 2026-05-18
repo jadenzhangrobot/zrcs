@@ -10,11 +10,12 @@
 #include "config/Parameter.h"
 #include <ruckig/ruckig.hpp>
 #include <memory>
-
+namespace zrcsSystem 
+{
 using namespace ruckig;
-
 class TrajectoryCmd : public zrcsSystem::CmdNode
 {
+   RunResult runResult_= RunResult::EXECUTING;
 protected:
     double baseDeltaTime_;  // 原始周期 = cycletime * 0.001
     std::unique_ptr<Ruckig<DynamicDOFs>>          otg_;    // 子类在 initTrajectory() 中 make_unique
@@ -42,13 +43,10 @@ protected:
     /// 读取 overrideRatio 并更新 delta_time，每个 run() 周期调用
     void updateOverride();
 
-    /// 标准 run() 流程：updateOverride → updateTrajectory → applyOutput
-    void runStandard();
-
 public:
     TrajectoryCmd();
-
-    void init() override;
-    void run() override;
-    void exit() override;
+    bool init() override;
+    RunResult run() override;
+    bool exit() override;
 };
+}

@@ -13,7 +13,7 @@
 
 using namespace ruckig;
 
-class MoveL : public TrajectoryCmd
+class MoveL : public zrcsSystem::TrajectoryCmd
 {
 
 private:

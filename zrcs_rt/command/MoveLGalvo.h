@@ -22,7 +22,7 @@
 
 using namespace ruckig;
 
-class MoveLGalvo : public TrajectoryCmd
+class MoveLGalvo : public zrcsSystem::TrajectoryCmd
 {
 private:
 

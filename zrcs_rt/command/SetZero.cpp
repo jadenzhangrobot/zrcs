@@ -5,12 +5,13 @@
 
 #include "command/SetZero.h"
 
-void SetZero::init()
+bool SetZero::init()
 {
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(SetZeroArg::AxisId)]);
+    return true;
 }
 
-void SetZero::run()
+zrcsSystem::RunResult SetZero::run()
 {
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
@@ -18,7 +19,7 @@ void SetZero::run()
             controller_->axes_[axisId_]->actualPos());
         controller_->axes_[axisId_]->setAxisPositionCmd(0.0);
         controller_->axes_[axisId_]->syncCmdHistory();
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -29,17 +30,18 @@ void SetZero::run()
             controller_->axes_[i]->setAxisPositionCmd(0.0);
             controller_->axes_[i]->syncCmdHistory();
         }
-        setCmdStatus(zrcsSystem::CmdStatus::COMPLETED);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else
     {
         ERROR_PRINT("SetZero: 轴索引%d 超出范围\n", axisId_);
-        setCmdStatus(zrcsSystem::CmdStatus::FAILED);
+        return zrcsSystem::RunResult::FAILED;
     }
 }
 
-void SetZero::exit()
+bool SetZero::exit()
 {
+    return true;
 }
 
 CMD_REGISTER(SetZero);

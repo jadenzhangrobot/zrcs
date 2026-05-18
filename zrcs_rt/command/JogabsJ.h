@@ -8,7 +8,7 @@
 
 using namespace ruckig;
 
-class JogabsJ : public TrajectoryCmd
+class JogabsJ : public zrcsSystem::TrajectoryCmd
 {
 private:
     int axisId_;

@@ -30,13 +30,13 @@ public:
     }
 
     /** @brief 从命令参数读取目标轴 ID */
-    void init() override;
+    bool init() override;
 
     /** @brief 执行设置零位操作 */
-    void run() override;
+    zrcsSystem::RunResult run() override;
 
     /** @brief 退出清理（无操作） */
-    void exit() override;
+    bool exit() override;
 
 private:
     int axisId_;   ///< 目标轴 ID，等于轴总数时表示全部轴
