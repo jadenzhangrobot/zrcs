@@ -8,7 +8,7 @@
  *   - TypedSendCommandNode<ArgEnum>  按 Arg 枚举成员生成独立命名输入端口的模板节点
  *
  * 两者均通过 SharedState 桥接 RtBridge，将命令推入 RT 共享内存队列，
- * 并轮询 lastCmdSeq 等待命令完成。
+ * 并轮询 lastCmdCompletion 等待命令完成。
  */
 
 #include <memory>

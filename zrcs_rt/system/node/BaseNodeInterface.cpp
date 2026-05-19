@@ -54,7 +54,7 @@ void CmdNode::execute()
             {
                 INFO_PRINT("%s 退出指令成功\n", nodeName_);
                 // 假设有个结束状态
-                cmdStatus_ = CmdStatus::COMPLETED; // 或 DONE
+                cmdStatus_ = CmdStatus::COMPLETED; 
             }
             else 
             { 

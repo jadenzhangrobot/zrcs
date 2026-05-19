@@ -21,7 +21,7 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <functional>
-#include "shared_memory/NrtProcess.h"
+#include "shared_memory/ShmClient.h"
 #include "communication/ZmqClient.h"
 #include "communication/ZmqStatusSubscriber.h"
 #include "trajectory/TrajectoryVisualizer.h"
@@ -80,7 +80,7 @@ class AlarmPanel : public QWidget {
     Q_OBJECT
 public:
     AlarmPanel(QWidget *parent = nullptr);
-    void addAlarm(const QString &message, const QString &timestamp);
+    void addAlarm(const QString &message, const QString &timestamp, const QString &type = QStringLiteral("错误"));
     void appendOperationLog(const QString &message);
 
 private:
@@ -122,6 +122,7 @@ private slots:
     // Status
     void onAxisPositionsUpdated(QVector<double> positions);
     void onTaskSchedulingUpdated(const QString &state);
+    void onRtLogReceived(quint32 level, const QString &message, const QString &timestamp);
 
 private:
     void setControlPanelExpanded(bool expanded);
@@ -134,6 +135,7 @@ private:
     void createSettingsPanel();
     void createAdvancedModules();
     void createQuickActions();
+    void bindBehaviorTreeClient();
     
     // UI Components
     StatusIndicator *globalStatus;
@@ -156,7 +158,7 @@ private:
     CommandPanel *commandPanel;
     
     // Backend
-    NRTProcess *nrtProcess;
+    zrcs::ShmClient *shmClient;
     ZMQClient *zmqClient;
     ZMQStatusSubscriber *statusSubscriber;
     QTimer *updateTimer;

@@ -1,5 +1,6 @@
 #include "ZmqStatusSubscriber.h"
 #include <QDebug>
+#include <QDateTime>
 #include <QTimer>
 
 // ============================================================================
@@ -73,6 +74,13 @@ void ZMQStatusWorker::pollLoop()
                 emit taskSchedulingUpdated(QString::fromStdString(status.system_state()));
             }
 
+            for (int i = 0; i < status.rt_logs_size(); ++i) {
+                const auto& log = status.rt_logs(i);
+                const QString message = QString::fromUtf8(log.message().c_str());
+                const QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
+                emit rtLogReceived(log.level(), message, timestamp);
+            }
+
         } catch (const zmq::error_t& e) {
             if (running_ && e.num() != EAGAIN) {
                 emit errorOccurred(QString("SUB recv error: %1").arg(e.what()));
@@ -107,6 +115,8 @@ ZMQStatusSubscriber::ZMQStatusSubscriber(const QString& host, int port, QObject*
             this, &ZMQStatusSubscriber::heartbeatReceived);
     connect(worker_, &ZMQStatusWorker::taskSchedulingUpdated,
             this, &ZMQStatusSubscriber::taskSchedulingUpdated);
+    connect(worker_, &ZMQStatusWorker::rtLogReceived,
+            this, &ZMQStatusSubscriber::rtLogReceived);
     connect(worker_, &ZMQStatusWorker::errorOccurred,
             this, &ZMQStatusSubscriber::errorOccurred);
 

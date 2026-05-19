@@ -189,9 +189,15 @@ private:
             if (send_result == RtBridge::SendResult::OK) {
                 spdlog::info("[ZMQServer] Command '{}' sent via RtBridge (seq={})", name, seq);
                 sendReply("OK");
-            } else {
+            } else if (send_result == RtBridge::SendResult::UNKNOWN_CMD) {
+                spdlog::error("[ZMQServer] Unknown command '{}'", name);
+                sendReply("ERROR: Unknown command");
+            } else if (send_result == RtBridge::SendResult::QUEUE_FULL) {
                 spdlog::error("[ZMQServer] Command queue full! cmd='{}'", name);
                 sendReply("ERROR: Queue full");
+            } else {
+                spdlog::error("[ZMQServer] Command '{}' failed: bridge not connected", name);
+                sendReply("ERROR: Not connected");
             }
         }
     }

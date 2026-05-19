@@ -19,7 +19,6 @@
 #include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
 #include "statusPublisher/StatusPublisher.h"
-#include "terminal/TerminalConsole.h"
 #include "rtBridge/RtBridge.h"
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
@@ -261,11 +260,6 @@ int main(int argc, char **argv)
         RtBridge bridge(nrt_process.sharedBlock());
         BehaviorTreeRunner behaviorTreeRunner(&bridge);
 
-        // 启动 RT 日志消费者（从共享内存读取 RT 日志并写入 spdlog）
-        RtLogConsumer rtLogConsumer(nrt_process.sharedBlock());
-        rtLogConsumer.start();
-        spdlog::info("RT log consumer started");
-
         // 初始化 ZMQ 服务器
         ZMQServer zmq_server(&bridge, &behaviorTreeRunner);
         g_zmq_server = &zmq_server;
@@ -288,18 +282,16 @@ int main(int argc, char **argv)
             spdlog::warn("Status publisher failed to initialize, continuing without it");
         }
 
-        // 初始化终端控制台
-        TerminalConsole terminal(&bridge, g_running);
-        if (terminal.initialize()) {
-            terminal.start();
-            spdlog::info("Terminal console started");
-        } else 
-        {
-            spdlog::warn("Terminal console not available, continuing without it");
+        // 启动 RT 日志消费者：写入 NRT 日志，并转发给状态发布器供 GUI 分流显示。
+        RtLogConsumer rtLogConsumer(
+            nrt_process.sharedBlock(),
+            [&status_publisher](const zrcs::RtLogEntry& entry) {
+                status_publisher.enqueueRtLog(entry);
+            });
+        rtLogConsumer.start();
+        spdlog::info("RT log consumer started");
 
-        }
-
-
+        // 初始化运动预处理器
         MotionPreprocessor motion_preprocessor(&bridge);
 
         // 主循环：监控共享内存状态
@@ -313,9 +305,6 @@ int main(int argc, char **argv)
 
         spdlog::info("Stopping RT log consumer...");
         rtLogConsumer.stop();
-
-        spdlog::info("Shutting down terminal console...");
-        terminal.stop();
 
         spdlog::info("Stopping behavior tree runner...");
         behaviorTreeRunner.stop("Process shutdown");

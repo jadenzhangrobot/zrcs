@@ -237,7 +237,6 @@ bool Axis::powerOn()
     {
       if(!servo_[i]->enable())
       {
-        ERROR_PRINT("轴%d: 伺服%zu 使能失败\n", axisId_, i);
         return false;
       }
     }

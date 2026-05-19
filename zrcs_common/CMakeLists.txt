@@ -1,6 +1,6 @@
 project(zrcscommon)
 
-file(GLOB_RECURSE SOURCES
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "config/*.cpp"
     "shared_memory/*.cpp"
     "xml/*.cpp"

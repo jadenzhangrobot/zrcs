@@ -27,6 +27,7 @@ signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
+    void rtLogReceived(quint32 level, QString message, QString timestamp);
     void errorOccurred(const QString& error);
 
 private:
@@ -59,6 +60,7 @@ signals:
     void axisPositionsUpdated(QVector<double> positions);
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
+    void rtLogReceived(quint32 level, QString message, QString timestamp);
     void errorOccurred(const QString& error);
 
 private:

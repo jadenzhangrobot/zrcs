@@ -1,6 +1,9 @@
 #include "command/CommandPanel.h"
 #include "ui_command_panel.h"
 
+#include "config/CmdDefine.h"
+
+#include <QSet>
 #include <QStringList>
 
 namespace {
@@ -8,6 +11,28 @@ namespace {
 constexpr double kSpinBoxMinimum = -999999.0;
 constexpr double kSpinBoxMaximum = 999999.0;
 constexpr int kSpinBoxDecimals = 3;
+
+bool isSupportedPresetCommand(const QString &commandName)
+{
+    static const QSet<QString> kSystemCommands = {
+        QStringLiteral("SYS_RUN"),
+        QStringLiteral("SYS_STOP"),
+        QStringLiteral("SYS_RESET"),
+        QStringLiteral("SYS_ESTOP"),
+        QStringLiteral("SYS_JOG_START"),
+        QStringLiteral("SYS_JOG_STOP"),
+        QStringLiteral("SYS_SET_MULTIPLIER"),
+        QStringLiteral("SYS_SET_ORIGIN"),
+        QStringLiteral("SYS_SET_AXIS_ORIGIN")
+    };
+
+    if (kSystemCommands.contains(commandName)) {
+        return true;
+    }
+
+    const auto cmdId = zrcs::cmdNameToId(commandName.toStdString());
+    return cmdId.has_value() && *cmdId != CmdId::INVALID;
+}
 
 }  // namespace
 
@@ -47,6 +72,12 @@ void CommandPanel::setupUI()
     for (auto *button : buttons) {
         const QString commandName = button->property("presetCommand").toString();
         if (commandName.isEmpty()) {
+            continue;
+        }
+
+        if (!isSupportedPresetCommand(commandName)) {
+            button->setEnabled(false);
+            button->setToolTip(QStringLiteral("当前 RT/NRT 未注册该命令"));
             continue;
         }
 

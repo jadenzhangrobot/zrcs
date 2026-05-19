@@ -68,6 +68,32 @@ void NodeManager::run()
     {
         controller_->receiveData();
         taskScheduling_ = shm()->taskSched.load(std::memory_order_acquire);
+
+        auto abortActiveCommand = [this](const char* reason)
+        {
+            if (cmdNode_ == nullptr)
+            {
+                return;
+            }
+            WARN_PRINT("%s: id=%u(seq=%u)\n",reason, static_cast<unsigned>(cmd_.cmdId),cmd_.seq);
+            shm()->lastCmdCompletion.store(zrcs::packCmdCompletion(cmd_.seq, 1), std::memory_order_release);
+            cmdNode_->setCmdStatus(CmdStatus::INIT);
+            cmdNode_->command_ = nullptr;
+            cmdNode_ = nullptr;
+        };
+
+        auto publishCommandResult = [this](uint8_t result)
+        {
+            shm()->lastCmdCompletion.store(
+                zrcs::packCmdCompletion(cmd_.seq, result),
+                std::memory_order_release);
+        };
+
+        auto stopContinuousJog = [this]()
+        {
+            shm()->jogCtrl.active.store(false, std::memory_order_release);
+        };
+
         // ---- Input nodes ----------------------------------------------------
            for (auto& node : factory_.inPutNodes) 
             {
@@ -94,8 +120,7 @@ void NodeManager::run()
                         if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                         {
                             WARN_PRINT("命令失败: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId),cmd_.seq);
-                            shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                            shm()->lastCmdResult.store(1,std::memory_order_release);
+                            publishCommandResult(1);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
                             taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
@@ -103,8 +128,7 @@ void NodeManager::run()
                         // COMPLETED may have been reached within execute() (status leap).
                         else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                         {
-                            shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                            shm()->lastCmdResult.store(0,std::memory_order_release);
+                            publishCommandResult(0);
                             INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
@@ -132,16 +156,14 @@ void NodeManager::run()
                             if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                             {
                                 WARN_PRINT("命令失败: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId),cmd_.seq);
-                                shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                                shm()->lastCmdResult.store(1,std::memory_order_release);
+                                publishCommandResult(1);
                                 cmdNode_->setCmdStatus(CmdStatus::INIT);
                                 cmdNode_ = nullptr;
                                 taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
                             }
                            else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                            {
-                            shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                            shm()->lastCmdResult.store(0,std::memory_order_release);
+                            publishCommandResult(0);
                             INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
                             cmdNode_->setCmdStatus(CmdStatus::INIT);
                             cmdNode_ = nullptr;
@@ -151,8 +173,7 @@ void NodeManager::run()
                         else if (cmdId != CmdId::INVALID)
                         {
                             WARN_PRINT("未注册的命令: %s(seq=%u), 已忽略\n",zrcs::cmdIdToName(cmd_.cmdId), cmd_.seq);
-                            shm()->lastCmdSeq.store(cmd_.seq,std::memory_order_release);
-                            shm()->lastCmdResult.store(1,std::memory_order_release);
+                            publishCommandResult(1);
                         }
                     }
                 }        
@@ -174,21 +195,16 @@ void NodeManager::run()
                 } 
                 break;
             case zrcs::TaskScheduling::ERROR_STATE:
-                if (cmdNode_ != nullptr)
-                {
-                    WARN_PRINT("错误状态: 清理命令节点 id=%u\n", static_cast<unsigned>(cmd_.cmdId));
-                    cmdNode_->setCmdStatus(CmdStatus::COMPLETED);                
-                }
+                stopContinuousJog();
+                abortActiveCommand("ERROR_STATE abort active command");
                 // 错误状态下不自动恢复，等待上位机切换至 RESET 后再继续。
                 break;
 
             case zrcs::TaskScheduling::STOP:
+                stopContinuousJog();
                 if (!stopHandled_)
                 {
-                    if (cmdNode_ != nullptr)
-                    {
-                        cmdNode_->setCmdStatus(CmdStatus::COMPLETED);
-                    }
+                    abortActiveCommand("STOP abort active command");
                     for (auto& axis : controller_->axes_)
                     {
                         axis->powerOff();
@@ -198,12 +214,10 @@ void NodeManager::run()
                 break;
 
             case zrcs::TaskScheduling::RESET:
-                if (cmdNode_ != nullptr) 
-                {
-                    cmdNode_->setCmdStatus(CmdStatus::COMPLETED);
-                }
+                stopContinuousJog();
+                abortActiveCommand("RESET abort active command");
                 stopHandled_ = false;
-                shm()->taskSched.store(zrcs::TaskScheduling::RUN,std::memory_order_release);
+                taskScheduling_ = zrcs::TaskScheduling::IDLE;
                 break;
             case zrcs::TaskScheduling::IDLE:
             default:
@@ -214,7 +228,7 @@ void NodeManager::run()
 
         // ---- Output nodes ---------------------------------------------------
         
-        shm()->taskSched.store(taskScheduling_,std::memory_order_acquire);
+        shm()->taskSched.store(taskScheduling_,std::memory_order_release);
         controller_->sendData();
         // Heartbeat: updated solely for RT liveness monitoring.  NRT does not
         // depend on this field for any decision-making.

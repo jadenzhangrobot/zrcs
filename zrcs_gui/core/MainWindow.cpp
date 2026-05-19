@@ -28,7 +28,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     setupConnections();
     setupStyles();
     
-    nrtProcess = new NRTProcess();
+    shmClient = new zrcs::ShmClient();
+    shmClient->attach();
     zmqClient = new ZMQClient();
 
     // ZMQ 状态信号连接
@@ -44,6 +45,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
             this, &MainWindowRefactored::onAxisPositionsUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
+            this, &MainWindowRefactored::onRtLogReceived);
     statusSubscriber->start();
 
     // 连接命令面板信号
@@ -52,21 +55,7 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
                 this, &MainWindowRefactored::onCommandPanelCommandRequested);
     }
 
-    // 连接行为树面板信号到 ZMQ 客户端
-    if (behaviorTreePanel && zmqClient) {
-        QObject::connect(behaviorTreePanel, &BehaviorTreePanel::requestBTLoad,
-            zmqClient, [this](const QString& xml) {
-                zmqClient->sendBTCommand("LOAD", xml);
-            });
-        QObject::connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStart,
-            zmqClient, [this]() {
-                zmqClient->sendBTCommand("START");
-            });
-        QObject::connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStop,
-            zmqClient, [this]() {
-                zmqClient->sendBTCommand("STOP");
-            });
-    }
+    bindBehaviorTreeClient();
     
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainWindowRefactored::onUpdateTimer);
@@ -79,6 +68,12 @@ MainWindowRefactored::~MainWindowRefactored()
 {
     if (updateTimer) updateTimer->stop();
     if (statusSubscriber) statusSubscriber->stop();
+    delete statusSubscriber;
+    statusSubscriber = nullptr;
+    delete zmqClient;
+    zmqClient = nullptr;
+    delete shmClient;
+    shmClient = nullptr;
 }
 
 void MainWindowRefactored::setupUI()
@@ -256,6 +251,36 @@ void MainWindowRefactored::createQuickActions()
     });
 }
 
+void MainWindowRefactored::bindBehaviorTreeClient()
+{
+    if (!behaviorTreePanel || !zmqClient) {
+        return;
+    }
+
+    disconnect(behaviorTreePanel, &BehaviorTreePanel::requestBTLoad, nullptr, nullptr);
+    disconnect(behaviorTreePanel, &BehaviorTreePanel::requestBTStart, nullptr, nullptr);
+    disconnect(behaviorTreePanel, &BehaviorTreePanel::requestBTStop, nullptr, nullptr);
+
+    connect(behaviorTreePanel, &BehaviorTreePanel::requestBTLoad,
+            this, [this](const QString& xml) {
+                if (zmqClient) {
+                    zmqClient->sendBTCommand("LOAD", xml);
+                }
+            });
+    connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStart,
+            this, [this]() {
+                if (zmqClient) {
+                    zmqClient->sendBTCommand("START");
+                }
+            });
+    connect(behaviorTreePanel, &BehaviorTreePanel::requestBTStop,
+            this, [this]() {
+                if (zmqClient) {
+                    zmqClient->sendBTCommand("STOP");
+                }
+            });
+}
+
 void MainWindowRefactored::onUpdateTimer()
 {
     updateGlobalStatus();
@@ -388,6 +413,21 @@ void MainWindowRefactored::onTaskSchedulingUpdated(const QString &state)
     }
 }
 
+void MainWindowRefactored::onRtLogReceived(quint32 level, const QString &message, const QString &timestamp)
+{
+    if (!alarmPanel) {
+        return;
+    }
+
+    const QString text = QString("[%1] %2").arg(timestamp, message.trimmed());
+    if (level == 0) {
+        alarmPanel->appendOperationLog(text);
+    } else {
+        alarmPanel->addAlarm(message.trimmed(), timestamp,
+                             level == 1 ? QStringLiteral("警告") : QStringLiteral("错误"));
+    }
+}
+
 void MainWindowRefactored::onConnectClicked()
 {
     if (zmqClient && zmqClient->isConnected()) {
@@ -424,6 +464,7 @@ void MainWindowRefactored::onConnectClicked()
         connect(commandPanel, &CommandPanel::commandRequested,
                 this, &MainWindowRefactored::onCommandPanelCommandRequested);
     }
+    bindBehaviorTreeClient();
 
     zmqClient->connectToServer();
     zmqStatusLabel->setText(QString("ZMQ: 连接中 %1:5555").arg(host));
@@ -438,14 +479,20 @@ void MainWindowRefactored::onConnectClicked()
             this, &MainWindowRefactored::onAxisPositionsUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
+            this, &MainWindowRefactored::onRtLogReceived);
     statusSubscriber->start();
 }
 
 void MainWindowRefactored::feedPoseToTrajectory()
 {
-    if (!nrtProcess || !trajectoryPanel) return;
+    if (!shmClient || !trajectoryPanel) return;
 
-    zrcs::SharedBlock *block = nrtProcess->sharedBlock();
+    if (!shmClient->isAttached()) {
+        shmClient->attach();
+    }
+
+    zrcs::SharedBlock *block = shmClient->sharedBlock();
     if (!block) return;
 
     zrcs::FkResultData fk;

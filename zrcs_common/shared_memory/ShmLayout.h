@@ -35,7 +35,7 @@ inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容�
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 10;           // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 11;           // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -94,6 +94,28 @@ struct Command {
     uint8_t  _pad[2]           = {};
     // sizeof = 20*8 + 4 + 2 + 2 = 172 bytes（旧版 268 bytes）
 };
+
+struct CmdCompletionData {
+    uint32_t seq     = 0;
+    uint8_t  result  = 0;  // 0=成功，非零=失败码
+    uint8_t  _pad[3] = {};
+};
+static_assert(sizeof(CmdCompletionData) == sizeof(uint64_t),
+    "CmdCompletionData must fit in one atomic<uint64_t>");
+
+inline constexpr uint64_t packCmdCompletion(uint32_t seq, uint8_t result) noexcept
+{
+    return (static_cast<uint64_t>(seq) << 32) | static_cast<uint64_t>(result);
+}
+
+inline constexpr CmdCompletionData unpackCmdCompletion(uint64_t packed) noexcept
+{
+    return {
+        static_cast<uint32_t>(packed >> 32),
+        static_cast<uint8_t>(packed & 0xffu),
+        {}
+    };
+}
 
 // RT→NRT 日志条目（固定大小，无动态分配）
 struct RtLogEntry {
@@ -312,8 +334,7 @@ struct alignas(64) SharedBlock {
     ContinuousJog jogCtrl;
 
     // ── 命令完成跟踪（RT 写，NRT 读）─────────────────────────────────────
-    alignas(64) std::atomic<uint32_t> lastCmdSeq{0};
-    alignas(64) std::atomic<uint8_t>  lastCmdResult{0};  // 0=成功，非零=失败码
+    alignas(64) std::atomic<uint64_t> lastCmdCompletion{packCmdCompletion(0, 0)};
 
     // ── IO 读结果（RT 写，NRT 读）────────────────────────────────────────
     alignas(64) std::atomic<uint32_t> ioReadResult{0};

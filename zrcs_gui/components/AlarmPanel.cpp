@@ -83,7 +83,7 @@ AlarmPanel::AlarmPanel(QWidget *parent)
     }
 }
 
-void AlarmPanel::addAlarm(const QString &message, const QString &timestamp)
+void AlarmPanel::addAlarm(const QString &message, const QString &timestamp, const QString &type)
 {
     int row = alarmTable->rowCount();
     alarmTable->insertRow(row);
@@ -91,18 +91,18 @@ void AlarmPanel::addAlarm(const QString &message, const QString &timestamp)
     QTableWidgetItem *timeItem = new QTableWidgetItem(timestamp);
     timeItem->setForeground(QColor(200, 200, 200));
     
-    QTableWidgetItem *typeItem = new QTableWidgetItem("错误");
-    typeItem->setForeground(QColor(255, 100, 100));
+    QTableWidgetItem *typeItem = new QTableWidgetItem(type);
+    const bool isWarning = type.contains(QStringLiteral("警告"));
+    typeItem->setForeground(isWarning ? QColor(255, 190, 80) : QColor(255, 100, 100));
     
     QTableWidgetItem *msgItem = new QTableWidgetItem(message);
-    msgItem->setForeground(QColor(255, 150, 150));
+    msgItem->setForeground(isWarning ? QColor(255, 210, 120) : QColor(255, 150, 150));
     
     alarmTable->setItem(row, 0, timeItem);
     alarmTable->setItem(row, 1, typeItem);
     alarmTable->setItem(row, 2, msgItem);
     
-    // 添加到日志
-    logDisplay->append(QString("[%1] %2").arg(timestamp, message));
+    alarmTable->scrollToBottom();
 }
 
 void AlarmPanel::appendOperationLog(const QString &message)

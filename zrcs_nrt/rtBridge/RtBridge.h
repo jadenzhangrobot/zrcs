@@ -2,7 +2,7 @@
 
 // RtBridge.h — NRT 侧共享内存统一访问层
 //
-// 所有 NRT 代码（ZMQ 线程、BT 引擎、终端）对 SharedBlock 的访问都应通过本类完成。
+// 所有 NRT 代码（ZMQ 线程、BT 引擎）对 SharedBlock 的访问都应通过本类完成。
 // 线程安全：多个调用方可并发调用任意方法。
 //   - cmdQueue 的单生产者语义由内部 push_mutex_ 保证（SPSC 要求单写者）。
 //   - logQueue 的单消费者语义由 RtLogConsumer 独占保证。
@@ -187,8 +187,16 @@ public:
     }
 
     void requestRun()      { setTaskScheduling(zrcs::TaskScheduling::RUN); }
-    void requestStop()     { setTaskScheduling(zrcs::TaskScheduling::STOP); }
-    void requestReset()    { setTaskScheduling(zrcs::TaskScheduling::RESET); }
+    void requestStop()
+    {
+        stopContinuousMotion();
+        setTaskScheduling(zrcs::TaskScheduling::STOP);
+    }
+    void requestReset()
+    {
+        stopContinuousMotion();
+        setTaskScheduling(zrcs::TaskScheduling::RESET);
+    }
     void requestStart()    { setTaskScheduling(zrcs::TaskScheduling::IDLE);}
     void requestShutdown() { setTaskScheduling(zrcs::TaskScheduling::SHUTDOWN); }
 
@@ -254,14 +262,16 @@ public:
     CmdCompletion lastCompletion() const noexcept 
     {
         if (!block_) return {0, false};
-        const uint32_t seq = block_->lastCmdSeq.load(std::memory_order_acquire);
-        const uint8_t  res = block_->lastCmdResult.load(std::memory_order_acquire);
-        return {seq, res == 0};
+        const auto completion = zrcs::unpackCmdCompletion(
+            block_->lastCmdCompletion.load(std::memory_order_acquire));
+        return {completion.seq, completion.result == 0};
     }
 
     bool isCommandCompleted(uint32_t seq) const noexcept {
         if (!block_) return false;
-        return block_->lastCmdSeq.load(std::memory_order_acquire) >= seq;
+        const auto completion = zrcs::unpackCmdCompletion(
+            block_->lastCmdCompletion.load(std::memory_order_acquire));
+        return completion.seq >= seq;
     }
 
     bool waitForCompletion(uint32_t seq,std::chrono::milliseconds timeout = std::chrono::milliseconds(10000)) noexcept
