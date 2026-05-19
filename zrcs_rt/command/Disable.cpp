@@ -6,6 +6,7 @@
  */
 
 #include "command/Disable.h"
+#include "system/log/RtLog.h"
 #include "system/node/BaseNodeInterface.h"
 
 bool Disable::init()
@@ -23,7 +24,12 @@ zrcsSystem::RunResult Disable::run()
             ERROR_PRINT("Disable: 轴%d 操作失败\n", axisId_);
             return zrcsSystem::RunResult::FAILED;
         }
-        return zrcsSystem::RunResult::SUCCESS;
+        else 
+        {
+            INFO_PRINT("Disable: 轴%d 操作成功\n", axisId_);
+            return zrcsSystem::RunResult::SUCCESS;
+        }
+        return zrcsSystem::RunResult::EXECUTING;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -32,9 +38,15 @@ zrcsSystem::RunResult Disable::run()
             if (!controller_->axes_[i]->powerOff())
             {
                 ERROR_PRINT("Disable: 轴%d 操作失败\n", i);
+                return zrcsSystem::RunResult::FAILED;
+            }
+            else
+            {
+                INFO_PRINT("Disable: 轴%d 操作成功\n", i);
+                return zrcsSystem::RunResult::SUCCESS;
             }
         }
-        return zrcsSystem::RunResult::SUCCESS;
+        return zrcsSystem::RunResult::EXECUTING;
     }
     else
     {

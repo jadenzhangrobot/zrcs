@@ -24,7 +24,12 @@ zrcsSystem::RunResult Enable::run()
             ERROR_PRINT("Enable: 轴%d 使能失败\n", axisId_);
             return zrcsSystem::RunResult::FAILED;
         }
-        return zrcsSystem::RunResult::SUCCESS;
+        else 
+        {
+           return zrcsSystem::RunResult::SUCCESS;
+        }
+        return zrcsSystem::RunResult::EXECUTING;
+        
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -36,9 +41,10 @@ zrcsSystem::RunResult Enable::run()
             if (!controller_->axes_[i]->powerOn())
             {
                 ERROR_PRINT("Enable: 轴%d 使能失败\n", i);
+                return zrcsSystem::RunResult::FAILED;
             }
         }
-        return zrcsSystem::RunResult::SUCCESS;
+         return zrcsSystem::RunResult::EXECUTING;
     }
     else
     {
