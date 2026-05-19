@@ -115,7 +115,7 @@ void Axis::statusSync()
        axisVel_ = toUserUnit(servo_[i]->vel());
        axisAcc_ = toUserUnit(servo_[i]->acc());
       // 计算位置差值
-      if (i!=0)
+      if (i != 0)
       {
           double posDiff = axisPos_ - lastAxisPos_;
           if (std::abs(posDiff) > config_->maxPosDiff)

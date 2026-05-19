@@ -99,6 +99,10 @@ public:
   {
     servo_.push_back(std::move(servo));
   }
+  size_t servoCount() const
+  {
+    return servo_.size();
+  }
   MC_ERROR_CODE setAxisId(uint32_t id)
   {
       axisId_=id;

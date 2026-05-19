@@ -14,6 +14,8 @@
 
 #include "config/ProjectConfig.h"
 
+#include <vector>
+
 #ifdef REALTIME
 #include "controller/ethercat/EthercatMaster.h"
 #include "controller/ethercat/EthercatMotor.h"
@@ -55,7 +57,13 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
     // 在 config 被 move 之前，先用它创建所有 Axis
     std::vector<std::unique_ptr<Axis>> axes;
     for (auto it = config->axisParas.begin(); it != config->axisParas.end(); ++it) {
-        auto axis = std::make_unique<Axis>(it->axisId, it->slaveId, new AxisPara(*it));
+        if (it->axisId >= axes.size()) {
+            axes.resize(static_cast<size_t>(it->axisId) + 1);
+        }
+        if (!axes[it->axisId]) {
+            axes[it->axisId] = std::make_unique<Axis>(it->axisId, it->slaveId, new AxisPara(*it));
+        }
+        Axis* axis = axes[it->axisId].get();
 
 #ifdef REALTIME
         if (masterPtr) {
@@ -71,13 +79,14 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
 #ifdef STANDARD
         axis->pushServo(std::make_unique<virtualServo>(it->slaveId));
 #endif
-        axes.push_back(std::move(axis));
     }
 
     auto controller = std::make_unique<Controller>(std::move(config), rtos, std::move(bus));
 
     for (auto& axis : axes) {
-        controller->addAxis(std::move(axis));
+        if (axis) {
+            controller->addAxis(std::move(axis));
+        }
     }
 
 #ifdef REALTIME
