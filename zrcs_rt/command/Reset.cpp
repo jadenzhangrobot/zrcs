@@ -6,6 +6,7 @@
  */
 
 #include "command/Reset.h"
+#include "system/log/RtLog.h"
 
 bool Reset::init()
 {
@@ -27,8 +28,10 @@ zrcsSystem::RunResult Reset::run()
             controller_->axes_[axisId_]->setAxisPositionCmd(
                 controller_->axes_[axisId_]->actualPos());
             controller_->axes_[axisId_]->syncCmdHistory();
+            INFO_PRINT("Reset: 轴%d 操作成功\n", axisId_);
+            return zrcsSystem::RunResult::SUCCESS;
         }
-        return zrcsSystem::RunResult::SUCCESS;
+        return zrcsSystem::RunResult::EXECUTING;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
@@ -37,20 +40,22 @@ zrcsSystem::RunResult Reset::run()
             if (!controller_->axes_[i]->resetError())
             {
                 ERROR_PRINT("Reset: 轴%d 操作失败\n", i);
+                return zrcsSystem::RunResult::FAILED;
             }
             else
             {
                 controller_->axes_[i]->setAxisPositionCmd(
                     controller_->axes_[i]->actualPos());
                 controller_->axes_[i]->syncCmdHistory();
+                INFO_PRINT("Reset: 轴%d 操作成功\n", i);
+                return zrcsSystem::RunResult::SUCCESS;
             }
         }
-        return zrcsSystem::RunResult::SUCCESS;
+        return zrcsSystem::RunResult::EXECUTING;
     }
     else
     {
-        ERROR_PRINT("Reset: 轴索引%d 超出范围(max=%zu)\n",
-                     axisId_, controller_->axes_.size());
+        ERROR_PRINT("Reset: 轴索引%d 超出范围(max=%zu)\n", axisId_, controller_->axes_.size());
         return zrcsSystem::RunResult::FAILED;
     }
 }

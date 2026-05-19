@@ -19,6 +19,7 @@ zrcsSystem::RunResult SetZero::run()
             controller_->axes_[axisId_]->actualPos());
         controller_->axes_[axisId_]->setAxisPositionCmd(0.0);
         controller_->axes_[axisId_]->syncCmdHistory();
+        INFO_PRINT("SetZero: 轴%d 操作成功\n", axisId_);
         return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
@@ -30,6 +31,7 @@ zrcsSystem::RunResult SetZero::run()
             controller_->axes_[i]->setAxisPositionCmd(0.0);
             controller_->axes_[i]->syncCmdHistory();
         }
+        INFO_PRINT("SetZero: 所有轴操作成功\n");
         return zrcsSystem::RunResult::SUCCESS;
     }
     else

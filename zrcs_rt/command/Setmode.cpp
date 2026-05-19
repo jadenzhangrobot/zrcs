@@ -19,6 +19,7 @@ zrcsSystem::RunResult Setmode::run()
     if (controller_->axes_.size() > static_cast<size_t>(axisId_))
     {
         controller_->axes_[axisId_]->setModeOfOperation(cia402_mode);
+        INFO_PRINT("Setmode: 轴%d 操作成功\n", axisId_);
         return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
@@ -27,6 +28,7 @@ zrcsSystem::RunResult Setmode::run()
         {
             controller_->axes_[i]->setModeOfOperation(cia402_mode);
         }
+        INFO_PRINT("Setmode: 所有轴操作成功\n");
         return zrcsSystem::RunResult::SUCCESS;
     }
     else
