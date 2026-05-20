@@ -47,6 +47,7 @@ ServoPara toServoPara(const zrcs::config::ServoConfigData& data)
     para.slaveId = data.slaveId;
     para.mode = parseMode(data.mode);
     para.encoderCountPerUnit = data.encoderCountPerUnit;
+    para.direction = data.direction;
     para.homePos = data.homePos;
     para.posOffset = data.posOffset;
     para.velFactor = data.velFactor;

@@ -32,12 +32,14 @@ struct AxisPara {
  * @brief 绑定到 Axis 的运行时伺服参数。
  *
  * 一个 Axis 可以拥有多个 ServoPara。第 i 个 ServoPara 对应第 i 个 push 到 Axis
- * 的 Servo 对象，因此命令和反馈换算可以分别使用每个驱动器自己的模式和编码器比例。
+ * 的 Servo 对象，因此命令和反馈换算可以分别使用每个驱动器自己的模式、编码器比例
+ * 和安装方向。
  */
 struct ServoPara {
     uint32_t slaveId = 0;
     MC_SERVO_CONTROL_MODE mode = MC_SERVO_CONTROL_MODE::mcServoControlModePosition;
     uint64_t encoderCountPerUnit = 1;
+    int direction = 1;
     double homePos = 0.0;
     double posOffset = 0.0;
     double velFactor = 1.0;

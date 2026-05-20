@@ -161,15 +161,16 @@ public:
   }
   double toUserUnit(double x, const ServoPara& config)
   {
-    // 将编码器计数转换回运动命令使用的用户单位。
-    return x / config.encoderCountPerUnit;
+    // 将编码器计数转换回运动命令使用的用户单位。direction 是伺服相对逻辑轴
+    // 正方向的符号：反装驱动器写 -1，反馈乘同一个符号后回到统一轴坐标。
+    return (x * config.direction) / config.encoderCountPerUnit;
   }
 
   int32_t toEncoderUnit(double x, const ServoPara& config)
   {
-    // 将用户单位命令转换为驱动器计数。fixOverFlow 用来把命令限制在
-    // CiA402 驱动器常用的 int32 范围内。
-    return (int32_t)fixOverFlow(x * config.encoderCountPerUnit);
+    // 先按逻辑轴正方向处理编码器溢出，再乘以伺服方向。这样双驱轴一正一反时，
+    // 两个伺服共享同一条逻辑轴连续位置，不会因为反向安装而各自维护一套溢出状态。
+    return (int32_t)(fixOverFlow(x * config.encoderCountPerUnit) * config.direction);
   }
 
   double fixOverFlow(double x);

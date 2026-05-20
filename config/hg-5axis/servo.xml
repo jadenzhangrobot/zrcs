@@ -6,6 +6,7 @@
 				<slaveId>0</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>
@@ -14,6 +15,7 @@
 				<slaveId>1</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>
@@ -22,6 +24,7 @@
 				<slaveId>2</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>
@@ -30,6 +33,7 @@
 				<slaveId>3</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>
@@ -38,6 +42,7 @@
 				<slaveId>4</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>

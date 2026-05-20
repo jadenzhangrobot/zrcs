@@ -68,20 +68,22 @@ int main()
 
     writeProject(temp, "single",
         "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>",
-        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
         model);
     // 单轴单驱是最小有效机器配置。
     auto single = zrcs::config::ConfigManager::load("single");
     assert(single.axisConfig().axes.size() == 1);
     assert(single.servoConfig().servos.size() == 1);
+    assert(single.servoConfig().servos.front().direction == 1);
 
     writeProject(temp, "dual",
         "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/><servo slaveId=\"1\"/></servos></axis>",
-        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/><servo slaveId=\"1\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/><servo slaveId=\"1\" mode=\"position\" posFactor=\"1000\" direction=\"-1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
         model);
     // 一个逻辑轴可以拥有两个 slaveId，用于双驱机械结构。
     auto dual = zrcs::config::ConfigManager::load("dual");
     assert(dual.axisConfig().axes.front().servoSlaveIds.size() == 2);
+    assert(dual.servoConfig().servos.at(1).direction == -1);
 
     const auto cerealDir = temp / "config" / "cereal-native";
     // 通过新的 cereal writer 写出后再由 ConfigManager 读回，
@@ -95,7 +97,7 @@ int main()
 
     writeProject(temp, "missing-servo",
         "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"9\"/></servos></axis>",
-        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
         model);
     // axis.xml 不能引用 servo.xml 中不存在的 slaveId。
     assert(loadFails("missing-servo"));
@@ -103,7 +105,7 @@ int main()
     writeProject(temp, "duplicate-servo-use",
         "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>"
         "<axis id=\"1\" name=\"y\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>",
-        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
         model);
     // 一个驱动器只能属于一个逻辑轴。
     assert(loadFails("duplicate-servo-use"));
@@ -116,10 +118,24 @@ int main()
         "</model>";
     writeProject(temp, "bad-model-axis",
         "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>",
-        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"1\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
         badModel);
     // model.xml 中的 joint 必须引用已存在的逻辑 axisId。
     assert(loadFails("bad-model-axis"));
+
+    writeProject(temp, "bad-servo-direction",
+        "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" direction=\"0\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        model);
+    // direction 只能是 1 或 -1，避免配置写错后伺服方向不可预测。
+    assert(loadFails("bad-servo-direction"));
+
+    writeProject(temp, "missing-servo-direction",
+        "<axis id=\"0\" name=\"x\" maxVel=\"1\" maxAcc=\"2\" maxJerk=\"3\" maxPos=\"10\" minPos=\"-10\" maxPosDiff=\"1\"><servos><servo slaveId=\"0\"/></servos></axis>",
+        "<servo slaveId=\"0\" mode=\"position\" posFactor=\"1000\" homePos=\"0\" posOffset=\"0\" velFactor=\"1\"/>",
+        model);
+    // direction 是必填字段，不再为旧配置提供默认方向。
+    assert(loadFails("missing-servo-direction"));
 
     std::filesystem::current_path(original);
     std::filesystem::remove_all(temp);

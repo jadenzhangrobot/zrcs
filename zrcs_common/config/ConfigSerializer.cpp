@@ -173,11 +173,18 @@ ServoConfigFile loadXml<ServoConfigFile>(const std::filesystem::path& path)
         ServoConfigFile file;
         archive(cereal::make_nvp("servoConfig", file));
         return file;
-    } catch (const cereal::Exception&) {
+    } catch (const cereal::Exception& e) {
+        tinyxml2::XMLDocument probe;
+        loadDocument(path, probe);
+        if (std::string(probe.RootElement()->Name()) == "cereal") {
+            throw std::runtime_error("invalid cereal servo.xml " + path.string() +
+                                     ": " + e.what());
+        }
     }
 
     // 迁移回退路径：旧 servo.xml 每个驱动器是一个扁平的 <servo .../> 元素。
-    // 旧字段名 "posFactor" 会映射到 encoderCountPerUnit。
+    // 旧字段名 "posFactor" 会映射到 encoderCountPerUnit。direction 不做兼容默认值，
+    // 旧格式如果仍在使用，也必须显式写 direction="1" 或 direction="-1"。
     tinyxml2::XMLDocument doc;
     loadDocument(path, doc);
     auto* root = doc.RootElement();
@@ -189,6 +196,7 @@ ServoConfigFile loadXml<ServoConfigFile>(const std::filesystem::path& path)
         servo.slaveId = queryNumber<uint32_t>(servoElem, "slaveId");
         servo.mode = requireString(servoElem, "mode");
         servo.encoderCountPerUnit = queryNumber<uint64_t>(servoElem, "posFactor");
+        servo.direction = queryNumber<int>(servoElem, "direction");
         servo.homePos = queryNumberDefault<double>(servoElem, "homePos", 0.0);
         servo.posOffset = queryNumberDefault<double>(servoElem, "posOffset", 0.0);
         servo.velFactor = queryNumberDefault<double>(servoElem, "velFactor", 1.0);

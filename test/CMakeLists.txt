@@ -25,6 +25,15 @@ target_link_libraries(test_command PRIVATE atomic)
 add_executable(test_config_manager test_config_manager.cpp)
 target_link_libraries(test_config_manager PRIVATE zrcscommon tinyxml2)
 
+add_executable(test_axis_direction
+    test_axis_direction.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/controller/ControllerInterface.cpp
+)
+target_include_directories(test_axis_direction PRIVATE
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt
+)
+target_link_libraries(test_axis_direction PRIVATE atomic)
+
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）
 find_package(Protobuf REQUIRED)
 

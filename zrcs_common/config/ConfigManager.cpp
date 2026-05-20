@@ -114,6 +114,10 @@ void ConfigManager::validate()
             throw std::runtime_error("Servo slaveId " + std::to_string(servo.slaveId) +
                                      " has zero encoder posFactor");
         }
+        if (servo.direction != 1 && servo.direction != -1) {
+            throw std::runtime_error("Servo slaveId " + std::to_string(servo.slaveId) +
+                                     " has invalid direction, expected 1 or -1");
+        }
     }
 
     // axisId 是面向用户和命令层的逻辑轴 ID。一个伺服只能属于一个轴；

@@ -6,6 +6,7 @@
 				<slaveId>0</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<direction>1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>

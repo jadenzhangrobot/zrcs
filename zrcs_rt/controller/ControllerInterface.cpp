@@ -89,7 +89,7 @@ void Axis::statusSync()
 
         // 反馈使用和命令下发相同的单驱比例换算。axisPos_ 最终保存最后一个伺服
         // 的位置，这样保持旧单驱行为，同时仍能检查多驱之间的位置差。
-        axisPos_ = toUserUnit(servo_[i]->pos() - overflowCount_ * INT32_MAX * 2.0, cfg);
+        axisPos_ = toUserUnit(servo_[i]->pos() - cfg.direction * overflowCount_ * INT32_MAX * 2.0, cfg);
         axisVel_ = toUserUnit(servo_[i]->vel(), cfg);
         axisAcc_ = toUserUnit(servo_[i]->acc(), cfg);
 
