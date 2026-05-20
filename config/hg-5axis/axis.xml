@@ -40,7 +40,7 @@
 				<maxJerk>1</maxJerk>
 				<posPositiveLimit>1000000000</posPositiveLimit>
 				<posNegativeLimit>-1000000000</posNegativeLimit>
-				<maxPosDiff>0</maxPosDiff>
+				<maxPosDiff>0.05</maxPosDiff>
 			</value2>
 			<value3>
 				<axisId>3</axisId>
@@ -53,7 +53,7 @@
 				<maxJerk>1</maxJerk>
 				<posPositiveLimit>1000000000</posPositiveLimit>
 				<posNegativeLimit>-1000000000</posNegativeLimit>
-				<maxPosDiff>0</maxPosDiff>
+				<maxPosDiff>0.00</maxPosDiff>
 			</value3>
 		</axes>
 	</axisConfig>

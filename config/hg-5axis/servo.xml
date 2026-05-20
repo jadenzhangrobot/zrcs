@@ -33,7 +33,7 @@
 				<slaveId>3</slaveId>
 				<mode>position</mode>
 				<encoderCountPerUnit>8388608</encoderCountPerUnit>
-				<direction>1</direction>
+				<direction>-1</direction>
 				<homePos>0</homePos>
 				<posOffset>0</posOffset>
 				<velFactor>1</velFactor>
