@@ -79,6 +79,10 @@ add_subdirectory(zrcs_nrt)
 # 3. zrcsrt (实时进程)
 add_subdirectory(zrcs_rt)
 
+if(test)
+    add_subdirectory(test)
+endif()
+
 
 # 安装配置
 # 注意：install 命令现在应该在各自的子目录 CMakeLists.txt 中处理

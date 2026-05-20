@@ -1,9 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<axis>
-    <axis-1>
-        <attribute id="0" mode="position" name="motor" slaveId="0"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="400" maxJerk="3000" maxPos="10000" maxPosDiff="0" maxVel="100" minPos="-10000"/>
-    </axis-1>
-</axis>
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<axisConfig>
+		<axes size="dynamic">
+			<value0>
+				<axisId>0</axisId>
+				<axisName>motor</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>0</value0>
+				</servoSlaveIds>
+				<maxVel>100</maxVel>
+				<maxAcc>400</maxAcc>
+				<maxJerk>3000</maxJerk>
+				<posPositiveLimit>10000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value0>
+		</axes>
+	</axisConfig>
+</cereal>
+

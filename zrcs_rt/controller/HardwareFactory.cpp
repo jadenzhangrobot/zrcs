@@ -12,8 +12,9 @@
  */
 #include "controller/HardwareFactory.h"
 
-#include "config/ProjectConfig.h"
-
+#include "config/ConfigManager.h"
+#include <map>
+#include <stdexcept>
 #include <vector>
 
 #ifdef REALTIME
@@ -37,16 +38,93 @@
 #endif
 
 namespace ZrcsHardware {
+namespace {
+
+// HardwareFactory 是文件配置对象到运行时控制器对象之间的桥梁。
+// 这里重复做一次模式转换，是因为控制器创建流程不经过旧的 ServoConfig 包装类。
+MC_SERVO_CONTROL_MODE parseServoMode(const std::string& mode)
+{
+    if (mode == "velocity") {
+        return MC_SERVO_CONTROL_MODE::mcServoControlModeVelocity;
+    }
+    if (mode == "torque") {
+        return MC_SERVO_CONTROL_MODE::mcServoControlModeTorque;
+    }
+    if (mode == "position") {
+        return MC_SERVO_CONTROL_MODE::mcServoControlModePosition;
+    }
+    throw std::runtime_error("Unsupported servo mode: " + mode);
+}
+
+ServoPara toServoPara(const zrcs::config::ServoConfigData& data)
+{
+    ServoPara para;
+    para.slaveId = data.slaveId;
+    para.mode = parseServoMode(data.mode);
+    para.encoderCountPerUnit = data.encoderCountPerUnit;
+    para.homePos = data.homePos;
+    para.posOffset = data.posOffset;
+    para.velFactor = data.velFactor;
+    return para;
+}
+
+} // namespace
 
 std::unique_ptr<Controller> HardwareFactory::createController(const std::string& projectName) {
-    auto config = std::make_unique<AxisConfig>(zrcs::ProjectConfig::prefixedFilename(projectName, "axis.xml"));
+    // projectName 为空时，ConfigManager 会解析 config/project.txt；
+    // 随后加载 axis/servo/model 文件，并在创建任何硬件对象前完成跨文件校验。
+    auto configManager = zrcs::config::ConfigManager::load(projectName);
+    auto config = std::make_unique<AxisConfig>();
+    std::map<uint32_t, ServoPara> servoBySlaveId;
+
+    // 建立 slaveId 到伺服参数的索引，因为 axis.xml 只引用伺服 slaveId，
+    // 不直接嵌入驱动器参数。
+    for (const auto& servoData : configManager.servoConfig().servos) {
+        auto servo = toServoPara(servoData);
+        servoBySlaveId.emplace(servo.slaveId, servo);
+    }
+
+    // 把已经校验过的轴级数据复制到控制器现有的 AxisConfig 容器中。
+    // 具体伺服对象要根据当前编译模式决定，所以伺服绑定在下面完成。
+    for (const auto& axisData : configManager.axisConfig().axes) {
+        AxisPara axis;
+        axis.axisId = axisData.axisId;
+        axis.axisName = axisData.axisName;
+        axis.servoSlaveIds = axisData.servoSlaveIds;
+        axis.maxVel = axisData.maxVel;
+        axis.maxAcc = axisData.maxAcc;
+        axis.maxJerk = axisData.maxJerk;
+        axis.posPositiveLimit = axisData.posPositiveLimit;
+        axis.posNegativeLimit = axisData.posNegativeLimit;
+        axis.maxPosDiff = axisData.maxPosDiff;
+        config->axisParas.push_back(axis);
+    }
     std::shared_ptr<Rtos> rtos;
     std::unique_ptr<HardwareBus> bus = nullptr;
 
 #ifdef REALTIME
     rtos = std::make_shared<xenomai>();
+    {
+        // REALTIME 模式下，servo.xml 中的 slaveId 必须对应 ethercat.xml 中的
+        // MOTOR 从站。EtherCAT 拓扑仍然只由 tinyxml2 解析，因为它描述的是
+        // 协议/PDO 布局，而不是业务配置。
+        SlaveConfig slaveConfig(configManager.ethercatPath().string());
+        std::map<uint32_t, SlaveConfig::SlaveType> slaveTypes;
+        for (const auto& slave : slaveConfig.Slaves) {
+            slaveTypes.emplace(slave.SlaveId, slave.slaveType);
+        }
+        for (const auto& servoData : configManager.servoConfig().servos) {
+            const auto slaveIt = slaveTypes.find(servoData.slaveId);
+            if (slaveIt == slaveTypes.end() ||
+                slaveIt->second != SlaveConfig::SlaveType::MOTOR) {
+                throw std::runtime_error("Servo slaveId " +
+                                         std::to_string(servoData.slaveId) +
+                                         " is not a motor slave in ethercat.xml");
+            }
+        }
+    }
     auto ethercatMaster = std::make_unique<EthercatMaster>(
-        zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
+        configManager.ethercatPath().string());
     void* masterPtr = ethercatMaster.get();
     bus = std::move(ethercatMaster);
 #else
@@ -55,30 +133,44 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
 #endif
 
     // 在 config 被 move 之前，先用它创建所有 Axis
+    // 在 config 被 move 给 Controller 之前创建所有 Axis。每个 Axis 持有一份
+    // AxisPara 拷贝，因为命令执行时会直接从 Axis 对象读取限位等参数。
     std::vector<std::unique_ptr<Axis>> axes;
     for (auto it = config->axisParas.begin(); it != config->axisParas.end(); ++it) {
         if (it->axisId >= axes.size()) {
             axes.resize(static_cast<size_t>(it->axisId) + 1);
         }
         if (!axes[it->axisId]) {
-            axes[it->axisId] = std::make_unique<Axis>(it->axisId, it->slaveId, new AxisPara(*it));
+            axes[it->axisId] = std::make_unique<Axis>(it->axisId, new AxisPara(*it));
         }
         Axis* axis = axes[it->axisId].get();
+        for (const auto slaveId : it->servoSlaveIds) {
+            // ConfigManager 已经校验过这个关系。这里保留本地检查，是为了以后如果
+            // HardwareFactory 被手工构造的、未校验配置调用，也能给出清晰错误。
+            const auto servoIt = servoBySlaveId.find(slaveId);
+            if (servoIt == servoBySlaveId.end()) {
+                throw std::runtime_error("Axis references missing servo slaveId " + std::to_string(slaveId));
+            }
 
 #ifdef REALTIME
-        if (masterPtr) {
-            axis->pushServo(std::make_unique<EthercatMotor>(
-                it->slaveId, static_cast<EthercatMaster*>(masterPtr)));
-        }
+            if (masterPtr) {
+                // 实时伺服由 EtherCAT 电机对象和 servo.xml 中的单驱比例/模式共同组成。
+                axis->pushServo(std::make_unique<EthercatMotor>(
+                    slaveId, static_cast<EthercatMaster*>(masterPtr)), servoIt->second);
+            }
 #endif
 
 #ifdef SIMULATION
-        axis->pushServo(std::make_unique<Coppeliasim>(it->slaveId));
+            // 仿真模式仍然保留 slaveId，这样切换构建模式时可以复用同一套
+            // axis/servo XML。
+            axis->pushServo(std::make_unique<Coppeliasim>(slaveId), servoIt->second);
 #endif
 
 #ifdef STANDARD
-        axis->pushServo(std::make_unique<virtualServo>(it->slaveId));
+            // 标准模式使用进程内虚拟伺服，便于快速测试配置和运动链路。
+            axis->pushServo(std::make_unique<virtualServo>(slaveId), servoIt->second);
 #endif
+        }
     }
 
     auto controller = std::make_unique<Controller>(std::move(config), rtos, std::move(bus));
@@ -91,9 +183,10 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
 
 #ifdef REALTIME
     // 为 AIO/DIO/LASER 类型从站创建 IO 对象
+    // 非电机 EtherCAT 从站创建为 IO 对象；电机从站已经在上面绑定到轴。
     if (masterPtr) {
         auto* ecMaster = static_cast<EthercatMaster*>(masterPtr);
-        SlaveConfig slaveConfig(zrcs::ProjectConfig::prefixedFilename(projectName, "ethercat.xml"));
+        SlaveConfig slaveConfig(configManager.ethercatPath().string());
         for (const auto& slave : slaveConfig.Slaves) {
             if (slave.slaveType == SlaveConfig::SlaveType::AIO ||
                 slave.slaveType == SlaveConfig::SlaveType::DIO ||

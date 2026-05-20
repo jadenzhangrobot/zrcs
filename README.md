@@ -7,7 +7,7 @@ ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++
 
 - `zrcs_rt`：实时控制进程，负责控制循环、命令执行、硬件驱动与模型调用
 - `zrcs_nrt`：非实时进程，负责桥接 RT、对外提供命令接口、发布状态、消费 RT 日志
-- `zrcs_common`：共享代码，包括共享内存结构、项目配置、XML 解析、命令定义等
+- `zrcs_common`：共享代码，包括共享内存结构、项目配置、命令定义等
 - `zrcs_gui`：主 Qt 图形界面，面向综合控制、状态展示和扩展功能
 - `motionGui`：轻量级运动调试界面
 - `config/`：按项目拆分的轴、模型、EtherCAT 等配置
@@ -29,7 +29,7 @@ ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++
 
 ```text
 zrcs-dev/
-|- zrcs_common/      公共库：共享内存、配置、XML、命令定义
+|- zrcs_common/      公共库：共享内存、配置、命令定义
 |- zrcs_nrt/         非实时进程：ZMQ、状态发布、RT 桥接、终端控制
 |- zrcs_rt/          实时进程：控制器、模型、命令、调度器
 |- zrcs_gui/         主 Qt GUI
@@ -50,7 +50,7 @@ zrcs-dev/
 
 - 共享内存布局定义
 - 项目配置解析
-- XML 解析
+- 项目配置解析
 - 命令 ID 与参数定义
 - NRT/RT 进程共享的数据结构
 
@@ -61,7 +61,7 @@ zrcs-dev/
 - `shared_memory/RtProcess.h`
 - `config/ProjectConfig.h`
 - `config/CmdDefine.h`
-- `xml/XmlParsing.h`
+- `config/ConfigManager.h`
 
 ### `zrcs_nrt`
 
@@ -497,16 +497,15 @@ bash ./package_installer.sh
 
 当前可见的测试目标包括：
 
-- `parameter`
 - `test_spsc`
 - `test_command`
+- `test_config_manager`
 - `test_zmq_comm`
 
 需要注意的是：
 
-- 当前顶层 `CMakeLists.txt` 没有默认 `add_subdirectory(test)`
-- 因此这些测试不会自动加入主构建流程
-- 如果你想启用统一测试构建，需要额外把 `test/` 接入顶层 CMake
+- 当前顶层 `CMakeLists.txt` 默认通过 `test` 选项接入测试目录
+- 如需关闭测试构建，可配置 `-Dtest=OFF`
 
 ## 常见开发入口
 

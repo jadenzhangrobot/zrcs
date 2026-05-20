@@ -3,7 +3,6 @@ project(zrcscommon)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "config/*.cpp"
     "shared_memory/*.cpp"
-    "xml/*.cpp"
 )
 
 add_library(zrcscommon STATIC ${SOURCES})
@@ -13,7 +12,7 @@ target_include_directories(zrcscommon
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/config
         ${CMAKE_CURRENT_SOURCE_DIR}/shared_memory
-        ${CMAKE_CURRENT_SOURCE_DIR}/xml
+        ${CMAKE_SOURCE_DIR}/3rdParty/cereal/cereal-master/include
         ${CMAKE_SOURCE_DIR}/3rdParty/magic_enum/include
     PRIVATE
         ${CMAKE_SOURCE_DIR}/3rdParty/tinyxml2

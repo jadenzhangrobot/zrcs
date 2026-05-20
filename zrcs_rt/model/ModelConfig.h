@@ -2,20 +2,19 @@
  * @file ModelConfig.h
  * @brief 从 model.xml 解析机器人模型配置
  *
- * 参照 AxisConfig.h 的模式，使用 XmlParsing + TreeNode 解析 XML。
+ * 通过统一配置对象读取 model.xml。
  * 支持多模型配置，每个模型独立配置类型、关节、坐标系等。
  */
 #pragma once
 
 #include "RobotModel.h"
-#include "xml/XmlParsing.h"
 
 #include <string>
 #include <vector>
 
 /**
  * @brief 模型参数结构体
- * 从 XML 解析出的完整模型描述
+ * 从统一配置对象转换出的完整模型描述
  */
 struct ModelParam
 {
@@ -48,11 +47,10 @@ struct ModelParam
  *   </model-1>
  * </modelConfig>
  */
-class ModelConfig : private XmlParsing
+class ModelConfig
 {
 public:
     std::vector<ModelParam> modelParams;
 
     ModelConfig(const std::string& xmlFileName);
 };
-

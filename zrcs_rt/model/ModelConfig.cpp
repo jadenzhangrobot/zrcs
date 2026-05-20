@@ -1,126 +1,82 @@
-/**
- * @file ModelConfig.cpp
- * @brief 模型配置解析器实现
- */
 #include "model/ModelConfig.h"
+
+#include "config/ConfigSerializer.h"
 
 #include <stdexcept>
 
-ModelConfig::ModelConfig(const std::string& xmlFileName) : XmlParsing(xmlFileName)
+namespace {
+
+// model.xml 中用可读文本保存关节类型，运行时模型类使用已有枚举。
+// 因此解析和校验都集中在配置边界完成。
+JointType parseJointType(const std::string& type)
 {
-    try
-    {
-        for (auto& modelNode : tree->root->children)
-        {
-            ModelParam param;
-            auto* node = modelNode.second;
-
-            // 解析 <attribute> 节点
-            if (node->children.find("attribute") != node->children.end())
-            {
-                auto* attr = node->children["attribute"];
-                param.name = attr->attribute["name"];
-                param.type = attr->attribute["type"];
-                param.dof  = std::stoi(attr->attribute["dof"]);
-            }
-
-            // 解析 <baseFrame> 节点 (可选)
-            if (node->children.find("baseFrame") != node->children.end())
-            {
-                auto* bf = node->children["baseFrame"];
-                param.baseTf = RobotModel::poseFromXYZRPY(
-                    std::stod(bf->attribute["x"]),
-                    std::stod(bf->attribute["y"]),
-                    std::stod(bf->attribute["z"]),
-                    std::stod(bf->attribute["rx"]),
-                    std::stod(bf->attribute["ry"]),
-                    std::stod(bf->attribute["rz"]));
-            }
-
-            // 解析 <toolFrame> 节点 (可选)
-            if (node->children.find("toolFrame") != node->children.end())
-            {
-                auto* tf = node->children["toolFrame"];
-                param.toolTf = RobotModel::poseFromXYZRPY(
-                    std::stod(tf->attribute["x"]),
-                    std::stod(tf->attribute["y"]),
-                    std::stod(tf->attribute["z"]),
-                    std::stod(tf->attribute["rx"]),
-                    std::stod(tf->attribute["ry"]),
-                    std::stod(tf->attribute["rz"]));
-            }
-
-            // 解析 <geometry> 节点 (Delta并联专用)
-            if (node->children.find("geometry") != node->children.end())
-            {
-                auto* geo = node->children["geometry"];
-                param.basePlatformRadius   = std::stod(geo->attribute["basePlatformRadius"]);
-                param.mobilePlatformRadius = std::stod(geo->attribute["mobilePlatformRadius"]);
-                param.upperArmLength       = std::stod(geo->attribute["upperArmLength"]);
-                param.lowerArmLength       = std::stod(geo->attribute["lowerArmLength"]);
-            }
-
-            // 解析 joint-N 节点
-            for (int i = 0; i < param.dof; i++)
-            {
-                std::string jointKey = "joint-" + std::to_string(i);
-                if (node->children.find(jointKey) == node->children.end())
-                {
-                    break;
-                }
-
-                auto* jn = node->children[jointKey];
-                ModelJoint joint;
-
-                joint.axisId = std::stoi(jn->attribute["axisId"]);
-
-                std::string typeStr = jn->attribute["type"];
-                if (typeStr == "revolute")
-                {
-                    joint.type = JointType::REVOLUTE;
-                }
-                else if (typeStr == "prismatic")
-                {
-                    joint.type = JointType::PRISMATIC;
-                }
-
-                if (jn->attribute.count("offset"))
-                {
-                    joint.offset = std::stod(jn->attribute["offset"]);
-                }
-
-                // DH参数 (串联专用)
-                if (jn->attribute.count("dh_a"))
-                {
-                    joint.dh_a = std::stod(jn->attribute["dh_a"]);
-                }
-                if (jn->attribute.count("dh_alpha"))
-                {
-                    joint.dh_alpha = std::stod(jn->attribute["dh_alpha"]);
-                }
-                if (jn->attribute.count("dh_d"))
-                {
-                    joint.dh_d = std::stod(jn->attribute["dh_d"]);
-                }
-                if (jn->attribute.count("dh_theta"))
-                {
-                    joint.dh_theta = std::stod(jn->attribute["dh_theta"]);
-                }
-
-                // 笛卡尔轴映射
-                if (jn->attribute.count("axis"))
-                {
-                    joint.axis = jn->attribute["axis"][0];
-                }
-
-                param.joints.push_back(joint);
-            }
-
-            modelParams.push_back(param);
-        }
+    if (type == "revolute") {
+        return JointType::REVOLUTE;
     }
-    catch (const std::exception& e)
-    {
+    if (type == "prismatic") {
+        return JointType::PRISMATIC;
+    }
+    throw std::runtime_error("Unsupported joint type: " + type);
+}
+
+ModelJoint toModelJoint(const zrcs::config::ModelJointConfigData& data)
+{
+    // 保持旧的 ModelJoint 运行时结构，使 ModelFactory 和具体 RobotModel
+    // 实现不需要感知 cereal 配置类型。
+    ModelJoint joint;
+    joint.axisId = data.axisId;
+    joint.type = parseJointType(data.type);
+    joint.offset = data.offset;
+    joint.dh_a = data.dh_a;
+    joint.dh_alpha = data.dh_alpha;
+    joint.dh_d = data.dh_d;
+    joint.dh_theta = data.dh_theta;
+    joint.axis = data.axis;
+    return joint;
+}
+
+Eigen::Matrix4d toPose(const zrcs::config::PoseConfig& pose)
+{
+    // 文件中保存 x/y/z/rx/ry/rz，加载后再转换为齐次变换矩阵，
+    // 让 model.xml 不依赖 Eigen 的序列化方式。
+    return RobotModel::poseFromXYZRPY(
+        pose.x, pose.y, pose.z, pose.rx, pose.ry, pose.rz);
+}
+
+ModelParam toModelParam(const zrcs::config::ModelConfigData& data)
+{
+    // ModelParam 是 ModelFactory 消费的旧运行时结构。通过这个适配层，
+    // 可以引入新的 cereal 文件格式，而不需要改动后续运动学栈。
+    ModelParam param;
+    param.name = data.name;
+    param.type = data.type;
+    param.dof = data.dof;
+    param.baseTf = toPose(data.baseFrame);
+    param.toolTf = toPose(data.toolFrame);
+    param.basePlatformRadius = data.basePlatformRadius;
+    param.mobilePlatformRadius = data.mobilePlatformRadius;
+    param.upperArmLength = data.upperArmLength;
+    param.lowerArmLength = data.lowerArmLength;
+    param.joints.reserve(data.joints.size());
+    for (const auto& joint : data.joints) {
+        param.joints.push_back(toModelJoint(joint));
+    }
+    return param;
+}
+
+} // namespace
+
+ModelConfig::ModelConfig(const std::string& xmlFileName)
+{
+    try {
+        // model.xml 使用和 axis.xml、servo.xml 相同的通用序列化入口。
+        // 正常 RT 启动时，ConfigManager 会在构造本类前完成跨文件校验。
+        auto file = zrcs::config::loadXml<zrcs::config::ModelConfigFile>(xmlFileName);
+        modelParams.reserve(file.models.size());
+        for (const auto& model : file.models) {
+            modelParams.push_back(toModelParam(model));
+        }
+    } catch (const std::exception& e) {
         throw std::runtime_error(std::string("Failed to parse model config: ") + e.what());
     }
 }

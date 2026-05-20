@@ -1,11 +1,12 @@
 /**
  * @file NodeManager.cpp
- * @brief Implementation of the RT control loop and command scheduler.
+ * @brief RT 控制循环与命令调度器实现。
  */
 
 #include "system/NodeManager.h"
 
-#include "command/CmdHead.h"     // IWYU pragma: keep -- triggers REGISTERCMD static initialisers
+#include "command/CmdHead.h"     // IWYU pragma: keep -- 触发 REGISTERCMD 静态注册
+#include "config/ConfigManager.h"
 #include "config/ProjectConfig.h"
 
 namespace zrcsSystem {
@@ -16,13 +17,13 @@ void NodeManager::run()
 
     auto* block = shm();
 
-    // Construct process-local SPSC wrappers.  Bound to the same lifetime as
-    // NodeManager, therefore the pointers handed out will never dangle.
+    // 构造进程内 SPSC 包装器。它们和 NodeManager 生命周期一致，
+    // 因此传出去的指针不会悬空。
     cmdConsumer_ = std::make_unique<zrcs::ShmSPSCConsumer<zrcs::Command, zrcs::kCmdQueueCap>>( block->cmdQueue);
 
     logProducer_ = std::make_unique<zrcs::ShmSPSCProducer<zrcs::RtLogEntry, zrcs::kLogQueueCap>>(block->logQueue);
 
-    // Register the log producer so that INFO_PRINT and friends write through it.
+    // 注册日志生产者，使 INFO_PRINT 等宏可以写入共享内存日志队列。
     zrcs::rtlog::setLogQueue(logProducer_.get());
 
     for (auto& node : factory_.inPutNodes) 
@@ -37,11 +38,15 @@ void NodeManager::run()
 
     initData();
 
-    // Initialisation complete -- switch to RUN so command dispatch is enabled.
+    // 初始化完成后切换到 RUN，允许命令调度开始工作。
     shm()->taskSched.store(zrcs::TaskScheduling::RUN, std::memory_order_release);
 
     try {
-            modelConfig_ = std::make_unique<ModelConfig>(zrcs::ProjectConfig::prefixedFilename(projectName_, "model.xml"));
+            // 使用和 HardwareFactory 相同的项目解析规则加载 model.xml。
+            // axis/servo 配置已经在控制器创建时被消费，这里只负责把运动学模型
+            // 注入给需要模型能力的节点，例如笛卡尔运动命令。
+            const auto configManager = zrcs::config::ConfigManager::load(projectName_);
+            modelConfig_ = std::make_unique<ModelConfig>((configManager.projectDir() / "model.xml").string());
             modelRegistry_.loadFromConfig(*modelConfig_);
             factory_.modelRegistry = &modelRegistry_;
             for (auto& node : factory_.inPutNodes)
@@ -58,12 +63,11 @@ void NodeManager::run()
            WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
-    // Publish axis count to shared memory so NRT can size its data structures.
+    // 将轴数量发布到共享内存，供 NRT 侧按需调整数据结构。
     shm()->axisCount.store(controller_->axes_.size(),
                            std::memory_order_release);
 
-    // Register the RT callback before starting the thread so that the strategy
-    // pointer is always valid when the first iteration fires.
+    // 启动线程前先注册 RT 回调，保证第一次周期执行时策略函数已经有效。
     controller_->rtos_->real_task([this]()
     {
         controller_->receiveData();
@@ -125,7 +129,7 @@ void NodeManager::run()
                             cmdNode_ = nullptr;
                             taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
                         }
-                        // COMPLETED may have been reached within execute() (status leap).
+                        // execute() 内部可能已经直接跳到 COMPLETED。
                         else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
                         {
                             publishCommandResult(0);
@@ -136,8 +140,8 @@ void NodeManager::run()
                         }
                 }
                 
-                // No active command: try to pop the next one immediately.
-                // Skip if we just transitioned to ERROR_STATE — don't re-pop a failing command.
+                // 当前没有活动命令时，立即尝试取下一条命令。
+                // 如果刚切到 ERROR_STATE，则不要再次取出导致失败的命令。
                 if (cmdNode_ == nullptr && taskScheduling_ != zrcs::TaskScheduling::ERROR_STATE)
                 {
                     if (cmdConsumer_->pop(cmd_)) 
@@ -150,8 +154,7 @@ void NodeManager::run()
                             cmdNode_ = nodePtr.get();
                             cmdNode_->registered(controller_.get(),rtProcess_.get(), &cmd_);
                             cmdNode_->modelRegistry_ = &modelRegistry_;
-                            // Execute init in the same cycle (may also run the
-                            // first trajectory step).
+                            // 在同一个周期内执行 init，部分命令也可能同时执行第一步轨迹。
                             cmdNode_->execute();
                             if (cmdNode_->getCmdStatus() == CmdStatus::FAILED)
                             {
@@ -230,8 +233,7 @@ void NodeManager::run()
         
         shm()->taskSched.store(taskScheduling_,std::memory_order_release);
         controller_->sendData();
-        // Heartbeat: updated solely for RT liveness monitoring.  NRT does not
-        // depend on this field for any decision-making.
+        // 心跳只用于 RT 存活监控，NRT 不依赖这个字段做业务决策。
         static uint64_t heartbeat = 0;
         heartbeat++;
         zrcs::lfl_write(shm()->heartbeat, heartbeat);

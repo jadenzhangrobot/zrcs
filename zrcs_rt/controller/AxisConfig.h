@@ -1,63 +1,75 @@
-/**
- * @file AxisConfig.h
- * @brief 轴参数配置结构体 — 从 axis.xml 解析轴的运动学和伺服参数
- *
- * AxisPara 定义了单个轴的所有配置属性（ID、名称、控制模式、
- * 编码器分辨率、速度/加速度/加加速度限制、软限位和跟随误差阈值）。
- * AxisConfig 类负责从 XML 文件加载并填充 AxisPara 向量。
- *
- * @author zhangyongjing
- */
 #pragma once
 
 #include <cstdint>
-#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "config/Parameter.h"
 #include "Global.h"
-#include "xml/XmlParsing.h"
 
 namespace ZrcsHardware {
 
 /**
- * @brief 单轴配置参数
+ * @brief Controller/Axis 运行时使用的轴参数。
  *
- * 每个运动轴对应一个 AxisPara 实例，存储轴的全部配置属性。
- * 这些参数在 axis.xml 中定义，由 AxisConfig 解析加载。
+ * 该结构刻意和 zrcs::config::AxisConfigData 分开：config 命名空间描述文件数据，
+ * 这里描述控制器运行时需要的形态，并可以保留 frequency 这类只属于控制器的字段。
  */
-typedef struct {
-    uint32_t axisId;              ///< 轴 ID（全局唯一）
-    uint32_t slaveId;             ///< 对应的从站 ID
-    std::string axisName;         ///< 轴名称（如 "X", "Y", "Z"）
-    MC_SERVO_CONTROL_MODE mode;   ///< 伺服控制模式（位置/速度/扭矩）
-    uint64_t encoderCountPerUnit; ///< 编码器分辨率（counts/用户单位）
-    double maxVel;                ///< 最大速度（用户单位/s）
-    double maxAcc;                ///< 最大加速度（用户单位/s^2）
-    double maxJerk;               ///< 最大加加速度（用户单位/s^3）
-    double posPositiveLimit;      ///< 正向软限位（用户单位）
-    double posNegativeLimit;      ///< 负向软限位（用户单位）
-    double maxPosDiff;            ///< 最大跟随误差阈值（用户单位）
-    double frequency;             ///< 控制频率（Hz）
-} AxisPara;
+struct AxisPara {
+    uint32_t axisId = 0;
+    std::string axisName;
+    std::vector<uint32_t> servoSlaveIds;
+    double maxVel = 0.0;
+    double maxAcc = 0.0;
+    double maxJerk = 0.0;
+    double posPositiveLimit = 0.0;
+    double posNegativeLimit = 0.0;
+    double maxPosDiff = 0.0;
+    double frequency = 0.0;
+};
 
 /**
- * @brief 轴配置解析器
+ * @brief 绑定到 Axis 的运行时伺服参数。
  *
- * 继承自 XmlParsing，从 axis.xml 文件加载所有轴的配置参数。
- * 解析后的数据存储在 axisParas 成员向量中。
+ * 一个 Axis 可以拥有多个 ServoPara。第 i 个 ServoPara 对应第 i 个 push 到 Axis
+ * 的 Servo 对象，因此命令和反馈换算可以分别使用每个驱动器自己的模式和编码器比例。
  */
-class AxisConfig : private XmlParsing {
-public:
-    std::vector<AxisPara> axisParas;  ///< 所有轴的配置参数列表
+struct ServoPara {
+    uint32_t slaveId = 0;
+    MC_SERVO_CONTROL_MODE mode = MC_SERVO_CONTROL_MODE::mcServoControlModePosition;
+    uint64_t encoderCountPerUnit = 1;
+    double homePos = 0.0;
+    double posOffset = 0.0;
+    double velFactor = 1.0;
+};
 
-    /**
-     * @brief 构造函数 — 从 XML 文件加载轴配置
-     * @param xmlFileName axis.xml 的文件路径
-     * @throws std::runtime_error 解析失败时抛出
-     */
-    AxisConfig(const std::string& xmlFileName);
+/**
+ * @brief 将 axis.xml 加载为运行时 AxisPara 的兼容包装类。
+ *
+ * 新的启动流程通常直接使用 ConfigManager。保留这个包装类，是为了让旧调用点
+ * 仍然可以通过文件名构造 AxisConfig，同时内部走新的强类型解析逻辑。
+ */
+class AxisConfig {
+public:
+    std::vector<AxisPara> axisParas;
+
+    AxisConfig() = default;
+    explicit AxisConfig(const std::string& xmlFileName);
+    explicit AxisConfig(std::vector<AxisPara> axisParasIn)
+        : axisParas(std::move(axisParasIn)) {}
+};
+
+/**
+ * @brief 将 servo.xml 加载为运行时 ServoPara 的兼容包装类。
+ */
+class ServoConfig {
+public:
+    std::vector<ServoPara> servoParas;
+
+    ServoConfig() = default;
+    explicit ServoConfig(const std::string& xmlFileName);
+    explicit ServoConfig(std::vector<ServoPara> servoParasIn)
+        : servoParas(std::move(servoParasIn)) {}
 };
 
 } // namespace ZrcsHardware

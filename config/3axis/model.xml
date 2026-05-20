@@ -1,11 +1,65 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<model>
-    <model-1>
-        <attribute dof="3" name="cartesian" type="cartesian"/>
-        <baseFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
-        <joint-0 axisId="0" offset="0" type="prismatic" axis="X"/>
-        <joint-1 axisId="1" offset="0" type="prismatic" axis="Y"/>
-        <joint-2 axisId="2" offset="0" type="prismatic" axis="Z"/>
-        <toolFrame rx="0" ry="0" rz="0" x="0" y="0" z="0"/>
-    </model-1>
-</model>
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<modelConfig>
+		<models size="dynamic">
+			<value0>
+				<name>cartesian</name>
+				<type>cartesian</type>
+				<dof>3</dof>
+				<baseFrame>
+					<x>0</x>
+					<y>0</y>
+					<z>0</z>
+					<rx>0</rx>
+					<ry>0</ry>
+					<rz>0</rz>
+				</baseFrame>
+				<toolFrame>
+					<x>0</x>
+					<y>0</y>
+					<z>0</z>
+					<rx>0</rx>
+					<ry>0</ry>
+					<rz>0</rz>
+				</toolFrame>
+				<basePlatformRadius>0</basePlatformRadius>
+				<mobilePlatformRadius>0</mobilePlatformRadius>
+				<upperArmLength>0</upperArmLength>
+				<lowerArmLength>0</lowerArmLength>
+				<joints size="dynamic">
+					<value0>
+						<axisId>0</axisId>
+						<type>prismatic</type>
+						<offset>0</offset>
+						<dh_a>0</dh_a>
+						<dh_alpha>0</dh_alpha>
+						<dh_d>0</dh_d>
+						<dh_theta>0</dh_theta>
+						<axis>X</axis>
+					</value0>
+					<value1>
+						<axisId>1</axisId>
+						<type>prismatic</type>
+						<offset>0</offset>
+						<dh_a>0</dh_a>
+						<dh_alpha>0</dh_alpha>
+						<dh_d>0</dh_d>
+						<dh_theta>0</dh_theta>
+						<axis>Y</axis>
+					</value1>
+					<value2>
+						<axisId>2</axisId>
+						<type>prismatic</type>
+						<offset>0</offset>
+						<dh_a>0</dh_a>
+						<dh_alpha>0</dh_alpha>
+						<dh_d>0</dh_d>
+						<dh_theta>0</dh_theta>
+						<axis>Z</axis>
+					</value2>
+				</joints>
+			</value0>
+		</models>
+	</modelConfig>
+</cereal>
+

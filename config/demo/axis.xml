@@ -1,33 +1,73 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<axis>
-    <axis-1>
-        <attribute id="0" mode="position" name="xAxis" slaveId="0"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="00" maxVel="10" minPos="-10000"/>
-    </axis-1>
-    <axis-2>
-        <attribute id="1" mode="position" name="xAxis" slaveId="1"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="00" maxVel="10" minPos="-10000"/>
-    </axis-2>
-    <axis-3>
-        <attribute id="2" mode="position" name="xAxis" slaveId="2"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="00" maxVel="10" minPos="-10000"/>
-    </axis-3>
-    <axis-4>
-        <attribute id="3" mode="position" name="xAxis" slaveId="3"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="00" maxVel="10" minPos="-10000"/>
-    </axis-4>
-    <axis-5>
-        <attribute id="4" mode="position" name="xAxis" slaveId="4"/>
-        <encoder homePos="0.0" posFactor="1048575" posOffset="0.0" velFactor="1.0"/>
-        <machine backlash="0.01" direction="1" ratio="1" value=""/>
-        <motion maxAcc="20" maxJerk="30" maxPos="100000" maxPosDiff="00" maxVel="10" minPos="-10000"/>
-    </axis-5>
-</axis>
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<axisConfig>
+		<axes size="dynamic">
+			<value0>
+				<axisId>0</axisId>
+				<axisName>xAxis</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>0</value0>
+				</servoSlaveIds>
+				<maxVel>10</maxVel>
+				<maxAcc>20</maxAcc>
+				<maxJerk>30</maxJerk>
+				<posPositiveLimit>100000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value0>
+			<value1>
+				<axisId>1</axisId>
+				<axisName>xAxis</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>1</value0>
+				</servoSlaveIds>
+				<maxVel>10</maxVel>
+				<maxAcc>20</maxAcc>
+				<maxJerk>30</maxJerk>
+				<posPositiveLimit>100000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value1>
+			<value2>
+				<axisId>2</axisId>
+				<axisName>xAxis</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>2</value0>
+				</servoSlaveIds>
+				<maxVel>10</maxVel>
+				<maxAcc>20</maxAcc>
+				<maxJerk>30</maxJerk>
+				<posPositiveLimit>100000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value2>
+			<value3>
+				<axisId>3</axisId>
+				<axisName>xAxis</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>3</value0>
+				</servoSlaveIds>
+				<maxVel>10</maxVel>
+				<maxAcc>20</maxAcc>
+				<maxJerk>30</maxJerk>
+				<posPositiveLimit>100000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value3>
+			<value4>
+				<axisId>4</axisId>
+				<axisName>xAxis</axisName>
+				<servoSlaveIds size="dynamic">
+					<value0>4</value0>
+				</servoSlaveIds>
+				<maxVel>10</maxVel>
+				<maxAcc>20</maxAcc>
+				<maxJerk>30</maxJerk>
+				<posPositiveLimit>100000</posPositiveLimit>
+				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxPosDiff>0</maxPosDiff>
+			</value4>
+		</axes>
+	</axisConfig>
+</cereal>
+

@@ -63,8 +63,12 @@ private:
   AxisPara *config_;
   std::vector<std::unique_ptr<Servo>> servo_;
 
+  // 与 servo_ 平行存储：servoConfig_[i] 描述 servo_[i]。
+  // Axis 负责逻辑轴限位和命令状态，每个伺服保留自己的模式与编码器比例，
+  // 因此一个轴可以驱动多个物理电机。
+  std::vector<ServoPara> servoConfig_;
+
   uint32_t axisId_=0;
-  uint32_t slaveId_=0;
   std::string axisName_="";
   double axisPos_=0;
   double axisVel_=0;
@@ -86,9 +90,13 @@ private:
   bool enableNegative_=true;
 public:
 
-  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): axisId_(axisId),slaveId_(salveId),config_(config)
+  Axis(uint32_t axisId,AxisPara *config): axisId_(axisId),config_(config)
   {
      
+  }
+  Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): Axis(axisId, config)
+  {
+      (void)salveId;
   }
   virtual ~Axis()
   {
@@ -98,6 +106,18 @@ public:
   void pushServo(std::unique_ptr<Servo> servo)
   {
     servo_.push_back(std::move(servo));
+  }
+
+  /**
+   * @brief 绑定一个物理/虚拟伺服及其单驱参数。
+   *
+   * 对双驱轴，HardwareFactory 会按 axis.xml 中列出的每个 slaveId 调用一次。
+   * 插入顺序会被保留，后续命令下发和反馈换算都按这个顺序匹配 servoConfig_。
+   */
+  void pushServo(std::unique_ptr<Servo> servo, const ServoPara& config)
+  {
+    servo_.push_back(std::move(servo));
+    servoConfig_.push_back(config);
   }
   size_t servoCount() const
   {
@@ -132,12 +152,24 @@ public:
 
   double toUserUnit(double x)
   {
-    return x / config_->encoderCountPerUnit;
+    return toUserUnit(x, defaultServoConfig());
   }
 
   int32_t toEncoderUnit(double x)
   {
-    return (int32_t)fixOverFlow(x * config_->encoderCountPerUnit);
+    return toEncoderUnit(x, defaultServoConfig());
+  }
+  double toUserUnit(double x, const ServoPara& config)
+  {
+    // 将编码器计数转换回运动命令使用的用户单位。
+    return x / config.encoderCountPerUnit;
+  }
+
+  int32_t toEncoderUnit(double x, const ServoPara& config)
+  {
+    // 将用户单位命令转换为驱动器计数。fixOverFlow 用来把命令限制在
+    // CiA402 驱动器常用的 int32 范围内。
+    return (int32_t)fixOverFlow(x * config.encoderCountPerUnit);
   }
 
   double fixOverFlow(double x);
@@ -234,8 +266,14 @@ public:
   }
 
   void setModeOfOperation(Cia402Mode mode);
-
 private:
+  const ServoPara& defaultServoConfig() const
+  {
+    // 旧调用点如果没有显式传入 ServoPara，就沿用第一个驱动器的比例。
+    // 在还没有添加伺服前使用安全回退配置，避免除零或空引用。
+    static const ServoPara fallback{};
+    return servoConfig_.empty() ? fallback : servoConfig_.front();
+  }
   double zeroOffset_ = 0;  // 用户零点偏移
 };
 class Io {

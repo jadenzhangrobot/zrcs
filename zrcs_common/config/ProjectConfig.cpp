@@ -19,7 +19,7 @@ std::string ProjectConfig::resolve()
 
     std::string line;
     std::getline(ifs, line);
-    // Trim whitespace
+    // 去掉 project.txt 中可能由手工编辑留下的首尾空白。
     line.erase(0, line.find_first_not_of(" \t\r\n"));
     line.erase(line.find_last_not_of(" \t\r\n") + 1);
     return line;

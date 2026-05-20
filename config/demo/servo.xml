@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<servoConfig>
+		<servos size="dynamic">
+			<value0>
+				<slaveId>0</slaveId>
+				<mode>position</mode>
+				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<homePos>0</homePos>
+				<posOffset>0</posOffset>
+				<velFactor>1</velFactor>
+			</value0>
+			<value1>
+				<slaveId>1</slaveId>
+				<mode>position</mode>
+				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<homePos>0</homePos>
+				<posOffset>0</posOffset>
+				<velFactor>1</velFactor>
+			</value1>
+			<value2>
+				<slaveId>2</slaveId>
+				<mode>position</mode>
+				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<homePos>0</homePos>
+				<posOffset>0</posOffset>
+				<velFactor>1</velFactor>
+			</value2>
+			<value3>
+				<slaveId>3</slaveId>
+				<mode>position</mode>
+				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<homePos>0</homePos>
+				<posOffset>0</posOffset>
+				<velFactor>1</velFactor>
+			</value3>
+			<value4>
+				<slaveId>4</slaveId>
+				<mode>position</mode>
+				<encoderCountPerUnit>1048575</encoderCountPerUnit>
+				<homePos>0</homePos>
+				<posOffset>0</posOffset>
+				<velFactor>1</velFactor>
+			</value4>
+		</servos>
+	</servoConfig>
+</cereal>
+
