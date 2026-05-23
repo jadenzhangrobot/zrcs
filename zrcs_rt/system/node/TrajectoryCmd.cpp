@@ -2,6 +2,7 @@
  * @Description: 轨迹规划基类实现
  */
 #include "system/node/TrajectoryCmd.h"
+#include "ruckig/result.hpp"
 #include <Eigen/Core>
 
 namespace zrcsSystem 
@@ -42,26 +43,21 @@ bool TrajectoryCmd::init()
 RunResult TrajectoryCmd::run()
 {
     updateOverride();
-    auto result = updateTrajectory();
-    if (result == Result::Working)
-    {
-        
-        applyOutput();
-        passOutputToInput();
-        return runResult_= RunResult::EXECUTING;
-    }
-    else if (result == Result::Finished)
+    auto result = updateTrajectory();  
+    applyOutput();
+    passOutputToInput();
+    if (result == Result::Finished)
     {
         applyOutput();
         passOutputToInput();
         return runResult_= RunResult::SUCCESS;    
     }
-    else
+    if(result<-1)
     {
-        ERROR_PRINT("%s: 轨迹规划失败\n", nodeName_);
+        ERROR_PRINT("%s: 轨迹规划失败, result=%d\n", nodeName_, static_cast<int>(result));
         return runResult_= RunResult::FAILED;
     }
-    return runResult_;
+    return runResult_= RunResult::EXECUTING;
 }
 
  bool TrajectoryCmd::exit() { return true; }

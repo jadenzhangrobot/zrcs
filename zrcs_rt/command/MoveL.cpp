@@ -68,11 +68,6 @@ bool MoveL::initTrajectory()
         return false;
     }
 
-    // Ruckig 状态接力：current_position/velocity/acceleration 全部由上一段
-    // passOutputToInput() 携带，initTrajectory 只更新目标和限制，不覆盖当前状态。
-    // 这样 Ruckig 内部状态与 input 一致，不会触发重新规划，速度天然连续。
-    arcOffset_ = input_->current_position[0];
-
     // 读取笛卡尔标量边界条件
     double maxVel = command_->args[static_cast<size_t>(MoveLArg::Vel)];
     double tgtVel = command_->args[static_cast<size_t>(MoveLArg::TargetVel)];
@@ -80,9 +75,10 @@ bool MoveL::initTrajectory()
     // 读取标量路径加速度/jerk 限制（复用 PathMove 配置）
     double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
-
+     
+    arcOffset_=arcOffset_+cartDist_;
     // 目标和限制使用累积弧长
-    input_->target_position[0]      = arcOffset_ + cartDist_;
+    input_->target_position[0]      = arcOffset_;
     input_->target_velocity[0]      = tgtVel;
     input_->max_velocity[0]         = maxVel;
     input_->max_acceleration[0]     = maxAccel;
