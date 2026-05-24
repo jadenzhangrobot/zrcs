@@ -51,19 +51,19 @@
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentVel="0.0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveLGalvo">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentVel="0.0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL_Batch">
         <Sequence>
-            <Action ID="BatchCmd" command="MoveL" segments="                    0,0,0,1,0,0,0, 20,0,0,1,0,0,0, 10,0,5|                    20,0,0,1,0,0,0, 40,0,0,1,0,0,0, 10,5,5|                    40,0,0,1,0,0,0, 60,0,0,1,0,0,0, 10,5,5|                    60,0,0,1,0,0,0, 80,0,0,1,0,0,0, 10,5,5|                    80,0,0,1,0,0,0, 100,0,0,1,0,0,0, 10,5,5|                    100,0,0,1,0,0,0, 120,0,0,1,0,0,0, 10,5,5|                    120,0,0,1,0,0,0, 140,0,0,1,0,0,0, 10,5,5|                    140,0,0,1,0,0,0, 160,0,0,1,0,0,0, 10,5,5|                    160,0,0,1,0,0,0, 180,0,0,1,0,0,0, 10,5,0"/>
+            <Action ID="BatchCmd" command="MoveL" segments="                    0,0,0,1,0,0,0, 20,0,0,1,0,0,0, 10,5|                    20,0,0,1,0,0,0, 40,0,0,1,0,0,0, 10,5|                    40,0,0,1,0,0,0, 60,0,0,1,0,0,0, 10,5|                    60,0,0,1,0,0,0, 80,0,0,1,0,0,0, 10,5|                    80,0,0,1,0,0,0, 100,0,0,1,0,0,0, 10,5|                    100,0,0,1,0,0,0, 120,0,0,1,0,0,0, 10,5|                    120,0,0,1,0,0,0, 140,0,0,1,0,0,0, 10,5|                    140,0,0,1,0,0,0, 160,0,0,1,0,0,0, 10,5|                    160,0,0,1,0,0,0, 180,0,0,1,0,0,0, 10,0"/>
             <Action AxisId="0.0" ID="JogabsJ" TargetPosition="0.0"/>
         </Sequence>
     </BehaviorTree>
@@ -153,7 +153,6 @@
             <input_port default="0.0" name="CurrentQ2" type="double">Start Qx</input_port>
             <input_port default="0.0" name="CurrentQ3" type="double">Start Qy</input_port>
             <input_port default="0.0" name="CurrentQ4" type="double">Start Qz</input_port>
-            <input_port default="0.0" name="CurrentVel" type="double">Start velocity</input_port>
             <input_port default="0.0" name="CurrentX" type="double">Start X</input_port>
             <input_port default="0.0" name="CurrentY" type="double">Start Y</input_port>
             <input_port default="0.0" name="CurrentZ" type="double">Start Z</input_port>
@@ -172,7 +171,6 @@
             <input_port default="0.0" name="CurrentQ2" type="double">Start Qx</input_port>
             <input_port default="0.0" name="CurrentQ3" type="double">Start Qy</input_port>
             <input_port default="0.0" name="CurrentQ4" type="double">Start Qz</input_port>
-            <input_port default="0.0" name="CurrentVel" type="double">Start velocity</input_port>
             <input_port default="0.0" name="CurrentX" type="double">Start X</input_port>
             <input_port default="0.0" name="CurrentY" type="double">Start Y</input_port>
             <input_port default="0.0" name="CurrentZ" type="double">Start Z</input_port>

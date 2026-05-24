@@ -35,9 +35,9 @@ enum class JogJArg : std::size_t { AxisId = 0, TargetPosition };
 enum class MoveAbsArg : std::size_t { AxisId = 0, Position, Vel, Acc, Jerk };
 enum class MoveAbsJArg : std::size_t { Count = 0, J1, J2, J3, J4, J5, J6 };
 enum class MoveJArg : std::size_t { X = 0, Y, Z, RX, RY, RZ, Vel };
-enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, CurrentVel, TargetVel};
+enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, TargetVel};
 enum class MoveCArg : std::size_t { ViaX = 0, ViaY, ViaZ, EndX, EndY, EndZ, Vel };
-enum class MoveLGalvoArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, CurrentVel, TargetVel};
+enum class MoveLGalvoArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, TargetVel};
 
 
 

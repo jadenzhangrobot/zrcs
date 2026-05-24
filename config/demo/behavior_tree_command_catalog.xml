@@ -82,7 +82,6 @@
             <input_port name="Q3" type="double" default="0.0">Target Qy</input_port>
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
-            <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
         </Action>
         <Action ID="MoveC">
@@ -113,7 +112,6 @@
             <input_port name="Q3" type="double" default="0.0">Target Qy</input_port>
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
-            <input_port name="CurrentVel" type="double" default="0.0">Start velocity</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
         </Action>
         <Action ID="BatchCmd">
@@ -205,15 +203,15 @@
             <Action ID="BatchCmd"
                 command="MoveL"
                 segments="
-                    0,0,0,1,0,0,0, 20,0,0,1,0,0,0, 10,0,5|
-                    20,0,0,1,0,0,0, 40,0,0,1,0,0,0, 10,5,5|
-                    40,0,0,1,0,0,0, 60,0,0,1,0,0,0, 10,5,5|
-                    60,0,0,1,0,0,0, 80,0,0,1,0,0,0, 10,5,5|
-                    80,0,0,1,0,0,0, 100,0,0,1,0,0,0, 10,5,5|
-                    100,0,0,1,0,0,0, 120,0,0,1,0,0,0, 10,5,5|
-                    120,0,0,1,0,0,0, 140,0,0,1,0,0,0, 10,5,5|
-                    140,0,0,1,0,0,0, 160,0,0,1,0,0,0, 10,5,5|
-                    160,0,0,1,0,0,0, 180,0,0,1,0,0,0, 10,5,0"/>
+                    0,0,0,1,0,0,0, 20,0,0,1,0,0,0, 10,5|
+                    20,0,0,1,0,0,0, 40,0,0,1,0,0,0, 10,5|
+                    40,0,0,1,0,0,0, 60,0,0,1,0,0,0, 10,5|
+                    60,0,0,1,0,0,0, 80,0,0,1,0,0,0, 10,5|
+                    80,0,0,1,0,0,0, 100,0,0,1,0,0,0, 10,5|
+                    100,0,0,1,0,0,0, 120,0,0,1,0,0,0, 10,5|
+                    120,0,0,1,0,0,0, 140,0,0,1,0,0,0, 10,5|
+                    140,0,0,1,0,0,0, 160,0,0,1,0,0,0, 10,5|
+                    160,0,0,1,0,0,0, 180,0,0,1,0,0,0, 10,0"/>
         </Sequence>
     </BehaviorTree>
 
