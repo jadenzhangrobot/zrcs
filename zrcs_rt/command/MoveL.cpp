@@ -39,6 +39,15 @@ bool MoveL::initTrajectory()
         modelInited_ = true;
     }
 
+    // Sync=1 时重置弧长参数空间，开始新的一组
+    if (command_->args[static_cast<size_t>(MoveLArg::Sync)] == 1.0)
+    {
+        arcOffset_ = 0.0;
+        input_->current_position[0] = 0.0;
+        input_->current_velocity[0] = 0.0;
+        input_->current_acceleration[0] = 0.0;
+    }
+
     // 从命令参数构建起点和终点位姿
     startPos_ = Eigen::Vector3d(
         command_->args[static_cast<size_t>(MoveLArg::CurrentX)],
@@ -97,7 +106,7 @@ void MoveL::applyOutput()
     const double pathVelocity = output_->new_velocity[0];
 
     // 线性插值得到当前笛卡尔位姿
-    double u = (s - arcOffset_) / cartDist_;
+    double u = (s-(arcOffset_-cartDist_)) / cartDist_;
     //u = std::clamp(u, 0.0, 1.0);
 
     Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);

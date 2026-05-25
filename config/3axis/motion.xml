@@ -165,6 +165,7 @@
             <input_port default="0.0" name="X" type="double">Target X</input_port>
             <input_port default="0.0" name="Y" type="double">Target Y</input_port>
             <input_port default="0.0" name="Z" type="double">Target Z</input_port>
+            <input_port default="0.0" name="Sync" type="double">Reset arc offset for new group</input_port>
         </Action>
         <Action ID="MoveLGalvo">
             <input_port default="1.0" name="CurrentQ1" type="double">Start Qw</input_port>
@@ -183,6 +184,7 @@
             <input_port default="0.0" name="X" type="double">Target X</input_port>
             <input_port default="0.0" name="Y" type="double">Target Y</input_port>
             <input_port default="0.0" name="Z" type="double">Target Z</input_port>
+            <input_port default="0.0" name="Sync" type="double">Reset arc offset for new group</input_port>
         </Action>
         <Action ID="Movehome"/>
         <Action ID="Reset">

@@ -83,6 +83,7 @@
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
+            <input_port name="Sync" type="double" default="0.0">Reset arc offset for new group</input_port>
         </Action>
         <Action ID="MoveC">
             <input_port name="ViaX" type="double" default="0.0">Via point X</input_port>
@@ -113,6 +114,7 @@
             <input_port name="Q4" type="double" default="0.0">Target Qz</input_port>
             <input_port name="Vel" type="double" default="50.0">Max velocity</input_port>
             <input_port name="TargetVel" type="double" default="50.0">End velocity</input_port>
+            <input_port name="Sync" type="double" default="0.0">Reset arc offset for new group</input_port>
         </Action>
         <Action ID="BatchCmd">
             <input_port name="command" type="std::string">Command name (e.g. MoveL, MoveLGalvo)</input_port>

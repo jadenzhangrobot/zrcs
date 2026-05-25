@@ -312,8 +312,9 @@ public:
 
         // 逐段发送，记录最后一条的 seq
         uint32_t lastSeq = 0;
-        for (const auto& seg : segParts)
+        for (size_t segIdx = 0; segIdx < segParts.size(); ++segIdx)
         {
+            const auto& seg = segParts[segIdx];
             std::vector<double> args;
             {
                 std::istringstream iss(seg);
@@ -325,6 +326,9 @@ public:
             }
 
             if (args.empty()) continue;
+
+            // 第一段设 Sync=1 重置弧长参数空间
+            args.push_back(segIdx == 0 ? 1.0 : 0.0);
 
             const auto [result, seq] = sharedState_->bridge->sendCommand(
                 commandName, args.data(), args.size());

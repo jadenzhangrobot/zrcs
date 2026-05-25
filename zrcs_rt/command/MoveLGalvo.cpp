@@ -24,6 +24,15 @@ MoveLGalvo::MoveLGalvo() : cartDist_(0),
 
 bool MoveLGalvo::initTrajectory()
 {
+    // Sync=1 时重置弧长参数空间，开始新的一组
+    if (command_->args[static_cast<size_t>(MoveLGalvoArg::Sync)] == 1.0)
+    {
+        arcOffset_ = 0.0;
+        input_->current_position[0] = 0.0;
+        input_->current_velocity[0] = 0.0;
+        input_->current_acceleration[0] = 0.0;
+    }
+
     // 从命令参数构建起点和终点位置
     startPos_ = Eigen::Vector3d(
         command_->args[static_cast<size_t>(MoveLGalvoArg::CurrentX)],
