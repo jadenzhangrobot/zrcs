@@ -70,7 +70,6 @@ add_subdirectory(3rdParty/Groot/depend/BehaviorTree.CPP)
 if(NOT BUILD_MODE STREQUAL "realtime")
     add_subdirectory(3rdParty/Groot)
     add_subdirectory(zrcs_gui)
-    add_subdirectory(motionGui)
 endif()
 
 # 2. zrcsnrt (非实时进程)
@@ -90,7 +89,7 @@ endif()
 # install(TARGETS zrcsnrt zrcsrt ...) # 已经在子目录处理
 
 if(NOT BUILD_MODE STREQUAL "realtime")
-    set_target_properties(zrcsgui motiongui zrcsnrt zrcsrt PROPERTIES
+    set_target_properties(zrcsgui  zrcsnrt zrcsrt PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
 else()
