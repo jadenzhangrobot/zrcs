@@ -1,0 +1,6 @@
+add_matplot_example(example_view_1 view_1.cpp)
+add_matplot_example(example_view_2 view_2.cpp)
+add_matplot_example(example_view_3 view_3.cpp)
+add_matplot_example(example_view_4 view_4.cpp)
+add_matplot_example(example_view_5 view_5.cpp)
+add_matplot_example(example_view_6 view_6.cpp)

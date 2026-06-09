@@ -1,0 +1,8 @@
+add_matplot_example(example_xlabel_1 xlabel_1.cpp)
+add_matplot_example(example_xlabel_2 xlabel_2.cpp)
+add_matplot_example(example_xlabel_3 xlabel_3.cpp)
+add_matplot_example(example_xlabel_4 xlabel_4.cpp)
+add_matplot_example(example_xlabel_5 xlabel_5.cpp)
+add_matplot_example(example_xlabel_6 xlabel_6.cpp)
+add_matplot_example(example_xlabel_7 xlabel_7.cpp)
+add_matplot_example(example_xlabel_8 xlabel_8.cpp)

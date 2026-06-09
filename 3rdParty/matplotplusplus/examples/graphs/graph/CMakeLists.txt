@@ -1,0 +1,6 @@
+add_matplot_example(example_graph_1 graph_1.cpp)
+add_matplot_example(example_graph_2 graph_2.cpp)
+add_matplot_example(example_graph_3 graph_3.cpp)
+add_matplot_example(example_graph_4 graph_4.cpp)
+add_matplot_example(example_graph_5 graph_5.cpp)
+add_matplot_example(example_graph_6 graph_6.cpp)

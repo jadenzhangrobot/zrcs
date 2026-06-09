@@ -1,246 +1,346 @@
 #pragma once
-#include <vector>
-#include <cmath>
+
+#include "TrajectoryTypes.h"
+
 #include <algorithm>
-#include "VelocityPlanner3D.h"
+#include <array>
+#include <cmath>
+#include <vector>
 
 class PathPreprocessor {
 public:
-    // ── 工业方案：直线段 + 局部角点 Bezier 过渡 ──────────────────────
-    std::vector<Point3D> processWithCornerBlend(
-        const std::vector<Point3D>& raw, double stepSize, double cornerTol)
+    std::vector<TrajectorySegment> fitCornerBlendSegments(
+        const std::vector<PathMoveBlock>& blocks, double sampleStep, double cornerTol)
     {
+        std::vector<PathMoveBlock> linearBlocks;
+        linearBlocks.reserve(blocks.size());
+        for (const auto& block : blocks) {
+            if (block.type == PathMoveType::Line &&
+                pointDistance(block.start, block.end) > 1e-9) {
+                linearBlocks.push_back(block);
+            }
+        }
+
+        if (linearBlocks.empty()) {
+            return {};
+        }
+
+        const double safeStep = std::max(sampleStep, 1e-6);
+        std::vector<Point3D> raw;
+        raw.reserve(linearBlocks.size() + 1);
+        raw.push_back(linearBlocks.front().start);
+        for (const auto& block : linearBlocks) {
+            raw.push_back(block.end);
+        }
+
         const size_t N = raw.size();
-        if (N < 2) return raw;
-        if (N == 2) return sampleStraight(raw[0], raw[1], stepSize);
-
-        // Phase 1: 计算每个内部角点的过渡参数
-        struct CornerBlend {
-            bool active = false;
-            double d = 0;
-            Point3D B0, B1, B2, B3;
-        };
         std::vector<CornerBlend> corners(N);
-
-        for (size_t i = 1; i < N - 1; ++i) {
-            Point3D vIn  = vecNorm(vecSub(raw[i], raw[i - 1]));
-            Point3D vOut = vecNorm(vecSub(raw[i + 1], raw[i]));
-            double cosTheta = vecDot(vIn, vOut);
-            double theta = std::acos(std::clamp(cosTheta, -1.0, 1.0));
-
-            if (theta < 0.01) continue; // 几乎共线，跳过
-
-            double alpha = theta / 2.0;
-            double cosA = std::cos(alpha);
-            double dTol = (1.0 - cosA) > 1e-9
-                          ? cornerTol * cosA / (1.0 - cosA)
-                          : 1e6;
-
-            double lIn  = vecLen(vecSub(raw[i], raw[i - 1]));
-            double lOut = vecLen(vecSub(raw[i + 1], raw[i]));
-            double dMax = 0.5 * std::min(lIn, lOut);
-            double d    = std::min(dTol, dMax);
-
-            if (d < stepSize) continue; // 过渡区太小
-
-            constexpr double k = 0.5;
-            corners[i].active = true;
-            corners[i].d  = d;
-            corners[i].B0 = vecAdd(raw[i], vecScale(vIn, -d));
-            corners[i].B3 = vecAdd(raw[i], vecScale(vOut, d));
-            corners[i].B1 = vecAdd(corners[i].B0, vecScale(vIn, k * d));
-            corners[i].B2 = vecAdd(corners[i].B3, vecScale(vOut, -k * d));
+        if (N > 2) {
+            buildCornerBlends(raw, safeStep, cornerTol, corners);
         }
 
-        // Phase 2: 沿折线行走，输出采样点
-        std::vector<Point3D> result;
-        result.push_back(raw[0]);
+        std::vector<TrajectorySegment> segments;
+        int segmentId = 0;
 
-        for (size_t i = 0; i < N - 1; ++i) {
-            Point3D segStart = (i > 0 && corners[i].active)
-                               ? corners[i].B3 : raw[i];
-            Point3D segEnd   = (i + 1 < N - 1 && corners[i + 1].active)
-                               ? corners[i + 1].B0 : raw[i + 1];
+        for (size_t i = 0; i < linearBlocks.size(); ++i) {
+            const auto& block = linearBlocks[i];
+            const Point3D segStart = (i > 0 && corners[i].active)
+                                   ? corners[i].end()
+                                   : raw[i];
+            const Point3D segEnd = (i + 1 < N - 1 && corners[i + 1].active)
+                                 ? corners[i + 1].start()
+                                 : raw[i + 1];
 
-            // 直线段只保留端点，不做中间密集采样
-            double straightLen = vecLen(vecSub(segEnd, segStart));
-            if (straightLen > stepSize * 0.5) {
-                result.push_back(segEnd);
+            if (pointDistance(segStart, segEnd) > 1e-9) {
+                segments.push_back(makeLineSegment(
+                    segmentId++, block.block_id, segStart, segEnd,
+                    block.rx, block.ry, block.rz, block.feedrate, safeStep));
             }
 
-            // 采样角点 Bezier 过渡
             if (i + 1 < N - 1 && corners[i + 1].active) {
-                double arcEst = estimateBezierLen(corners[i + 1]);
-                int nSamples = std::max(2, (int)std::ceil(arcEst / stepSize));
-                for (int j = 0; j <= nSamples; ++j) {
-                    double t = (double)j / nSamples;
-                    result.push_back(evalCubicBezier(corners[i + 1], t));
-                }
-            } else if (i + 1 == N - 1) {
-                result.push_back(raw[N - 1]);
+                const double cornerFeedrate = mergeFeedrate(
+                    linearBlocks[i].feedrate, linearBlocks[i + 1].feedrate);
+                segments.push_back(makeCubicSpanSegment(
+                    segmentId++, block.block_id, corners[i + 1].ctrl, 0.0, 0.5,
+                    block.rx, block.ry, block.rz, cornerFeedrate, safeStep));
+                segments.push_back(makeCubicSpanSegment(
+                    segmentId++, block.block_id, corners[i + 1].ctrl, 0.5, 1.0,
+                    block.rx, block.ry, block.rz, cornerFeedrate, safeStep));
             }
         }
 
-        // Phase 3: 去重
-        deduplicate(result, stepSize * 0.1);
-
-        return result;
+        return segments;
     }
 
-    // ── 旧方案（备选）：自然三次样条 ────────────────────────────────
-    std::vector<Point3D> processWithSpline(const std::vector<Point3D>& rawPath, double stepSize) {
-        if (rawPath.size() < 3) return rawPath;
+    static Point3D evaluate(const TrajectorySegment& segment, double u)
+    {
+        return evaluateSegment(segment, u);
+    }
 
-        std::vector<double> s = calculateArcLength(rawPath);
-        auto coeffsX = solveSpline(s, getAxisVector(rawPath, 'x'));
-        auto coeffsY = solveSpline(s, getAxisVector(rawPath, 'y'));
-        auto coeffsZ = solveSpline(s, getAxisVector(rawPath, 'z'));
+    static Point3D tangent(const TrajectorySegment& segment, double u)
+    {
+        return segmentTangent(segment, u);
+    }
 
-        std::vector<Point3D> result;
-        double totalLen = s.back();
-        for (double t = 0; t <= totalLen; t += stepSize) {
-            result.push_back({
-                interpolate(s, coeffsX, t),
-                interpolate(s, coeffsY, t),
-                interpolate(s, coeffsZ, t)
-            });
-        }
-        return result;
+    static double curvature(const TrajectorySegment& segment, double u)
+    {
+        return segmentCurvature(segment, u);
     }
 
 private:
-    // ── 3D 向量辅助函数 ─────────────────────────────────────────────
-    static Point3D vecSub(const Point3D& a, const Point3D& b) {
-        return {a.x - b.x, a.y - b.y, a.z - b.z};
-    }
-    static Point3D vecAdd(const Point3D& a, const Point3D& b) {
-        return {a.x + b.x, a.y + b.y, a.z + b.z};
-    }
-    static Point3D vecScale(const Point3D& v, double s) {
-        return {v.x * s, v.y * s, v.z * s};
-    }
-    static double vecDot(const Point3D& a, const Point3D& b) {
-        return a.x * b.x + a.y * b.y + a.z * b.z;
-    }
-    static double vecLen(const Point3D& v) {
-        return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-    }
-    static Point3D vecNorm(const Point3D& v) {
-        double len = vecLen(v);
-        if (len < 1e-12) return {0, 0, 0};
-        return {v.x / len, v.y / len, v.z / len};
-    }
+    struct CornerBlend {
+        bool active = false;
+        std::array<Point3D, 5> ctrl{};
 
-    // ── Bezier 辅助 ─────────────────────────────────────────────────
-    struct CornerBlend;
-
-    template<typename CB>
-    static Point3D evalCubicBezier(const CB& c, double t) {
-        double u = 1.0 - t;
-        double u2 = u * u, u3 = u2 * u;
-        double t2 = t * t, t3 = t2 * t;
-        return {
-            u3 * c.B0.x + 3 * u2 * t * c.B1.x + 3 * u * t2 * c.B2.x + t3 * c.B3.x,
-            u3 * c.B0.y + 3 * u2 * t * c.B1.y + 3 * u * t2 * c.B2.y + t3 * c.B3.y,
-            u3 * c.B0.z + 3 * u2 * t * c.B1.z + 3 * u * t2 * c.B2.z + t3 * c.B3.z
-        };
-    }
-
-    template<typename CB>
-    static double estimateBezierLen(const CB& c) {
-        double chord = vecLen(vecSub(c.B3, c.B0));
-        double poly  = vecLen(vecSub(c.B1, c.B0))
-                     + vecLen(vecSub(c.B2, c.B1))
-                     + vecLen(vecSub(c.B3, c.B2));
-        return 0.5 * (chord + poly);
-    }
-
-    // ── 直线采样 ────────────────────────────────────────────────────
-    static std::vector<Point3D> sampleStraight(const Point3D& a, const Point3D& b, double stepSize) {
-        std::vector<Point3D> result;
-        Point3D diff = vecSub(b, a);
-        double len = vecLen(diff);
-        if (len < 1e-9) {
-            result.push_back(a);
-            result.push_back(b);
-            return result;
-        }
-        Point3D dir = vecScale(diff, 1.0 / len);
-        for (double s = 0; s <= len; s += stepSize) {
-            result.push_back(vecAdd(a, vecScale(dir, s)));
-        }
-        // 确保终点
-        if (vecLen(vecSub(result.back(), b)) > stepSize * 0.1) {
-            result.push_back(b);
-        }
-        return result;
-    }
-
-    // ── 去重 ────────────────────────────────────────────────────────
-    static void deduplicate(std::vector<Point3D>& pts, double minDist) {
-        if (pts.size() < 2) return;
-        std::vector<Point3D> clean;
-        clean.push_back(pts[0]);
-        for (size_t i = 1; i < pts.size(); ++i) {
-            if (vecLen(vecSub(pts[i], clean.back())) >= minDist) {
-                clean.push_back(pts[i]);
-            }
-        }
-        pts = std::move(clean);
-    }
-
-    // ── 自然三次样条（旧方案辅助）───────────────────────────────────
-    struct SplineCoeffs {
-        std::vector<double> a, b, c, d;
+        const Point3D& start() const { return ctrl.front(); }
+        const Point3D& end() const { return ctrl.back(); }
     };
 
-    SplineCoeffs solveSpline(const std::vector<double>& x, const std::vector<double>& y) {
-        int n = x.size() - 1;
-        std::vector<double> h(n), alpha(n), l(n + 1), mu(n + 1), z(n + 1), c(n + 1), b(n), d(n);
+    static void buildCornerBlends(const std::vector<Point3D>& raw,
+                                  double sampleStep,
+                                  double cornerTol,
+                                  std::vector<CornerBlend>& corners)
+    {
+        for (size_t i = 1; i + 1 < raw.size(); ++i) {
+            const Point3D vIn = pointNormalize(pointSub(raw[i], raw[i - 1]));
+            const Point3D vOut = pointNormalize(pointSub(raw[i + 1], raw[i]));
+            const double cosTheta = std::clamp(pointDot(vIn, vOut), -1.0, 1.0);
+            const double theta = std::acos(cosTheta);
 
-        for (int i = 0; i < n; ++i) h[i] = x[i + 1] - x[i];
-        for (int i = 1; i < n; ++i)
-            alpha[i] = (3.0 / h[i]) * (y[i + 1] - y[i]) - (3.0 / h[i - 1]) * (y[i] - y[i - 1]);
+            if (theta < 0.01) {
+                continue;
+            }
 
-        l[0] = 1.0; mu[0] = 0.0; z[0] = 0.0;
-        for (int i = 1; i < n; ++i) {
-            l[i] = 2.0 * (x[i + 1] - x[i - 1]) - h[i - 1] * mu[i - 1];
-            mu[i] = h[i] / l[i];
-            z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
+            const double alpha = theta * 0.5;
+            const double cosA = std::cos(alpha);
+            const double dTol = (1.0 - cosA) > 1e-9
+                              ? cornerTol * cosA / (1.0 - cosA)
+                              : 1e6;
+            const double lIn = pointDistance(raw[i], raw[i - 1]);
+            const double lOut = pointDistance(raw[i + 1], raw[i]);
+            const double dMax = 0.5 * std::min(lIn, lOut);
+            const double d = std::min(dTol, dMax);
+
+            if (d < sampleStep) {
+                continue;
+            }
+
+            constexpr double k = 0.5;
+            const Point3D start = pointSub(raw[i], pointScale(vIn, d));
+            const Point3D end = pointAdd(raw[i], pointScale(vOut, d));
+            corners[i].active = true;
+            corners[i].ctrl = {
+                start,
+                pointAdd(start, pointScale(vIn, k * d)),
+                raw[i],
+                pointSub(end, pointScale(vOut, k * d)),
+                end,
+            };
         }
-        l[n] = 1.0; z[n] = 0.0; c[n] = 0.0;
-        for (int j = n - 1; j >= 0; --j) {
-            c[j] = z[j] - mu[j] * c[j + 1];
-            b[j] = (y[j + 1] - y[j]) / h[j] - h[j] * (c[j + 1] + 2.0 * c[j]) / 3.0;
-            d[j] = (c[j + 1] - c[j]) / (3.0 * h[j]);
-        }
-
-        std::vector<double> a(y.begin(), y.end() - 1);
-        return {a, b, c, d};
     }
 
-    double interpolate(const std::vector<double>& x, const SplineCoeffs& co, double t) {
-        auto it = std::upper_bound(x.begin(), x.end(), t) - 1;
-        int i = std::distance(x.begin(), it);
-        i = std::max(0, std::min(i, (int)co.a.size() - 1));
-        double dx = t - x[i];
-        return co.a[i] + co.b[i] * dx + co.c[i] * dx * dx + co.d[i] * dx * dx * dx;
+    static TrajectorySegment makeLineSegment(int segmentId,
+                                             int sourceBlockId,
+                                             const Point3D& start,
+                                             const Point3D& end,
+                                             double rx,
+                                             double ry,
+                                             double rz,
+                                             double feedrate,
+                                             double sampleStep)
+    {
+        TrajectorySegment segment;
+        segment.segment_id = segmentId;
+        segment.source_block_id = sourceBlockId;
+        segment.type = TrajectorySegmentType::Line;
+        segment.feedrate_limit = feedrate;
+
+        setAxis(segment, 0, start.x, end.x - start.x, 0.0, 0.0);
+        setAxis(segment, 1, start.y, end.y - start.y, 0.0, 0.0);
+        setAxis(segment, 2, start.z, end.z - start.z, 0.0, 0.0);
+        setAxis(segment, 3, rx, 0.0, 0.0, 0.0);
+        setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
+        setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
+
+        finalizeGeometry(segment, sampleStep);
+        return segment;
     }
 
-    std::vector<double> calculateArcLength(const std::vector<Point3D>& path) {
-        std::vector<double> s = {0.0};
-        for (size_t i = 1; i < path.size(); ++i) {
-            double d = std::sqrt(std::pow(path[i].x - path[i-1].x, 2) +
-                                std::pow(path[i].y - path[i-1].y, 2) +
-                                std::pow(path[i].z - path[i-1].z, 2));
-            s.push_back(s.back() + d);
+    static TrajectorySegment makeCubicSpanSegment(int segmentId,
+                                                  int sourceBlockId,
+                                                  const std::array<Point3D, 5>& ctrl,
+                                                  double u0,
+                                                  double u1,
+                                                  double rx,
+                                                  double ry,
+                                                  double rz,
+                                                  double feedrate,
+                                                  double sampleStep)
+    {
+        const Point3D p0 = evalClampedCubicBSpline(ctrl, u0);
+        const Point3D p1 = evalClampedCubicBSpline(ctrl, u0 + (u1 - u0) / 3.0);
+        const Point3D p2 = evalClampedCubicBSpline(ctrl, u0 + 2.0 * (u1 - u0) / 3.0);
+        const Point3D p3 = evalClampedCubicBSpline(ctrl, u1);
+
+        TrajectorySegment segment;
+        segment.segment_id = segmentId;
+        segment.source_block_id = sourceBlockId;
+        segment.type = TrajectorySegmentType::CubicPolynomial;
+        segment.feedrate_limit = feedrate;
+
+        const auto cx = fitCubicFromSamples(p0.x, p1.x, p2.x, p3.x);
+        const auto cy = fitCubicFromSamples(p0.y, p1.y, p2.y, p3.y);
+        const auto cz = fitCubicFromSamples(p0.z, p1.z, p2.z, p3.z);
+        setAxis(segment, 0, cx[0], cx[1], cx[2], cx[3]);
+        setAxis(segment, 1, cy[0], cy[1], cy[2], cy[3]);
+        setAxis(segment, 2, cz[0], cz[1], cz[2], cz[3]);
+        setAxis(segment, 3, rx, 0.0, 0.0, 0.0);
+        setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
+        setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
+
+        finalizeGeometry(segment, sampleStep);
+        return segment;
+    }
+
+    static void setAxis(TrajectorySegment& segment,
+                        int axis,
+                        double c0,
+                        double c1,
+                        double c2,
+                        double c3)
+    {
+        segment.coeff[axis][0] = c0;
+        segment.coeff[axis][1] = c1;
+        segment.coeff[axis][2] = c2;
+        segment.coeff[axis][3] = c3;
+    }
+
+    static std::array<double, 4> fitCubicFromSamples(double y0, double y1, double y2, double y3)
+    {
+        double m[3][4] = {
+            {1.0 / 3.0, 1.0 / 9.0, 1.0 / 27.0, y1 - y0},
+            {2.0 / 3.0, 4.0 / 9.0, 8.0 / 27.0, y2 - y0},
+            {1.0,       1.0,       1.0,        y3 - y0},
+        };
+
+        for (int col = 0; col < 3; ++col) {
+            int pivot = col;
+            for (int row = col + 1; row < 3; ++row) {
+                if (std::abs(m[row][col]) > std::abs(m[pivot][col])) {
+                    pivot = row;
+                }
+            }
+            if (pivot != col) {
+                for (int k = col; k < 4; ++k) {
+                    std::swap(m[col][k], m[pivot][k]);
+                }
+            }
+
+            const double denom = std::abs(m[col][col]) > 1e-12 ? m[col][col] : 1.0;
+            for (int k = col; k < 4; ++k) {
+                m[col][k] /= denom;
+            }
+            for (int row = 0; row < 3; ++row) {
+                if (row == col) {
+                    continue;
+                }
+                const double factor = m[row][col];
+                for (int k = col; k < 4; ++k) {
+                    m[row][k] -= factor * m[col][k];
+                }
+            }
         }
-        return s;
+
+        return {y0, m[0][3], m[1][3], m[2][3]};
     }
 
-    std::vector<double> getAxisVector(const std::vector<Point3D>& path, char axis) {
-        std::vector<double> r;
-        for (auto& p : path) r.push_back(axis == 'x' ? p.x : (axis == 'y' ? p.y : p.z));
-        return r;
+    static void finalizeGeometry(TrajectorySegment& segment, double sampleStep)
+    {
+        segment.length = estimateLength(segment, sampleStep);
+        segment.max_curvature = estimateMaxCurvature(segment);
+    }
+
+    static double estimateLength(const TrajectorySegment& segment, double sampleStep)
+    {
+        if (segment.type == TrajectorySegmentType::Line) {
+            return pointDistance(evaluateSegment(segment, 0.0), evaluateSegment(segment, 1.0));
+        }
+
+        const Point3D a = evaluateSegment(segment, 0.0);
+        const Point3D b = evaluateSegment(segment, 1.0);
+        const int sampleCount = std::max(16, static_cast<int>(std::ceil(
+            std::max(pointDistance(a, b), sampleStep) / sampleStep)));
+
+        double length = 0.0;
+        Point3D prev = a;
+        for (int i = 1; i <= sampleCount; ++i) {
+            const double u = static_cast<double>(i) / sampleCount;
+            const Point3D curr = evaluateSegment(segment, u);
+            length += pointDistance(prev, curr);
+            prev = curr;
+        }
+        return length;
+    }
+
+    static double estimateMaxCurvature(const TrajectorySegment& segment)
+    {
+        if (segment.type == TrajectorySegmentType::Line) {
+            return 0.0;
+        }
+
+        double maxCurvature = 0.0;
+        constexpr int sampleCount = 32;
+        for (int i = 0; i <= sampleCount; ++i) {
+            const double u = static_cast<double>(i) / sampleCount;
+            const double kappa = segmentCurvature(segment, u);
+            if (std::isfinite(kappa)) {
+                maxCurvature = std::max(maxCurvature, kappa);
+            }
+        }
+        return maxCurvature;
+    }
+
+    static double mergeFeedrate(double a, double b)
+    {
+        if (a > 0.0 && b > 0.0) {
+            return std::min(a, b);
+        }
+        return a > 0.0 ? a : b;
+    }
+
+    static Point3D evalClampedCubicBSpline(const std::array<Point3D, 5>& ctrl, double u)
+    {
+        if (u <= 0.0) {
+            return ctrl.front();
+        }
+        if (u >= 1.0) {
+            return ctrl.back();
+        }
+
+        constexpr int degree = 3;
+        constexpr int n = 4;
+        constexpr std::array<double, 9> knots = {
+            0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 1.0
+        };
+
+        int span = degree;
+        while (span < n && u >= knots[span + 1]) {
+            ++span;
+        }
+
+        std::array<Point3D, degree + 1> d{};
+        for (int j = 0; j <= degree; ++j) {
+            d[j] = ctrl[span - degree + j];
+        }
+
+        for (int r = 1; r <= degree; ++r) {
+            for (int j = degree; j >= r; --j) {
+                const int knotIndex = span - degree + j;
+                const double denom = knots[knotIndex + degree - r + 1] - knots[knotIndex];
+                const double alpha = denom > 1e-12 ? (u - knots[knotIndex]) / denom : 0.0;
+                d[j] = pointAdd(pointScale(d[j - 1], 1.0 - alpha), pointScale(d[j], alpha));
+            }
+        }
+        return d[degree];
     }
 };

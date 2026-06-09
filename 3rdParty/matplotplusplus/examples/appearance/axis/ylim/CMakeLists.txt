@@ -1,0 +1,6 @@
+add_matplot_example(example_ylim_1 ylim_1.cpp)
+add_matplot_example(example_ylim_2 ylim_2.cpp)
+add_matplot_example(example_ylim_3 ylim_3.cpp)
+add_matplot_example(example_ylim_4 ylim_4.cpp)
+add_matplot_example(example_ylim_5 ylim_5.cpp)
+add_matplot_example(example_ylim_6 ylim_6.cpp)

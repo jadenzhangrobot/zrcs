@@ -1,0 +1,8 @@
+add_matplot_example(example_polarplot_1 polarplot_1.cpp)
+add_matplot_example(example_polarplot_2 polarplot_2.cpp)
+add_matplot_example(example_polarplot_3 polarplot_3.cpp)
+add_matplot_example(example_polarplot_4 polarplot_4.cpp)
+add_matplot_example(example_polarplot_5 polarplot_5.cpp)
+add_matplot_example(example_polarplot_6 polarplot_6.cpp)
+add_matplot_example(example_polarplot_7 polarplot_7.cpp)
+add_matplot_example(example_polarplot_8 polarplot_8.cpp)

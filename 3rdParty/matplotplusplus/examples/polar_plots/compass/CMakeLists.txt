@@ -1,0 +1,2 @@
+add_matplot_example(example_compass_1 compass_1.cpp)
+add_matplot_example(example_compass_2 compass_2.cpp)

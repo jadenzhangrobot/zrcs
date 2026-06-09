@@ -1,0 +1,7 @@
+add_matplot_example(example_geoplot_1 geoplot_1.cpp)
+add_matplot_example(example_geoplot_2 geoplot_2.cpp)
+add_matplot_example(example_geoplot_3 geoplot_3.cpp)
+add_matplot_example(example_geoplot_4 geoplot_4.cpp)
+add_matplot_example(example_geoplot_5 geoplot_5.cpp)
+add_matplot_example(example_geoplot_6 geoplot_6.cpp)
+add_matplot_example(example_geoplot_7 geoplot_7.cpp)

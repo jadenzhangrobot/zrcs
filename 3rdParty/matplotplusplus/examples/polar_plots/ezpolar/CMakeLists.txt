@@ -1,0 +1,2 @@
+add_matplot_example(example_ezpolar_1 ezpolar_1.cpp)
+add_matplot_example(example_ezpolar_2 ezpolar_2.cpp)

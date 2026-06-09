@@ -1,0 +1,1 @@
+add_matplot_example(example_ellipse_1 ellipse_1.cpp)

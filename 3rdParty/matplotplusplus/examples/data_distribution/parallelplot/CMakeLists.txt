@@ -1,0 +1,3 @@
+add_matplot_example(example_parallelplot_1 parallelplot_1.cpp)
+add_matplot_example(example_parallelplot_2 parallelplot_2.cpp)
+add_matplot_example(example_parallelplot_3 parallelplot_3.cpp)

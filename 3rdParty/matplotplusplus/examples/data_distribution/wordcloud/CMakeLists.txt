@@ -1,0 +1,7 @@
+add_matplot_example(example_wordcloud_1 wordcloud_1.cpp)
+add_matplot_example(example_wordcloud_2 wordcloud_2.cpp)
+add_matplot_example(example_wordcloud_3 wordcloud_3.cpp)
+add_matplot_example(example_wordcloud_4 wordcloud_4.cpp)
+
+configure_file(shakespeare_sonnets.txt shakespeare_sonnets.txt COPYONLY)
+configure_file(en_blacklist.txt en_blacklist.txt COPYONLY)

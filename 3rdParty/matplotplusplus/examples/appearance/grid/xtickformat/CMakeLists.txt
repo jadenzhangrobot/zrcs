@@ -1,0 +1,5 @@
+add_matplot_example(example_xtickformat_1 xtickformat_1.cpp)
+add_matplot_example(example_xtickformat_2 xtickformat_2.cpp)
+add_matplot_example(example_xtickformat_3 xtickformat_3.cpp)
+add_matplot_example(example_xtickformat_4 xtickformat_4.cpp)
+add_matplot_example(example_xtickformat_5 xtickformat_5.cpp)

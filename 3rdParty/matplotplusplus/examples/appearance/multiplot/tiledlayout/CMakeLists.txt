@@ -1,0 +1,8 @@
+add_matplot_example(example_tiledlayout_1 tiledlayout_1.cpp)
+add_matplot_example(example_tiledlayout_2 tiledlayout_2.cpp)
+add_matplot_example(example_tiledlayout_3 tiledlayout_3.cpp)
+add_matplot_example(example_tiledlayout_4 tiledlayout_4.cpp)
+add_matplot_example(example_tiledlayout_5 tiledlayout_5.cpp)
+add_matplot_example(example_tiledlayout_6 tiledlayout_6.cpp)
+add_matplot_example(example_tiledlayout_7 tiledlayout_7.cpp)
+add_matplot_example(example_tiledlayout_8 tiledlayout_8.cpp)

@@ -1,0 +1,7 @@
+add_matplot_example(example_colororder_1 colororder_1.cpp)
+add_matplot_example(example_colororder_2 colororder_2.cpp)
+add_matplot_example(example_colororder_3 colororder_3.cpp)
+add_matplot_example(example_colororder_4 colororder_4.cpp)
+add_matplot_example(example_colororder_5 colororder_5.cpp)
+add_matplot_example(example_colororder_6 colororder_6.cpp)
+add_matplot_example(example_colororder_7 colororder_7.cpp)

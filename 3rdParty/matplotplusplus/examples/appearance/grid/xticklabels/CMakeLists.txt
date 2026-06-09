@@ -1,0 +1,4 @@
+add_matplot_example(example_xticklabels_1 xticklabels_1.cpp)
+add_matplot_example(example_xticklabels_2 xticklabels_2.cpp)
+add_matplot_example(example_xticklabels_3 xticklabels_3.cpp)
+add_matplot_example(example_xticklabels_4 xticklabels_4.cpp)

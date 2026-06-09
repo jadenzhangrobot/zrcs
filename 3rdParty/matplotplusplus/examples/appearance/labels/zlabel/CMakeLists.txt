@@ -1,0 +1,3 @@
+add_matplot_example(example_zlabel_1 zlabel_1.cpp)
+add_matplot_example(example_zlabel_2 zlabel_2.cpp)
+add_matplot_example(example_zlabel_3 zlabel_3.cpp)

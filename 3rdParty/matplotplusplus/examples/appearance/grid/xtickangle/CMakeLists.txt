@@ -1,0 +1,3 @@
+add_matplot_example(example_xtickangle_1 xtickangle_1.cpp)
+add_matplot_example(example_xtickangle_2 xtickangle_2.cpp)
+add_matplot_example(example_xtickangle_3 xtickangle_3.cpp)

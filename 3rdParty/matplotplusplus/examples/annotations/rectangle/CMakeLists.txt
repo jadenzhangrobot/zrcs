@@ -1,0 +1,5 @@
+add_matplot_example(example_rectangle_1 rectangle_1.cpp)
+add_matplot_example(example_rectangle_2 rectangle_2.cpp)
+add_matplot_example(example_rectangle_3 rectangle_3.cpp)
+add_matplot_example(example_rectangle_4 rectangle_4.cpp)
+add_matplot_example(example_rectangle_5 rectangle_5.cpp)

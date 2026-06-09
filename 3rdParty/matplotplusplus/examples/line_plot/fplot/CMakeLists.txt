@@ -1,0 +1,6 @@
+add_matplot_example(example_fplot_1 fplot_1.cpp)
+add_matplot_example(example_fplot_2 fplot_2.cpp)
+add_matplot_example(example_fplot_3 fplot_3.cpp)
+add_matplot_example(example_fplot_4 fplot_4.cpp)
+add_matplot_example(example_fplot_5 fplot_5.cpp)
+add_matplot_example(example_fplot_6 fplot_6.cpp)

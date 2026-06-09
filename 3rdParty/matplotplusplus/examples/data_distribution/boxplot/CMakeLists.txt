@@ -1,0 +1,3 @@
+add_matplot_example(example_boxplot_1 boxplot_1.cpp)
+add_matplot_example(example_boxplot_2 boxplot_2.cpp)
+add_matplot_example(example_boxplot_3 boxplot_3.cpp)

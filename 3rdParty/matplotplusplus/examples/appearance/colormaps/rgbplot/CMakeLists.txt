@@ -1,0 +1,2 @@
+add_matplot_example(example_rgbplot_1 rgbplot_1.cpp)
+add_matplot_example(example_rgbplot_2 rgbplot_2.cpp)

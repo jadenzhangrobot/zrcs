@@ -1,0 +1,6 @@
+add_matplot_example(example_contourf_1 contourf_1.cpp)
+add_matplot_example(example_contourf_2 contourf_2.cpp)
+add_matplot_example(example_contourf_3 contourf_3.cpp)
+add_matplot_example(example_contourf_4 contourf_4.cpp)
+add_matplot_example(example_contourf_5 contourf_5.cpp)
+add_matplot_example(example_contourf_6 contourf_6.cpp)

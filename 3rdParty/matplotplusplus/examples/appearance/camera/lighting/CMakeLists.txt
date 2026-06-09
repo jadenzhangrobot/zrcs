@@ -1,0 +1,6 @@
+add_matplot_example(example_lighting_1 lighting_1.cpp)
+add_matplot_example(example_lighting_2 lighting_2.cpp)
+add_matplot_example(example_lighting_3 lighting_3.cpp)
+add_matplot_example(example_lighting_4 lighting_4.cpp)
+add_matplot_example(example_lighting_5 lighting_5.cpp)
+add_matplot_example(example_lighting_6 lighting_6.cpp)

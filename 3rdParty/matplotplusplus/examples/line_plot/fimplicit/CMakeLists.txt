@@ -1,0 +1,4 @@
+add_matplot_example(example_fimplicit_1 fimplicit_1.cpp)
+add_matplot_example(example_fimplicit_2 fimplicit_2.cpp)
+add_matplot_example(example_fimplicit_3 fimplicit_3.cpp)
+add_matplot_example(example_fimplicit_4 fimplicit_4.cpp)

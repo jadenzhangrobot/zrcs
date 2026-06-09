@@ -1,0 +1,1 @@
+add_matplot_example(example_semilogx_1 semilogx_1.cpp)

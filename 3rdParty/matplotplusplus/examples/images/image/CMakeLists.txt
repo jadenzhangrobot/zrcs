@@ -1,0 +1,5 @@
+add_matplot_example(example_image_1 image_1.cpp)
+add_matplot_example(example_image_2 image_2.cpp)
+add_matplot_example(example_image_3 image_3.cpp)
+add_matplot_example(example_image_4 image_4.cpp)
+add_matplot_example(example_image_5 image_5.cpp)

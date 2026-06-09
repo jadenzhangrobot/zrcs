@@ -1,0 +1,2 @@
+add_matplot_example(example_geoscatter_1 geoscatter_1.cpp)
+add_matplot_example(example_geoscatter_2 geoscatter_2.cpp)

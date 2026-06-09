@@ -1,0 +1,4 @@
+add_matplot_example(example_surfc_1 surfc_1.cpp)
+add_matplot_example(example_surfc_2 surfc_2.cpp)
+add_matplot_example(example_surfc_3 surfc_3.cpp)
+add_matplot_example(example_surfc_4 surfc_4.cpp)

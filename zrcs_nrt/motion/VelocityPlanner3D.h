@@ -1,249 +1,190 @@
 #pragma once
+
+#include "TrajectoryTypes.h"
+
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <cmath>
-#include <algorithm>
-#include <iomanip>
-#include <fstream>  // 必须包含这个头文件
-// ==========================================
-// 1. 修改点结构体为 3D
-// ==========================================
-struct Point3D {
-    double x;
-    double y;
-    double z;
-};
-
-struct WayPoint {
-    Point3D pos;            // 3D 坐标
-    double dist_to_next;    // 到下一个点的空间距离 (3D 距离)
-    double velocity;        // 该点规划速度
-    double acceleration;    // 从该点出发进入下一段时的切向加速度
-
-    WayPoint(double x, double y, double z)
-        : pos{x, y, z}, dist_to_next(0), velocity(0), acceleration(0) {}
-};
 
 class VelocityPlanner3D {
-private:
-    std::vector<WayPoint> path;
-
-    double max_vel_global;
-    double max_accel;
-    double max_jerk;
-    double start_vel;
-    double end_vel;
-    double corner_tolerance;  // 拐角偏差容限 (mm)
-
-    // ==========================================
-    // 2. 修改几何计算函数适配 3D
-    // ==========================================
-
-    // 计算 3D 欧几里得距离
-    double getDistance(const Point3D& p1, const Point3D& p2) {
-        double dx = p2.x - p1.x;
-        double dy = p2.y - p1.y;
-        double dz = p2.z - p1.z; // 新增 Z
-        return std::sqrt(dx*dx + dy*dy + dz*dz);
-    }
-
-    // 计算 3D 空间向量夹角
-    double getCosAngle(const Point3D& prev, const Point3D& curr, const Point3D& next) {
-        // 向量 v1 = curr - prev
-        double v1x = curr.x - prev.x;
-        double v1y = curr.y - prev.y;
-        double v1z = curr.z - prev.z;
-
-        // 向量 v2 = next - curr
-        double v2x = next.x - curr.x;
-        double v2y = next.y - curr.y;
-        double v2z = next.z - curr.z;
-
-        double len1 = std::sqrt(v1x*v1x + v1y*v1y + v1z*v1z);
-        double len2 = std::sqrt(v2x*v2x + v2y*v2y + v2z*v2z);
-
-        if (len1 < 1e-6 || len2 < 1e-6) return 0.0; // 防止除零
-        
-        // 3D 点积: x*x + y*y + z*z
-        double dot = v1x * v2x + v1y * v2y + v1z * v2z;
-        return dot / (len1 * len2);
-    }
-
-    // ==========================================
-    // 核心算法 (这部分逻辑与 2D 完全通用，无需修改)
-    // ==========================================
-
-    void calculateGeometryConstraints() {
-        size_t N = path.size();
-        path[0].velocity = start_vel;
-        path[N - 1].velocity = end_vel;
-
-        for (size_t i = 1; i < N - 1; ++i) {
-            double cos_theta = getCosAngle(path[i - 1].pos, path[i].pos, path[i + 1].pos);
-
-            // 向心加速度约束: v_corner = sqrt(a_max * r_tol / (1 - cos_theta))
-            double denom = 1.0 - cos_theta;
-            if (denom < 1e-6) denom = 1e-6;  // 接近直线，不限速
-            double v_corner = std::sqrt(max_accel * corner_tolerance / denom);
-
-            // 方向连续性因子：转角越大，轴向速度跳变越大，必须降低过渡速度
-            // cos_theta= 1（直线）→ factor=1；cos_theta=0（90°）→ factor=0；cos_theta=-1（掉头）→ factor=0
-            // 这保证了在没有物理路径混合的情况下，各轴速度平滑减速到0再换向
-            double dir_factor = std::max(0.0, cos_theta);
-            path[i].velocity = std::min(max_vel_global, v_corner * dir_factor);
-        }
-    }
-
-    // 从 v0 变速到 v1 所需最小弧长（Jerk 感知，使用 Ruckig 相同的三段式模型）
-    double dMinTransition(double v0, double v1) const {
-        double dv = std::abs(v1 - v0);
-        if (dv < 1e-9) return 0.0;
-        // Type I（全程 Jerk 受限）：加速度峰值 = sqrt(j * dv)
-        // Type II（Jerk 斜坡 + 匀加速）：加速度到达 max_accel
-        double a_peak = std::sqrt(max_jerk * dv);
-        double T_total;
-        if (a_peak <= max_accel) {
-            // Type I
-            T_total = 2.0 * std::sqrt(dv / max_jerk);
-        } else {
-            // Type II
-            double T_j = max_accel / max_jerk;
-            double T_a = dv / max_accel - T_j;
-            T_total = 2.0 * T_j + T_a;
-        }
-        return (v0 + v1) / 2.0 * T_total;
-    }
-
-    // 给定弧长 d 和起始速度 v0，二分求最大可达末速度
-    double maxReachableVel(double v0, double d) const {
-        double lo = v0, hi = max_vel_global;
-        if (dMinTransition(v0, hi) <= d) return hi;
-        for (int iter = 0; iter < 64; ++iter) {
-            double mid = (lo + hi) * 0.5;
-            if (dMinTransition(v0, mid) <= d) lo = mid;
-            else hi = mid;
-        }
-        return lo;
-    }
-
-    void backwardScan() {
-        size_t N = path.size();
-        for (int i = (int)N - 2; i >= 0; --i) {
-            double dist = path[i].dist_to_next;
-            double v_next = path[i + 1].velocity;
-            // 对称性：从 v_next 减速到 path[i] 的最大可达速度
-            double max_reachable_v = maxReachableVel(v_next, dist);
-            path[i].velocity = std::min(path[i].velocity, max_reachable_v);
-        }
-    }
-
-    void forwardScan() {
-        size_t N = path.size();
-        for (size_t i = 1; i < N; ++i) {
-            double dist = path[i - 1].dist_to_next;
-            double v_prev = path[i - 1].velocity;
-            double max_reachable_v = maxReachableVel(v_prev, dist);
-            path[i].velocity = std::min(path[i].velocity, max_reachable_v);
-        }
-    }
-
-    void calculateAccelerations() {
-        for (size_t i = 0; i + 1 < path.size(); ++i) {
-            double ds = path[i].dist_to_next;
-            if (ds > 1e-9) {
-                double v0 = path[i].velocity;
-                double v1 = path[i + 1].velocity;
-                path[i].acceleration = (v1 * v1 - v0 * v0) / (2.0 * ds);
-            } else {
-                path[i].acceleration = 0.0;
-            }
-        }
-        path.back().acceleration = 0.0;
-    }
-
 public:
     VelocityPlanner3D()
-        : max_vel_global(100.0), max_accel(100.0), max_jerk(1000.0),
-          start_vel(0.0), end_vel(0.0), corner_tolerance(0.5) {}
-
-    void setConfig(double max_v, double max_a, double start_v = 0.0, double end_v = 0.0,
-                   double corner_tol = 0.5, double max_j = 1000.0) {
-        max_vel_global = max_v;
-        max_accel = max_a;
-        max_jerk = max_j;
-        start_vel = start_v;
-        end_vel = end_v;
-        corner_tolerance = corner_tol;
+        : max_vel_global_(100.0),
+          max_accel_(100.0),
+          max_jerk_(1000.0),
+          start_vel_(0.0),
+          end_vel_(0.0),
+          corner_tolerance_(0.5)
+    {
     }
 
-    // 3. 接口增加 Z 参数
-    void addPoint(double x, double y, double z) {
-        path.emplace_back(x, y, z);
+    void setConfig(double max_v,
+                   double max_a,
+                   double start_v = 0.0,
+                   double end_v = 0.0,
+                   double corner_tol = 0.5,
+                   double max_j = 1000.0)
+    {
+        max_vel_global_ = max_v;
+        max_accel_ = max_a;
+        max_jerk_ = max_j;
+        start_vel_ = start_v;
+        end_vel_ = end_v;
+        corner_tolerance_ = corner_tol;
     }
 
-    void clearPath() {
-        path.clear();
-    }
-
-    const std::vector<WayPoint>& getPath() const { return path; }
-
-    bool plan() {
-        if (path.size() < 2) {
-            std::cerr << "Error: Path must have at least 2 points." << std::endl;
+    bool planSegments(std::vector<TrajectorySegment>& segments)
+    {
+        if (segments.empty()) {
+            std::cerr << "Error: trajectory must contain at least one segment." << std::endl;
             return false;
         }
 
-        // 计算 3D 距离
-        for (size_t i = 0; i < path.size() - 1; ++i) {
-            path[i].dist_to_next = getDistance(path[i].pos, path[i+1].pos);
+        for (auto& segment : segments) {
+            if (segment.length <= 1e-9 || !std::isfinite(segment.length)) {
+                std::cerr << "Error: invalid trajectory segment length." << std::endl;
+                return false;
+            }
+            segment.v_max_local = calculateLocalVelocityLimit(segment);
+            segment.a_max_local = max_accel_;
+            segment.jerk_max_local = max_jerk_;
         }
 
-        calculateGeometryConstraints();
-        backwardScan();
-        forwardScan();
-        calculateAccelerations();
+        std::vector<double> junctionVel(segments.size() + 1, max_vel_global_);
+        junctionVel.front() = std::clamp(start_vel_, 0.0, max_vel_global_);
+        junctionVel.back() = std::clamp(end_vel_, 0.0, max_vel_global_);
+
+        for (size_t i = 1; i < junctionVel.size() - 1; ++i) {
+            double limit = std::min(segments[i - 1].v_max_local, segments[i].v_max_local);
+            limit = std::min(limit, calculateJunctionVelocityLimit(segments[i - 1], segments[i]));
+            junctionVel[i] = std::clamp(limit, 0.0, max_vel_global_);
+        }
+
+        for (int i = static_cast<int>(segments.size()) - 1; i >= 0; --i) {
+            const double reachable = maxReachableVel(junctionVel[i + 1], segments[i].length);
+            junctionVel[i] = std::min(junctionVel[i], reachable);
+        }
+
+        for (size_t i = 0; i < segments.size(); ++i) {
+            const double reachable = maxReachableVel(junctionVel[i], segments[i].length);
+            junctionVel[i + 1] = std::min(junctionVel[i + 1], reachable);
+        }
+
+        for (size_t i = 0; i < segments.size(); ++i) {
+            auto& segment = segments[i];
+            segment.v_enter = std::clamp(junctionVel[i], 0.0, segment.v_max_local);
+            segment.v_exit = std::clamp(junctionVel[i + 1], 0.0, segment.v_max_local);
+            segment.duration = estimateSegmentDuration(segment);
+            segment.is_lookahead_optimized = true;
+        }
 
         return true;
     }
 
-    void printReport(const std::string& filename) const {
-        printReport(filename, {});
+private:
+    double max_vel_global_;
+    double max_accel_;
+    double max_jerk_;
+    double start_vel_;
+    double end_vel_;
+    double corner_tolerance_;
+
+    double calculateLocalVelocityLimit(const TrajectorySegment& segment) const
+    {
+        double limit = max_vel_global_;
+        if (segment.feedrate_limit > 0.0) {
+            limit = std::min(limit, segment.feedrate_limit);
+        }
+        if (segment.max_curvature > 1e-9) {
+            limit = std::min(limit, std::sqrt(max_accel_ / segment.max_curvature));
+        }
+        return std::max(0.0, limit);
     }
 
-    void printReport(const std::string& filename, const std::vector<Point3D>& rawPoints) const {
-        std::ofstream outFile(filename);
+    double calculateJunctionVelocityLimit(const TrajectorySegment& prev,
+                                          const TrajectorySegment& next) const
+    {
+        const Point3D tPrev = pointNormalize(segmentTangent(prev, 1.0));
+        const Point3D tNext = pointNormalize(segmentTangent(next, 0.0));
+        const double cosTheta = std::clamp(pointDot(tPrev, tNext), -1.0, 1.0);
+        const double denom = std::max(1.0 - cosTheta, 1e-6);
+        const double vCorner = std::sqrt(max_accel_ * corner_tolerance_ / denom);
+        const double directionFactor = std::max(0.0, cosTheta);
 
-        if (!outFile.is_open()) {
-            std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
-            return;
+        return std::min(max_vel_global_, vCorner * directionFactor);
+    }
+
+    double transitionTime(double v0, double v1) const
+    {
+        const double dv = std::abs(v1 - v0);
+        if (dv < 1e-9) {
+            return 0.0;
+        }
+        const double aPeak = std::sqrt(max_jerk_ * dv);
+        if (aPeak <= max_accel_) {
+            return 2.0 * std::sqrt(dv / max_jerk_);
         }
 
-        outFile << std::fixed << std::setprecision(4);
-        outFile << "Index,X,Y,Z,Distance,Velocity,Acceleration" << std::endl;
+        const double tj = max_accel_ / max_jerk_;
+        const double ta = dv / max_accel_ - tj;
+        return 2.0 * tj + ta;
+    }
 
-        for (size_t i = 0; i < path.size(); ++i) {
-            outFile << i << ","
-                    << path[i].pos.x << ","
-                    << path[i].pos.y << ","
-                    << path[i].pos.z << ","
-                    << (i < path.size() - 1 ? path[i].dist_to_next : 0.0) << ","
-                    << path[i].velocity << ","
-                    << path[i].acceleration << "\n";
+    double dMinTransition(double v0, double v1) const
+    {
+        return 0.5 * (v0 + v1) * transitionTime(v0, v1);
+    }
+
+    double maxReachableVel(double v0, double distance) const
+    {
+        double lo = v0;
+        double hi = max_vel_global_;
+        if (dMinTransition(v0, hi) <= distance) {
+            return hi;
         }
 
-        if (!rawPoints.empty()) {
-            outFile << "RAW_POINTS" << std::endl;
-            outFile << "Index,X,Y,Z" << std::endl;
-            for (size_t i = 0; i < rawPoints.size(); ++i) {
-                outFile << i << ","
-                        << rawPoints[i].x << ","
-                        << rawPoints[i].y << ","
-                        << rawPoints[i].z << "\n";
+        for (int iter = 0; iter < 64; ++iter) {
+            const double mid = 0.5 * (lo + hi);
+            if (dMinTransition(v0, mid) <= distance) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    double estimateSegmentDuration(const TrajectorySegment& segment) const
+    {
+        const double vmax = std::max({segment.v_enter, segment.v_exit, segment.v_max_local});
+        if (vmax <= 1e-9) {
+            return 0.0;
+        }
+
+        const double dAccel = dMinTransition(segment.v_enter, segment.v_max_local);
+        const double dDecel = dMinTransition(segment.v_exit, segment.v_max_local);
+        if (dAccel + dDecel <= segment.length) {
+            const double cruise = segment.length - dAccel - dDecel;
+            return transitionTime(segment.v_enter, segment.v_max_local) +
+                   transitionTime(segment.v_exit, segment.v_max_local) +
+                   cruise / segment.v_max_local;
+        }
+
+        double lo = std::max(segment.v_enter, segment.v_exit);
+        double hi = segment.v_max_local;
+        for (int iter = 0; iter < 64; ++iter) {
+            const double mid = 0.5 * (lo + hi);
+            const double needed = dMinTransition(segment.v_enter, mid) +
+                                  dMinTransition(segment.v_exit, mid);
+            if (needed <= segment.length) {
+                lo = mid;
+            } else {
+                hi = mid;
             }
         }
 
-        outFile.close();
-        std::cout << "Successfully saved planning data to: " << filename << std::endl;
+        return transitionTime(segment.v_enter, lo) +
+               transitionTime(segment.v_exit, lo);
     }
 };
-

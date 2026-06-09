@@ -1,0 +1,8 @@
+add_matplot_example(example_text_1 text_1.cpp)
+add_matplot_example(example_text_2 text_2.cpp)
+add_matplot_example(example_text_3 text_3.cpp)
+add_matplot_example(example_text_4 text_4.cpp)
+add_matplot_example(example_text_5 text_5.cpp)
+add_matplot_example(example_text_6 text_6.cpp)
+add_matplot_example(example_text_7 text_7.cpp)
+add_matplot_example(example_text_8 text_8.cpp)

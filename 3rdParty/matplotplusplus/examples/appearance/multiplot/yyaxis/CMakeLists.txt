@@ -1,0 +1,7 @@
+add_matplot_example(example_yyaxis_1 yyaxis_1.cpp)
+add_matplot_example(example_yyaxis_2 yyaxis_2.cpp)
+add_matplot_example(example_yyaxis_3 yyaxis_3.cpp)
+add_matplot_example(example_yyaxis_4 yyaxis_4.cpp)
+add_matplot_example(example_yyaxis_5 yyaxis_5.cpp)
+add_matplot_example(example_yyaxis_6 yyaxis_6.cpp)
+add_matplot_example(example_yyaxis_7 yyaxis_7.cpp)

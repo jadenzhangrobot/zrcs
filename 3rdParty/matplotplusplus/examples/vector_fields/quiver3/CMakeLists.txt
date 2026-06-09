@@ -1,0 +1,2 @@
+add_matplot_example(example_quiver3_1 quiver3_1.cpp)
+add_matplot_example(example_quiver3_2 quiver3_2.cpp)

@@ -1,0 +1,6 @@
+add_matplot_example(example_zticks_1 zticks_1.cpp)
+add_matplot_example(example_zticks_2 zticks_2.cpp)
+add_matplot_example(example_zticks_3 zticks_3.cpp)
+add_matplot_example(example_zticks_4 zticks_4.cpp)
+add_matplot_example(example_zticks_5 zticks_5.cpp)
+add_matplot_example(example_zticks_6 zticks_6.cpp)
