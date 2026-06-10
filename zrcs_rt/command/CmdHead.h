@@ -14,9 +14,11 @@
 #include "command/MoveAbs.h"
 #include "command/MoveabsJ.h"
 #include "command/MoveC.h"
+#include "command/MoveCurve.h"
 #include "command/MoveJ.h"
 #include "command/MoveL.h"
 #include "command/MoveLGalvo.h"
+#include "command/MovePath.h"
 #include "command/Movehome.h"
 #include "command/Reset.h"
 

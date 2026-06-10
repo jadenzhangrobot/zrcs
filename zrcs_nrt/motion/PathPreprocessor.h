@@ -266,20 +266,38 @@ private:
             return pointDistance(evaluateSegment(segment, 0.0), evaluateSegment(segment, 1.0));
         }
 
-        const Point3D a = evaluateSegment(segment, 0.0);
-        const Point3D b = evaluateSegment(segment, 1.0);
-        const int sampleCount = std::max(16, static_cast<int>(std::ceil(
-            std::max(pointDistance(a, b), sampleStep) / sampleStep)));
+        (void)sampleStep;
+        return integrateSegmentSpeed(segment, 1.0);
+    }
 
-        double length = 0.0;
-        Point3D prev = a;
-        for (int i = 1; i <= sampleCount; ++i) {
-            const double u = static_cast<double>(i) / sampleCount;
-            const Point3D curr = evaluateSegment(segment, u);
-            length += pointDistance(prev, curr);
-            prev = curr;
+    static double integrateSegmentSpeed(const TrajectorySegment& segment, double u)
+    {
+        u = std::clamp(u, 0.0, 1.0);
+        if (u <= 0.0) {
+            return 0.0;
         }
-        return length;
+
+        static constexpr std::array<double, 8> nodes = {
+            -0.9602898564975363, -0.7966664774136267,
+            -0.5255324099163290, -0.1834346424956498,
+             0.1834346424956498,  0.5255324099163290,
+             0.7966664774136267,  0.9602898564975363,
+        };
+        static constexpr std::array<double, 8> weights = {
+            0.1012285362903763, 0.2223810344533745,
+            0.3137066458778873, 0.3626837833783620,
+            0.3626837833783620, 0.3137066458778873,
+            0.2223810344533745, 0.1012285362903763,
+        };
+
+        const double half = 0.5 * u;
+        const double center = 0.5 * u;
+        double sum = 0.0;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            const double t = center + half * nodes[i];
+            sum += weights[i] * pointLength(segmentTangent(segment, t));
+        }
+        return half * sum;
     }
 
     static double estimateMaxCurvature(const TrajectorySegment& segment)

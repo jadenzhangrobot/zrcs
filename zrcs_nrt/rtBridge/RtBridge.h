@@ -32,8 +32,7 @@ public:
     explicit RtBridge(zrcs::SharedBlock* block)
         : block_(block),
           cmdProducer_(block->cmdQueue),
-          axisFbConsumer_(block->axisFeedbackQueue),
-          pathProducer_(block->pathQueue)
+          axisFbConsumer_(block->axisFeedbackQueue)
     {}
 
     RtBridge(const RtBridge&) = delete;
@@ -302,14 +301,8 @@ public:
     }
 
     // ─────────────────────────────────────────────────────────────────
-    // 10. 路径运动（NRT → RT pathQueue）
+    // 10. MoveL / MoveLGalvo 运动限制配置
     // ─────────────────────────────────────────────────────────────────
-
-    bool pushPathPoint(const zrcs::PathPoint& pt) noexcept 
-    {
-        if (!block_) return false;
-        return pathProducer_.push(pt);
-    }
 
     void setPathMoveConfig(double maxVel, double maxAccel, double maxJerk) noexcept 
     {
@@ -329,12 +322,6 @@ public:
         block_->galvoCfg.cutoffHz.store(cutoffHz, std::memory_order_release);
     }
 
-    void setPathMoveActive(bool active) noexcept 
-    {
-        if (!block_) return;
-        block_->pathMoveActive.store(active, std::memory_order_release);
-    }
-
     // ─────────────────────────────────────────────────────────────────
     // 11. 诊断
     // ─────────────────────────────────────────────────────────────────
@@ -351,7 +338,6 @@ private:
     zrcs::SharedBlock*                                                         block_;
     zrcs::ShmSPSCProducer<zrcs::Command, zrcs::kCmdQueueCap>                 cmdProducer_;
     zrcs::ShmSPSCConsumer<zrcs::AxisFeedbackData, zrcs::kLogQueueCap>        axisFbConsumer_;
-    zrcs::ShmSPSCProducer<zrcs::PathPoint, zrcs::kPathBufCap>               pathProducer_;
     std::mutex                                                                push_mutex_;
     std::atomic<uint32_t>                                                     seq_counter_{1};
     std::atomic<uint64_t>                                                     dropped_count_{0};

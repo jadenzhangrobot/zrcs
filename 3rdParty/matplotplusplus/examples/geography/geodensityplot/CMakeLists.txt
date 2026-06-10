@@ -1,1 +1,0 @@
-add_matplot_example(example_geodensityplot_1 geodensityplot_1.cpp)

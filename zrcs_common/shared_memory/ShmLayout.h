@@ -35,7 +35,7 @@ inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容�
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 11;           // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 12;           // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -287,15 +287,6 @@ struct FkResultData    { double pose[6]       = {}; };   // X Y Z RX RY RZ
 struct ProbeResultData { double pose[6]       = {}; };
 struct CaptureData     { double pos[kAxisMax] = {}; };
 
-// 路径运动路点（NRT 写，RT 读）
-struct PathPoint {
-    double x  = 0, y  = 0, z  = 0;    // 笛卡尔位置 (mm)
-    double rx = 0, ry = 0, rz = 0;    // 姿态 (rad)
-    double maxVel = 0;                  // 速度前瞻输出 (mm/s)
-};
-
-inline constexpr size_t kPathBufCap = 256;  // 路径缓冲区容量，必须为 2 的幂
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 8. SharedBlock — 完整的共享数据布局
 // ─────────────────────────────────────────────────────────────────────────────
@@ -351,10 +342,7 @@ struct alignas(64) SharedBlock {
     alignas(64) std::atomic<bool>   probeTriggered{false};
     alignas(64) std::atomic<bool>   captureTriggered{false};
 
-    // ── 路径运动（NRT→RT）──────────────────────────────────────────────
-    ShmSPSC<PathPoint, kPathBufCap> pathQueue;              // 路点队列
-    alignas(64) std::atomic<bool>   pathMoveActive{false};  // 使能标志
-
+    // ── MoveL / MoveLGalvo 标量运动限制配置（NRT→RT）────────────────────
     struct alignas(64) PathMoveConfig {
         std::atomic<double> maxVel{10.0};    // mm/s（与轴配置 motion/maxVel 一致）
         std::atomic<double> maxAccel{20.0};  // mm/s²（与轴配置 motion/maxAcc 一致）

@@ -15,6 +15,7 @@
 #include <string>
 #include <filesystem>
 #include <cmath>
+#include <vector>
 #include "log/NrtLogger.h"
 #include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
@@ -206,6 +207,52 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
 
 }
 
+static bool runMotionPreprocessorDemo(MotionPreprocessor& motionPreprocessor)
+{
+    MotionPreprocessor::Config cfg;
+    cfg.maxVel = 5.0;
+    cfg.maxAccel = 40.0;
+    cfg.maxJerk = 200.0;
+    cfg.stepSize = 0.25;
+    cfg.cornerTol = 0.2;
+    cfg.galvoMode = false;
+
+    const std::vector<Point3D> waypoints = {
+        { 0.0,  4.2, 0.0},
+        {-0.8,  3.4, 0.0},
+        {-2.4,  4.6, 0.0},
+        {-4.5,  5.2, 0.0},
+        {-6.2,  4.0, 0.0},
+        {-5.2,  2.0, 0.0},
+        {-3.4,  0.7, 0.0},
+        {-5.5, -1.2, 0.0},
+        {-4.5, -3.8, 0.0},
+        {-2.4, -3.1, 0.0},
+        {-0.8, -1.4, 0.0},
+        { 0.0, -3.6, 0.0},
+        { 0.8, -1.4, 0.0},
+        { 2.4, -3.1, 0.0},
+        { 4.5, -3.8, 0.0},
+        { 5.5, -1.2, 0.0},
+        { 3.4,  0.7, 0.0},
+        { 5.2,  2.0, 0.0},
+        { 6.2,  4.0, 0.0},
+        { 4.5,  5.2, 0.0},
+        { 2.4,  4.6, 0.0},
+        { 0.8,  3.4, 0.0},
+        { 0.0,  4.2, 0.0},
+    };
+
+    spdlog::info("[MotionPreprocessorDemo] Sending {} waypoints through real RtBridge", waypoints.size());
+    if (!motionPreprocessor.process(waypoints, 0.1, -0.2, 0.3, cfg)) {
+        spdlog::error("[MotionPreprocessorDemo] Failed to queue demo path");
+        return false;
+    }
+
+    spdlog::info("[MotionPreprocessorDemo] Demo path queued to RT cmdQueue");
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     // std::signal 两平台共用，统一处理 Ctrl+C / SIGTERM
@@ -293,6 +340,7 @@ int main(int argc, char **argv)
 
         // 初始化运动预处理器
         MotionPreprocessor motion_preprocessor(&bridge);
+        (void)runMotionPreprocessorDemo(motion_preprocessor);
 
         // 主循环：监控共享内存状态
         while (g_running) {

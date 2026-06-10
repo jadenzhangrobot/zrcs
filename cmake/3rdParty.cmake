@@ -22,43 +22,24 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/spdlog)
 set(CPPZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/cppzmq)
 
-# 添加 Matplot++ 绘图库（仅构建库本体，示例/测试关闭）
-include(GNUInstallDirs)
-set(MATPLOT_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/matplotplusplus)
-set(MATPLOTPP_BUILD_HIGH_RESOLUTION_WORLD_MAP OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_BUILD_FOR_DOCUMENTATION_IMAGES OFF CACHE BOOL "" FORCE)
-set(MATPLOT_TRACE_GNUPLOT_COMMANDS OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_BUILD_INSTALLER OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_BUILD_EXPERIMENTAL_OPENGL_BACKEND OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_WITH_OPENCV OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_WITH_SYSTEM_CIMG OFF CACHE BOOL "" FORCE)
-set(MATPLOTPP_WITH_SYSTEM_NODESOUP OFF CACHE BOOL "" FORCE)
-function(target_link_libraries_system target)
-    target_link_libraries(${target} ${ARGN})
-endfunction()
-function(target_bigobj_options target)
-    if(MSVC)
-        target_compile_options(${target} PRIVATE /bigobj)
-    endif()
-endfunction()
-function(target_exception_options target)
-    if(MSVC)
-        target_compile_options(${target} PRIVATE /EHsc)
-    endif()
-endfunction()
-function(target_utf8_options target)
-    if(MSVC)
-        target_compile_options(${target} PRIVATE /utf-8)
-    endif()
-endfunction()
-function(target_nominmax_definition target)
-    if(MSVC)
-        target_compile_definitions(${target} PRIVATE NOMINMAX)
-    endif()
-endfunction()
-function(maybe_target_pedantic_warnings target)
-endfunction()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/matplotplusplus/source)
+# 添加 matplotlib-cpp 绘图库（单头文件库，不构建示例）
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python3 COMPONENTS NumPy QUIET)
+add_library(matplotlib_cpp INTERFACE)
+add_library(matplotlib_cpp::matplotlib_cpp ALIAS matplotlib_cpp)
+target_include_directories(matplotlib_cpp INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/matplotlib-cpp
+)
+target_compile_features(matplotlib_cpp INTERFACE cxx_std_11)
+target_link_libraries(matplotlib_cpp INTERFACE
+    Python3::Python
+    Python3::Module
+)
+if(Python3_NumPy_FOUND)
+    target_link_libraries(matplotlib_cpp INTERFACE Python3::NumPy)
+else()
+    target_compile_definitions(matplotlib_cpp INTERFACE WITHOUT_NUMPY)
+endif()
 
 # 添加 Abseil 库（供 Protobuf 等依赖使用）
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -93,4 +74,3 @@ endif()
 
 
 # 添加CoppeliaSim的头文件
-

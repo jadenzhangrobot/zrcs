@@ -82,7 +82,13 @@ segment.duration;
 
 ## Plotting Test
 
-`test_motion_preprocessing` draws two Matplot++ figures:
+`test_motion_preprocessing` draws two matplotlib-cpp figures:
 
 - fitted segment outline sampled from `TrajectorySegment`,
 - velocity lookahead profile over arc length.
+
+Plotting is optional. Install Python `matplotlib` to show these figures. If it
+is not installed, the test skips plotting and still runs the assertions. With a
+non-interactive backend such as `Agg`, the figures are saved as
+`motion_preprocessing_segments.png` and `motion_preprocessing_velocity.png`;
+set `ZRCS_SKIP_PLOTS=1` to skip plotting explicitly.

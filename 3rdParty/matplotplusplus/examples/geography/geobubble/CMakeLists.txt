@@ -1,2 +1,0 @@
-add_matplot_example(example_geobubble_1 geobubble_1.cpp)
-add_matplot_example(example_geobubble_2 geobubble_2.cpp)

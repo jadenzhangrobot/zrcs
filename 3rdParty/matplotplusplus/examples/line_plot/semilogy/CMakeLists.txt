@@ -1,1 +1,0 @@
-add_matplot_example(example_semilogy_1 semilogy_1.cpp)

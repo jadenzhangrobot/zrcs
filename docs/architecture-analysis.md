@@ -116,7 +116,7 @@ sequenceDiagram
 
     GUI->>ZMQ: MotionCommand or TypedCommand
     ZMQ->>Bridge: sendCommand / task control / BT command
-    Bridge->>SHM: cmdQueue, taskSched, pathQueue, config atomics
+    Bridge->>SHM: cmdQueue, taskSched, motion config atomics
     RT->>SHM: pop command / read taskSched
     RT->>Node: NodeFactory creates or runs node
     Node->>HW: axis / IO / laser operations
@@ -220,7 +220,7 @@ flowchart LR
 | `axisCount`, config atomics | NRT/config initialization | RT/NRT | Runtime configuration |
 | `lastCmdCompletion` | RT | NRT / BT nodes | Packed seq/result in atomic `uint64_t` |
 | `axisPositions`, `fkResult`, etc. | RT | NRT | `LockFreeLatest<T>` three-slot seqlock |
-| `pathQueue`, `pathMoveCfg`, `galvoCfg` | NRT | RT path command/output nodes | Path and galvo/platform coordination |
+| `pathMoveCfg`, `galvoCfg` | NRT | RT MoveL / MoveLGalvo nodes | Motion limits and galvo/platform coordination |
 
 ## 8. 依赖风险图
 

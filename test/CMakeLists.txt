@@ -37,8 +37,13 @@ target_link_libraries(test_axis_direction PRIVATE atomic)
 add_executable(test_motion_preprocessing test_motion_preprocessing.cpp)
 target_include_directories(test_motion_preprocessing PRIVATE
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt
+    ${DEVEL_INCLUDE_DIRS}/3rdParty/magic_enum/include
 )
-target_link_libraries(test_motion_preprocessing PRIVATE Matplot++::matplot)
+target_compile_definitions(test_motion_preprocessing PRIVATE WITHOUT_NUMPY)
+target_link_libraries(test_motion_preprocessing PRIVATE
+    matplotlib_cpp::matplotlib_cpp
+    spdlog::spdlog
+)
 
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）
 find_package(Protobuf REQUIRED)

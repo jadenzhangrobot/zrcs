@@ -1,5 +1,0 @@
-add_subdirectory(xlim)
-add_subdirectory(ylim)
-add_subdirectory(zlim)
-add_subdirectory(axis)
-add_subdirectory(box)

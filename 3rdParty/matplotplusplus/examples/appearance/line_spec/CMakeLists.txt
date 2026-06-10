@@ -1,1 +1,0 @@
-add_matplot_example(example_line_spec_1 line_spec_1.cpp)

@@ -202,6 +202,8 @@ private:
             case CmdId::MoveC:      registerTypedAlias<MoveCArg>(commandName);      break;
             case CmdId::Movehome:   registerTypedAlias<void>(commandName);          break;
             case CmdId::MoveLGalvo: registerTypedAlias<MoveLGalvoArg>(commandName); break;
+            case CmdId::MoveCurve:  registerTypedAlias<MoveCurveArg>(commandName);  break;
+            case CmdId::MovePath:   registerTypedAlias<MovePathArg>(commandName);   break;
             default: break;
             }
         }
