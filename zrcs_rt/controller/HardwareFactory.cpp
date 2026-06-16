@@ -4,7 +4,7 @@
  *
  * createController() 根据编译宏选择硬件栈:
  * - REALTIME:  创建 xenomai RTOS + EthercatMaster + EthercatMotor/EthercatIo
- * - SIMULATION: 为每个轴添加 CoppeliaSim 仿真伺服
+ * - SIMULATION: 为每个轴添加 virtualServo 虚拟伺服
  * - STANDARD:   为每个轴添加 virtualServo 虚拟伺服
  * - 非 REALTIME 时使用 Nativelinux 作为 RTOS
  *
@@ -25,11 +25,7 @@
 #include "controller/rtos/Xenomai.h"
 #endif
 
-#ifdef SIMULATION
-#include "controller/virtual/CoppeliaSim.h"
-#endif
-
-#ifdef STANDARD
+#if defined(SIMULATION) || defined(STANDARD)
 #include "controller/virtual/VirtualServo.h"
 #endif
 
@@ -161,14 +157,8 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
             }
 #endif
 
-#ifdef SIMULATION
-            // 仿真模式仍然保留 slaveId，这样切换构建模式时可以复用同一套
-            // axis/servo XML。
-            axis->pushServo(std::make_unique<Coppeliasim>(slaveId), servoIt->second);
-#endif
-
-#ifdef STANDARD
-            // 标准模式使用进程内虚拟伺服，便于快速测试配置和运动链路。
+#if defined(SIMULATION) || defined(STANDARD)
+            // Simulation and standard modes use the in-process virtual servo.
             axis->pushServo(std::make_unique<virtualServo>(slaveId), servoIt->second);
 #endif
         }

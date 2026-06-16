@@ -62,7 +62,8 @@ public:
             socket_.reset();
         }
         // 等待服务线程退出（此时 recv 已被中断，不会等超时）
-        if (server_thread_.joinable()) {
+        if (server_thread_.joinable()) 
+        {
             server_thread_.join();
         }
         context_.close();
@@ -95,7 +96,8 @@ private:
                 }
 
                 zrcs_message::MotionCommand cmd;
-                if (!cmd.ParseFromArray(request.data(), request.size())) {
+                if (!cmd.ParseFromArray(request.data(), request.size()))
+                {
                     spdlog::error("[ZMQServer] Failed to parse protobuf message, size={}", request.size());
                     sendReply("ERROR: Parse failed");
                     continue;
@@ -266,7 +268,8 @@ private:
         sendReply("ERROR: Unknown BT action");
     }
 
-    void sendReply(const std::string& message) {
+    void sendReply(const std::string& message) 
+    {
         try {
             zmq::message_t reply(message.size());
             memcpy(reply.data(), message.data(), message.size());

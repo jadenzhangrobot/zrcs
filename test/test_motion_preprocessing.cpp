@@ -610,6 +610,122 @@ void assert_segments_are_continuous(const std::vector<TrajectorySegment>& segmen
     }
 }
 
+void assert_segment_tangents_are_continuous(const std::vector<TrajectorySegment>& segments)
+{
+    for (size_t i = 1; i < segments.size(); ++i)
+    {
+        const Point3D prevTangent = pointNormalize(segmentTangent(segments[i - 1], 1.0));
+        const Point3D currTangent = pointNormalize(segmentTangent(segments[i], 0.0));
+        assert(pointLength(prevTangent) > 0.0);
+        assert(pointLength(currTangent) > 0.0);
+        assert(pointDot(prevTangent, currTangent) > 1.0 - 1e-5);
+    }
+}
+
+void assert_no_internal_waypoint_is_kept_as_hard_corner(
+    const std::vector<TrajectorySegment>& segments,
+    const std::vector<Point3D>& raw)
+{
+    for (size_t waypoint = 1; waypoint + 1 < raw.size(); ++waypoint)
+    {
+        for (size_t i = 1; i < segments.size(); ++i)
+        {
+            const Point3D junction = evaluateSegment(segments[i], 0.0);
+            assert(!is_same_point(junction, raw[waypoint], 1e-5));
+        }
+    }
+}
+
+double integrate_segment_speed_for_test(const TrajectorySegment& segment, double u)
+{
+    u = std::clamp(u, 0.0, 1.0);
+    if (u <= 0.0) {
+        return 0.0;
+    }
+
+    static constexpr std::array<double, 8> nodes = {
+        -0.9602898564975363, -0.7966664774136267,
+        -0.5255324099163290, -0.1834346424956498,
+         0.1834346424956498,  0.5255324099163290,
+         0.7966664774136267,  0.9602898564975363,
+    };
+    static constexpr std::array<double, 8> weights = {
+        0.1012285362903763, 0.2223810344533745,
+        0.3137066458778873, 0.3626837833783620,
+        0.3626837833783620, 0.3137066458778873,
+        0.2223810344533745, 0.1012285362903763,
+    };
+
+    const double half = 0.5 * u;
+    const double center = 0.5 * u;
+    double sum = 0.0;
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const double t = center + half * nodes[i];
+        sum += weights[i] * pointLength(segmentTangent(segment, t));
+    }
+    return half * sum;
+}
+
+double segment_arc_to_u_for_test(const TrajectorySegment& segment, double localS)
+{
+    localS = std::clamp(localS, 0.0, segment.length);
+    if (segment.length <= 1e-9) {
+        return 0.0;
+    }
+    if (segment.type == TrajectorySegmentType::Line) {
+        return localS / segment.length;
+    }
+
+    double lo = 0.0;
+    double hi = 1.0;
+    for (int iter = 0; iter < 48; ++iter) {
+        const double mid = 0.5 * (lo + hi);
+        if (integrate_segment_speed_for_test(segment, mid) < localS) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return 0.5 * (lo + hi);
+}
+
+Point3D sample_by_global_arc_for_test(const std::vector<TrajectorySegment>& segments, double s)
+{
+    double offset = 0.0;
+    for (const auto& segment : segments) {
+        if (s <= offset + segment.length) {
+            const double u = segment_arc_to_u_for_test(segment, s - offset);
+            return evaluateSegment(segment, u);
+        }
+        offset += segment.length;
+    }
+    return evaluateSegment(segments.back(), 1.0);
+}
+
+void assert_equal_arc_x_velocity_has_no_single_sample_spikes(
+    const std::vector<TrajectorySegment>& segments)
+{
+    double totalLength = 0.0;
+    for (const auto& segment : segments) {
+        totalLength += segment.length;
+    }
+
+    constexpr double ds = 0.002;
+    std::vector<double> vx;
+    Point3D prev = sample_by_global_arc_for_test(segments, 0.0);
+    for (double s = ds; s <= totalLength; s += ds) {
+        const Point3D curr = sample_by_global_arc_for_test(segments, s);
+        vx.push_back((curr.x - prev.x) / ds);
+        prev = curr;
+    }
+
+    for (size_t i = 1; i + 1 < vx.size(); ++i) {
+        const double neighborMax = std::max(std::abs(vx[i - 1]), std::abs(vx[i + 1]));
+        const double spike = std::abs(vx[i]) - neighborMax;
+        assert(spike < 0.05);
+    }
+}
+
 void test_line_block_generates_single_segment()
 {
     PathMoveBlock block;
@@ -636,11 +752,14 @@ void test_corner_blend_fits_butterfly_segments()
     const auto blocks = make_blocks(raw, 12.0);
 
     PathPreprocessor fitter;
-    const auto segments = fitter.fitCornerBlendSegments(blocks, 0.1, 0.2);
+    const auto segments = fitter.fitCornerBlendSegments(blocks, 0.25, 0.2);
 
     assert(!segments.empty());
     assert(segments.size() > blocks.size());
     assert_segments_are_continuous(segments);
+    assert_segment_tangents_are_continuous(segments);
+    assert_no_internal_waypoint_is_kept_as_hard_corner(segments, raw);
+    assert_equal_arc_x_velocity_has_no_single_sample_spikes(segments);
     assert(is_same_point(evaluateSegment(segments.front(), 0.0), raw.front()));
     assert(is_same_point(evaluateSegment(segments.back(), 1.0), raw.back()));
 
@@ -664,7 +783,7 @@ void test_velocity_lookahead_on_segments()
     const auto blocks = make_blocks(raw, 5.0);
 
     PathPreprocessor fitter;
-    auto segments = fitter.fitCornerBlendSegments(blocks, 0.1, 0.2);
+    auto segments = fitter.fitCornerBlendSegments(blocks, 0.25, 0.2);
 
     VelocityPlanner3D planner;
     planner.setConfig(20.0, 40.0, 0.0, 0.0, 1.0, 200.0);

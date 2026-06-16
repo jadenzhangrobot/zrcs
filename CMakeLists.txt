@@ -44,12 +44,12 @@ set(MOTION_CONTROL_LIBS
     absl::log_internal_check_op
     absl::log_globals
 )
-if(BUILD_MODE STREQUAL "realtime")
-    list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)
+if(TARGET zrcs_mujoco)
+    list(APPEND MOTION_CONTROL_LIBS zrcs_mujoco)
 endif()
 
-if(BUILD_MODE STREQUAL "simulation")
-    list(APPEND MOTION_CONTROL_LIBS remoteApi)
+if(BUILD_MODE STREQUAL "realtime")
+    list(APPEND MOTION_CONTROL_LIBS ethercat_rtdm)
 endif()
 
 # 源文件

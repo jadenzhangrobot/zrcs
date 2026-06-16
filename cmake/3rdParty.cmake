@@ -22,6 +22,49 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/spdlog)
 set(CPPZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/cppzmq)
 
+# Add bundled MuJoCo physics library.
+option(ZRCS_ENABLE_MUJOCO "Build bundled MuJoCo support" ON)
+if(ZRCS_ENABLE_MUJOCO)
+    set(ZRCS_MUJOCO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/mujoco-main")
+    if(NOT EXISTS "${ZRCS_MUJOCO_SOURCE_DIR}/CMakeLists.txt")
+        message(FATAL_ERROR "ZRCS_ENABLE_MUJOCO is ON, but ${ZRCS_MUJOCO_SOURCE_DIR} is missing.")
+    endif()
+
+    set(MUJOCO_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_BUILD_SIMULATE OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_BUILD_STUDIO OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_TEST_PYTHON_UTIL OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_WITH_USD OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_USE_FILAMENT OFF CACHE BOOL "" FORCE)
+    set(MUJOCO_ENABLE_AVX OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory("${ZRCS_MUJOCO_SOURCE_DIR}")
+
+    if(NOT TARGET mujoco::mujoco)
+        message(FATAL_ERROR "Bundled MuJoCo did not define target mujoco::mujoco.")
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(mujoco PRIVATE -Wno-error)
+    endif()
+
+    foreach(ZRCS_MUJOCO_PLUGIN_TARGET elasticity actuator sensor sdf_plugin)
+        if(TARGET ${ZRCS_MUJOCO_PLUGIN_TARGET})
+            set_target_properties(${ZRCS_MUJOCO_PLUGIN_TARGET} PROPERTIES
+                EXCLUDE_FROM_ALL TRUE
+                EXCLUDE_FROM_DEFAULT_BUILD TRUE
+            )
+        endif()
+    endforeach()
+
+    add_library(zrcs_mujoco INTERFACE)
+    add_library(zrcs::mujoco ALIAS zrcs_mujoco)
+    target_link_libraries(zrcs_mujoco INTERFACE mujoco::mujoco)
+    target_compile_definitions(zrcs_mujoco INTERFACE ZRCS_HAS_MUJOCO=1)
+    message(STATUS "Using bundled MuJoCo from ${ZRCS_MUJOCO_SOURCE_DIR}")
+endif()
+
 # 添加 matplotlib-cpp 绘图库（单头文件库，不构建示例）
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(Python3 COMPONENTS NumPy QUIET)
@@ -72,5 +115,3 @@ if(Eigen3_FOUND)
 endif()
 
 
-
-# 添加CoppeliaSim的头文件

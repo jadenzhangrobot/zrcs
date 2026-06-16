@@ -11,7 +11,7 @@ ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++
 - `zrcs_gui`：主 Qt 图形界面，面向综合控制、状态展示和扩展功能
 - `motionGui`：轻量级运动调试界面
 - `config/`：按项目拆分的轴、模型、EtherCAT 等配置
-- `3rdParty/`：内置第三方依赖，如 `ruckig`、`tinyxml2`、`spdlog`、`cppzmq`、`abseil-cpp`、`BehaviorTree.CPP` 等
+- `3rdParty/`：内置第三方依赖，如 `ruckig`、`tinyxml2`、`spdlog`、`cppzmq`、`abseil-cpp`、`BehaviorTree.CPP`、`MuJoCo` 等
 
 ## 主要特性
 
@@ -265,10 +265,12 @@ ZRCS 采用项目化配置方式。当前激活项目由 `config/project.txt` �
 顶层 CMake 当前使用 `BUILD_MODE` 控制构建形态：
 
 - `standard`：标准模式，默认模式
-- `simulation`：仿真模式，接入 CoppeliaSim Remote API
+- `simulation`：仿真模式，使用进程内虚拟伺服；MuJoCo 支持库可供后续仿真后端接入
 - `realtime`：实时模式，接入 Xenomai/EtherCAT
 
 注意：这比旧 README 中的 `-Drealtime=YES -Dethercat=YES` 更接近当前代码的真实构建方式。旧写法可以视为历史用法说明，不建议继续作为主文档命令使用。
+
+MuJoCo 支持默认开启，源码目录为 `3rdParty/mujoco-main`。工程会关闭 MuJoCo 的 examples、tests、simulate、studio 等额外目标，只构建核心 `mujoco::mujoco` 库，并通过 `zrcs_mujoco` 目标链接到控制进程。首次配置时，MuJoCo 上游 CMake 可能通过 `FetchContent` 下载 `lodepng`、`qhull`、`libccd`、`tinyobjloader`、`miniz` 等依赖；如需暂时跳过，可在配置时添加 `-DZRCS_ENABLE_MUJOCO=OFF`。
 
 ## 环境依赖
 

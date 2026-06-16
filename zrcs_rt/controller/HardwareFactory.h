@@ -4,7 +4,7 @@
  *
  * 通过条件编译（REALTIME / SIMULATION / STANDARD）自动选择:
  * - REALTIME:  EtherCAT 主站 + Xenomai RTOS + EthercatMotor
- * - SIMULATION: CoppeliaSim 仿真伺服
+ * - SIMULATION: VirtualServo 虚拟伺服
  * - STANDARD: VirtualServo 虚拟伺服
  *
  * 非 REALTIME 时使用 Linux 原生线程作为 RTOS。

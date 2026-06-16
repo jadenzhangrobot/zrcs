@@ -74,7 +74,7 @@ flowchart LR
     RT["zrcsrt<br/>real-time process"]
     SHM["SharedBlock<br/>shared memory"]
     Controller["Controller<br/>Axis / IO / Laser"]
-    Hardware["Hardware or simulation<br/>EtherCAT / virtual / CoppeliaSim"]
+    Hardware["Hardware or simulation<br/>EtherCAT / virtual / MuJoCo-ready"]
 
     GUI -- "REQ/REP commands<br/>tcp://*:5555" --> NRT
     NRT -- "PUB status<br/>tcp://*:5556" --> GUI

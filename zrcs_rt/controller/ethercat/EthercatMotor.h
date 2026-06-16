@@ -93,7 +93,7 @@ class EthercatMotor:public Servo
         }
 		 int32_t acc(void) override 
         {
-            // CoppeliaSim 中通常不直接提供加速度读取
+            // 驱动通常不直接提供加速度读取
              acceleration_=(velocity_-lastVelocity_)*1000/cycletime;
             return acceleration_;
         }
@@ -185,5 +185,4 @@ class EthercatMotor:public Servo
 		}          
 };
 }
-
 
