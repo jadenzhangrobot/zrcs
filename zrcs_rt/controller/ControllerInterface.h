@@ -243,6 +243,14 @@ public:
   {
     return config_->maxJerk;
   }
+  double getPositiveLimit() const
+  {
+    return config_->posPositiveLimit;
+  }
+  double getNegativeLimit() const
+  {
+    return config_->posNegativeLimit;
+  }
 
   // --- 零点偏移 ---
   void setZeroOffset(double offset) 
@@ -323,6 +331,7 @@ public:
 class HardwareBus {
 public:
     virtual ~HardwareBus() = default;
+    virtual void bindSharedBlock(zrcs::SharedBlock* block) { (void)block; }
     virtual void send() = 0;
     virtual void receive() = 0;
 };

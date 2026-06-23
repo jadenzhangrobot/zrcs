@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TrajectoryTypes.h"
+#include "config/Parameter.h"
 
 #include <algorithm>
 #include <cmath>
@@ -111,8 +112,20 @@ private:
         const double denom = std::max(1.0 - cosTheta, 1e-6);
         const double vCorner = std::sqrt(max_accel_ * corner_tolerance_ / denom);
         const double directionFactor = std::max(0.0, cosTheta);
+        double limit = vCorner * directionFactor;
 
-        return std::min(max_vel_global_, vCorner * directionFactor);
+        const double kPrev = segmentCurvature(prev, 1.0);
+        const double kNext = segmentCurvature(next, 0.0);
+        const double deltaK = std::abs(kNext - kPrev);
+        if (deltaK > 1e-9) {
+            constexpr double kCurvatureRampTime = 0.02; // seconds
+            const double jerkWindow = std::max(kCurvatureRampTime, cycletime * 0.001);
+            const double accelJumpLimit = std::max(max_jerk_ * jerkWindow, 1e-9);
+            const double vCurvatureJump = std::sqrt(accelJumpLimit / deltaK);
+            limit = std::min(limit, vCurvatureJump);
+        }
+
+        return std::min(max_vel_global_, limit);
     }
 
     double transitionTime(double v0, double v1) const

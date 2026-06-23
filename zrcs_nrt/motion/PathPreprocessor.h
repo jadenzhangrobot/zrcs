@@ -45,10 +45,10 @@ public:
         for (size_t i = 0; i < linearBlocks.size(); ++i) {
             const auto& block = linearBlocks[i];
             const Point3D segStart = (i > 0 && corners[i].active)
-                                   ? corners[i].end()
+                                   ? corners[i].endPoint()
                                    : raw[i];
             const Point3D segEnd = (i + 1 < N - 1 && corners[i + 1].active)
-                                 ? corners[i + 1].start()
+                                 ? corners[i + 1].startPoint()
                                  : raw[i + 1];
 
             if (pointDistance(segStart, segEnd) > 1e-9) {
@@ -60,11 +60,8 @@ public:
             if (i + 1 < N - 1 && corners[i + 1].active) {
                 const double cornerFeedrate = mergeFeedrate(
                     linearBlocks[i].feedrate, linearBlocks[i + 1].feedrate);
-                segments.push_back(makeCubicSpanSegment(
-                    segmentId++, block.block_id, corners[i + 1].ctrl, 0.0, 0.5,
-                    block.rx, block.ry, block.rz, cornerFeedrate, safeStep));
-                segments.push_back(makeCubicSpanSegment(
-                    segmentId++, block.block_id, corners[i + 1].ctrl, 0.5, 1.0,
+                segments.push_back(makeArcSegment(
+                    segmentId++, block.block_id, corners[i + 1],
                     block.rx, block.ry, block.rz, cornerFeedrate, safeStep));
             }
         }
@@ -90,10 +87,16 @@ public:
 private:
     struct CornerBlend {
         bool active = false;
-        std::array<Point3D, 5> ctrl{};
+        Point3D start;
+        Point3D end;
+        Point3D center;
+        Point3D basisU;
+        Point3D basisV;
+        double radius = 0.0;
+        double sweep = 0.0;
 
-        const Point3D& start() const { return ctrl.front(); }
-        const Point3D& end() const { return ctrl.back(); }
+        const Point3D& startPoint() const { return start; }
+        const Point3D& endPoint() const { return end; }
     };
 
     static void buildCornerBlends(const std::vector<Point3D>& raw,
@@ -101,13 +104,15 @@ private:
                                   double cornerTol,
                                   std::vector<CornerBlend>& corners)
     {
+        (void)sampleStep;
         for (size_t i = 1; i + 1 < raw.size(); ++i) {
             const Point3D vIn = pointNormalize(pointSub(raw[i], raw[i - 1]));
             const Point3D vOut = pointNormalize(pointSub(raw[i + 1], raw[i]));
             const double cosTheta = std::clamp(pointDot(vIn, vOut), -1.0, 1.0);
             const double theta = std::acos(cosTheta);
 
-            if (theta < 0.01) {
+            constexpr double pi = 3.14159265358979323846;
+            if (theta < 0.01 || theta > pi - 0.01) {
                 continue;
             }
 
@@ -121,21 +126,33 @@ private:
             const double dMax = 0.5 * std::min(lIn, lOut);
             const double d = std::min(dTol, dMax);
 
-            if (d < sampleStep) {
+            // sampleStep is a geometry/length sampling resolution, not a
+            // minimum blend size.  Sharp corners often need short blends; if
+            // we drop them here, the generated path keeps a hard tangent jump.
+            if (d < 1e-6) {
                 continue;
             }
 
-            constexpr double k = 0.5;
             const Point3D start = pointSub(raw[i], pointScale(vIn, d));
             const Point3D end = pointAdd(raw[i], pointScale(vOut, d));
+            const Point3D normal = pointNormalize(pointCross(vIn, vOut));
+            const Point3D centerDir = pointNormalize(pointCross(normal, vIn));
+            const double radius = d / std::tan(alpha);
+            if (radius < 1e-9 || pointLength(normal) < 1e-9 || pointLength(centerDir) < 1e-9) {
+                continue;
+            }
+
+            const Point3D center = pointAdd(start, pointScale(centerDir, radius));
+            const Point3D basisU = pointNormalize(pointSub(start, center));
+            const Point3D basisV = vIn;
             corners[i].active = true;
-            corners[i].ctrl = {
-                start,
-                pointAdd(start, pointScale(vIn, k * d)),
-                raw[i],
-                pointSub(end, pointScale(vOut, k * d)),
-                end,
-            };
+            corners[i].start = start;
+            corners[i].end = end;
+            corners[i].center = center;
+            corners[i].basisU = basisU;
+            corners[i].basisV = basisV;
+            corners[i].radius = radius;
+            corners[i].sweep = theta;
         }
     }
 
@@ -158,6 +175,33 @@ private:
         setAxis(segment, 0, start.x, end.x - start.x, 0.0, 0.0);
         setAxis(segment, 1, start.y, end.y - start.y, 0.0, 0.0);
         setAxis(segment, 2, start.z, end.z - start.z, 0.0, 0.0);
+        setAxis(segment, 3, rx, 0.0, 0.0, 0.0);
+        setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
+        setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
+
+        finalizeGeometry(segment, sampleStep);
+        return segment;
+    }
+
+    static TrajectorySegment makeArcSegment(int segmentId,
+                                            int sourceBlockId,
+                                            const CornerBlend& corner,
+                                            double rx,
+                                            double ry,
+                                            double rz,
+                                            double feedrate,
+                                            double sampleStep)
+    {
+        TrajectorySegment segment;
+        segment.segment_id = segmentId;
+        segment.source_block_id = sourceBlockId;
+        segment.type = TrajectorySegmentType::CircularArc;
+        segment.feedrate_limit = feedrate;
+        segment.arc_center = corner.center;
+        segment.arc_u = corner.basisU;
+        segment.arc_v = corner.basisV;
+        segment.arc_radius = corner.radius;
+        segment.arc_sweep = corner.sweep;
         setAxis(segment, 3, rx, 0.0, 0.0, 0.0);
         setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
         setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
@@ -265,6 +309,9 @@ private:
         if (segment.type == TrajectorySegmentType::Line) {
             return pointDistance(evaluateSegment(segment, 0.0), evaluateSegment(segment, 1.0));
         }
+        if (segment.type == TrajectorySegmentType::CircularArc) {
+            return std::abs(segment.arc_radius * segment.arc_sweep);
+        }
 
         (void)sampleStep;
         return integrateSegmentSpeed(segment, 1.0);
@@ -304,6 +351,9 @@ private:
     {
         if (segment.type == TrajectorySegmentType::Line) {
             return 0.0;
+        }
+        if (segment.type == TrajectorySegmentType::CircularArc) {
+            return segment.arc_radius > 1e-9 ? 1.0 / segment.arc_radius : 0.0;
         }
 
         double maxCurvature = 0.0;

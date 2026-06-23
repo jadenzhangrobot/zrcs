@@ -259,13 +259,13 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="trajectoryTab">
+      <widget class="QWidget" name="mujocoTab">
        <attribute name="title">
-            <string>轨迹可视化</string>
+            <string>MuJoCo</string>
        </attribute>
-       <layout class="QVBoxLayout" name="trajectoryLayout">
+       <layout class="QVBoxLayout" name="mujocoLayout">
         <item>
-         <widget class="TrajectoryPanel" name="trajectoryPanel"/>
+         <widget class="MujocoPanel" name="mujocoPanel"/>
         </item>
        </layout>
       </widget>
@@ -361,9 +361,9 @@
    <header>core/MainWindow.h</header>
   </customwidget>
   <customwidget>
-   <class>TrajectoryPanel</class>
+   <class>MujocoPanel</class>
    <extends>QWidget</extends>
-   <header>trajectory/TrajectoryVisualizer.h</header>
+   <header>mujoco/MujocoVisualizer.h</header>
   </customwidget>
   <customwidget>
    <class>AlarmPanel</class>

@@ -1,0 +1,74 @@
+<mujoco model="zrcs_3axis_gantry">
+  <compiler angle="radian" autolimits="true"/>
+
+  <option timestep="0.001" gravity="0 0 -9.81"/>
+
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+    <quality shadowsize="4096" offsamples="4"/>
+    <headlight ambient="0.38 0.38 0.38" diffuse="0.62 0.62 0.62" specular="0.35 0.35 0.35"/>
+    <map znear="0.01"/>
+    <rgba haze="0.78 0.82 0.88 1"/>
+  </visual>
+
+  <statistic center="0 0 0.35" extent="1.4" meansize="0.1"/>
+
+  <default>
+    <joint damping="6" armature="0.01"/>
+    <geom contype="1" conaffinity="1" friction="0.4 0.02 0.001"/>
+  </default>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" width="512" height="512"
+             rgb1="0.72 0.78 0.86" rgb2="0.94 0.96 0.98"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512"
+             rgb1="0.62 0.67 0.72" rgb2="0.78 0.82 0.86"/>
+    <material name="floor_grid" texture="grid" texrepeat="10 10" reflectance="0.18"/>
+    <material name="base_mat" rgba="0.18 0.22 0.28 1" specular="0.45" shininess="0.65"/>
+    <material name="rail_mat" rgba="0.72 0.78 0.86 1" specular="0.70" shininess="0.80"/>
+    <material name="x_mat" rgba="0.95 0.22 0.22 1" specular="0.55" shininess="0.65"/>
+    <material name="y_mat" rgba="0.16 0.78 0.38 1" specular="0.55" shininess="0.65"/>
+    <material name="z_mat" rgba="0.16 0.48 0.98 1" specular="0.60" shininess="0.70"/>
+    <material name="tool_mat" rgba="1.00 0.78 0.18 1" emission="0.10" specular="0.80" shininess="0.85"/>
+    <material name="axis_x_mat" rgba="1.00 0.16 0.18 1" emission="0.08"/>
+    <material name="axis_y_mat" rgba="0.10 0.90 0.34 1" emission="0.08"/>
+    <material name="axis_z_mat" rgba="0.16 0.48 1.00 1" emission="0.08"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="1.6 -2.4 3.2" dir="-0.4 0.5 -1" diffuse="1.0 0.98 0.92" specular="0.45 0.45 0.45"/>
+    <light name="fill_light" pos="-2.0 1.2 2.0" dir="0.7 -0.4 -1" diffuse="0.55 0.62 0.72" specular="0.16 0.16 0.20"/>
+    <camera name="overview" pos="1.8 -2.2 1.4" xyaxes="0.78 0.63 0 -0.30 0.38 0.88"/>
+    <geom name="floor" type="plane" size="2.5 2.5 0.02" material="floor_grid"/>
+
+    <geom name="x_axis_arrow" type="capsule" fromto="0.45 -0.62 0.05 0.78 -0.62 0.05" size="0.015" material="axis_x_mat" contype="0" conaffinity="0"/>
+    <geom name="x_axis_tip" type="sphere" pos="0.82 -0.62 0.05" size="0.04" material="axis_x_mat" contype="0" conaffinity="0"/>
+    <geom name="y_axis_arrow" type="capsule" fromto="0.40 -0.58 0.05 0.40 -0.25 0.05" size="0.015" material="axis_y_mat" contype="0" conaffinity="0"/>
+    <geom name="y_axis_tip" type="sphere" pos="0.40 -0.21 0.05" size="0.04" material="axis_y_mat" contype="0" conaffinity="0"/>
+    <geom name="z_axis_arrow" type="capsule" fromto="0.40 -0.62 0.05 0.40 -0.62 0.38" size="0.015" material="axis_z_mat" contype="0" conaffinity="0"/>
+    <geom name="z_axis_tip" type="sphere" pos="0.40 -0.62 0.42" size="0.04" material="axis_z_mat" contype="0" conaffinity="0"/>
+
+    <body name="machine_base" pos="0 0 0.05">
+      <geom name="base_plate" type="box" size="0.82 0.55 0.045" material="base_mat"/>
+      <geom name="left_post" type="box" pos="-0.72 0 0.38" size="0.045 0.045 0.38" material="base_mat"/>
+      <geom name="right_post" type="box" pos="0.72 0 0.38" size="0.045 0.045 0.38" material="base_mat"/>
+      <geom name="back_post" type="box" pos="0 0.48 0.38" size="0.045 0.045 0.38" material="base_mat"/>
+      <geom name="front_post" type="box" pos="0 -0.48 0.38" size="0.045 0.045 0.38" material="base_mat"/>
+      <geom name="x_front_rail" type="capsule" fromto="-0.72 -0.48 0.72 0.72 -0.48 0.72" size="0.025" material="rail_mat"/>
+      <geom name="x_back_rail" type="capsule" fromto="-0.72 0.48 0.72 0.72 0.48 0.72" size="0.025" material="rail_mat"/>
+      <geom name="y_left_rail" type="capsule" fromto="-0.72 -0.48 0.72 -0.72 0.48 0.72" size="0.018" material="rail_mat"/>
+      <geom name="y_right_rail" type="capsule" fromto="0.72 -0.48 0.72 0.72 0.48 0.72" size="0.018" material="rail_mat"/>
+    </body>
+
+    <body name="moving_head" pos="0 0 0.58">
+      <joint name="x_slide" type="slide" axis="1 0 0" damping="4"/>
+      <joint name="y_slide" type="slide" axis="0 1 0" damping="4"/>
+      <joint name="z_slide" type="slide" axis="0 0 1" damping="3"/>
+      <geom name="x_carriage" type="box" pos="0 0 0.15" size="0.20 0.08 0.055" material="x_mat"/>
+      <geom name="y_carriage" type="box" pos="0 0 0.07" size="0.13 0.18 0.045" material="y_mat"/>
+      <geom name="z_slider" type="box" pos="0 0 -0.08" size="0.075 0.075 0.18" material="z_mat"/>
+      <geom name="spindle" type="cylinder" pos="0 0 -0.29" size="0.045 0.15" material="z_mat"/>
+      <geom name="tool_tip" type="sphere" pos="0 0 -0.47" size="0.04" material="tool_mat"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -140,10 +140,10 @@ private:
         return std::min(limit, fallback);
     }
 
-    static bool containsCubicSegment(const std::vector<TrajectorySegment>& segments)
+    static bool containsNonLineSegment(const std::vector<TrajectorySegment>& segments)
     {
         return std::any_of(segments.begin(), segments.end(), [](const TrajectorySegment& segment) {
-            return segment.type == TrajectorySegmentType::CubicPolynomial;
+            return segment.type != TrajectorySegmentType::Line;
         });
     }
 
@@ -153,18 +153,30 @@ private:
                                  double maxVel,
                                  double sync)
     {
-        args[static_cast<size_t>(MovePathArg::X0)] = segment.coeff[0][0];
-        args[static_cast<size_t>(MovePathArg::X1)] = segment.coeff[0][1];
-        args[static_cast<size_t>(MovePathArg::X2)] = segment.coeff[0][2];
-        args[static_cast<size_t>(MovePathArg::X3)] = segment.coeff[0][3];
-        args[static_cast<size_t>(MovePathArg::Y0)] = segment.coeff[1][0];
-        args[static_cast<size_t>(MovePathArg::Y1)] = segment.coeff[1][1];
-        args[static_cast<size_t>(MovePathArg::Y2)] = segment.coeff[1][2];
-        args[static_cast<size_t>(MovePathArg::Y3)] = segment.coeff[1][3];
-        args[static_cast<size_t>(MovePathArg::Z0)] = segment.coeff[2][0];
-        args[static_cast<size_t>(MovePathArg::Z1)] = segment.coeff[2][1];
-        args[static_cast<size_t>(MovePathArg::Z2)] = segment.coeff[2][2];
-        args[static_cast<size_t>(MovePathArg::Z3)] = segment.coeff[2][3];
+        if (segment.type == TrajectorySegmentType::CircularArc) {
+            args[static_cast<size_t>(MovePathArg::Shape)] = 1.0;
+            args[static_cast<size_t>(MovePathArg::P0X)] = segment.arc_center.x;
+            args[static_cast<size_t>(MovePathArg::P0Y)] = segment.arc_center.y;
+            args[static_cast<size_t>(MovePathArg::P0Z)] = segment.arc_center.z;
+            args[static_cast<size_t>(MovePathArg::P1X)] = segment.arc_u.x;
+            args[static_cast<size_t>(MovePathArg::P1Y)] = segment.arc_u.y;
+            args[static_cast<size_t>(MovePathArg::P1Z)] = segment.arc_u.z;
+            args[static_cast<size_t>(MovePathArg::P2X)] = segment.arc_v.x;
+            args[static_cast<size_t>(MovePathArg::P2Y)] = segment.arc_v.y;
+            args[static_cast<size_t>(MovePathArg::P2Z)] = segment.arc_v.z;
+            args[static_cast<size_t>(MovePathArg::Radius)] = segment.arc_radius;
+            args[static_cast<size_t>(MovePathArg::Sweep)] = segment.arc_sweep;
+        } else {
+            const Point3D start = evaluateSegment(segment, 0.0);
+            const Point3D end = evaluateSegment(segment, 1.0);
+            args[static_cast<size_t>(MovePathArg::Shape)] = 0.0;
+            args[static_cast<size_t>(MovePathArg::P0X)] = start.x;
+            args[static_cast<size_t>(MovePathArg::P0Y)] = start.y;
+            args[static_cast<size_t>(MovePathArg::P0Z)] = start.z;
+            args[static_cast<size_t>(MovePathArg::P1X)] = end.x;
+            args[static_cast<size_t>(MovePathArg::P1Y)] = end.y;
+            args[static_cast<size_t>(MovePathArg::P1Z)] = end.z;
+        }
         args[static_cast<size_t>(MovePathArg::QStartW)] = quat.w;
         args[static_cast<size_t>(MovePathArg::QStartX)] = quat.x;
         args[static_cast<size_t>(MovePathArg::QStartY)] = quat.y;
@@ -228,7 +240,7 @@ private:
         for (size_t i = 0; i < segments.size(); ++i) {
             const auto& segment = segments[i];
             if (segment.type != TrajectorySegmentType::Line) {
-                spdlog::error("[MotionPreprocessor] {} cannot execute cubic segment without sampling",
+                spdlog::error("[MotionPreprocessor] {} cannot execute non-line segment without sampling",
                               commandName);
                 return false;
             }
@@ -303,8 +315,8 @@ private:
         if (!cfg.galvoMode) {
             return sendSegmentsAsMovePath(segments, rx, ry, rz, cfg);
         }
-        if (cfg.galvoMode && containsCubicSegment(segments)) {
-            spdlog::error("[MotionPreprocessor] MoveLGalvo cannot execute fitted cubic segments without sampling");
+        if (cfg.galvoMode && containsNonLineSegment(segments)) {
+            spdlog::error("[MotionPreprocessor] MoveLGalvo cannot execute blended arc segments without sampling");
             return false;
         }
         return sendSegmentsAsMoveL(segments, rx, ry, rz, cfg);

@@ -409,6 +409,20 @@
              <item><spacer name="jogSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
             </layout>
            </item>
+           <item>
+            <layout class="QHBoxLayout" name="moveExciteRowLayout">
+             <item><widget class="QPushButton" name="btnMoveExcite"><property name="text"><string>MoveExcite</string></property><property name="toolTip"><string>AxisId 大于等于 0 时激励单轴；小于 0 时同时激励前 N 个轴，例如 -7 表示前 7 轴。</string></property><property name="presetCommand" stdset="0"><string>MoveExcite</string></property><property name="presetInputs" stdset="0"><string>inputMoveExciteAxis,inputMoveExciteDuration,inputMoveExciteAmplitude,inputMoveExciteCenter</string></property></widget></item>
+             <item><widget class="QLabel" name="labelMoveExciteAxis"><property name="text"><string>轴号/数量:</string></property></widget></item>
+             <item><widget class="QDoubleSpinBox" name="inputMoveExciteAxis"><property name="value"><double>-7.000000000000000</double></property></widget></item>
+             <item><widget class="QLabel" name="labelMoveExciteDuration"><property name="text"><string>时长s:</string></property></widget></item>
+             <item><widget class="QDoubleSpinBox" name="inputMoveExciteDuration"><property name="value"><double>20.000000000000000</double></property></widget></item>
+             <item><widget class="QLabel" name="labelMoveExciteAmplitude"><property name="text"><string>幅值:</string></property></widget></item>
+             <item><widget class="QDoubleSpinBox" name="inputMoveExciteAmplitude"><property name="value"><double>0.100000000000000</double></property></widget></item>
+             <item><widget class="QLabel" name="labelMoveExciteCenter"><property name="text"><string>中心偏置:</string></property></widget></item>
+             <item><widget class="QDoubleSpinBox" name="inputMoveExciteCenter"/></item>
+             <item><spacer name="moveExciteSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+            </layout>
+           </item>
           </layout>
          </widget>
         </item>

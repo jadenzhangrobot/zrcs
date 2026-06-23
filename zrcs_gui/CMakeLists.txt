@@ -50,6 +50,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS resources/ui)
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcs_gui
     ${CMAKE_SOURCE_DIR}/zrcs_gui/modules
+    ${CMAKE_SOURCE_DIR}/zrcs_rt
     ${CMAKE_SOURCE_DIR}/zrcs_gui/resources/style
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/3rdParty/Groot
@@ -63,6 +64,18 @@ set(PROTO_FILES
 )
 protobuf_generate_cpp(GUI_PROTO_SRCS GUI_PROTO_HDRS ${PROTO_FILES})
 
+set(ZRCS_GUI_EXTRA_SOURCES)
+set(ZRCS_GUI_EXTRA_LIBS)
+if(TARGET zrcs_mujoco)
+    list(APPEND ZRCS_GUI_EXTRA_SOURCES
+        ${CMAKE_SOURCE_DIR}/zrcs_rt/controller/mujoco/MujocoConfig.cpp
+    )
+    list(APPEND ZRCS_GUI_EXTRA_LIBS
+        zrcs_mujoco
+        tinyxml2
+    )
+endif()
+
 # 源文件
 set(SOURCES
     core/main.cpp
@@ -72,10 +85,11 @@ set(SOURCES
     components/AlarmPanel.cpp
     communication/ZmqClient.cpp
     communication/ZmqStatusSubscriber.cpp
-    modules/trajectory/TrajectoryVisualizer.cpp
+    modules/mujoco/MujocoVisualizer.cpp
     modules/behavior_tree/BehaviorTreePanel.cpp
     modules/command/CommandPanel.cpp
     ${GUI_PROTO_SRCS}
+    ${ZRCS_GUI_EXTRA_SOURCES}
 )
 
 # 头文件
@@ -86,7 +100,7 @@ set(HEADERS
     config/ZrcsStyles.h
     config/ZrcsConfig.h
     resources/style/StyleLoader.h
-    modules/trajectory/TrajectoryVisualizer.h
+    modules/mujoco/MujocoVisualizer.h
     modules/behavior_tree/BehaviorTreePanel.h
     modules/command/CommandPanel.h
 )
@@ -96,7 +110,7 @@ set(UI_FILES
     resources/ui/main_window.ui
     resources/ui/jog_control_panel.ui
     resources/ui/alarm_panel.ui
-    resources/ui/trajectory_panel.ui
+    resources/ui/mujoco_panel.ui
     resources/ui/command_panel.ui
     resources/ui/behavior_tree_panel.ui
 )
@@ -133,6 +147,7 @@ target_link_libraries(${PROJECT_NAME}
     absl::log_globals
     OpenGL::GL
     behavior_tree_editor
+    ${ZRCS_GUI_EXTRA_LIBS}
 )
 
 

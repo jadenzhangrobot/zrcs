@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>TrajectoryPanelUi</class>
- <widget class="QWidget" name="trajectoryPanel">
+ <class>MujocoPanelUi</class>
+ <widget class="QWidget" name="mujocoPanel">
   <layout class="QVBoxLayout" name="mainLayout">
    <property name="leftMargin">
     <number>8</number>
@@ -19,7 +19,7 @@
     <number>8</number>
    </property>
    <item>
-    <widget class="TrajectoryVisualizer3D" name="visualizer3D">
+    <widget class="MujocoVisualizer3D" name="mujocoView">
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -58,7 +58,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnClear">
+      <widget class="QPushButton" name="btnReload">
        <property name="text">
         <string>清空</string>
        </property>
@@ -83,9 +83,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>TrajectoryVisualizer3D</class>
+   <class>MujocoVisualizer3D</class>
    <extends>QOpenGLWidget</extends>
-    <header>trajectory/TrajectoryVisualizer.h</header>
+    <header>mujoco/MujocoVisualizer.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

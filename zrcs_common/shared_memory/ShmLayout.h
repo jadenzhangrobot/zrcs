@@ -33,9 +33,11 @@ namespace zrcs {
 inline constexpr size_t   kAxisMax       = 64;
 inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
 inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
+inline constexpr size_t   kMujocoIdentQueueCap = 1024;
+inline constexpr size_t   kMujocoParamQueueCap = 256;
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 12;           // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 13;           // ABI 变更时必须 +1
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -135,6 +137,74 @@ struct AxisFeedbackData
     double cmdVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
+};
+
+struct MujocoIdentCommandData {
+    uint64_t seq = 0;
+    uint32_t sessionId = 0;
+    uint32_t axisCount = 0;
+    uint64_t validMask = 0;
+    double qCmd[kAxisMax] = {};
+    double dqCmd[kAxisMax] = {};
+    double ddqCmd[kAxisMax] = {};
+};
+
+struct MujocoIdentSampleData {
+    uint64_t seq = 0;
+    uint64_t commandSeq = 0;
+    uint32_t sessionId = 0;
+    uint32_t sampleCount = 0;
+    double timestampSec = 0.0;
+    uint32_t axisId[kAxisMax] = {};
+    uint32_t slaveId[kAxisMax] = {};
+    double qCmd[kAxisMax] = {};
+    double dqCmd[kAxisMax] = {};
+    double ddqCmd[kAxisMax] = {};
+    double q[kAxisMax] = {};
+    double dq[kAxisMax] = {};
+    double ddq[kAxisMax] = {};
+    double tauApplied[kAxisMax] = {};
+    double tauInverse[kAxisMax] = {};
+    double ctrl[kAxisMax] = {};
+    uint8_t saturation[kAxisMax] = {};
+    uint8_t enabled[kAxisMax] = {};
+};
+
+struct MujocoParamUpdate {
+    uint64_t seq = 0;
+    uint32_t axisId = 0;
+    uint32_t slaveId = 0;
+    double inertia = 0.0;
+    double damping = 0.0;
+    double friction = 0.0;
+    double bias = 0.0;
+    double kp = 0.0;
+    double kv = 0.0;
+    double bandwidthHz = 0.0;
+    double dampingRatio = 0.0;
+    uint8_t applyArmature = 0;
+    uint8_t applyDamping = 0;
+    uint8_t applyFriction = 0;
+    uint8_t applyGains = 0;
+    uint8_t valid = 0;
+    uint8_t _pad[3] = {};
+};
+
+struct MujocoIdentStatusData {
+    uint64_t seq = 0;
+    uint32_t sessionId = 0;
+    uint32_t activeAxisId = 0;
+    uint64_t sampleCount = 0;
+    uint64_t acceptedCount = 0;
+    uint64_t rejectedCount = 0;
+    double inertia[kAxisMax] = {};
+    double damping[kAxisMax] = {};
+    double friction[kAxisMax] = {};
+    double bias[kAxisMax] = {};
+    double rmsError[kAxisMax] = {};
+    uint8_t active = 0;
+    uint8_t applying = 0;
+    uint8_t _pad[6] = {};
 };
 
 
@@ -306,6 +376,11 @@ struct alignas(64) SharedBlock {
     ShmSPSC<AxisFeedbackData, kLogQueueCap> axisFeedbackQueue;  // 额外的队列，用于高频轴状态反馈（可选）
 
     // ── 任务调度控制（双向，原子读写）────────────────────────────────────
+    ShmSPSC<MujocoIdentSampleData, kMujocoIdentQueueCap> mujocoIdentSampleQueue;
+    ShmSPSC<MujocoParamUpdate, kMujocoParamQueueCap> mujocoParamUpdateQueue;
+    LockFreeLatest<MujocoIdentCommandData> mujocoIdentCommand;
+    LockFreeLatest<MujocoIdentStatusData> mujocoIdentStatus;
+
     alignas(64) std::atomic<TaskScheduling> taskSched{TaskScheduling::IDLE};
   
 

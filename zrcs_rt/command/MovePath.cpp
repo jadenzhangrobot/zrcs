@@ -18,7 +18,12 @@ MovePath::MovePath()
 
 Eigen::Vector3d MovePath::evaluate(double u) const
 {
-    u = std::clamp(u, 0.0, 1.0);
+    if (isArc_)
+    {
+        const double theta = arcSweep_ * u;
+        return arcCenter_ + arcRadius_ * (std::cos(theta) * arcU_ + std::sin(theta) * arcV_);
+    }
+
     const double u2 = u * u;
     const double u3 = u2 * u;
 
@@ -31,7 +36,12 @@ Eigen::Vector3d MovePath::evaluate(double u) const
 
 Eigen::Vector3d MovePath::evaluateDerivative(double u) const
 {
-    u = std::clamp(u, 0.0, 1.0);
+    if (isArc_)
+    {
+        const double theta = arcSweep_ * u;
+        return arcRadius_ * arcSweep_ * (-std::sin(theta) * arcU_ + std::cos(theta) * arcV_);
+    }
+
     const double u2 = u * u;
 
     return {
@@ -110,25 +120,47 @@ double MovePath::arcLengthToParameter(double localS) const
     const double u0 = static_cast<double>(lo) / static_cast<double>(kArcLutSize - 1);
     const double u1 = static_cast<double>(hi) / static_cast<double>(kArcLutSize - 1);
     double u = u0 + ratio * (u1 - u0);
+    double loU = u0;
+    double hiU = u1;
 
     // 牛顿精修：用真实�? s(u)=integrateSpeed(u) 消掉分段线性插值的导数跳变
-    for (int iter = 0; iter < 4; ++iter)
+    for (int iter = 0; iter < 2; ++iter)
     {
+        const double currentS = integrateSpeed(u);
+        const double error = currentS - localS;
+        if (std::abs(error) <= 1e-10)
+        {
+            break;
+        }
+
+        if (currentS > localS)
+        {
+            hiU = u;
+        }
+        else
+        {
+            loU = u;
+        }
+
         const double speed = evaluateDerivative(u).norm();
         if (speed <= 1e-12)
         {
+            u = 0.5 * (loU + hiU);
             break;
         }
 
-        const double error = integrateSpeed(u) - localS;
-        if (std::abs(error) <= 1e-9)
+        const double nextU = u - error / speed;
+        if (std::isfinite(nextU) && nextU > loU && nextU < hiU)
         {
-            break;
+            u = nextU;
         }
-        u = std::clamp(u - error / speed, 0.0, 1.0);
+        else
+        {
+            u = 0.5 * (loU + hiU);
+        }
     }
 
-    return u;
+    return std::clamp(u, u0, u1);
 }
 
 bool MovePath::initTrajectory()
@@ -164,31 +196,60 @@ bool MovePath::initTrajectory()
         input_->current_acceleration[0] = 0.0;
     }
 
-    coeff_[0][0] = command_->args[static_cast<size_t>(MovePathArg::X0)];
-    coeff_[0][1] = command_->args[static_cast<size_t>(MovePathArg::X1)];
-    coeff_[0][2] = command_->args[static_cast<size_t>(MovePathArg::X2)];
-    coeff_[0][3] = command_->args[static_cast<size_t>(MovePathArg::X3)];
-    coeff_[1][0] = command_->args[static_cast<size_t>(MovePathArg::Y0)];
-    coeff_[1][1] = command_->args[static_cast<size_t>(MovePathArg::Y1)];
-    coeff_[1][2] = command_->args[static_cast<size_t>(MovePathArg::Y2)];
-    coeff_[1][3] = command_->args[static_cast<size_t>(MovePathArg::Y3)];
-    coeff_[2][0] = command_->args[static_cast<size_t>(MovePathArg::Z0)];
-    coeff_[2][1] = command_->args[static_cast<size_t>(MovePathArg::Z1)];
-    coeff_[2][2] = command_->args[static_cast<size_t>(MovePathArg::Z2)];
-    coeff_[2][3] = command_->args[static_cast<size_t>(MovePathArg::Z3)];
+    const int shape = static_cast<int>(command_->args[static_cast<size_t>(MovePathArg::Shape)]);
+    isArc_ = shape == 1;
+    isLinear_ = !isArc_;
+
+    if (isArc_)
+    {
+        arcCenter_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MovePathArg::P0X)],
+            command_->args[static_cast<size_t>(MovePathArg::P0Y)],
+            command_->args[static_cast<size_t>(MovePathArg::P0Z)]);
+        arcU_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MovePathArg::P1X)],
+            command_->args[static_cast<size_t>(MovePathArg::P1Y)],
+            command_->args[static_cast<size_t>(MovePathArg::P1Z)]);
+        arcV_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MovePathArg::P2X)],
+            command_->args[static_cast<size_t>(MovePathArg::P2Y)],
+            command_->args[static_cast<size_t>(MovePathArg::P2Z)]);
+        arcRadius_ = command_->args[static_cast<size_t>(MovePathArg::Radius)];
+        arcSweep_ = command_->args[static_cast<size_t>(MovePathArg::Sweep)];
+
+        const double uNorm = arcU_.norm();
+        const double vNorm = arcV_.norm();
+        if (!std::isfinite(arcRadius_) || !std::isfinite(arcSweep_) ||
+            arcRadius_ <= 1e-9 || std::abs(arcSweep_) <= 1e-9 ||
+            uNorm <= 1e-9 || vNorm <= 1e-9)
+        {
+            ERROR_PRINT("MovePath: circular arc args are invalid\n");
+            return false;
+        }
+        arcU_ /= uNorm;
+        arcV_ /= vNorm;
+    }
+    else
+    {
+        startPos_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MovePathArg::P0X)],
+            command_->args[static_cast<size_t>(MovePathArg::P0Y)],
+            command_->args[static_cast<size_t>(MovePathArg::P0Z)]);
+        targetPos_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MovePathArg::P1X)],
+            command_->args[static_cast<size_t>(MovePathArg::P1Y)],
+            command_->args[static_cast<size_t>(MovePathArg::P1Z)]);
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            coeff_[axis][0] = startPos_(axis);
+            coeff_[axis][1] = targetPos_(axis) - startPos_(axis);
+            coeff_[axis][2] = 0.0;
+            coeff_[axis][3] = 0.0;
+        }
+    }
 
     startPos_ = evaluate(0.0);
     targetPos_ = evaluate(1.0);
-    isLinear_ = true;
-    for (int axis = 0; axis < 3; ++axis)
-    {
-        if (std::abs(coeff_[axis][2]) > 1e-12 ||
-            std::abs(coeff_[axis][3]) > 1e-12)
-        {
-            isLinear_ = false;
-            break;
-        }
-    }
 
     startQuat_ = Eigen::Quaterniond(
         command_->args[static_cast<size_t>(MovePathArg::QStartW)],
@@ -225,6 +286,10 @@ bool MovePath::initTrajectory()
     {
         geometryLength_ = (targetPos_ - startPos_).norm();
     }
+    else if (isArc_)
+    {
+        geometryLength_ = std::abs(arcRadius_ * arcSweep_);
+    }
     else
     {
         geometryLength_ = integrateSpeed(1.0);
@@ -235,7 +300,7 @@ bool MovePath::initTrajectory()
         return false;
     }
 
-    if (!isLinear_)
+    if (!isLinear_ && !isArc_)
     {
         buildArcLengthLut();
     }
@@ -254,7 +319,7 @@ bool MovePath::initTrajectory()
         return false;
     }
 
-    arcOffset_ = arcOffset_ + pathLength_;
+    arcOffset_ = arcOffset_ + geometryLength_;
     input_->target_position[0] = arcOffset_;
     input_->target_velocity[0] = targetVel;
     input_->target_acceleration[0] = 0.0;
@@ -271,38 +336,55 @@ void MovePath::applyOutput()
     // output_ 已包含当前周期的轨迹输出，此处不再重复调用 update/pass_to_input。
 
     double s = output_->new_position[0];
-
-    // 弧长参数化：绝对弧长→段内弧长→查表反求曲线参数 u∈[0,1]
-    const double localS = std::clamp(s - (arcOffset_ - pathLength_), 0.0, pathLength_);
-    const double geometryS = pathLength_ > 1e-12
-                           ? localS * (geometryLength_ / pathLength_)
-                           : 0.0;
-    const double u = isLinear_
-                   ? geometryS / geometryLength_
+    const double geometryS = s - (arcOffset_ - geometryLength_);
+    const double u = (isLinear_ || isArc_)
+                   ? (geometryLength_ > 1e-12 ? geometryS / geometryLength_ : 0.0)
                    : arcLengthToParameter(geometryS);
 
     const Eigen::Vector3d pos = isLinear_
                               ? startPos_ + u * (targetPos_ - startPos_)
                               : evaluate(u);
 
+    Eigen::Vector3d pathDir = Eigen::Vector3d::Zero();
+    if (isLinear_)
+    {
+        if (geometryLength_ > 1e-12)
+        {
+            pathDir = (targetPos_ - startPos_) / geometryLength_;
+        }
+    }
+    else
+    {
+        const Eigen::Vector3d du = evaluateDerivative(u);
+        const double duNorm = du.norm();
+        if (duNorm > 1e-12)
+        {
+            pathDir = du / duNorm;
+        }
+    }
+    const double pathVelocity = output_->new_velocity[0];
+
     controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
     controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
+    controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
+    controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
+    controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
 
-    // 四元数球面线性插补 (SLERP) — 跳过相同四元数，避�? slerp(q,q) 0/0 数值噪声
-    Eigen::Quaterniond qInterp;
-    if (startQuat_.dot(endQuat_) >= 1.0 - 1e-12) {
-        qInterp = startQuat_;
-    } else {
-        qInterp = startQuat_.slerp(u, endQuat_);
-    }
-    if (axisIds_.size() >= 6)
-    {
-        Eigen::Vector3d euler = qInterp.toRotationMatrix().canonicalEulerAngles(2, 1, 0);
-        controller_->axes_[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
-        controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
-        controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
-    }
+    // // 四元数球面线性插补 (SLERP) — 跳过相同四元数，避�? slerp(q,q) 0/0 数值噪声
+    // Eigen::Quaterniond qInterp;
+    // if (startQuat_.dot(endQuat_) >= 1.0 - 1e-12) {
+    //     qInterp = startQuat_;
+    // } else {
+    //     qInterp = startQuat_.slerp(u, endQuat_);
+    // }
+    // if (axisIds_.size() >= 6)
+    // {
+    //     Eigen::Vector3d euler = qInterp.toRotationMatrix().canonicalEulerAngles(2, 1, 0);
+    //     controller_->axes_[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
+    //     controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
+    //     controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
+    // }
 }
 
 CMD_REGISTER(MovePath);

@@ -24,7 +24,8 @@ enum CmdId      {
     MoveLGalvo   = 14,
     MoveCurve    = 15,
     MovePath     = 16,
-    SENTINEL     = 17
+    MoveExcite   = 17,
+    SENTINEL     = 18
 };
 
 enum class EnableArg : std::size_t { AxisId = 0 };
@@ -51,7 +52,41 @@ enum class MoveCurveArg : std::size_t {
     TargetVel,
     Sync
 };
-using MovePathArg = MoveCurveArg;
+enum class MovePathArg : std::size_t {
+    Shape = 0, // 0=line, 1=circular arc
+    P0X, P0Y, P0Z,       // line start or arc center
+    P1X, P1Y, P1Z,       // line end or arc radial unit vector at start
+    P2X, P2Y, P2Z,       // unused for line or arc tangent unit vector at start
+    Radius,
+    Sweep,
+    QStartW, QStartX, QStartY, QStartZ,
+    QEndW, QEndX, QEndY, QEndZ,
+    Length,
+    Vel,
+    TargetVel,
+    Sync
+};
+
+enum class MoveExciteArg : std::size_t {
+    AxisId = 0,
+    Duration,
+    Amplitude,
+    CenterOffset,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    Phase1,
+    Phase2,
+    Phase3,
+    Phase4,
+    Phase5,
+    RampTime,
+    VelScale,
+    AccScale,
+    SessionId
+};
 
 
 

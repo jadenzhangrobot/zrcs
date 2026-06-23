@@ -21,10 +21,9 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <functional>
-#include "shared_memory/ShmClient.h"
 #include "communication/ZmqClient.h"
 #include "communication/ZmqStatusSubscriber.h"
-#include "trajectory/TrajectoryVisualizer.h"
+#include "mujoco/MujocoVisualizer.h"
 #include "command/CommandPanel.h"
 
 class BehaviorTreePanel;
@@ -130,7 +129,7 @@ private:
     void setupConnections();
     void setupStyles();
     void createJogControl();
-    void createTrajectoryPanel();
+    void createMujocoPanel();
     void createAlarmPanel();
     void createSettingsPanel();
     void createAdvancedModules();
@@ -153,12 +152,11 @@ private:
     
     // Advanced Modules
     QTabWidget *advancedTabs;
-    TrajectoryPanel *trajectoryPanel;
+    MujocoPanel *mujocoPanel;
     BehaviorTreePanel *behaviorTreePanel;
     CommandPanel *commandPanel;
     
     // Backend
-    zrcs::ShmClient *shmClient;
     ZMQClient *zmqClient;
     ZMQStatusSubscriber *statusSubscriber;
     QTimer *updateTimer;
@@ -172,5 +170,4 @@ private:
     // Helper methods
     void sendMotionCommand(const QString &command, const QVector<double> &args = {});
     void showConfirmDialog(const QString &title, const QString &message, std::function<void()> onConfirm);
-    void feedPoseToTrajectory();
 };

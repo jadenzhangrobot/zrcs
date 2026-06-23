@@ -120,6 +120,12 @@ public:
         return axisFbConsumer_.pop(out);
     }
 
+    bool readMujocoIdentStatus(zrcs::MujocoIdentStatusData& out) const noexcept
+    {
+        if (!block_) return false;
+        return zrcs::lfl_read(block_->mujocoIdentStatus, out);
+    }
+
     uint8_t axisCount() const noexcept 
     {
         if (!block_) return 0;

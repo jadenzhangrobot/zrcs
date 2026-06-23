@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 启用编译命令导出
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # realtime simulation standard
-set(BUILD_MODE "standard" CACHE STRING "Build configuration mode")
+set(BUILD_MODE "simulation" CACHE STRING "Build configuration mode")
 option(test "Build test programs" ON)
 # 包含模块文件
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/controller.cmake)

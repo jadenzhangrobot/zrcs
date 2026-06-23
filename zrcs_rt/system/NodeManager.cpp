@@ -16,6 +16,7 @@ void NodeManager::run()
     rtProcess_->initialize();
 
     auto* block = shm();
+    controller_->bindSharedBlock(block);
 
     // 构造进程内 SPSC 包装器。它们和 NodeManager 生命周期一致，
     // 因此传出去的指针不会悬空。

@@ -15,6 +15,7 @@
 #include "config/ConfigManager.h"
 #include <map>
 #include <stdexcept>
+#include <unordered_set>
 #include <vector>
 
 #ifdef REALTIME
@@ -27,6 +28,13 @@
 
 #if defined(SIMULATION) || defined(STANDARD)
 #include "controller/virtual/VirtualServo.h"
+#endif
+
+#if defined(SIMULATION)
+#include "controller/mujoco/MujocoBus.h"
+#include "controller/mujoco/MujocoConfig.h"
+#include "controller/mujoco/MujocoServo.h"
+#include "controller/mujoco/MujocoSimulation.h"
 #endif
 
 #ifndef REALTIME
@@ -64,6 +72,46 @@ ServoPara toServoPara(const zrcs::config::ServoConfigData& data)
     para.velFactor = data.velFactor;
     return para;
 }
+
+#if defined(SIMULATION)
+void validateMujocoBindings(const MujocoConfig& mujocoConfig,
+                            const std::map<uint32_t, ServoPara>& servoBySlaveId,
+                            const std::vector<AxisPara>& axes)
+{
+    std::unordered_set<uint32_t> axisServoIds;
+    for (const auto& axis : axes) {
+        for (const auto slaveId : axis.servoSlaveIds) {
+            axisServoIds.insert(slaveId);
+        }
+    }
+
+    std::unordered_set<uint32_t> mujocoServoIds;
+    for (const auto& servo : mujocoConfig.servos) {
+        mujocoServoIds.insert(servo.slaveId);
+        if (servoBySlaveId.find(servo.slaveId) == servoBySlaveId.end()) {
+            throw std::runtime_error(
+                "mujoco.xml references servo slaveId " +
+                std::to_string(servo.slaveId) +
+                ", but it does not exist in servo.xml");
+        }
+        if (axisServoIds.find(servo.slaveId) == axisServoIds.end()) {
+            throw std::runtime_error(
+                "mujoco.xml references servo slaveId " +
+                std::to_string(servo.slaveId) +
+                ", but no axis in axis.xml uses it");
+        }
+    }
+
+    for (const auto slaveId : axisServoIds) {
+        if (mujocoServoIds.find(slaveId) == mujocoServoIds.end()) {
+            throw std::runtime_error(
+                "axis.xml references servo slaveId " +
+                std::to_string(slaveId) +
+                ", but mujoco.xml does not bind it to a MuJoCo joint");
+        }
+    }
+}
+#endif
 
 } // namespace
 
@@ -129,6 +177,24 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
     void* masterPtr = nullptr;
 #endif
 
+#if defined(SIMULATION)
+    bool useMujoco = false;
+    std::shared_ptr<MujocoSimulation> mujocoSimulation;
+    if (MujocoConfig::existsInProject(configManager.projectDir())) {
+#ifdef ZRCS_HAS_MUJOCO
+        const auto mujocoConfig = MujocoConfig::load(configManager.projectDir());
+        validateMujocoBindings(mujocoConfig, servoBySlaveId, config->axisParas);
+        mujocoSimulation = std::make_shared<MujocoSimulation>(mujocoConfig);
+        bus = std::make_unique<MujocoBus>(mujocoSimulation);
+        useMujoco = true;
+#else
+        throw std::runtime_error(
+            "mujoco.xml exists in project " + configManager.projectDir().string() +
+            ", but MuJoCo support was not compiled. Configure with ZRCS_ENABLE_MUJOCO=ON.");
+#endif
+    }
+#endif
+
     // 在 config 被 move 之前，先用它创建所有 Axis
     // 在 config 被 move 给 Controller 之前创建所有 Axis。每个 Axis 持有一份
     // AxisPara 拷贝，因为命令执行时会直接从 Axis 对象读取限位等参数。
@@ -157,9 +223,20 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
             }
 #endif
 
+#if defined(SIMULATION)
+            if (useMujoco) {
+                mujocoSimulation->setAxisId(slaveId, it->axisId);
+                axis->pushServo(std::make_unique<MujocoServo>(
+                                    mujocoSimulation, slaveId, servoIt->second),
+                                servoIt->second);
+            } else
+#endif
 #if defined(SIMULATION) || defined(STANDARD)
-            // Simulation and standard modes use the in-process virtual servo.
-            axis->pushServo(std::make_unique<virtualServo>(slaveId), servoIt->second);
+            {
+                // Simulation falls back to VirtualServo when no mujoco.xml exists.
+                // Standard mode always keeps the in-process virtual servo.
+                axis->pushServo(std::make_unique<virtualServo>(slaveId), servoIt->second);
+            }
 #endif
         }
     }

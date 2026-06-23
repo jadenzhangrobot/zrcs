@@ -3,5 +3,5 @@
 #ifdef REALTIME
   #define cycletime 1
 #else
-  #define cycletime 10
+  #define cycletime 1
 #endif

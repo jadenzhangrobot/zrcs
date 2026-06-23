@@ -94,22 +94,42 @@ void assert_quaternion_layout(const zrcs::Command& command)
 Point3D command_curve_point(const zrcs::Command& command, double u)
 {
     u = std::clamp(u, 0.0, 1.0);
-    const double u2 = u * u;
-    const double u3 = u2 * u;
-    return {
-        command_arg(command, MovePathArg::X0) +
-            command_arg(command, MovePathArg::X1) * u +
-            command_arg(command, MovePathArg::X2) * u2 +
-            command_arg(command, MovePathArg::X3) * u3,
-        command_arg(command, MovePathArg::Y0) +
-            command_arg(command, MovePathArg::Y1) * u +
-            command_arg(command, MovePathArg::Y2) * u2 +
-            command_arg(command, MovePathArg::Y3) * u3,
-        command_arg(command, MovePathArg::Z0) +
-            command_arg(command, MovePathArg::Z1) * u +
-            command_arg(command, MovePathArg::Z2) * u2 +
-            command_arg(command, MovePathArg::Z3) * u3,
+    const int shape = static_cast<int>(command_arg(command, MovePathArg::Shape));
+    if (shape == 1) {
+        const Point3D center = {
+            command_arg(command, MovePathArg::P0X),
+            command_arg(command, MovePathArg::P0Y),
+            command_arg(command, MovePathArg::P0Z),
+        };
+        const Point3D basisU = {
+            command_arg(command, MovePathArg::P1X),
+            command_arg(command, MovePathArg::P1Y),
+            command_arg(command, MovePathArg::P1Z),
+        };
+        const Point3D basisV = {
+            command_arg(command, MovePathArg::P2X),
+            command_arg(command, MovePathArg::P2Y),
+            command_arg(command, MovePathArg::P2Z),
+        };
+        const double radius = command_arg(command, MovePathArg::Radius);
+        const double theta = command_arg(command, MovePathArg::Sweep) * u;
+        return pointAdd(center,
+                        pointScale(pointAdd(pointScale(basisU, std::cos(theta)),
+                                            pointScale(basisV, std::sin(theta))),
+                                   radius));
+    }
+
+    const Point3D start = {
+        command_arg(command, MovePathArg::P0X),
+        command_arg(command, MovePathArg::P0Y),
+        command_arg(command, MovePathArg::P0Z),
     };
+    const Point3D end = {
+        command_arg(command, MovePathArg::P1X),
+        command_arg(command, MovePathArg::P1Y),
+        command_arg(command, MovePathArg::P1Z),
+    };
+    return pointAdd(start, pointScale(pointSub(end, start), u));
 }
 
 void assert_curve_quaternion_layout(const zrcs::Command& command)
@@ -205,7 +225,7 @@ void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
     assert(!commands.empty());
 
     Point3D previous_target = command_curve_point(commands.front(), 0.0);
-    bool has_cubic_coefficients = false;
+    bool has_arc_segment = false;
     for (size_t i = 0; i < commands.size(); ++i)
     {
         const auto& command = commands[i];
@@ -242,18 +262,13 @@ void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
         assert(target_vel <= max_vel + 1e-9);
         assert(is_near(command_arg(command, MovePathArg::Sync), i == 0 ? 1.0 : 0.0));
 
-        has_cubic_coefficients = has_cubic_coefficients ||
-            std::abs(command_arg(command, MovePathArg::X2)) > 1e-9 ||
-            std::abs(command_arg(command, MovePathArg::X3)) > 1e-9 ||
-            std::abs(command_arg(command, MovePathArg::Y2)) > 1e-9 ||
-            std::abs(command_arg(command, MovePathArg::Y3)) > 1e-9 ||
-            std::abs(command_arg(command, MovePathArg::Z2)) > 1e-9 ||
-            std::abs(command_arg(command, MovePathArg::Z3)) > 1e-9;
+        has_arc_segment = has_arc_segment ||
+            static_cast<int>(command_arg(command, MovePathArg::Shape)) == 1;
 
         previous_target = target;
     }
 
-    assert(has_cubic_coefficients);
+    assert(has_arc_segment);
     assert(is_same_point(previous_target, waypoints.back(), 1e-5));
     assert(is_near(command_arg(commands.back(), MovePathArg::TargetVel), 0.0, 1e-6));
 }
@@ -672,7 +687,8 @@ double segment_arc_to_u_for_test(const TrajectorySegment& segment, double localS
     if (segment.length <= 1e-9) {
         return 0.0;
     }
-    if (segment.type == TrajectorySegmentType::Line) {
+    if (segment.type == TrajectorySegmentType::Line ||
+        segment.type == TrajectorySegmentType::CircularArc) {
         return localS / segment.length;
     }
 
@@ -763,16 +779,16 @@ void test_corner_blend_fits_butterfly_segments()
     assert(is_same_point(evaluateSegment(segments.front(), 0.0), raw.front()));
     assert(is_same_point(evaluateSegment(segments.back(), 1.0), raw.back()));
 
-    bool has_cubic = false;
+    bool has_arc = false;
     for (const auto& segment : segments)
     {
         assert(segment.length > 1e-9);
         assert(std::isfinite(segment.length));
         assert(std::isfinite(segment.max_curvature));
         assert(is_near(segment.feedrate_limit, 12.0));
-        has_cubic = has_cubic || segment.type == TrajectorySegmentType::CubicPolynomial;
+        has_arc = has_arc || segment.type == TrajectorySegmentType::CircularArc;
     }
-    assert(has_cubic);
+    assert(has_arc);
 
     show_segment_plot(raw, segments);
 }

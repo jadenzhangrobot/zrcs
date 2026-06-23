@@ -204,6 +204,7 @@ private:
             case CmdId::MoveLGalvo: registerTypedAlias<MoveLGalvoArg>(commandName); break;
             case CmdId::MoveCurve:  registerTypedAlias<MoveCurveArg>(commandName);  break;
             case CmdId::MovePath:   registerTypedAlias<MovePathArg>(commandName);   break;
+            case CmdId::MoveExcite: registerTypedAlias<MoveExciteArg>(commandName); break;
             default: break;
             }
         }

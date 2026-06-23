@@ -30,7 +30,8 @@ struct PathMoveBlock {
 
 enum class TrajectorySegmentType {
     Line,
-    CubicPolynomial
+    CubicPolynomial,
+    CircularArc
 };
 
 struct TrajectorySegment {
@@ -41,6 +42,11 @@ struct TrajectorySegment {
 
     double length = 0.0;
     double coeff[6][4] = {}; // axis, c0 + c1*u + c2*u^2 + c3*u^3, u in [0, 1]
+    Point3D arc_center;
+    Point3D arc_u;
+    Point3D arc_v;
+    double arc_radius = 0.0;
+    double arc_sweep = 0.0;
     double max_curvature = 0.0;
 
     double feedrate_limit = 0.0;
@@ -131,6 +137,17 @@ inline double evalSegmentAxisSecondDerivative(const TrajectorySegment& seg, int 
 
 inline Point3D evaluateSegment(const TrajectorySegment& seg, double u)
 {
+    if (seg.type == TrajectorySegmentType::CircularArc) {
+        u = std::clamp(u, 0.0, 1.0);
+        const double theta = seg.arc_sweep * u;
+        const double c = std::cos(theta);
+        const double s = std::sin(theta);
+        return pointAdd(seg.arc_center,
+                        pointScale(pointAdd(pointScale(seg.arc_u, c),
+                                            pointScale(seg.arc_v, s)),
+                                   seg.arc_radius));
+    }
+
     return {
         evalSegmentAxis(seg, 0, u),
         evalSegmentAxis(seg, 1, u),
@@ -140,6 +157,16 @@ inline Point3D evaluateSegment(const TrajectorySegment& seg, double u)
 
 inline Point3D segmentTangent(const TrajectorySegment& seg, double u)
 {
+    if (seg.type == TrajectorySegmentType::CircularArc) {
+        u = std::clamp(u, 0.0, 1.0);
+        const double theta = seg.arc_sweep * u;
+        const double c = std::cos(theta);
+        const double s = std::sin(theta);
+        return pointScale(pointAdd(pointScale(seg.arc_u, -s),
+                                   pointScale(seg.arc_v, c)),
+                          seg.arc_radius * seg.arc_sweep);
+    }
+
     return {
         evalSegmentAxisDerivative(seg, 0, u),
         evalSegmentAxisDerivative(seg, 1, u),
@@ -149,6 +176,16 @@ inline Point3D segmentTangent(const TrajectorySegment& seg, double u)
 
 inline Point3D segmentSecondDerivative(const TrajectorySegment& seg, double u)
 {
+    if (seg.type == TrajectorySegmentType::CircularArc) {
+        u = std::clamp(u, 0.0, 1.0);
+        const double theta = seg.arc_sweep * u;
+        const double c = std::cos(theta);
+        const double s = std::sin(theta);
+        return pointScale(pointAdd(pointScale(seg.arc_u, -c),
+                                   pointScale(seg.arc_v, -s)),
+                          seg.arc_radius * seg.arc_sweep * seg.arc_sweep);
+    }
+
     return {
         evalSegmentAxisSecondDerivative(seg, 0, u),
         evalSegmentAxisSecondDerivative(seg, 1, u),

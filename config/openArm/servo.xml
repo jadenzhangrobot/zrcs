@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<servoConfig>
+		<servos size="dynamic">
+			<value0><slaveId>0</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value0>
+			<value1><slaveId>1</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value1>
+			<value2><slaveId>2</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value2>
+			<value3><slaveId>3</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value3>
+			<value4><slaveId>4</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value4>
+			<value5><slaveId>5</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value5>
+			<value6><slaveId>6</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value6>
+			<value7><slaveId>7</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value7>
+			<value8><slaveId>8</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value8>
+			<value9><slaveId>9</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value9>
+			<value10><slaveId>10</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value10>
+			<value11><slaveId>11</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value11>
+			<value12><slaveId>12</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value12>
+			<value13><slaveId>13</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value13>
+			<value14><slaveId>14</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value14>
+			<value15><slaveId>15</slaveId><mode>position</mode><encoderCountPerUnit>1048575</encoderCountPerUnit><direction>1</direction><homePos>0</homePos><posOffset>0</posOffset><velFactor>1</velFactor></value15>
+		</servos>
+	</servoConfig>
+</cereal>

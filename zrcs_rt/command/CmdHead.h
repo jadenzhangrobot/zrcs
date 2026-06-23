@@ -15,6 +15,7 @@
 #include "command/MoveabsJ.h"
 #include "command/MoveC.h"
 #include "command/MoveCurve.h"
+#include "command/MoveExcite.h"
 #include "command/MoveJ.h"
 #include "command/MoveL.h"
 #include "command/MoveLGalvo.h"

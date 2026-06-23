@@ -26,6 +26,7 @@
 #include "config/ProjectConfig.h"
 #include "motion/MotionPreprocessor.h"
 #include "behavior_tree/BehaviorTreeRunner.h"
+#include "mujoco_identify/MujocoIdentifyWorker.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -210,7 +211,7 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
 static bool runMotionPreprocessorDemo(MotionPreprocessor& motionPreprocessor)
 {
     MotionPreprocessor::Config cfg;
-    cfg.maxVel = 1.0;
+    cfg.maxVel = 3.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
     cfg.stepSize = 0.25;
@@ -317,6 +318,10 @@ int main(int argc, char **argv)
         // 创建 RtBridge（NRT→RT 共享内存通信的唯一入口）
         RtBridge bridge(nrt_process.sharedBlock());
         BehaviorTreeRunner behaviorTreeRunner(&bridge);
+        auto mujocoIdentifyOptions = zrcs_nrt::parseMujocoIdentifyOptions(argc, argv);
+        zrcs_nrt::MujocoIdentifyWorker mujocoIdentifyWorker(
+            nrt_process.sharedBlock(), mujocoIdentifyOptions);
+        mujocoIdentifyWorker.start();
 
         // 初始化 ZMQ 服务器
         ZMQServer zmq_server(&bridge, &behaviorTreeRunner);
@@ -350,8 +355,8 @@ int main(int argc, char **argv)
         spdlog::info("RT log consumer started");
 
         // 初始化运动预处理器
-        MotionPreprocessor motion_preprocessor(&bridge);
-        (void)runMotionPreprocessorDemo(motion_preprocessor);
+       MotionPreprocessor motion_preprocessor(&bridge);
+       (void)runMotionPreprocessorDemo(motion_preprocessor);
 
         // 主循环：监控共享内存状态
         while (g_running) {
@@ -359,6 +364,9 @@ int main(int argc, char **argv)
         }
 
         // 优雅关闭
+        spdlog::info("Stopping MuJoCo identification worker...");
+        mujocoIdentifyWorker.stop();
+
         spdlog::info("Stopping status publisher...");
         status_publisher.stop();
 

@@ -12,7 +12,6 @@
 #include <functional>
 #include <QFile>
 #include "ui_main_window.h"
-#include "shared_memory/ShmLayout.h"
 
 MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     : QMainWindow(parent),
@@ -28,8 +27,6 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     setupConnections();
     setupStyles();
     
-    shmClient = new zrcs::ShmClient();
-    shmClient->attach();
     zmqClient = new ZMQClient();
 
     // ZMQ 状态信号连接
@@ -72,8 +69,6 @@ MainWindowRefactored::~MainWindowRefactored()
     statusSubscriber = nullptr;
     delete zmqClient;
     zmqClient = nullptr;
-    delete shmClient;
-    shmClient = nullptr;
 }
 
 void MainWindowRefactored::setupUI()
@@ -103,7 +98,7 @@ void MainWindowRefactored::setupUI()
 
     createJogControl();
     createQuickActions();
-    createTrajectoryPanel();
+    createMujocoPanel();
     createAlarmPanel();
     createAdvancedModules();
 
@@ -199,9 +194,15 @@ void MainWindowRefactored::createJogControl()
     jogPanel = findChild<JogControlPanel*>("jogPanel");
 }
 
-void MainWindowRefactored::createTrajectoryPanel()
+void MainWindowRefactored::createMujocoPanel()
 {
-    trajectoryPanel = findChild<TrajectoryPanel*>("trajectoryPanel");
+    mujocoPanel = findChild<MujocoPanel*>("mujocoPanel");
+    if (advancedTabs && mujocoPanel) {
+        const int index = advancedTabs->indexOf(mujocoPanel->parentWidget());
+        if (index >= 0) {
+            advancedTabs->setTabText(index, QStringLiteral("MuJoCo"));
+        }
+    }
 }
 
 void MainWindowRefactored::createAlarmPanel()
@@ -284,7 +285,6 @@ void MainWindowRefactored::bindBehaviorTreeClient()
 void MainWindowRefactored::onUpdateTimer()
 {
     updateGlobalStatus();
-    feedPoseToTrajectory();
 }
 void MainWindowRefactored::updateGlobalStatus() {}
 void MainWindowRefactored::updateCommunicationStatus() {}
@@ -367,6 +367,10 @@ void MainWindowRefactored::showConfirmDialog(const QString &title, const QString
 
 void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
 {
+    if (mujocoPanel) {
+        mujocoPanel->updateAxisPositions(positions);
+    }
+
     if (!jogPanel) return;
 
     const int axisCount = positions.size();
@@ -482,27 +486,4 @@ void MainWindowRefactored::onConnectClicked()
     connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
             this, &MainWindowRefactored::onRtLogReceived);
     statusSubscriber->start();
-}
-
-void MainWindowRefactored::feedPoseToTrajectory()
-{
-    if (!shmClient || !trajectoryPanel) return;
-
-    if (!shmClient->isAttached()) {
-        shmClient->attach();
-    }
-
-    zrcs::SharedBlock *block = shmClient->sharedBlock();
-    if (!block) return;
-
-    zrcs::FkResultData fk;
-    if (zrcs::lfl_read(block->fkResult, fk)) {
-        QVector3D pos(static_cast<float>(fk.pose[0]),
-                      static_cast<float>(fk.pose[1]),
-                      static_cast<float>(fk.pose[2]));
-        QVector3D rpy(static_cast<float>(fk.pose[3]),
-                      static_cast<float>(fk.pose[4]),
-                      static_cast<float>(fk.pose[5]));
-        trajectoryPanel->updateEndEffectorPose(pos, rpy);
-    }
 }

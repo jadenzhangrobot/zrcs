@@ -20,6 +20,7 @@
 #include "AxisConfig.h"
 #include "ControllerInterface.h"
 #include "laser/LaserController.h"
+#include "shared_memory/ShmLayout.h"
 
 namespace ZrcsHardware {
 
@@ -64,6 +65,12 @@ public:
 
     /// 每周期前端：接收总线数据 → 同步轴状态
     void receiveData();
+
+    void bindSharedBlock(zrcs::SharedBlock* block) {
+        if (hardwareBus_) {
+            hardwareBus_->bindSharedBlock(block);
+        }
+    }
 
     void readIo() {}
     void writeIo() {}

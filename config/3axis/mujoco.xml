@@ -1,0 +1,5 @@
+<mujocoConfig model="mujoco/robot.xml" timestepMs="1.0" substeps="1">
+  <servo slaveId="0" joint="x_slide" kp="800.0" kd="40.0" qposScale="0.001" qposOffset="0.0"/>
+  <servo slaveId="1" joint="y_slide" kp="800.0" kd="40.0" qposScale="0.001" qposOffset="0.0"/>
+  <servo slaveId="2" joint="z_slide" kp="800.0" kd="40.0" qposScale="0.001" qposOffset="0.0"/>
+</mujocoConfig>

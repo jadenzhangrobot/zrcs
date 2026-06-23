@@ -1,10 +1,8 @@
 project(zrcsnrt)
 
-# 查找依赖库
 find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
 
-# 包含目录
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcs_nrt
     ${CMAKE_SOURCE_DIR}/zrcs_rt
@@ -13,9 +11,9 @@ include_directories(
     ${CMAKE_BINARY_DIR}
 )
 
-# 源文件
-file(GLOB_RECURSE SOURCES 
-    "main.cpp"
+set(SOURCES
+    main.cpp
+    mujoco_identify/MujocoIdentifyWorker.cpp
 )
 
 set(PROTO_FILES
@@ -26,7 +24,6 @@ protobuf_generate_cpp(ZRCSNRT_PROTO_SRCS ZRCSNRT_PROTO_HDRS ${PROTO_FILES})
 add_executable(zrcsnrt ${SOURCES} ${ZRCSNRT_PROTO_SRCS} ${ZRCSNRT_PROTO_HDRS})
 target_include_directories(zrcsnrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-# 链接库
 target_link_libraries(zrcsnrt PRIVATE
     zrcscommon
     Threads::Threads
