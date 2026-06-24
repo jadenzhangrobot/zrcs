@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modelConfig>
+  <model name="unitree_g1" type="humanoid" dof="29">
+    <baseFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
+    <toolFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
+    <joints>
+      <joint axisId="0" type="revolute" axis="Y"/>
+      <joint axisId="1" type="revolute" axis="X"/>
+      <joint axisId="2" type="revolute" axis="Z"/>
+      <joint axisId="3" type="revolute" axis="Y"/>
+      <joint axisId="4" type="revolute" axis="Y"/>
+      <joint axisId="5" type="revolute" axis="X"/>
+      <joint axisId="6" type="revolute" axis="Y"/>
+      <joint axisId="7" type="revolute" axis="X"/>
+      <joint axisId="8" type="revolute" axis="Z"/>
+      <joint axisId="9" type="revolute" axis="Y"/>
+      <joint axisId="10" type="revolute" axis="Y"/>
+      <joint axisId="11" type="revolute" axis="X"/>
+      <joint axisId="12" type="revolute" axis="Z"/>
+      <joint axisId="13" type="revolute" axis="X"/>
+      <joint axisId="14" type="revolute" axis="Y"/>
+      <joint axisId="15" type="revolute" axis="Y"/>
+      <joint axisId="16" type="revolute" axis="X"/>
+      <joint axisId="17" type="revolute" axis="Z"/>
+      <joint axisId="18" type="revolute" axis="Y"/>
+      <joint axisId="19" type="revolute" axis="X"/>
+      <joint axisId="20" type="revolute" axis="Y"/>
+      <joint axisId="21" type="revolute" axis="Z"/>
+      <joint axisId="22" type="revolute" axis="Y"/>
+      <joint axisId="23" type="revolute" axis="X"/>
+      <joint axisId="24" type="revolute" axis="Z"/>
+      <joint axisId="25" type="revolute" axis="Y"/>
+      <joint axisId="26" type="revolute" axis="X"/>
+      <joint axisId="27" type="revolute" axis="Y"/>
+      <joint axisId="28" type="revolute" axis="Z"/>
+    </joints>
+  </model>
+</modelConfig>
