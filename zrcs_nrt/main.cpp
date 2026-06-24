@@ -14,8 +14,6 @@
 #include <atomic>
 #include <string>
 #include <filesystem>
-#include <cmath>
-#include <vector>
 #include "log/NrtLogger.h"
 #include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
@@ -24,7 +22,6 @@
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"
-#include "motion/MotionPreprocessor.h"
 #include "behavior_tree/BehaviorTreeRunner.h"
 #include "mujoco_identify/MujocoIdentifyWorker.h"
 
@@ -208,66 +205,6 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
 
 }
 
-static bool runMotionPreprocessorDemo(MotionPreprocessor& motionPreprocessor)
-{
-    constexpr double visualScale = 50.0;
-    MotionPreprocessor::Config cfg;
-    cfg.maxVel = 80.0 * visualScale;
-    cfg.maxAccel = 300.0 * visualScale;
-    cfg.maxJerk = 8000.0 * visualScale;
-    cfg.cornerTol = 0.1 * visualScale;
-    cfg.galvoMode = false;
-
-    // 蝴蝶形点位 — 先注释，用共线点测试弧长累加
-    auto wp = [](double x, double y, double z) {
-        return Point3D{x * visualScale, y * visualScale, z * visualScale};
-    };
-    const std::vector<Point3D> waypoints = {
-       wp( 0.0,  4.2, 0.0),
-       wp(-0.8,  3.4, 0.0),
-       wp(-2.4,  4.6, 0.0),
-       wp(-4.5,  5.2, 0.0),
-       wp(-6.2,  4.0, 0.0),
-       wp(-5.2,  2.0, 0.0),
-       wp(-3.4,  0.7, 0.0),
-       wp(-5.5, -1.2, 0.0),
-       wp(-4.5, -3.8, 0.0),
-       wp(-2.4, -3.1, 0.0),
-       wp(-0.8, -1.4, 0.0),
-       wp( 0.0, -3.6, 0.0),
-       wp( 0.8, -1.4, 0.0),
-       wp( 2.4, -3.1, 0.0),
-       wp( 4.5, -3.8, 0.0),
-       wp( 5.5, -1.2, 0.0),
-       wp( 3.4,  0.7, 0.0),
-       wp( 5.2,  2.0, 0.0),
-       wp( 6.2,  4.0, 0.0),
-       wp( 4.5,  5.2, 0.0),
-       wp( 2.4,  4.6, 0.0),
-       wp( 0.8,  3.4, 0.0),
-       wp( 0.0,  4.2, 0.0),
-    };
-
-    // 共线测试点：沿 X 轴等距排列
-    // const std::vector<Point3D> waypoints = {
-    //     {0.0, 0.0, 0.0},
-    //     {1.0, 0.0, 0.0},
-    //     {2.0, 0.0, 0.0},
-    //     {3.0, 0.0, 0.0},
-    //     {4.0, 0.0, 0.0},
-    //     {5.0, 0.0, 0.0},
-    // };
-
-    spdlog::info("[MotionPreprocessorDemo] Sending {} waypoints through real RtBridge", waypoints.size());
-    if (!motionPreprocessor.process(waypoints, 0.1, -0.2, 0.3, cfg)) {
-        spdlog::error("[MotionPreprocessorDemo] Failed to queue demo path");
-        return false;
-    }
-
-    spdlog::info("[MotionPreprocessorDemo] Demo path queued to RT cmdQueue");
-    return true;
-}
-
 int main(int argc, char **argv)
 {
     // std::signal 两平台共用，统一处理 Ctrl+C / SIGTERM
@@ -356,10 +293,6 @@ int main(int argc, char **argv)
             });
         rtLogConsumer.start();
         spdlog::info("RT log consumer started");
-
-        // 初始化运动预处理器
-       MotionPreprocessor motion_preprocessor(&bridge);
-       (void)runMotionPreprocessorDemo(motion_preprocessor);
 
         // 主循环：监控共享内存状态
         while (g_running) {

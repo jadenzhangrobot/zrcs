@@ -161,14 +161,14 @@ void NodeManager::run()
                                 cmdNode_ = nullptr;
                                 taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
                             }
-                           else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
-                           {
-                            publishCommandResult(0);
-                            INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
-                            cmdNode_->setCmdStatus(CmdStatus::INIT);
-                            cmdNode_ = nullptr;
-                            break;
-                           }
+                            else if (cmdNode_->getCmdStatus() == CmdStatus::COMPLETED)
+                            {
+                                publishCommandResult(0);
+                                INFO_PRINT("命令完成: id=%u(seq=%u)\n",static_cast<unsigned>(cmd_.cmdId), cmd_.seq);
+                                cmdNode_->setCmdStatus(CmdStatus::INIT);
+                                cmdNode_ = nullptr;
+                                break;
+                            }
                         } 
                         else if (cmdId != CmdId::INVALID)
                         {

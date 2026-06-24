@@ -15,11 +15,13 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <spdlog/spdlog.h>
 
 #include "config/CmdDefine.h"   // CmdId, Arg 枚举, magic_enum, kCmdArgsMax
+#include "motion/MotionPreprocessor.h"
 #include "rtBridge/RtBridge.h"  // RtBridge, SendResult
 #include "BtSharedState.h"
 
@@ -376,6 +378,71 @@ public:
 private:
     std::shared_ptr<SharedState> sharedState_;
     uint32_t pendingSeq_{0};
+};
+
+class ButterflyPathNode : public BT::SyncActionNode
+{
+public:
+    ButterflyPathNode(const std::string& name,
+                      const BT::NodeConfiguration& config,
+                      std::shared_ptr<SharedState> sharedState)
+        : BT::SyncActionNode(name, config)
+        , sharedState_(std::move(sharedState))
+    {}
+
+    static BT::PortsList providedPorts()
+    {
+        return {};
+    }
+
+    BT::NodeStatus tick() override
+    {
+        MotionPreprocessor::Config cfg;
+        cfg.maxVel = 100.0;
+        cfg.maxAccel = 300.0;
+        cfg.maxJerk = 3000.0;
+        cfg.cornerTol = 1.0;
+        cfg.galvoMode = false;
+
+        const std::vector<Point3D> waypoints = {
+            {   0.0,   84.0, 0.0},
+            { -16.0,   68.0, 0.0},
+            { -48.0,   92.0, 0.0},
+            { -90.0,  104.0, 0.0},
+            {-124.0,   80.0, 0.0},
+            {-104.0,   40.0, 0.0},
+            { -68.0,   14.0, 0.0},
+            {-110.0,  -24.0, 0.0},
+            { -90.0,  -76.0, 0.0},
+            { -48.0,  -62.0, 0.0},
+            { -16.0,  -28.0, 0.0},
+            {   0.0,  -72.0, 0.0},
+            {  16.0,  -28.0, 0.0},
+            {  48.0,  -62.0, 0.0},
+            {  90.0,  -76.0, 0.0},
+            { 110.0,  -24.0, 0.0},
+            {  68.0,   14.0, 0.0},
+            { 104.0,   40.0, 0.0},
+            { 124.0,   80.0, 0.0},
+            {  90.0,  104.0, 0.0},
+            {  48.0,   92.0, 0.0},
+            {  16.0,   68.0, 0.0},
+            {   0.0,   84.0, 0.0},
+        };
+
+        sharedState_->setCurrentNode(name(), "send butterfly path");
+        MotionPreprocessor motionPreprocessor(sharedState_->bridge);
+        if (!motionPreprocessor.process(waypoints, 0.1, -0.2, 0.3, cfg)) {
+            sharedState_->setCurrentNode(name(), "failed to queue butterfly path");
+            return BT::NodeStatus::FAILURE;
+        }
+
+        sharedState_->setCurrentNode(name(), "butterfly path queued");
+        return BT::NodeStatus::SUCCESS;
+    }
+
+private:
+    std::shared_ptr<SharedState> sharedState_;
 };
 
 } // namespace zrcs_bt

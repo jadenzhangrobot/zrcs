@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<root main_tree_to_execute="Cmd_MoveL_Batch">
+<root main_tree_to_execute="Cmd_ButterflyPath">
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_Disable">
         <Sequence>
@@ -68,6 +68,12 @@
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
+    <BehaviorTree ID="Cmd_ButterflyPath">
+        <Sequence>
+            <Action ID="ButterflyPath"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
     <BehaviorTree ID="Cmd_Movehome">
         <Sequence>
             <Action ID="Movehome"/>
@@ -97,6 +103,7 @@
             <input_port name="command" type="std::string">Command name (e.g. MoveL, MoveLGalvo)</input_port>
             <input_port name="segments" type="std::string">Pipe-separated segments, each comma-separated doubles in Arg enum order</input_port>
         </Action>
+        <Action ID="ButterflyPath"/>
         <Action ID="Disable">
             <input_port default="0.0" name="AxisId" type="double">Axis ID (0=all axes)</input_port>
         </Action>

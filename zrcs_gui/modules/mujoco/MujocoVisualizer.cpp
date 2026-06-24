@@ -48,6 +48,7 @@ struct MujocoVisualizer3D::Impl {
     static constexpr int kMaxRenderedTrailSegments = 2500;
     static constexpr mjtNum kMinTrailDistance = 0.0005;
     static constexpr mjtNum kTrailDisplayZ = 0.121;
+    static constexpr mjtNum kTrailRadius = 0.0005;
 
     Impl()
     {
@@ -151,7 +152,7 @@ struct MujocoVisualizer3D::Impl {
                 mjv_initGeom(geom, mjGEOM_CAPSULE, size, pos, mat, trailRgba);
                 mjv_connector(geom,
                               mjGEOM_CAPSULE,
-                              0.004,
+                              kTrailRadius,
                               toolTrail[i0].data(),
                               toolTrail[i1].data());
                 geom->category = mjCAT_DECOR;

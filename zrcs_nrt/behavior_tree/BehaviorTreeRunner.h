@@ -169,6 +169,13 @@ private:
                 return std::make_unique<zrcs_bt::BatchCmdNode>(name, config, sharedState);
             });
 
+        factory_.registerBuilder<zrcs_bt::ButterflyPathNode>(
+            "ButterflyPath",
+            [sharedState = sharedState_](const std::string& name, const BT::NodeConfiguration& config)
+            {
+                return std::make_unique<zrcs_bt::ButterflyPathNode>(name, config, sharedState);
+            });
+
         // 为每个已实现的 CmdId 注册 TypedSendCommandNode 别名
         registerCommandAliasNodes();
     }

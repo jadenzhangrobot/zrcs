@@ -8,9 +8,9 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>20</maxAcc>
-				<maxJerk>30</maxJerk>
+				<maxVel>100</maxVel>
+				<maxAcc>300</maxAcc>
+				<maxJerk>3000</maxJerk>
 				<posPositiveLimit>100000</posPositiveLimit>
 				<posNegativeLimit>-100000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
@@ -21,9 +21,9 @@
 				<servoSlaveIds size="dynamic">
 					<value0>1</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>20</maxAcc>
-				<maxJerk>30</maxJerk>
+				<maxVel>100</maxVel>
+				<maxAcc>300</maxAcc>
+				<maxJerk>3000</maxJerk>
 				<posPositiveLimit>100000</posPositiveLimit>
 				<posNegativeLimit>-100000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
@@ -34,9 +34,9 @@
 				<servoSlaveIds size="dynamic">
 					<value0>2</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>20</maxAcc>
-				<maxJerk>30</maxJerk>
+				<maxVel>100</maxVel>
+				<maxAcc>300</maxAcc>
+				<maxJerk>3000</maxJerk>
 				<posPositiveLimit>100000</posPositiveLimit>
 				<posNegativeLimit>-100000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
