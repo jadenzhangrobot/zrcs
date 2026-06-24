@@ -64,10 +64,6 @@ void NodeManager::run()
            WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
 
-    // 将轴数量发布到共享内存，供 NRT 侧按需调整数据结构。
-    shm()->axisCount.store(controller_->axes_.size(),
-                           std::memory_order_release);
-
     // 启动线程前先注册 RT 回调，保证第一次周期执行时策略函数已经有效。
     controller_->rtos_->real_task([this]()
     {

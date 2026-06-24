@@ -6,7 +6,7 @@ endif()
 
 # 默认安装到 build/install，避免需要管理员权限
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path" FORCE)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/Install" CACHE PATH "Install path" FORCE)
 endif()
 
 project(zrcs VERSION 1.0.0)
@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 启用编译命令导出
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # realtime simulation standard
-set(BUILD_MODE "simulation" CACHE STRING "Build configuration mode")
+set(BUILD_MODE "standard" CACHE STRING "Build configuration mode")
 option(test "Build test programs" ON)
 # 包含模块文件
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/controller.cmake)

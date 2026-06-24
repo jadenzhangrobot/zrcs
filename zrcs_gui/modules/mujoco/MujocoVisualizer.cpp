@@ -42,6 +42,12 @@ struct MujocoVisualizer3D::Impl {
     bool sceneReady = false;
     bool renderContextReady = false;
     QVector<JointBinding> bindings;
+    int toolTipGeomId = -1;
+    QVector<std::array<mjtNum, 3>> toolTrail;
+    static constexpr int kMaxTrailPoints = 20000;
+    static constexpr int kMaxRenderedTrailSegments = 2500;
+    static constexpr mjtNum kMinTrailDistance = 0.0005;
+    static constexpr mjtNum kTrailDisplayZ = 0.121;
 
     Impl()
     {
@@ -77,11 +83,81 @@ struct MujocoVisualizer3D::Impl {
             model = nullptr;
         }
         bindings.clear();
+        toolTipGeomId = -1;
+        toolTrail.clear();
     }
 
     bool ready() const
     {
         return model && data && sceneReady && renderContextReady;
+    }
+
+    void appendToolTipSample()
+    {
+        if (!model || !data || toolTipGeomId < 0) {
+            return;
+        }
+
+        const mjtNum *p = data->geom_xpos + 3 * toolTipGeomId;
+        std::array<mjtNum, 3> point{p[0], p[1], kTrailDisplayZ};
+        if (!toolTrail.isEmpty()) {
+            const auto &last = toolTrail.back();
+            const mjtNum dx = point[0] - last[0];
+            const mjtNum dy = point[1] - last[1];
+            const mjtNum dz = point[2] - last[2];
+            const mjtNum dist2 = dx * dx + dy * dy + dz * dz;
+            if (dist2 < kMinTrailDistance * kMinTrailDistance) {
+                return;
+            }
+        }
+
+        toolTrail.append(point);
+        if (toolTrail.size() > kMaxTrailPoints) {
+            toolTrail.remove(0, toolTrail.size() - kMaxTrailPoints);
+        }
+    }
+
+    void addTrailToScene()
+    {
+        if (!sceneReady || toolTrail.isEmpty()) {
+            return;
+        }
+
+        const float trailRgba[4] = {1.00f, 0.22f, 0.48f, 1.00f};
+        mjtNum size[3] = {0.0, 0.0, 0.0};
+        mjtNum pos[3] = {0.0, 0.0, 0.0};
+        mjtNum mat[9] = {1.0, 0.0, 0.0,
+                         0.0, 1.0, 0.0,
+                         0.0, 0.0, 1.0};
+
+        const int available = std::min(scene.maxgeom - scene.ngeom, kMaxRenderedTrailSegments);
+        if (available <= 0) {
+            return;
+        }
+
+        if (toolTrail.size() >= 2) {
+            const int trailSegments = static_cast<int>(toolTrail.size() - 1);
+            const int renderedSegments = std::min(trailSegments, available);
+            for (int out = 0; out < renderedSegments && scene.ngeom < scene.maxgeom; ++out) {
+                int i0 = static_cast<int>(
+                    (static_cast<long long>(out) * trailSegments) / renderedSegments);
+                int i1 = static_cast<int>(
+                    (static_cast<long long>(out + 1) * trailSegments) / renderedSegments);
+                if (i1 <= i0) {
+                    i1 = std::min(i0 + 1, trailSegments);
+                }
+
+                mjvGeom *geom = scene.geoms + scene.ngeom++;
+                mjv_initGeom(geom, mjGEOM_CAPSULE, size, pos, mat, trailRgba);
+                mjv_connector(geom,
+                              mjGEOM_CAPSULE,
+                              0.004,
+                              toolTrail[i0].data(),
+                              toolTrail[i1].data());
+                geom->category = mjCAT_DECOR;
+                geom->emission = 0.45f;
+            }
+        }
     }
 #else
     void release() {}
@@ -192,8 +268,11 @@ void MujocoVisualizer3D::reloadModel()
             throw std::runtime_error("No axis.xml servo maps to mujoco.xml servo.");
         }
 
+        impl_->toolTipGeomId = mj_name2id(impl_->model, mjOBJ_GEOM, "tool_tip");
+
         mj_forward(impl_->model, impl_->data);
-        mjv_makeScene(impl_->model, &impl_->scene, 2000);
+        impl_->appendToolTipSample();
+        mjv_makeScene(impl_->model, &impl_->scene, 3500);
         impl_->sceneReady = true;
         impl_->scene.flags[mjRND_SHADOW] = 1;
         impl_->scene.flags[mjRND_REFLECTION] = 1;
@@ -232,9 +311,21 @@ void MujocoVisualizer3D::setAxisPositions(const QVector<double> &positions)
                 positions[binding.axisId] * binding.qposScale + binding.qposOffset;
         }
         mj_forward(impl_->model, impl_->data);
+        impl_->appendToolTipSample();
     }
 #endif
 
+    update();
+}
+
+void MujocoVisualizer3D::clearTrajectory()
+{
+#ifdef ZRCS_HAS_MUJOCO
+    impl_->toolTrail.clear();
+    if (impl_->model && impl_->data) {
+        impl_->appendToolTipSample();
+    }
+#endif
     update();
 }
 
@@ -256,12 +347,14 @@ void MujocoVisualizer3D::paintGL()
                         &impl_->camera,
                         mjCAT_ALL,
                         &impl_->scene);
+        impl_->addTrailToScene();
         mjr_render(viewport, &impl_->scene, &impl_->context);
 
         const std::string left = "MuJoCo";
         const std::string right =
             "axes " + std::to_string(impl_->latestAxisPositions.size()) +
-            " / joints " + std::to_string(impl_->bindings.size());
+            " / joints " + std::to_string(impl_->bindings.size()) +
+            " / trail " + std::to_string(impl_->toolTrail.size());
         mjr_overlay(mjFONT_NORMAL,
                     mjGRID_TOPLEFT,
                     viewport,
@@ -401,7 +494,8 @@ void MujocoPanel::setupUI()
     QPushButton *btn3D = findChild<QPushButton *>("btn3D");
     QPushButton *btnResetView = findChild<QPushButton *>("btnResetView");
     QPushButton *btnReload = findChild<QPushButton *>("btnReload");
-    if (!mujocoView || !btn2D || !btn3D || !btnResetView || !btnReload) {
+    QPushButton *btnClearTrail = findChild<QPushButton *>("btnClearTrail");
+    if (!mujocoView || !btn2D || !btn3D || !btnResetView || !btnReload || !btnClearTrail) {
         return;
     }
 
@@ -409,16 +503,19 @@ void MujocoPanel::setupUI()
     btn3D->setText(QStringLiteral("Free"));
     btnResetView->setText(QStringLiteral("Reset"));
     btnReload->setText(QStringLiteral("Reload"));
+    btnClearTrail->setText(QStringLiteral("Clear Path"));
 
     btn2D->setProperty("kind", "accent");
     btn3D->setProperty("kind", "accentBlue");
     btnResetView->setProperty("kind", "neutral");
     btnReload->setProperty("kind", "neutral");
+    btnClearTrail->setProperty("kind", "neutral");
 
     connect(btn2D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::setTopView);
     connect(btn3D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::resetView);
     connect(btnResetView, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::resetView);
     connect(btnReload, &QPushButton::clicked, this, &MujocoPanel::reloadModel);
+    connect(btnClearTrail, &QPushButton::clicked, this, &MujocoPanel::clearTrajectory);
 }
 
 void MujocoPanel::clearState()
@@ -439,5 +536,12 @@ void MujocoPanel::reloadModel()
 {
     if (mujocoView) {
         mujocoView->reloadModel();
+    }
+}
+
+void MujocoPanel::clearTrajectory()
+{
+    if (mujocoView) {
+        mujocoView->clearTrajectory();
     }
 }

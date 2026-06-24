@@ -21,7 +21,6 @@ public:
         double maxVel = 10.0;
         double maxAccel = 20.0;
         double maxJerk = 30.0;
-        double stepSize = 1.0;
         double cornerTol = 0.5;
         bool galvoMode = false;
     };
@@ -49,7 +48,7 @@ public:
         bridge_->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
 
         auto blocks = makeBlocksFromWaypoints(waypoints, rx, ry, rz, cfg.maxVel);
-        auto segments = pathFitter_.fitCornerBlendSegments(blocks, cfg.stepSize, cfg.cornerTol);
+        auto segments = pathFitter_.fitCornerBlendSegments(blocks, cfg.cornerTol);
         if (segments.empty()) {
             spdlog::error("[MotionPreprocessor] Path fitting produced no trajectory segments");
             return false;

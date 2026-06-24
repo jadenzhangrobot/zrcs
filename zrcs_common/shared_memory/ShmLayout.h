@@ -32,12 +32,12 @@ namespace zrcs {
 
 inline constexpr size_t   kAxisMax       = 64;
 inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容以支持路径 MoveL 批量发送）
-inline constexpr size_t   kLogQueueCap   = 256;  // 必须为 2 的幂
+inline constexpr size_t   kLogQueueCap   = 1024; // 必须为 2 的幂（扩容以缓解消费滞后时的帧丢弃）
 inline constexpr size_t   kMujocoIdentQueueCap = 1024;
 inline constexpr size_t   kMujocoParamQueueCap = 256;
 inline constexpr size_t   kCmdArgsMax    = 24;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 13;           // ABI 变更时必须 +1
+inline constexpr uint32_t kShmVersion    = 14;           // ABI 变更时必须 +1 (14: kLogQueueCap 256→1024)
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -112,7 +112,8 @@ inline constexpr uint64_t packCmdCompletion(uint32_t seq, uint8_t result) noexce
 
 inline constexpr CmdCompletionData unpackCmdCompletion(uint64_t packed) noexcept
 {
-    return {
+    return 
+    {
         static_cast<uint32_t>(packed >> 32),
         static_cast<uint8_t>(packed & 0xffu),
         {}
@@ -120,7 +121,8 @@ inline constexpr CmdCompletionData unpackCmdCompletion(uint64_t packed) noexcept
 }
 
 // RT→NRT 日志条目（固定大小，无动态分配）
-struct RtLogEntry {
+struct RtLogEntry 
+{
     uint64_t timestamp_us;
     uint8_t  level;       // 0=INFO 1=WARN 2=ERROR
     uint8_t  _pad[1];
@@ -219,7 +221,8 @@ struct MujocoIdentStatusData {
 //   - 通过 ShmSPSCProducer / ShmSPSCConsumer 包装器访问
 
 template <typename T, size_t Cap>
-struct alignas(64) ShmSPSC {
+struct alignas(64) ShmSPSC 
+{
     static_assert((Cap > 0) && ((Cap & (Cap - 1)) == 0),
         "Capacity must be a power of 2");
     static constexpr size_t kMask = Cap - 1;
@@ -237,7 +240,8 @@ struct alignas(64) ShmSPSC {
 // cached_tail_ / cached_head_ 是进程本地优化，即使两进程映射在不同虚拟地址也正确。
 
 template <typename T, size_t Cap>
-class ShmSPSCProducer {
+class ShmSPSCProducer 
+{
 public:
     explicit ShmSPSCProducer(ShmSPSC<T, Cap>& shm) noexcept : shm_(shm) {}
 
@@ -246,10 +250,12 @@ public:
     ShmSPSCProducer& operator=(const ShmSPSCProducer&) = delete;
 
     // 队列满时静默返回 false（RT 路径不阻塞）
-    bool push(const T& item) noexcept {
+    bool push(const T& item) noexcept 
+    {
         const uint32_t head = shm_.head.load(std::memory_order_relaxed);
         const uint32_t next = (head + 1) & ShmSPSC<T, Cap>::kMask;
-        if (next == cached_tail_) {
+        if (next == cached_tail_) 
+        {
             cached_tail_ = shm_.tail.load(std::memory_order_acquire);
             if (next == cached_tail_) return false;  // 满
         }

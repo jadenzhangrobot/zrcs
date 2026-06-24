@@ -210,39 +210,42 @@ static void terminateRTProcess(RtBridge* bridge = nullptr)
 
 static bool runMotionPreprocessorDemo(MotionPreprocessor& motionPreprocessor)
 {
+    constexpr double visualScale = 50.0;
     MotionPreprocessor::Config cfg;
-    cfg.maxVel = 3.0;
-    cfg.maxAccel = 40.0;
-    cfg.maxJerk = 200.0;
-    cfg.stepSize = 0.25;
-    cfg.cornerTol = 0.2;
+    cfg.maxVel = 80.0 * visualScale;
+    cfg.maxAccel = 300.0 * visualScale;
+    cfg.maxJerk = 8000.0 * visualScale;
+    cfg.cornerTol = 0.1 * visualScale;
     cfg.galvoMode = false;
 
     // 蝴蝶形点位 — 先注释，用共线点测试弧长累加
+    auto wp = [](double x, double y, double z) {
+        return Point3D{x * visualScale, y * visualScale, z * visualScale};
+    };
     const std::vector<Point3D> waypoints = {
-       { 0.0,  4.2, 0.0},
-       {-0.8,  3.4, 0.0},
-       {-2.4,  4.6, 0.0},
-       {-4.5,  5.2, 0.0},
-       {-6.2,  4.0, 0.0},
-       {-5.2,  2.0, 0.0},
-       {-3.4,  0.7, 0.0},
-       {-5.5, -1.2, 0.0},
-       {-4.5, -3.8, 0.0},
-       {-2.4, -3.1, 0.0},
-       {-0.8, -1.4, 0.0},
-       { 0.0, -3.6, 0.0},
-       { 0.8, -1.4, 0.0},
-       { 2.4, -3.1, 0.0},
-       { 4.5, -3.8, 0.0},
-       { 5.5, -1.2, 0.0},
-       { 3.4,  0.7, 0.0},
-       { 5.2,  2.0, 0.0},
-       { 6.2,  4.0, 0.0},
-       { 4.5,  5.2, 0.0},
-       { 2.4,  4.6, 0.0},
-       { 0.8,  3.4, 0.0},
-       { 0.0,  4.2, 0.0},
+       wp( 0.0,  4.2, 0.0),
+       wp(-0.8,  3.4, 0.0),
+       wp(-2.4,  4.6, 0.0),
+       wp(-4.5,  5.2, 0.0),
+       wp(-6.2,  4.0, 0.0),
+       wp(-5.2,  2.0, 0.0),
+       wp(-3.4,  0.7, 0.0),
+       wp(-5.5, -1.2, 0.0),
+       wp(-4.5, -3.8, 0.0),
+       wp(-2.4, -3.1, 0.0),
+       wp(-0.8, -1.4, 0.0),
+       wp( 0.0, -3.6, 0.0),
+       wp( 0.8, -1.4, 0.0),
+       wp( 2.4, -3.1, 0.0),
+       wp( 4.5, -3.8, 0.0),
+       wp( 5.5, -1.2, 0.0),
+       wp( 3.4,  0.7, 0.0),
+       wp( 5.2,  2.0, 0.0),
+       wp( 6.2,  4.0, 0.0),
+       wp( 4.5,  5.2, 0.0),
+       wp( 2.4,  4.6, 0.0),
+       wp( 0.8,  3.4, 0.0),
+       wp( 0.0,  4.2, 0.0),
     };
 
     // 共线测试点：沿 X 轴等距排列

@@ -17,6 +17,7 @@ public:
 
     void setAxisPositions(const QVector<double> &positions);
     void reloadModel();
+    void clearTrajectory();
 
     void clearState();
     void resetView();
@@ -48,6 +49,7 @@ public:
     void clearState();
     void updateAxisPositions(const QVector<double> &positions);
     void reloadModel();
+    void clearTrajectory();
 
 signals:
     void modelLoaded(int jointCount);

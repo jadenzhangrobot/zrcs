@@ -10,7 +10,7 @@
 class PathPreprocessor {
 public:
     std::vector<TrajectorySegment> fitCornerBlendSegments(
-        const std::vector<PathMoveBlock>& blocks, double sampleStep, double cornerTol)
+        const std::vector<PathMoveBlock>& blocks, double cornerTol)
     {
         std::vector<PathMoveBlock> linearBlocks;
         linearBlocks.reserve(blocks.size());
@@ -25,7 +25,6 @@ public:
             return {};
         }
 
-        const double safeStep = std::max(sampleStep, 1e-6);
         std::vector<Point3D> raw;
         raw.reserve(linearBlocks.size() + 1);
         raw.push_back(linearBlocks.front().start);
@@ -36,7 +35,7 @@ public:
         const size_t N = raw.size();
         std::vector<CornerBlend> corners(N);
         if (N > 2) {
-            buildCornerBlends(raw, safeStep, cornerTol, corners);
+            buildCornerBlends(raw, cornerTol, corners);
         }
 
         std::vector<TrajectorySegment> segments;
@@ -54,7 +53,7 @@ public:
             if (pointDistance(segStart, segEnd) > 1e-9) {
                 segments.push_back(makeLineSegment(
                     segmentId++, block.block_id, segStart, segEnd,
-                    block.rx, block.ry, block.rz, block.feedrate, safeStep));
+                    block.rx, block.ry, block.rz, block.feedrate));
             }
 
             if (i + 1 < N - 1 && corners[i + 1].active) {
@@ -62,7 +61,7 @@ public:
                     linearBlocks[i].feedrate, linearBlocks[i + 1].feedrate);
                 segments.push_back(makeArcSegment(
                     segmentId++, block.block_id, corners[i + 1],
-                    block.rx, block.ry, block.rz, cornerFeedrate, safeStep));
+                    block.rx, block.ry, block.rz, cornerFeedrate));
             }
         }
 
@@ -100,11 +99,9 @@ private:
     };
 
     static void buildCornerBlends(const std::vector<Point3D>& raw,
-                                  double sampleStep,
                                   double cornerTol,
                                   std::vector<CornerBlend>& corners)
     {
-        (void)sampleStep;
         for (size_t i = 1; i + 1 < raw.size(); ++i) {
             const Point3D vIn = pointNormalize(pointSub(raw[i], raw[i - 1]));
             const Point3D vOut = pointNormalize(pointSub(raw[i + 1], raw[i]));
@@ -126,9 +123,6 @@ private:
             const double dMax = 0.5 * std::min(lIn, lOut);
             const double d = std::min(dTol, dMax);
 
-            // sampleStep is a geometry/length sampling resolution, not a
-            // minimum blend size.  Sharp corners often need short blends; if
-            // we drop them here, the generated path keeps a hard tangent jump.
             if (d < 1e-6) {
                 continue;
             }
@@ -163,8 +157,7 @@ private:
                                              double rx,
                                              double ry,
                                              double rz,
-                                             double feedrate,
-                                             double sampleStep)
+                                             double feedrate)
     {
         TrajectorySegment segment;
         segment.segment_id = segmentId;
@@ -179,7 +172,7 @@ private:
         setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
         setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
 
-        finalizeGeometry(segment, sampleStep);
+        finalizeGeometry(segment);
         return segment;
     }
 
@@ -189,8 +182,7 @@ private:
                                             double rx,
                                             double ry,
                                             double rz,
-                                            double feedrate,
-                                            double sampleStep)
+                                            double feedrate)
     {
         TrajectorySegment segment;
         segment.segment_id = segmentId;
@@ -206,7 +198,7 @@ private:
         setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
         setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
 
-        finalizeGeometry(segment, sampleStep);
+        finalizeGeometry(segment);
         return segment;
     }
 
@@ -218,8 +210,7 @@ private:
                                                   double rx,
                                                   double ry,
                                                   double rz,
-                                                  double feedrate,
-                                                  double sampleStep)
+                                                  double feedrate)
     {
         const Point3D p0 = evalClampedCubicBSpline(ctrl, u0);
         const Point3D p1 = evalClampedCubicBSpline(ctrl, u0 + (u1 - u0) / 3.0);
@@ -242,7 +233,7 @@ private:
         setAxis(segment, 4, ry, 0.0, 0.0, 0.0);
         setAxis(segment, 5, rz, 0.0, 0.0, 0.0);
 
-        finalizeGeometry(segment, sampleStep);
+        finalizeGeometry(segment);
         return segment;
     }
 
@@ -298,13 +289,13 @@ private:
         return {y0, m[0][3], m[1][3], m[2][3]};
     }
 
-    static void finalizeGeometry(TrajectorySegment& segment, double sampleStep)
+    static void finalizeGeometry(TrajectorySegment& segment)
     {
-        segment.length = estimateLength(segment, sampleStep);
+        segment.length = estimateLength(segment);
         segment.max_curvature = estimateMaxCurvature(segment);
     }
 
-    static double estimateLength(const TrajectorySegment& segment, double sampleStep)
+    static double estimateLength(const TrajectorySegment& segment)
     {
         if (segment.type == TrajectorySegmentType::Line) {
             return pointDistance(evaluateSegment(segment, 0.0), evaluateSegment(segment, 1.0));
@@ -313,7 +304,6 @@ private:
             return std::abs(segment.arc_radius * segment.arc_sweep);
         }
 
-        (void)sampleStep;
         return integrateSegmentSpeed(segment, 1.0);
     }
 

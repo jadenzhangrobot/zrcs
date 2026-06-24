@@ -284,7 +284,6 @@ void run_motion_preprocessor_queue_test(bool galvo_mode, CmdId expected_cmd)
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
-    cfg.stepSize = 0.25;
     cfg.cornerTol = 0.2;
     cfg.galvoMode = galvo_mode;
 
@@ -751,7 +750,7 @@ void test_line_block_generates_single_segment()
     block.feedrate = 5.0;
 
     PathPreprocessor fitter;
-    const auto segments = fitter.fitCornerBlendSegments({block}, 0.1, 0.2);
+    const auto segments = fitter.fitCornerBlendSegments({block}, 0.1);
 
     assert(segments.size() == 1);
     assert(segments[0].type == TrajectorySegmentType::Line);
@@ -768,7 +767,7 @@ void test_corner_blend_fits_butterfly_segments()
     const auto blocks = make_blocks(raw, 12.0);
 
     PathPreprocessor fitter;
-    const auto segments = fitter.fitCornerBlendSegments(blocks, 0.25, 0.2);
+    const auto segments = fitter.fitCornerBlendSegments(blocks, 0.25);
 
     assert(!segments.empty());
     assert(segments.size() > blocks.size());
@@ -799,7 +798,7 @@ void test_velocity_lookahead_on_segments()
     const auto blocks = make_blocks(raw, 5.0);
 
     PathPreprocessor fitter;
-    auto segments = fitter.fitCornerBlendSegments(blocks, 0.25, 0.2);
+    auto segments = fitter.fitCornerBlendSegments(blocks, 0.25);
 
     VelocityPlanner3D planner;
     planner.setConfig(20.0, 40.0, 0.0, 0.0, 1.0, 200.0);
@@ -859,7 +858,6 @@ void test_motion_preprocessor_queues_move_path_commands()
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
-    cfg.stepSize = 0.25;
     cfg.cornerTol = 0.2;
     cfg.galvoMode = false;
 

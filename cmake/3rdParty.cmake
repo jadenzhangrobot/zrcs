@@ -49,6 +49,12 @@ if(ZRCS_ENABLE_MUJOCO)
         target_compile_options(mujoco PRIVATE -Wno-error)
     endif()
 
+    # 静态构建 MuJoCo：须定义 MJ_STATIC，否则 mjexport.h 将 MJAPI 解析为
+    # __declspec(dllimport)，导致 render_noop 等 stub 实现与头声明冲突
+    # (redeclared without dllimport attribute)。PUBLIC 传播给所有链接者
+    # （含 render_noop 与 zrcs::mujoco 消费方），无需逐目标单独设置。
+    target_compile_definitions(mujoco PUBLIC MJ_STATIC)
+
     foreach(ZRCS_MUJOCO_PLUGIN_TARGET elasticity actuator sensor sdf_plugin)
         if(TARGET ${ZRCS_MUJOCO_PLUGIN_TARGET})
             set_target_properties(${ZRCS_MUJOCO_PLUGIN_TARGET} PROPERTIES

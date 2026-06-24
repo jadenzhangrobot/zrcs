@@ -15,7 +15,10 @@
       "WebFetch(domain:scholar.google.com)",
       "Bash(find / -name \"tinyfsm*\" -type f 2>/dev/null | head -20)",
       "Read(//e//**)",
-      "Bash(cmake --build /e/zrcs-dev/build --target zrcsrt)"
+      "Bash(cmake --build /e/zrcs-dev/build --target zrcsrt)",
+      "Bash(awk -F'geomS=' '{split\\($2,a,\" \"\\); split\\($0,b,\"newVel=\"\\); split\\(b[2],c,\" \"\\); print a[1], c[1]}')",
+      "Bash(awk 'NR%3==0 || $1>7 || $2<0')",
+      "Bash(awk '$2<0 || $1>15')"
     ]
   }
 }
