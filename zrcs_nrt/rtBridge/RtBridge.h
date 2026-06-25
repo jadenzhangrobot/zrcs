@@ -10,7 +10,6 @@
 #include <atomic>
 #include <string>
 #include <vector>
-#include <unordered_map>
 #include <cstring>
 #include <chrono>
 #include <mutex>

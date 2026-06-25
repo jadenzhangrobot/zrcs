@@ -13,7 +13,6 @@
 #include <csignal>
 #include <atomic>
 #include <string>
-#include <filesystem>
 #include "log/NrtLogger.h"
 #include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
