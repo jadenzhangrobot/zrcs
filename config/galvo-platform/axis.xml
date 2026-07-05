@@ -14,6 +14,7 @@
 				<posPositiveLimit>500</posPositiveLimit>
 				<posNegativeLimit>-500</posNegativeLimit>
 				<maxPosDiff>1</maxPosDiff>
+				<lead>1</lead>
 			</value0>
 			<value1>
 				<axisId>1</axisId>
@@ -27,6 +28,7 @@
 				<posPositiveLimit>500</posPositiveLimit>
 				<posNegativeLimit>-500</posNegativeLimit>
 				<maxPosDiff>1</maxPosDiff>
+				<lead>1</lead>
 			</value1>
 			<value2>
 				<axisId>2</axisId>
@@ -40,6 +42,7 @@
 				<posPositiveLimit>50</posPositiveLimit>
 				<posNegativeLimit>-50</posNegativeLimit>
 				<maxPosDiff>5</maxPosDiff>
+				<lead>1</lead>
 			</value2>
 			<value3>
 				<axisId>3</axisId>
@@ -53,6 +56,7 @@
 				<posPositiveLimit>50</posPositiveLimit>
 				<posNegativeLimit>-50</posNegativeLimit>
 				<maxPosDiff>5</maxPosDiff>
+				<lead>1</lead>
 			</value3>
 		</axes>
 	</axisConfig>

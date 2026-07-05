@@ -36,6 +36,7 @@ public:
     int32_t vel() override { return velocity_; }
     int32_t acc() override { return acceleration_; }
     int32_t torque() override { return torque_; }
+    int32_t rawPosition() const { return position_; }
     void emergStop() override { velocity_ = 0; }
     void runCycle() override {}
 
@@ -55,6 +56,7 @@ int main()
     axisConfig.axisId = 0;
     axisConfig.axisName = "dual";
     axisConfig.maxPosDiff = 0.001;
+    axisConfig.lead = 5.0;
 
     ZrcsHardware::Axis axis(0, new ZrcsHardware::AxisPara(axisConfig));
 
@@ -68,16 +70,23 @@ int main()
     reverseServo.encoderCountPerUnit = 1000;
     reverseServo.direction = -1;
 
-    axis.pushServo(std::make_unique<TestServo>(), forwardServo);
-    axis.pushServo(std::make_unique<TestServo>(), reverseServo);
+    auto forward = std::make_unique<TestServo>();
+    auto reverse = std::make_unique<TestServo>();
+    auto* forwardPtr = forward.get();
+    auto* reversePtr = reverse.get();
 
-    assert(axis.toEncoderUnit(2.5, forwardServo) == 2500);
-    assert(axis.toEncoderUnit(2.5, reverseServo) == -2500);
-    assert(axis.toUserUnit(2500, forwardServo) == 2.5);
-    assert(axis.toUserUnit(-2500, reverseServo) == 2.5);
+    axis.pushServo(std::move(forward), forwardServo);
+    axis.pushServo(std::move(reverse), reverseServo);
+
+    assert(axis.toServoUnit(2.5, forwardServo) == 0.5);
+    assert(axis.toServoUnit(2.5, reverseServo) == 0.5);
+    assert(axis.toUserUnit(0.5, forwardServo) == 2.5);
+    assert(axis.toUserUnit(0.5, reverseServo) == 2.5);
 
     axis.setAxisPositionCmd(2.5);
     axis.updateMotionCmdsToServo();
+    assert(forwardPtr->rawPosition() == 500);
+    assert(reversePtr->rawPosition() == -500);
     axis.statusSync();
 
     assert(axis.actualPos() == 2.5);

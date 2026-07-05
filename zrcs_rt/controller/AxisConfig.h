@@ -25,6 +25,7 @@ struct AxisPara {
     double posPositiveLimit = 0.0;
     double posNegativeLimit = 0.0;
     double maxPosDiff = 0.0;
+    double lead = 0.0;
     double frequency = 0.0;
 };
 

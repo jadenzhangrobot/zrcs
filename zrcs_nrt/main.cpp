@@ -41,9 +41,6 @@ static ZMQServer* g_zmq_server = nullptr;
 static void signalHandler(int signum) {
     std::fprintf(stdout, "[main] Received signal %d, shutting down...\n", signum);
     g_running = false;
-    if (g_zmq_server) {
-        g_zmq_server->stop();
-    }
 }
 
 #ifdef _WIN32
@@ -295,7 +292,7 @@ int main(int argc, char **argv)
 
         // 主循环：监控共享内存状态
         while (g_running) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
         // 优雅关闭

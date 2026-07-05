@@ -14,6 +14,7 @@
 				<posPositiveLimit>10000</posPositiveLimit>
 				<posNegativeLimit>-10000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
+				<lead>1</lead>
 			</value0>
 		</axes>
 	</axisConfig>

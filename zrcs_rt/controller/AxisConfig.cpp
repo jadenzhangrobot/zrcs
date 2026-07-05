@@ -37,6 +37,7 @@ AxisPara toAxisPara(const zrcs::config::AxisConfigData& data)
     para.posPositiveLimit = data.posPositiveLimit;
     para.posNegativeLimit = data.posNegativeLimit;
     para.maxPosDiff = data.maxPosDiff;
+    para.lead = data.lead;
     return para;
 }
 

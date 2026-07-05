@@ -309,9 +309,7 @@ void MujocoIdentifyWorker::start()
 
 void MujocoIdentifyWorker::stop()
 {
-    if (!running_.exchange(false, std::memory_order_acq_rel)) {
-        return;
-    }
+    running_.store(false, std::memory_order_release);
     if (thread_.joinable()) {
         thread_.join();
     }

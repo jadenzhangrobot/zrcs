@@ -68,7 +68,8 @@ void NodeManager::run()
     controller_->rtos_->real_task([this]()
     {
         controller_->receiveData();
-        taskScheduling_ = shm()->taskSched.load(std::memory_order_acquire);
+        const auto observedTaskScheduling = shm()->taskSched.load(std::memory_order_acquire);
+        taskScheduling_ = observedTaskScheduling;
 
         auto abortActiveCommand = [this](const char* reason)
         {
@@ -219,6 +220,10 @@ void NodeManager::run()
                 stopHandled_ = false;
                 taskScheduling_ = zrcs::TaskScheduling::IDLE;
                 break;
+            case zrcs::TaskScheduling::SHUTDOWN:
+                stopContinuousJog();
+                abortActiveCommand("SHUTDOWN abort active command");
+                break;
             case zrcs::TaskScheduling::IDLE:
             default:
                 break;
@@ -227,8 +232,13 @@ void NodeManager::run()
         }
 
         // ---- Output nodes ---------------------------------------------------
-        
-        shm()->taskSched.store(taskScheduling_,std::memory_order_release);
+
+        auto expectedTaskScheduling = observedTaskScheduling;
+        shm()->taskSched.compare_exchange_strong(
+            expectedTaskScheduling,
+            taskScheduling_,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire);
         controller_->sendData();
         // 心跳只用于 RT 存活监控，NRT 不依赖这个字段做业务决策。
         static uint64_t heartbeat = 0;

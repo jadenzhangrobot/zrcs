@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZRCS MuJoCo 动力学辨识详细设计</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #18202a;
+      --muted: #5b6472;
+      --line: #d8dde6;
+      --soft: #eef3f8;
+      --code: #101827;
+      --blue: #2457a6;
+      --green: #176b4d;
+      --red: #a43232;
+      --amber: #8a5b13;
+      --violet: #5d4b9b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.72 "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px;
+      border-right: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    nav h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    nav ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    nav li {
+      margin: 6px 0;
+      color: var(--muted);
+    }
+
+    main {
+      max-width: 1180px;
+      padding: 36px 44px 72px;
+    }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 38px 44px;
+      box-shadow: 0 12px 34px rgba(24, 32, 42, 0.06);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.24;
+    }
+
+    h2 {
+      margin: 38px 0 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 25px;
+      line-height: 1.3;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 19px;
+    }
+
+    h4 {
+      margin: 22px 0 8px;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 10px 24px;
+      padding: 0;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #eef1f5;
+      color: #172033;
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+      font-size: 0.94em;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 12px 0 18px;
+      padding: 15px 17px;
+      border-radius: 8px;
+      background: var(--code);
+      color: #eef4ff;
+      font: 13px/1.55 Consolas, "Cascadia Mono", "Courier New", monospace;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    table {
+      width: 100%;
+      margin: 14px 0 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef3f8;
+      font-weight: 650;
+    }
+
+    .meta {
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    .lead {
+      padding: 15px 18px;
+      border-left: 4px solid var(--blue);
+      background: #f0f5fc;
+      border-radius: 6px;
+    }
+
+    .note,
+    .warn,
+    .good {
+      margin: 15px 0;
+      padding: 13px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .note strong,
+    .warn strong,
+    .good strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .warn {
+      border-color: #efd39d;
+      background: #fff7e8;
+    }
+
+    .warn strong {
+      color: var(--amber);
+    }
+
+    .good {
+      border-color: #b8dccd;
+      background: #edf8f3;
+    }
+
+    .good strong {
+      color: var(--green);
+    }
+
+    .formula {
+      overflow: auto;
+      margin: 13px 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #d6deea;
+      background: #fbfcff;
+      color: #111827;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.75;
+      white-space: nowrap;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0 18px;
+    }
+
+    .node {
+      min-height: 78px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .node b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue);
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e8eef8;
+      color: #24405f;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .tag.green {
+      background: #e0f3ea;
+      color: var(--green);
+    }
+
+    .tag.red {
+      background: #f8e5e5;
+      color: var(--red);
+    }
+
+    .tag.amber {
+      background: #fff0d0;
+      color: var(--amber);
+    }
+
+    .tag.violet {
+      background: #eeeafa;
+      color: var(--violet);
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .kbd {
+      padding: 1px 6px;
+      border: 1px solid #c9d1db;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: #fff;
+      font: 12px Consolas, monospace;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        display: block;
+      }
+
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      article {
+        padding: 24px 18px;
+      }
+
+      .flow {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <h2>动力学辨识文档</h2>
+      <ol>
+        <li><a href="#scope">目标和边界</a></li>
+        <li><a href="#architecture">整体架构</a></li>
+        <li><a href="#model">动力学模型</a></li>
+        <li><a href="#rls">RLS 数学推导</a></li>
+        <li><a href="#excitation">激励轨迹</a></li>
+        <li><a href="#sampling">采样和共享内存</a></li>
+        <li><a href="#worker">NRT 辨识 Worker</a></li>
+        <li><a href="#apply">参数回写</a></li>
+        <li><a href="#usage">使用流程</a></li>
+        <li><a href="#result">结果判读</a></li>
+        <li><a href="#diagnostics">故障诊断</a></li>
+        <li><a href="#code-map">代码地图</a></li>
+        <li><a href="#future">后续改进</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <article>
+        <h1>ZRCS MuJoCo 动力学辨识详细设计</h1>
+        <div class="meta">文档日期：2026-06-25。适用对象：当前工程中的 OpenArm/MuJoCo 在线动力学辨识实现。</div>
+
+        <p class="lead">
+          当前辨识模块的核心思想是：RT 侧产生安全的多频激励并采集 MuJoCo 关节状态，NRT 侧在线估计每个关节的等效惯量、粘滞阻尼、库仑摩擦和平衡偏置。实现采用递推最小二乘法，模型为
+          <code>tau = J*ddq + B*dq + Fc*tanh(dq/eps) + bias</code>。
+        </p>
+
+        <section id="scope">
+          <h2>1. 目标和边界</h2>
+
+          <h3>1.1 这个模块解决什么问题</h3>
+          <p>
+            在 MuJoCo 仿真中，同一套轨迹指令会受到关节惯量、阻尼、摩擦、执行器增益、仿真步长和限幅的影响。如果这些参数不合理，就会出现跟踪慢、过冲、抖动、力矩异常、某些关节看起来像“特别重”或“特别软”的现象。
+          </p>
+          <p>
+            本模块通过主动激励关节，让系统在运行时收集 <code>q</code>、<code>dq</code>、<code>ddq</code>、<code>tau</code>，然后在线拟合每个关节的低阶等效动力学参数。拟合结果可以用于三件事：
+          </p>
+          <ul>
+            <li>判断当前 MuJoCo 模型或控制器参数是否明显不合理。</li>
+            <li>给 <code>dof_damping</code>、<code>dof_frictionloss</code>、<code>kp</code>、<code>kv</code> 提供自动调参依据。</li>
+            <li>生成可读报告，快速看出哪个轴没有被激励、哪个轴噪声大、哪个轴结果可信。</li>
+          </ul>
+
+          <h3>1.2 当前实现的边界</h3>
+          <p>
+            当前实现不是完整的机械臂刚体参数辨识。它没有直接估计每个 link 的质量、质心、惯量张量，也没有建立完整的基参数回归矩阵。它估计的是单轴等效模型：
+          </p>
+          <div class="formula">
+            τ<sub>i</sub> ≈ J<sub>i</sub> q̈<sub>i</sub> + B<sub>i</sub> q̇<sub>i</sub> + F<sub>c,i</sub> tanh(q̇<sub>i</sub>/ε) + b<sub>i</sub>
+          </div>
+          <p>
+            这个模型适合用于关节级阻尼、摩擦和 PD 增益调优，但不能替代完整逆动力学建模。特别是重力项本来依赖构型 <code>q</code>，当前实现只用常数 <code>bias</code> 吸收局部工作区内的平均重力和静态偏置。
+          </p>
+
+          <div class="warn">
+            <strong>重要限制</strong>
+            如果关节没有运动，或者只在极小范围内抖动，那么 RLS 看到的数据不具备可辨识性。此时即使 RMS 很小，得到的参数也可能完全没有意义。报告工具会把这种轴标为 <code>weak</code>。
+          </div>
+        </section>
+
+        <section id="architecture">
+          <h2>2. 整体架构</h2>
+
+          <p>
+            当前工程把实时控制和辨识计算拆开。RT 侧只做确定耗时的事情：生成激励、推进 MuJoCo、采样、无锁队列推送。NRT 侧做矩阵更新、CSV 写入、状态发布和可选的参数回写决策。
+          </p>
+
+          <div class="flow">
+            <div class="node"><b>命令入口</b><code>MoveExcite</code><br>生成多频正弦激励。</div>
+            <div class="node"><b>RT 控制</b>Axis 命令写入控制器，再映射到 MuJoCo servo。</div>
+            <div class="node"><b>仿真采样</b><code>MujocoBus</code><br>推进 step 并采样状态。</div>
+            <div class="node"><b>NRT 辨识</b><code>MujocoIdentifyWorker</code><br>消费样本并更新 RLS。</div>
+            <div class="node"><b>输出/回写</b>CSV、HTML 报告、状态、可选 MuJoCo 参数更新。</div>
+          </div>
+
+          <h3>2.1 数据方向</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>方向</th>
+                <th>通道</th>
+                <th>数据结构</th>
+                <th>用途</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RT 最新命令状态</td>
+                <td><code>LockFreeLatest</code></td>
+                <td><code>MujocoIdentCommandData</code></td>
+                <td><code>MoveExcite</code> 发布本周期的 <code>qCmd/dqCmd/ddqCmd</code> 和有效轴掩码。</td>
+              </tr>
+              <tr>
+                <td>RT 到 NRT</td>
+                <td><code>ShmSPSC</code></td>
+                <td><code>MujocoIdentSampleData</code></td>
+                <td><code>MujocoBus</code> 每个 RT 周期推送 MuJoCo 采样。</td>
+              </tr>
+              <tr>
+                <td>NRT 到 RT</td>
+                <td><code>ShmSPSC</code></td>
+                <td><code>MujocoParamUpdate</code></td>
+                <td>开启 <code>--mujoco-ident-apply</code> 后，NRT 发送参数更新。</td>
+              </tr>
+              <tr>
+                <td>NRT 最新状态</td>
+                <td><code>LockFreeLatest</code></td>
+                <td><code>MujocoIdentStatusData</code></td>
+                <td>发布当前估计参数、样本数量、接受/拒绝数量和 RMS。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>2.2 运行时顺序</h3>
+          <ol>
+            <li><code>zrcsnrt</code> 启动 RT 子进程，等待共享内存 <code>SharedBlock</code> 就绪。</li>
+            <li><code>zrcsnrt/main.cpp</code> 解析 <code>--mujoco-ident-*</code> 参数并启动 <code>MujocoIdentifyWorker</code>。</li>
+            <li>用户发送 <code>MoveExcite</code> 命令。</li>
+            <li><code>MoveExcite::run()</code> 每个 RT 周期生成目标位置、速度、加速度，并发布到 <code>mujocoIdentCommand</code>。</li>
+            <li><code>MujocoBus::send()</code> 先消费最多 8 个参数更新，再调用 <code>simulation_->step()</code>。</li>
+            <li><code>MujocoSimulation::fillIdentificationSample()</code> 读取 MuJoCo 状态、控制量、力矩和饱和标志。</li>
+            <li><code>MujocoBus</code> 把样本推入 <code>mujocoIdentSampleQueue</code>。</li>
+            <li><code>MujocoIdentifyWorker</code> 消费样本，逐轴更新 RLS，写入 <code>mujoco_ident_samples.csv</code>。</li>
+            <li>如果开启 apply 且某轴接受样本超过 200，worker 周期性发送 <code>MujocoParamUpdate</code>。</li>
+          </ol>
+        </section>
+
+        <section id="model">
+          <h2>3. 动力学模型</h2>
+
+          <h3>3.1 完整机器人动力学</h3>
+          <p>
+            对 n 自由度机械臂，标准刚体动力学通常写成：
+          </p>
+          <div class="formula">
+            τ = M(q)q̈ + C(q,q̇)q̇ + g(q) + τ<sub>fric</sub>(q̇) + τ<sub>ext</sub>
+          </div>
+          <p>
+            其中 <code>M(q)</code> 是惯量矩阵，<code>C(q,qdot)qdot</code> 是科氏和离心项，<code>g(q)</code> 是重力项，<code>τfric</code> 是摩擦项。完整动力学辨识会把这些项展开成线性参数形式：
+          </p>
+          <div class="formula">
+            τ = Y(q,q̇,q̈)π
+          </div>
+          <p>
+            <code>Y</code> 是动力学回归矩阵，<code>π</code> 是 link 质量、质心、惯量和摩擦等参数的组合。当前工程没有实现这一级别的全局刚体辨识。
+          </p>
+
+          <h3>3.2 当前实现的单轴等效模型</h3>
+          <p>
+            当前实现把每个轴局部近似为一个可线性估计的标量模型：
+          </p>
+          <div class="formula">
+            τ<sub>k</sub> = φ<sub>k</sub><sup>T</sup> θ + e<sub>k</sub>
+          </div>
+          <div class="formula">
+            φ<sub>k</sub> = [ q̈<sub>k</sub>, q̇<sub>k</sub>, tanh(q̇<sub>k</sub>/ε), 1 ]<sup>T</sup>
+          </div>
+          <div class="formula">
+            θ = [ J, B, F<sub>c</sub>, bias ]<sup>T</sup>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>物理含义</th>
+                <th>当前用途</th>
+                <th>注意事项</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>J</code></td>
+                <td>关节等效惯量或等效 armature。</td>
+                <td>用于计算建议 <code>kp/kv</code>。当前回写时 <code>applyArmature=0</code>，不会写入 <code>dof_armature</code>。</td>
+                <td>它不是完整 link 惯量，只是当前数据局部拟合出的标量惯性。</td>
+              </tr>
+              <tr>
+                <td><code>B</code></td>
+                <td>粘滞阻尼系数。</td>
+                <td>开启 apply 时写入 MuJoCo <code>dof_damping</code>。</td>
+                <td>如果速度激励不足，<code>B</code> 会被噪声污染。</td>
+              </tr>
+              <tr>
+                <td><code>Fc</code></td>
+                <td>库仑摩擦幅值，符号由 <code>tanh(qdot/eps)</code> 表示。</td>
+                <td>开启 apply 时取绝对值写入 <code>dof_frictionloss</code>。</td>
+                <td>低速附近使用 <code>tanh</code> 平滑，避免符号函数不连续。</td>
+              </tr>
+              <tr>
+                <td><code>bias</code></td>
+                <td>常值偏置，吸收局部平均重力、控制偏置或模型偏差。</td>
+                <td>写入 CSV 和状态，当前不直接回写 MuJoCo。</td>
+                <td>重力本应随 <code>q</code> 变化，常值 bias 只在小工作区近似有效。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>3.3 为什么使用 <code>tanh(qdot/eps)</code></h3>
+          <p>
+            理想库仑摩擦可写成 <code>Fc * sign(qdot)</code>，但 <code>sign</code> 在 0 附近不连续，低速时容易把噪声放大。当前实现使用：
+          </p>
+          <div class="formula">
+            sign(q̇) ≈ tanh(q̇ / ε)
+          </div>
+          <p>
+            默认 <code>ε=0.02</code>。<code>ε</code> 越小越接近符号函数，但低速更敏感；<code>ε</code> 越大越平滑，但会把库仑摩擦“抹开”成类似阻尼的效果。
+          </p>
+        </section>
+
+        <section id="rls">
+          <h2>4. RLS 数学推导</h2>
+
+          <h3>4.1 加权最小二乘目标</h3>
+          <p>
+            对某一个关节，假设到第 k 个有效样本为止，目标是最小化指数遗忘加权误差：
+          </p>
+          <div class="formula">
+            J<sub>k</sub>(θ) = Σ<sub>j=1..k</sub> λ<sup>k-j</sup>(τ<sub>j</sub> - φ<sub>j</sub><sup>T</sup>θ)<sup>2</sup>
+          </div>
+          <p>
+            <code>λ</code> 是遗忘因子，当前默认 <code>0.998</code>，并被限制到 <code>[0.90, 0.9999]</code>。越接近 1，历史数据权重越大，估计更稳但跟踪参数变化更慢。
+          </p>
+
+          <h3>4.2 法方程</h3>
+          <p>
+            令目标函数对 <code>θ</code> 的梯度为 0，可得到：
+          </p>
+          <div class="formula">
+            R<sub>k</sub> θ<sub>k</sub> = h<sub>k</sub>
+          </div>
+          <div class="formula">
+            R<sub>k</sub> = Σ<sub>j=1..k</sub> λ<sup>k-j</sup>φ<sub>j</sub>φ<sub>j</sub><sup>T</sup>,&nbsp;&nbsp;
+            h<sub>k</sub> = Σ<sub>j=1..k</sub> λ<sup>k-j</sup>φ<sub>j</sub>τ<sub>j</sub>
+          </div>
+          <p>
+            如果每次都显式求逆，代价和数值稳定性都不适合在线运行。RLS 维护协方差矩阵 <code>P = R^-1</code>，每个样本只做小矩阵更新。
+          </p>
+
+          <h3>4.3 Sherman-Morrison 更新</h3>
+          <p>
+            有递推关系：
+          </p>
+          <div class="formula">
+            R<sub>k</sub> = λR<sub>k-1</sub> + φ<sub>k</sub>φ<sub>k</sub><sup>T</sup>
+          </div>
+          <p>
+            设 <code>P<sub>k</sub> = R<sub>k</sub><sup>-1</sup></code>。根据 Sherman-Morrison 公式：
+          </p>
+          <div class="formula">
+            K<sub>k</sub> = P<sub>k-1</sub>φ<sub>k</sub> / (λ + φ<sub>k</sub><sup>T</sup>P<sub>k-1</sub>φ<sub>k</sub>)
+          </div>
+          <div class="formula">
+            θ<sub>k</sub> = θ<sub>k-1</sub> + K<sub>k</sub>(τ<sub>k</sub> - φ<sub>k</sub><sup>T</sup>θ<sub>k-1</sub>)
+          </div>
+          <div class="formula">
+            P<sub>k</sub> = (P<sub>k-1</sub> - K<sub>k</sub>φ<sub>k</sub><sup>T</sup>P<sub>k-1</sub>) / λ
+          </div>
+          <p>
+            这些公式对应 <code>zrcs_nrt/mujoco_identify/MujocoIdentifyWorker.cpp</code> 中 <code>AxisEstimator::update()</code> 的实现。
+          </p>
+
+          <h3>4.4 当前代码中的初始化和限幅</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>当前值</th>
+                <th>解释</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>初始参数</td>
+                <td><code>theta = {0.02, 0.1, 0.0, 0.0}</code></td>
+                <td>初始 <code>J=0.02</code>、<code>B=0.1</code>、<code>Fc=0</code>、<code>bias=0</code>。</td>
+              </tr>
+              <tr>
+                <td>初始协方差</td>
+                <td><code>P = 1000 * I</code></td>
+                <td>较大的不确定性，使前期样本对参数有较大影响。</td>
+              </tr>
+              <tr>
+                <td><code>J</code> 限幅</td>
+                <td><code>[1e-5, 1000]</code></td>
+                <td>避免负惯量和数值爆炸。</td>
+              </tr>
+              <tr>
+                <td><code>B</code> 限幅</td>
+                <td><code>[0, 10000]</code></td>
+                <td>避免负阻尼。</td>
+              </tr>
+              <tr>
+                <td><code>Fc</code> 限幅</td>
+                <td><code>[-10000, 10000]</code></td>
+                <td>估计允许带符号，回写摩擦时取绝对值。</td>
+              </tr>
+              <tr>
+                <td><code>bias</code> 限幅</td>
+                <td><code>[-10000, 10000]</code></td>
+                <td>防止异常数据使偏置发散。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>4.5 样本接受条件</h3>
+          <p>
+            RLS 不会使用所有样本。当前 <code>AxisEstimator::update()</code> 会拒绝以下数据：
+          </p>
+          <ul>
+            <li>轴未使能：<code>enabled == false</code>。</li>
+            <li>发生限幅或饱和：<code>saturated == true</code>。</li>
+            <li><code>ddq</code>、<code>dq</code>、<code>tau</code> 不是有限数。</li>
+            <li>速度过小：<code>abs(dq) &lt; 1e-4</code>。</li>
+            <li>加速度和速度都太小：<code>abs(ddq) &lt; 1e-3</code> 且 <code>abs(dq) &lt; 1e-3</code>。</li>
+            <li>RLS 分母 <code>lambda + phi^T P phi</code> 非法或过小。</li>
+          </ul>
+          <p>
+            接受样本数用于判断是否可以回写参数。当前 <code>acceptedCount &gt; 200</code> 后，<code>MujocoParamUpdate.valid</code> 才会置 1。
+          </p>
+
+          <h3>4.6 RMS 误差</h3>
+          <p>
+            每个有效样本的预测误差为：
+          </p>
+          <div class="formula">
+            e<sub>k</sub> = τ<sub>k</sub> - φ<sub>k</sub><sup>T</sup>θ<sub>k-1</sub>
+          </div>
+          <p>
+            当前 RMS 使用接受样本的累计误差计算：
+          </p>
+          <div class="formula">
+            RMS = sqrt(Σ e<sub>j</sub><sup>2</sup> / N<sub>accepted</sub>)
+          </div>
+          <p>
+            RMS 小不一定代表结果可信。必须同时看激励幅度、实际运动幅度、饱和比例和接受样本比例。
+          </p>
+        </section>
+
+        <section id="excitation">
+          <h2>5. 激励轨迹</h2>
+
+          <h3>5.1 <code>MoveExcite</code> 参数</h3>
+          <p>
+            <code>MoveExciteArg</code> 定义在 <code>zrcs_common/config/CmdDefine.h</code>。参数顺序如下：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>参数</th>
+                <th>默认值或来源</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>0</td><td><code>AxisId</code></td><td>必填</td><td>非负表示单轴；负数 <code>-N</code> 表示激励前 N 个轴。</td></tr>
+              <tr><td>1</td><td><code>Duration</code></td><td><code>20.0</code></td><td>持续时间，单位秒。</td></tr>
+              <tr><td>2</td><td><code>Amplitude</code></td><td>必填且必须大于 0</td><td>多频正弦总幅值，OpenArm 单位一般是 rad。</td></tr>
+              <tr><td>3</td><td><code>CenterOffset</code></td><td><code>0.0</code></td><td>相对于起点的中心偏移。</td></tr>
+              <tr><td>4..8</td><td><code>F1..F5</code></td><td><code>0.15, 0.35, 0.70, 1.10, 1.70</code></td><td>多频正弦频率，单位 Hz。</td></tr>
+              <tr><td>9..13</td><td><code>Phase1..Phase5</code></td><td><code>0.0, 1.3, 2.1, 0.7, 2.8</code></td><td>各频率相位，单位 rad。</td></tr>
+              <tr><td>14</td><td><code>RampTime</code></td><td><code>1.0</code></td><td>淡入时间。当前代码只实现开头淡入，不做末端淡出。</td></tr>
+              <tr><td>15</td><td><code>VelScale</code></td><td><code>0.5</code></td><td>相对于轴最大速度的安全系数，代码 clamp 到 <code>[0.05, 1.0]</code>。</td></tr>
+              <tr><td>16</td><td><code>AccScale</code></td><td><code>0.5</code></td><td>相对于轴最大加速度的安全系数，代码 clamp 到 <code>[0.05, 1.0]</code>。</td></tr>
+              <tr><td>17</td><td><code>SessionId</code></td><td><code>0</code></td><td>写入样本，用于区分不同辨识会话。</td></tr>
+            </tbody>
+          </table>
+
+          <h3>5.2 多频轨迹公式</h3>
+          <p>
+            <code>MoveExcite</code> 使用 5 个正弦项，权重相同：
+          </p>
+          <div class="formula">
+            wave(t) = A Σ<sub>i=1..5</sub> (1/5) sin(2πf<sub>i</sub>t + phase<sub>i</sub> + phaseOffset)
+          </div>
+          <p>
+            对第 m 个被激励轴，代码使用 <code>phaseOffset = m * 0.73</code>，让多轴同时运动时各轴波形错开。
+          </p>
+          <p>
+            带淡入包络后的命令位置为：
+          </p>
+          <div class="formula">
+            q<sub>cmd</sub>(t) = q<sub>start</sub> + E(t)(centerOffset + wave(t))
+          </div>
+          <p>
+            淡入包络使用 smoothstep：
+          </p>
+          <div class="formula">
+            E(t) = s(t/T<sub>ramp</sub>),&nbsp;&nbsp; s(x)=3x<sup>2</sup>-2x<sup>3</sup>,&nbsp;&nbsp; 0≤x≤1
+          </div>
+
+          <h3>5.3 解析速度和加速度</h3>
+          <p>
+            速度和加速度不是用差分算出来的，而是直接解析求导：
+          </p>
+          <div class="formula">
+            wavė(t) = A Σ (1/5)(2πf<sub>i</sub>) cos(2πf<sub>i</sub>t + phase<sub>i</sub> + phaseOffset)
+          </div>
+          <div class="formula">
+            wavë(t) = -A Σ (1/5)(2πf<sub>i</sub>)<sup>2</sup> sin(2πf<sub>i</sub>t + phase<sub>i</sub> + phaseOffset)
+          </div>
+          <div class="formula">
+            q̇<sub>cmd</sub> = Ė(centerOffset + wave) + E wavė
+          </div>
+          <div class="formula">
+            q̈<sub>cmd</sub> = Ë(centerOffset + wave) + 2Ėwavė + Ewavë
+          </div>
+          <p>
+            这些量会写入共享内存中的 <code>MujocoIdentCommandData</code>。报告里 <code>qCmd range</code> 和 <code>moving cmd</code> 主要依赖这些命令量。
+          </p>
+
+          <h3>5.4 安全检查和幅值自动缩小</h3>
+          <p>
+            <code>MoveExcite::init()</code> 会根据轴限位、最大速度、最大加速度检查轨迹是否安全。主要逻辑包括：
+          </p>
+          <ul>
+            <li>当前起点必须在正负限位内。接近限位的 <code>1e-5</code> 误差会被夹到边界。</li>
+            <li>如果 <code>centerOffset ± amplitude</code> 超出限位，代码会尝试把幅值缩小到可用行程的一半再乘 <code>0.95</code>。</li>
+            <li>根据多频波形估算最坏速度和加速度，如果超过轴限制，会按比例缩小幅值。</li>
+            <li>最多尝试 8 次，仍失败则命令初始化失败。</li>
+          </ul>
+
+          <div class="warn">
+            <strong>为什么会报 amplitude must be positive</strong>
+            <code>Amplitude</code> 是第三个参数，必须显式大于 0。比如只发 <code>MoveExcite 0,30</code> 或把第三个参数留空，都会导致幅值为 0，初始化失败。
+          </div>
+        </section>
+
+        <section id="sampling">
+          <h2>6. 采样和共享内存</h2>
+
+          <h3>6.1 MuJoCo 时间步</h3>
+          <p>
+            OpenArm 当前配置：
+          </p>
+          <pre><code>&lt;mujocoConfig model="mujoco/robot.xml" timestepMs="10.0" substeps="10"&gt;</code></pre>
+          <p>
+            这表示 ZRCS RT 周期是 10 ms，MuJoCo 内部每个 RT 周期做 10 个 substep，所以 MuJoCo 的内部积分步长为 1 ms：
+          </p>
+          <div class="formula">
+            dt<sub>mujoco</sub> = timestepMs / substeps = 10 ms / 10 = 1 ms
+          </div>
+          <p>
+            <code>MujocoSimulation::step()</code> 在每个 RT 周期循环 <code>substeps</code> 次，每次先 <code>applyControls()</code>，再调用 <code>mj_step()</code>。
+          </p>
+
+          <h3>6.2 采样字段</h3>
+          <p>
+            <code>MujocoIdentSampleData</code> 定义在 <code>zrcs_common/shared_memory/ShmLayout.h</code>。当前实际字段包括：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>字段</th>
+                <th>来源</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>seq</code></td><td><code>MujocoBus</code></td><td>样本序号，RT 侧递增。</td></tr>
+              <tr><td><code>commandSeq</code></td><td><code>MujocoIdentCommandData</code></td><td>最近一次激励命令状态序号。</td></tr>
+              <tr><td><code>sessionId</code></td><td><code>MoveExcite</code></td><td>辨识会话编号。</td></tr>
+              <tr><td><code>sampleCount</code></td><td>MuJoCo servo 数量</td><td>本次样本里包含多少个轴。</td></tr>
+              <tr><td><code>timestampSec</code></td><td><code>data->time</code></td><td>MuJoCo 仿真时间。</td></tr>
+              <tr><td><code>axisId</code>, <code>slaveId</code></td><td>servo binding</td><td>ZRCS 轴号和 MuJoCo/驱动从站号映射。</td></tr>
+              <tr><td><code>qCmd/dqCmd/ddqCmd</code></td><td><code>MoveExcite</code> 或当前 target</td><td>如果该轴在 validMask 内，用激励命令；否则用当前保持目标。</td></tr>
+              <tr><td><code>q/dq/ddq</code></td><td>MuJoCo <code>qpos/qvel/qacc</code></td><td>经过 <code>qposScale/qposOffset</code> 转到 ZRCS 用户单位。</td></tr>
+              <tr><td><code>tauApplied</code></td><td><code>qfrc_actuator + qfrc_applied</code></td><td>实际施加到该 dof 上的力或力矩。</td></tr>
+              <tr><td><code>tauInverse</code></td><td><code>mj_inverse</code></td><td>由当前 <code>q/dq/ddq</code> 反算出的逆动力学力矩。</td></tr>
+              <tr><td><code>ctrl</code></td><td>MuJoCo actuator 或手动控制</td><td>最近一次控制输入。</td></tr>
+              <tr><td><code>saturation</code></td><td>限幅检查</td><td>控制输入或关节力矩被 clamp 时置 1。</td></tr>
+              <tr><td><code>enabled</code></td><td>servo 状态</td><td>轴是否使能。</td></tr>
+            </tbody>
+          </table>
+
+          <h3>6.3 <code>tauApplied</code> 和 <code>tauInverse</code> 的区别</h3>
+          <p>
+            默认 RLS 使用 <code>tauApplied</code>，即控制器实际向 MuJoCo dof 施加的力矩。这更贴近“控制器产生了什么”。如果启动参数带 <code>--mujoco-ident-use-inverse</code>，则改用 <code>tauInverse</code>，即 MuJoCo 根据当前运动状态反算的逆动力学力矩。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>力矩源</th>
+                <th>优点</th>
+                <th>风险</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>tauApplied</code></td>
+                <td>反映执行器和控制器真正施加的量。</td>
+                <td>会受 PD 增益、限幅、跟踪误差影响。控制器调得太差时，辨识结果也会被污染。</td>
+              </tr>
+              <tr>
+                <td><code>tauInverse</code></td>
+                <td>更接近 MuJoCo 内部动力学需要的力矩。</td>
+                <td>依赖 MuJoCo 模型本身，如果模型已经错得很厉害，反算力矩也不一定代表真实执行器。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="worker">
+          <h2>7. NRT 辨识 Worker</h2>
+
+          <h3>7.1 启动参数</h3>
+          <p>
+            参数解析在 <code>parseMujocoIdentifyOptions()</code> 中，默认启用 worker。常用启动参数如下：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>默认值</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--mujoco-ident-disable</code></td><td>不传则启用</td><td>关闭辨识 worker。</td></tr>
+              <tr><td><code>--mujoco-ident-apply</code></td><td><code>false</code></td><td>允许把辨识参数回写到 RT/MuJoCo。</td></tr>
+              <tr><td><code>--mujoco-ident-use-inverse</code></td><td><code>false</code></td><td>使用 <code>tauInverse</code> 代替 <code>tauApplied</code>。</td></tr>
+              <tr><td><code>--mujoco-ident-lambda &lt;value&gt;</code></td><td><code>0.998</code></td><td>RLS 遗忘因子，限制到 <code>[0.90, 0.9999]</code>。</td></tr>
+              <tr><td><code>--mujoco-ident-eps &lt;value&gt;</code></td><td><code>0.02</code></td><td><code>tanh(qdot/eps)</code> 的平滑系数，下限 <code>1e-4</code>。</td></tr>
+              <tr><td><code>--mujoco-ident-bandwidth &lt;Hz&gt;</code></td><td><code>8.0</code></td><td>由 <code>J</code> 换算 <code>kp/kv</code> 的目标带宽。</td></tr>
+              <tr><td><code>--mujoco-ident-zeta &lt;value&gt;</code></td><td><code>0.9</code></td><td>由 <code>J</code> 换算 <code>kv</code> 的阻尼比。</td></tr>
+              <tr><td><code>--mujoco-ident-out &lt;path&gt;</code></td><td><code>identify</code></td><td>CSV 输出目录。</td></tr>
+            </tbody>
+          </table>
+
+          <h3>7.2 CSV 输出</h3>
+          <p>
+            worker 启动后会创建输出目录，并写入 <code>mujoco_ident_samples.csv</code>。表头为：
+          </p>
+          <pre><code>sampleSeq,timeSec,sessionId,index,axisId,slaveId,
+qCmd,dqCmd,ddqCmd,q,dq,ddq,tauApplied,tauInverse,ctrl,
+saturation,enabled,J,B,Fc,bias,rmsError</code></pre>
+          <p>
+            这个 CSV 是完整过程数据，长时间运行时会很大。实际查看建议使用报告工具。
+          </p>
+
+          <h3>7.3 HTML 报告工具</h3>
+          <p>
+            工程里提供了 <code>tool/identify_report.py</code>，可以把大 CSV 转成浏览器友好的报告和小型汇总 CSV：
+          </p>
+          <pre><code>python tool\identify_report.py ^
+  E:\zrcs-dev\build\bin\identify\mujoco_ident_samples.csv ^
+  --out E:\zrcs-dev\build\bin\identify\mujoco_ident_report.html</code></pre>
+          <p>
+            输出：
+          </p>
+          <ul>
+            <li><code>mujoco_ident_report.html</code>：每个轴的表格、质量标签、位置曲线、力矩曲线。</li>
+            <li><code>mujoco_ident_summary.csv</code>：每个轴一行的最终参数和质量指标。</li>
+          </ul>
+        </section>
+
+        <section id="apply">
+          <h2>8. 参数回写</h2>
+
+          <h3>8.1 回写触发条件</h3>
+          <p>
+            只有满足以下条件时，NRT worker 才会发送 <code>MujocoParamUpdate</code>：
+          </p>
+          <ul>
+            <li>启动时传入 <code>--mujoco-ident-apply</code>。</li>
+            <li>某轴 <code>acceptedCount &gt; 200</code>。</li>
+            <li>距离上次该轴回写至少 <code>applyPeriodSec</code>，当前默认 <code>0.5 s</code>。</li>
+            <li><code>mujocoParamUpdateQueue</code> 没满，push 成功。</li>
+          </ul>
+
+          <h3>8.2 从辨识参数到 PD 增益</h3>
+          <p>
+            worker 使用二阶系统带宽公式，把等效惯量 <code>J</code> 转成建议增益：
+          </p>
+          <div class="formula">
+            ω = 2π f<sub>bandwidth</sub>
+          </div>
+          <div class="formula">
+            kp = Jω<sup>2</sup>
+          </div>
+          <div class="formula">
+            kv = 2ζJω
+          </div>
+          <p>
+            当前代码对结果做限幅：
+          </p>
+          <ul>
+            <li><code>kp</code> clamp 到 <code>[1.0, 50000.0]</code>。</li>
+            <li><code>kv</code> clamp 到 <code>[0.0, 10000.0]</code>。</li>
+          </ul>
+
+          <h3>8.3 RT 侧应用到 MuJoCo</h3>
+          <p>
+            <code>MujocoBus::send()</code> 每个周期最多消费 8 个 <code>MujocoParamUpdate</code>，并调用 <code>MujocoSimulation::applyParamUpdate()</code>。当前实际回写：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>更新项</th>
+                <th>写入 MuJoCo 字段</th>
+                <th>当前是否启用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>inertia</code></td><td><code>model->dof_armature[dofAdr]</code></td><td>默认 <code>applyArmature=0</code>，不写。</td></tr>
+              <tr><td><code>damping</code></td><td><code>model->dof_damping[dofAdr]</code></td><td>启用。</td></tr>
+              <tr><td><code>friction</code></td><td><code>model->dof_frictionloss[dofAdr]</code></td><td>启用，使用 <code>abs(Fc)</code>。</td></tr>
+              <tr><td><code>kp/kv</code></td><td><code>actuator_gainprm</code> 和 <code>actuator_biasprm</code></td><td>启用。</td></tr>
+              <tr><td><code>bias</code></td><td>无</td><td>当前不回写，只记录。</td></tr>
+            </tbody>
+          </table>
+
+          <div class="warn">
+            <strong>建议</strong>
+            调试阶段先不要开 <code>--mujoco-ident-apply</code>。先跑辨识，生成报告，确认轴确实被充分激励且结果合理，再考虑开启在线回写。
+          </div>
+        </section>
+
+        <section id="usage">
+          <h2>9. 使用流程</h2>
+
+          <h3>9.1 推荐流程</h3>
+          <ol>
+            <li>确认 MuJoCo 配置时间步合理。OpenArm 推荐 <code>timestepMs="10.0"</code>，<code>substeps="10"</code>，即内部 1 ms。</li>
+            <li>启动 NRT/RT。默认 worker 已启用；需要指定输出目录时加 <code>--mujoco-ident-out</code>。</li>
+            <li>先把机械臂移动到远离限位、远离奇异、不会碰撞的姿态。</li>
+            <li>对要辨识的轴发送 <code>MoveExcite</code>。</li>
+            <li>等待命令结束，停止或继续下一组激励。</li>
+            <li>生成 HTML 报告，查看 <code>quality</code>、<code>qCmd range</code>、<code>q range</code>、<code>saturation</code>、<code>RMS</code>。</li>
+            <li>只采用 <code>good</code> 或 <code>ok</code>，且运动范围确实足够的轴。</li>
+          </ol>
+
+          <h3>9.2 OpenArm 左臂推荐预备姿态</h3>
+          <p>
+            辨识前建议先移动到一个比较温和的左臂姿态，再进行激励。下面只作为 OpenArm 左臂仿真的起始参考，需要结合当前模型限位确认：
+          </p>
+          <pre><code>MoveAbs 0,0.00,0.4,1.5,5
+MoveAbs 1,-0.60,0.4,1.5,5
+MoveAbs 2,0.00,0.4,1.5,5
+MoveAbs 3,1.35,0.4,1.5,5
+MoveAbs 4,0.00,0.4,1.5,5
+MoveAbs 5,0.00,0.4,1.5,5
+MoveAbs 6,0.00,0.4,1.5,5
+MoveAbs 7,0.20,0.4,1.5,5</code></pre>
+          <p>
+            gripper 或行程很小的轴不建议和机械臂主关节一起做动力学辨识。OpenArm 左臂主关节通常优先看轴 <code>0..6</code>。
+          </p>
+
+          <h3>9.3 发送辨识命令</h3>
+          <p>
+            单轴辨识例子，激励 axis 0，持续 30 秒，幅值 0.03 rad，中心偏移 0：
+          </p>
+          <pre><code>MoveExcite
+0,30,0.03,0</code></pre>
+          <p>
+            左臂 7 个主关节一起辨识，使用负数 <code>-7</code> 表示前 7 个轴：
+          </p>
+          <pre><code>MoveExcite
+-7,30,0.03,0</code></pre>
+          <p>
+            更保守的调试方式是先单轴跑，再多轴跑：
+          </p>
+          <pre><code>MoveExcite
+0,20,0.02,0
+
+MoveExcite
+1,20,0.02,0
+
+MoveExcite
+2,20,0.02,0</code></pre>
+
+          <h3>9.4 生成报告</h3>
+          <pre><code>python tool\identify_report.py ^
+  E:\zrcs-dev\build\bin\identify\mujoco_ident_samples.csv ^
+  --out E:\zrcs-dev\build\bin\identify\mujoco_ident_report.html</code></pre>
+          <p>
+            如果系统里 Python 路径是 <code>D:\python\python.exe</code>，可以显式使用：
+          </p>
+          <pre><code>D:\python\python.exe tool\identify_report.py ^
+  E:\zrcs-dev\build\bin\identify\mujoco_ident_samples.csv ^
+  --out E:\zrcs-dev\build\bin\identify\mujoco_ident_report.html</code></pre>
+        </section>
+
+        <section id="result">
+          <h2>10. 结果判读</h2>
+
+          <h3>10.1 报告质量标签</h3>
+          <p>
+            <code>tool/identify_report.py</code> 会给每个轴打一个质量标签。当前规则大致为：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>标签</th>
+                <th>含义</th>
+                <th>是否建议使用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="tag green">good</span></td><td>有足够运动，未饱和，RMS 小于 0.05。</td><td>通常可用。</td></tr>
+              <tr><td><span class="tag">ok</span></td><td>有足够运动，未饱和，RMS 小于 0.2。</td><td>可参考，建议结合曲线确认。</td></tr>
+              <tr><td><span class="tag red">noisy</span></td><td>有运动，但 RMS 偏大。</td><td>谨慎使用，通常需要更好的激励或控制参数。</td></tr>
+              <tr><td><span class="tag amber">weak</span></td><td>没有收到运动命令、命令幅度太小、实际运动太小或有效样本太少。</td><td>不要使用。</td></tr>
+              <tr><td><span class="tag red">bad</span></td><td>饱和比例超过阈值。</td><td>不要使用。</td></tr>
+            </tbody>
+          </table>
+
+          <h3>10.2 必看指标</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>怎么看</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>moving_cmd_pct</code></td>
+                <td>命令速度或加速度非零的比例。接近 0 表示这个轴根本没有被激励。</td>
+              </tr>
+              <tr>
+                <td><code>qcmd_range</code></td>
+                <td>命令位置范围。为 0 或非常小则辨识无效。</td>
+              </tr>
+              <tr>
+                <td><code>q_range</code></td>
+                <td>实际位置范围。命令动了但实际没动，说明控制、限位、映射或使能有问题。</td>
+              </tr>
+              <tr>
+                <td><code>saturation_pct</code></td>
+                <td>限幅比例。饱和数据被 RLS 拒绝，比例高说明幅值过大或力矩限制太小。</td>
+              </tr>
+              <tr>
+                <td><code>eligible_pct</code></td>
+                <td>满足 RLS 更新条件的样本比例。太低说明运动太慢、太小或轴未使能。</td>
+              </tr>
+              <tr>
+                <td><code>rmsError</code></td>
+                <td>力矩拟合误差。需要结合力矩量级看，不能单独作为可信度判断。</td>
+              </tr>
+              <tr>
+                <td><code>J/B/Fc/bias</code></td>
+                <td>最终估计参数。要看是否和相邻关节量级相近，是否出现极端值。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>10.3 你当前那类结果如何读</h3>
+          <p>
+            如果看到类似：
+          </p>
+          <pre><code>axis 0 noisy
+axis 1 noisy
+axis 2 ok
+axis 3 noisy
+axis 4 good
+axis 5 ok
+axis 6 ok
+axis 7-15 weak</code></pre>
+          <p>
+            解释是：左臂主关节 <code>0..6</code> 发生了有效运动，其中 <code>2/4/5/6</code> 较有参考价值，<code>0/1/3</code> 噪声或模型不匹配偏大；<code>7</code> 可能是 gripper 或耦合噪声，不能当成主关节动力学参数；<code>8..15</code> 没有被激励，结果不应采用。
+          </p>
+        </section>
+
+        <section id="diagnostics">
+          <h2>11. 故障诊断</h2>
+
+          <h3>11.1 <code>MoveExcite: amplitude must be positive</code></h3>
+          <p>
+            原因：第三个参数 <code>Amplitude</code> 为 0、缺失或非有限数。正确命令示例：
+          </p>
+          <pre><code>MoveExcite
+0,30,0.03,0</code></pre>
+
+          <h3>11.2 <code>negative limit exceeded pos=-0.0000, limit=0.0000</code></h3>
+          <p>
+            这通常不是辨识算法本身报错，而是控制器命令处理阶段发现某个轴的负限位是 0，而当前位置或命令位置因为浮点误差略小于 0。常见原因：
+          </p>
+          <ul>
+            <li>该轴是夹爪或单向行程轴，负限位确实为 0。</li>
+            <li>初始位置为 <code>-0.0000</code>，显示上像 0，实际略小于 0。</li>
+            <li>对行程为 <code>[0, upper]</code> 的轴使用了围绕 0 的正负激励。</li>
+            <li>轴限位配置不合理，例如上下限都为 0，导致没有可运动空间。</li>
+          </ul>
+          <p>
+            处理方式：不要把夹爪或单向轴纳入主关节动力学辨识；辨识前先把该轴移动到正行程内部，例如 <code>0.2</code>；或者检查配置里的限位。
+          </p>
+
+          <h3>11.3 报告里某轴 <code>weak</code></h3>
+          <p>
+            重点看 <code>moving_cmd_pct</code>、<code>qcmd_range</code>、<code>q_range</code>：
+          </p>
+          <ul>
+            <li><code>moving_cmd_pct=0</code>：这个轴没有收到激励命令。</li>
+            <li><code>qcmd_range=0</code>：命令没有变化，常见于只激励了左臂但看右臂。</li>
+            <li><code>q_range≈0</code>：命令可能有变化，但实际轴没动，检查使能、映射、限位、控制模式。</li>
+          </ul>
+
+          <h3>11.4 <code>B</code> 或 <code>Fc</code> 特别大</h3>
+          <p>
+            常见原因：
+          </p>
+          <ul>
+            <li>轴没有真实运动，噪声被 RLS 当成阻尼或摩擦。</li>
+            <li>速度范围太窄，<code>dq</code> 和 <code>tanh(dq/eps)</code> 两个基函数相关性太强。</li>
+            <li>力矩饱和或执行器限幅，导致实际力矩和模型不匹配。</li>
+            <li>用 gripper/coupled joint 做单轴模型，物理关系不满足当前假设。</li>
+          </ul>
+
+          <h3>11.5 RMS 大但曲线跟得还行</h3>
+          <p>
+            当前模型没有显式包含完整重力项、科氏项和耦合项。如果运动范围大、姿态变化明显，单轴常偏置模型会吃不下这些非线性项，RMS 会增大。可以尝试：
+          </p>
+          <ul>
+            <li>缩小单次辨识工作区，在多个姿态分别辨识。</li>
+            <li>降低幅值但延长时间，保证速度/加速度覆盖仍然足够。</li>
+            <li>改用单轴逐个辨识，减少耦合和控制器互相影响。</li>
+            <li>后续扩展包含 <code>sin(q)</code>、<code>cos(q)</code> 或完整动力学回归项。</li>
+          </ul>
+        </section>
+
+        <section id="code-map">
+          <h2>12. 代码地图</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>文件</th>
+                <th>关键类/函数</th>
+                <th>职责</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>zrcs_common/config/CmdDefine.h</code></td>
+                <td><code>MoveExciteArg</code></td>
+                <td>定义 <code>MoveExcite</code> 参数顺序。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/command/MoveExcite.h</code></td>
+                <td><code>MoveExcite</code></td>
+                <td>声明激励命令节点、波形状态、每轴状态。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/command/MoveExcite.cpp</code></td>
+                <td><code>init()</code>, <code>run()</code>, <code>evaluateWave()</code>, <code>publishCommand()</code></td>
+                <td>参数解析、安全检查、多频轨迹生成、发布 <code>qCmd/dqCmd/ddqCmd</code>。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_common/shared_memory/ShmLayout.h</code></td>
+                <td><code>MujocoIdentCommandData</code>, <code>MujocoIdentSampleData</code>, <code>MujocoParamUpdate</code>, <code>MujocoIdentStatusData</code></td>
+                <td>跨进程共享内存 ABI。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/controller/mujoco/MujocoBus.cpp</code></td>
+                <td><code>bindSharedBlock()</code>, <code>send()</code></td>
+                <td>绑定共享内存，消费参数更新，推进 MuJoCo，推送辨识样本。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/controller/mujoco/MujocoSimulation.cpp</code></td>
+                <td><code>step()</code>, <code>fillIdentificationSample()</code>, <code>applyParamUpdate()</code></td>
+                <td>MuJoCo 仿真步进、状态采样、参数回写。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_nrt/mujoco_identify/MujocoIdentifyWorker.h</code></td>
+                <td><code>MujocoIdentifyOptions</code>, <code>MujocoIdentifyWorker</code></td>
+                <td>辨识 worker 选项和生命周期。</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_nrt/mujoco_identify/MujocoIdentifyWorker.cpp</code></td>
+                <td><code>AxisEstimator</code>, <code>CsvWriter</code>, <code>parseMujocoIdentifyOptions()</code>, <code>run()</code></td>
+                <td>RLS、CSV 输出、状态发布和可选参数回写。</td>
+              </tr>
+              <tr>
+                <td><code>tool/identify_report.py</code></td>
+                <td><code>AxisSummary</code>, <code>render_html()</code>, <code>write_summary_csv()</code></td>
+                <td>把原始 CSV 转成 HTML 图表和汇总 CSV。</td>
+              </tr>
+              <tr>
+                <td><code>config/openArm/mujoco.xml</code></td>
+                <td><code>&lt;mujocoConfig&gt;</code>, <code>&lt;servo&gt;</code></td>
+                <td>OpenArm MuJoCo 模型路径、RT 周期、substeps、servo 到 joint 的映射和初始 PD 参数。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="future">
+          <h2>13. 后续改进建议</h2>
+
+          <h3>13.1 从单轴模型扩展到构型相关模型</h3>
+          <p>
+            当前 <code>bias</code> 是常数。如果要改善肩部、肘部这类重力变化明显的关节，可以先加局部重力基函数：
+          </p>
+          <div class="formula">
+            τ = Jq̈ + Bq̇ + F<sub>c</sub>tanh(q̇/ε) + a sin(q) + c cos(q) + b
+          </div>
+          <p>
+            这样仍然是线性参数模型，可以继续用 RLS，只是 <code>φ</code> 维度从 4 增加到 6。
+          </p>
+
+          <h3>13.2 增加协方差和可辨识性指标</h3>
+          <p>
+            报告可以进一步输出 <code>P</code> 的对角线、条件数近似、各基函数相关性。如果某些参数的协方差很大，说明数据不足以辨识该参数，即使 RMS 小也不应该使用。
+          </p>
+
+          <h3>13.3 将报告生成集成到关闭流程</h3>
+          <p>
+            现在报告需要手动运行 <code>tool/identify_report.py</code>。后续可以在 NRT 停止 worker 时自动生成 HTML，或者在 GUI 中增加“生成辨识报告”按钮。
+          </p>
+
+          <h3>13.4 更严格的轴选择</h3>
+          <p>
+            <code>MoveExcite -7</code> 适合 OpenArm 左臂主关节，但不同项目的前 N 个轴不一定都是机械臂主关节。可以在配置中增加 <code>identifiable="true"</code> 或辨识轴组，避免误激励 gripper、虚拟轴或限位为 0 的轴。
+          </p>
+        </section>
+
+        <section id="summary">
+          <h2>14. 一句话总结</h2>
+          <p>
+            当前 ZRCS/MuJoCo 动力学辨识是一套面向仿真调参的在线单轴等效模型辨识：RT 负责安全激励和采样，NRT 用 RLS 拟合 <code>J/B/Fc/bias</code>，报告工具负责把大 CSV 变成能看懂的质量判断和曲线。使用时最重要的是保证轴真的被激励、没有饱和、运动范围足够，并且不要把没有运动的轴的参数当成有效结果。
+          </p>
+        </section>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

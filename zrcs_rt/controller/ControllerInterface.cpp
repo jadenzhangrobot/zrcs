@@ -3,22 +3,8 @@
 #include "system/log/RtLog.h"
 
 #include <cmath>
-#include <cstdint>
 
 namespace ZrcsHardware {
-
-double Axis::fixOverFlow(double x)
-{
-    x += overflowCount_ * INT32_MAX * 2.0;
-    if (x >= INT32_MAX) {
-        x -= INT32_MAX * 2.0;
-        overflowCount_ -= 1;
-    } else if (x <= -INT32_MAX) {
-        x += INT32_MAX * 2.0;
-        overflowCount_ += 1;
-    }
-    return x;
-}
 
 bool Axis::cmdsProcessing(double frequency)
 {
@@ -61,18 +47,16 @@ bool Axis::cmdsProcessing(double frequency)
 
 void Axis::updateMotionCmdsToServo()
 {
-    // 将逻辑轴命令广播到该轴绑定的所有伺服。每个驱动器可以使用自己的模式和
-    // 编码器比例，因此无需复制 Axis 对象也能支持双驱轴。
     for (size_t i = 0; i < servo_.size(); ++i) {
         const auto& cfg = i < servoConfig_.size() ? servoConfig_[i] : defaultServoConfig();
         if (cfg.mode == mcServoControlModePosition) {
-            auto ret = servo_[i]->setPos(toEncoderUnit(axisPosCmd_ + zeroOffset_, cfg));
+            auto ret = servo_[i]->setPosInTurns(toServoUnit(axisPosCmd_ + zeroOffset_, cfg));
             if (ret != SERVONOERROR) {
                 WARN_PRINT("axis%d: setPos servo error code=%d\n",
                            axisId_, static_cast<int>(ret));
             }
         } else if (cfg.mode == mcServoControlModeVelocity) {
-            auto ret = servo_[i]->setVel(toEncoderUnit(axisVelCmd_, cfg));
+            auto ret = servo_[i]->setVelInTurns(toServoUnit(axisVelCmd_, cfg));
             if (ret != SERVONOERROR) {
                 WARN_PRINT("axis%d: setVel servo error code=%d\n",
                            axisId_, static_cast<int>(ret));
@@ -87,15 +71,12 @@ void Axis::statusSync()
     for (size_t i = 0; i < servo_.size(); ++i) {
         const auto& cfg = i < servoConfig_.size() ? servoConfig_[i] : defaultServoConfig();
 
-        // 反馈使用和命令下发相同的单驱比例换算。axisPos_ 最终保存最后一个伺服
-        // 的位置，这样保持旧单驱行为，同时仍能检查多驱之间的位置差。
-        axisPos_ = toUserUnit(servo_[i]->pos() - cfg.direction * overflowCount_ * INT32_MAX * 2.0, cfg);
-        axisVel_ = toUserUnit(servo_[i]->vel(), cfg);
-        axisAcc_ = toUserUnit(servo_[i]->acc(), cfg);
+        axisPos_ = toUserUnit(servo_[i]->posInTurns(), cfg);
+        axisVel_ = toUserUnit(servo_[i]->velInTurns(), cfg);
+        axisAcc_ = toUserUnit(servo_[i]->accInTurns(), cfg);
 
-        if (i != 0) {
-            // maxPosDiff 属于逻辑轴，因为它描述的是同一机械轴上多个驱动器之间
-            // 允许的同步误差。
+        if (i != 0) 
+        {
             double posDiff = axisPos_ - lastAxisPos;
             if (std::abs(posDiff) > config_->maxPosDiff) {
                 ERROR_PRINT("axis%d: multi-drive sync error posDiff=%.4f, limit=%.4f\n",

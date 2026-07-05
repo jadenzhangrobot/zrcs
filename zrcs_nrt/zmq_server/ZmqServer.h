@@ -19,7 +19,7 @@ private:
     BehaviorTreeRunner* behaviorTreeRunner_;
 
     static constexpr const char* ENDPOINT = "tcp://*:5555";
-    static constexpr int RECV_TIMEOUT = 1000; // ms
+    static constexpr int RECV_TIMEOUT = 100; // ms
 
 public:
     ZMQServer(RtBridge* bridge, BehaviorTreeRunner* behaviorTreeRunner = nullptr)
@@ -53,25 +53,28 @@ public:
     }
 
     void stop() {
-        if (!running_.exchange(false)) {
+        const bool wasRunning = running_.exchange(false);
+        const bool hasThread = server_thread_.joinable();
+        const bool hasSocket = static_cast<bool>(socket_);
+        if (!wasRunning && !hasThread && !hasSocket) {
             return; // Already stopped
         }
-        // 先关闭 socket，中断阻塞中的 recv，使服务线程立即退出
-        if (socket_) {
-            socket_->close();
-            socket_.reset();
-        }
-        // 等待服务线程退出（此时 recv 已被中断，不会等超时）
         if (server_thread_.joinable()) 
         {
             server_thread_.join();
         }
+        if (socket_) {
+            socket_->close();
+            socket_.reset();
+        }
         context_.close();
 
-        if (bridge_->droppedCount() > 0) {
+        if (bridge_ && bridge_->droppedCount() > 0) {
             spdlog::warn("[ZMQServer] Total dropped commands: {}", bridge_->droppedCount());
         }
-        spdlog::info("[ZMQServer] Stopped");
+        if (wasRunning || hasThread) {
+            spdlog::info("[ZMQServer] Stopped");
+        }
     }
 
 private:

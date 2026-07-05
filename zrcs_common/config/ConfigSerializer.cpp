@@ -149,6 +149,7 @@ AxisConfigFile loadXml<AxisConfigFile>(const std::filesystem::path& path)
         axis.posPositiveLimit = queryNumber<double>(axisElem, "maxPos");
         axis.posNegativeLimit = queryNumber<double>(axisElem, "minPos");
         axis.maxPosDiff = queryNumber<double>(axisElem, "maxPosDiff");
+        axis.lead = queryNumber<double>(axisElem, "lead");
 
         auto* servosElem = requireChild(axisElem, "servos");
         for (auto* ref = servosElem->FirstChildElement("servo"); ref;

@@ -23,29 +23,24 @@ int32_t clampToInt32(double value)
 } // namespace
 
 MujocoServo::MujocoServo(std::shared_ptr<MujocoSimulation> simulation,
-                         uint32_t slaveId,
-                         ServoPara servoConfig)
+                         uint32_t slaveId)
     : simulation_(std::move(simulation)),
-      slaveId_(slaveId),
-      servoConfig_(std::move(servoConfig))
+      slaveId_(slaveId)
 {
     if (!simulation_) {
         throw std::runtime_error("MujocoServo requires a simulation instance");
-    }
-    if (servoConfig_.encoderCountPerUnit == 0) {
-        servoConfig_.encoderCountPerUnit = 1;
     }
 }
 
 MC_SERVO_CODE MujocoServo::setPos(int32_t position)
 {
-    simulation_->setTargetPosition(slaveId_, encoderToUser(position));
+    simulation_->setTargetPosition(slaveId_, static_cast<double>(position));
     return SERVONOERROR;
 }
 
 MC_SERVO_CODE MujocoServo::setVel(int32_t velocity)
 {
-    simulation_->setTargetVelocity(slaveId_, encoderToUser(velocity));
+    simulation_->setTargetVelocity(slaveId_, static_cast<double>(velocity));
     return SERVONOERROR;
 }
 
@@ -53,6 +48,18 @@ MC_SERVO_CODE MujocoServo::setTorque(int32_t torque)
 {
     torque_ = torque;
     simulation_->setTargetTorque(slaveId_, static_cast<double>(torque));
+    return SERVONOERROR;
+}
+
+MC_SERVO_CODE MujocoServo::setPosInTurns(double turns)
+{
+    simulation_->setTargetPosition(slaveId_, turns);
+    return SERVONOERROR;
+}
+
+MC_SERVO_CODE MujocoServo::setVelInTurns(double turns)
+{
+    simulation_->setTargetVelocity(slaveId_, turns);
     return SERVONOERROR;
 }
 
@@ -65,22 +72,22 @@ MC_SERVO_CODE MujocoServo::setMode(Cia402Mode mode)
 
 int32_t MujocoServo::pos()
 {
-    return userToEncoder(simulation_->position(slaveId_));
+    return clampToInt32(simulation_->position(slaveId_));
 }
 
 int32_t MujocoServo::vel()
 {
-    return userToEncoder(simulation_->velocity(slaveId_));
+    return clampToInt32(simulation_->velocity(slaveId_));
 }
 
 int32_t MujocoServo::acc()
 {
-    return userToEncoder(simulation_->acceleration(slaveId_));
+    return clampToInt32(simulation_->acceleration(slaveId_));
 }
 
 int32_t MujocoServo::torque()
 {
-    return userToEncoder(simulation_->appliedTorque(slaveId_));
+    return clampToInt32(simulation_->appliedTorque(slaveId_));
 }
 
 bool MujocoServo::readVal(int index, double& value)
@@ -147,19 +154,6 @@ void MujocoServo::emergStop()
     simulation_->setTargetVelocity(slaveId_, 0.0);
     torque_ = 0;
     simulation_->setTargetTorque(slaveId_, 0.0);
-}
-
-double MujocoServo::encoderToUser(int32_t value) const
-{
-    return (static_cast<double>(value) * servoConfig_.direction) /
-           static_cast<double>(servoConfig_.encoderCountPerUnit);
-}
-
-int32_t MujocoServo::userToEncoder(double value) const
-{
-    return clampToInt32(value *
-                        static_cast<double>(servoConfig_.encoderCountPerUnit) *
-                        servoConfig_.direction);
 }
 
 } // namespace ZrcsHardware

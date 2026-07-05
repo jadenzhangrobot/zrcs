@@ -3,28 +3,31 @@
  * @email: 649894200@qq.com
  * @Date: 2023-03-15 14:36:47
  * @LastEditTime: 2023-06-06 16:48:44
- * @Description: controllr的一些抽象接口包括电机，传感器，io等
- *
+ * @Description: controller hardware abstraction interfaces
  */
 #pragma once
 
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "AxisConfig.h"
 #include "Global.h"
 #include "config/Parameter.h"
 #include "shared_memory/ShmLayout.h"
+
 namespace ZrcsHardware {
+
 class Servo
 {
 public:
-  Servo()
-  {}
-  virtual~Servo() = default;
+  Servo() = default;
+  virtual ~Servo() = default;
 
   virtual bool enable()
   {
@@ -34,7 +37,7 @@ public:
   {
     return true;
   }
-  //virtual MC_SERVO_CODE setPower(bool powerStatus)=0;
+
   virtual MC_SERVO_CODE setPos(int32_t pos)=0;
   virtual MC_SERVO_CODE setVel(int32_t vel) = 0;
   virtual MC_SERVO_CODE setTorque(int32_t torque) = 0;
@@ -45,9 +48,42 @@ public:
   virtual int32_t acc()=0;
   virtual int32_t torque() = 0;
 
+  void setServoConfig(const ServoPara& config)
+  {
+    servoConfig_ = config;
+    if (servoConfig_.encoderCountPerUnit == 0) 
+    {
+      servoConfig_.encoderCountPerUnit = 1;
+    }
+  }
+
+  virtual MC_SERVO_CODE setPosInTurns(double turns)
+  {
+    return setPos(turnsToEncoderCount(turns));
+  }
+
+  virtual MC_SERVO_CODE setVelInTurns(double turns)
+  {
+    return setVel(turnsToEncoderCount(turns));
+  }
+
+  double posInTurns()
+  {
+    return encoderCountToTurns(pos());
+  }
+
+  double velInTurns()
+  {
+    return encoderCountToTurns(vel());
+  }
+
+  double accInTurns()
+  {
+    return encoderCountToTurns(acc());
+  }
+
   virtual bool readVal(int index, double& value) { return false; }
   virtual bool writeVal(int index, double value) { return false; }
-  
 
   virtual bool resetError()
   {
@@ -55,17 +91,40 @@ public:
   }
   virtual void emergStop()=0;
   virtual void runCycle()=0;
+
+protected:
+  int32_t turnsToEncoderCount(double turns) const
+  {
+    const double encoderCount =turns * static_cast<double>(servoConfig_.encoderCountPerUnit) *static_cast<double>(servoConfig_.direction);
+    const double maxValue = static_cast<double>(std::numeric_limits<int32_t>::max());
+    const double minValue = static_cast<double>(std::numeric_limits<int32_t>::min());
+
+    if (encoderCount > maxValue) 
+    {
+      return std::numeric_limits<int32_t>::max();
+    }
+    if (encoderCount < minValue) 
+    {
+      return std::numeric_limits<int32_t>::min();
+    }
+    return static_cast<int32_t>(std::llround(encoderCount));
+  }
+
+  double encoderCountToTurns(int32_t encoderCount) const
+  {
+    return (static_cast<double>(encoderCount) *
+           static_cast<double>(servoConfig_.direction)) /
+           static_cast<double>(servoConfig_.encoderCountPerUnit);
+  }
+
+private:
+  ServoPara servoConfig_;
 };
 
 class Axis {
 private:
-
   AxisPara *config_;
   std::vector<std::unique_ptr<Servo>> servo_;
-
-  // 与 servo_ 平行存储：servoConfig_[i] 描述 servo_[i]。
-  // Axis 负责逻辑轴限位和命令状态，每个伺服保留自己的模式与编码器比例，
-  // 因此一个轴可以驱动多个物理电机。
   std::vector<ServoPara> servoConfig_;
 
   uint32_t axisId_=0;
@@ -79,7 +138,6 @@ private:
   double axisVelCmd_=0;
   double lastAxisVelCmd_=0;
   double axisTorCmd_=0;
-  int32_t overflowCount_=0;
   MC_AXIS_STATES axisState_=MC_AXIS_STATES::mcStandstill;
   MC_ERROR_CODE axisError_=MC_ERRORCODE_GOOD;
 
@@ -88,11 +146,10 @@ private:
   bool reset_=false;
   bool enablePositive_=true;
   bool enableNegative_=true;
-public:
 
+public:
   Axis(uint32_t axisId,AxisPara *config): axisId_(axisId),config_(config)
   {
-     
   }
   Axis(uint32_t axisId,uint32_t salveId,AxisPara *config): Axis(axisId, config)
   {
@@ -103,22 +160,19 @@ public:
       servo_.clear();
       delete config_;
   };
+
   void pushServo(std::unique_ptr<Servo> servo)
   {
     servo_.push_back(std::move(servo));
   }
 
-  /**
-   * @brief 绑定一个物理/虚拟伺服及其单驱参数。
-   *
-   * 对双驱轴，HardwareFactory 会按 axis.xml 中列出的每个 slaveId 调用一次。
-   * 插入顺序会被保留，后续命令下发和反馈换算都按这个顺序匹配 servoConfig_。
-   */
   void pushServo(std::unique_ptr<Servo> servo, const ServoPara& config)
   {
+    servo->setServoConfig(config);
     servo_.push_back(std::move(servo));
     servoConfig_.push_back(config);
   }
+
   size_t servoCount() const
   {
     return servo_.size();
@@ -149,43 +203,30 @@ public:
          lastAxisVelCmd_ = 0.0;
    }
 
-
-  double toUserUnit(double x)
+  double toUserUnit(double motorTurns)
   {
-    return toUserUnit(x, defaultServoConfig());
+    return toUserUnit(motorTurns, defaultServoConfig());
   }
 
-  int32_t toEncoderUnit(double x)
+  double toServoUnit(double axisUnit)
   {
-    return toEncoderUnit(x, defaultServoConfig());
-  }
-  double toUserUnit(double x, const ServoPara& config)
-  {
-    // 将编码器计数转换回运动命令使用的用户单位。direction 是伺服相对逻辑轴
-    // 正方向的符号：反装驱动器写 -1，反馈乘同一个符号后回到统一轴坐标。
-    return (x * config.direction) / config.encoderCountPerUnit;
+    return toServoUnit(axisUnit, defaultServoConfig());
   }
 
-  int32_t toEncoderUnit(double x, const ServoPara& config)
+  double toUserUnit(double motorTurns, const ServoPara& config) const
   {
-    // 先按逻辑轴正方向处理编码器溢出，再乘以伺服方向。这样双驱轴一正一反时，
-    // 两个伺服共享同一条逻辑轴连续位置，不会因为反向安装而各自维护一套溢出状态。
-    return (int32_t)(fixOverFlow(x * config.encoderCountPerUnit) * config.direction);
+    (void)config;
+    return motorTurns * config_->lead;
   }
 
-  double fixOverFlow(double x);
-  /** 对给到轴的位置，速度进行检查
-   */
+  double toServoUnit(double axisUnit, const ServoPara& config) const
+  {
+    (void)config;
+    return config_->lead == 0.0 ? 0.0 : axisUnit / config_->lead;
+  }
+
   bool cmdsProcessing(double frequency);
-/**
- * @brief 把轴的数据更新给具体的伺服电机
- *
- */
   void updateMotionCmdsToServo();
-  /**
-   * @brief 将伺服电机的数据更新给轴，更新轴的位置和速度
-   *
-   */
   void statusSync();
   
   double actualPos()
@@ -243,6 +284,10 @@ public:
   {
     return config_->maxJerk;
   }
+  double getLead() const
+  {
+    return config_->lead;
+  }
   double getPositiveLimit() const
   {
     return config_->posPositiveLimit;
@@ -252,7 +297,6 @@ public:
     return config_->posNegativeLimit;
   }
 
-  // --- 零点偏移 ---
   void setZeroOffset(double offset) 
   { 
     zeroOffset_ = offset+zeroOffset_;
@@ -260,7 +304,6 @@ public:
   double getZeroOffset() const 
   { return zeroOffset_; }
 
-  // --- 动态限位修改 ---
   void setPosLimits(double posLimit, double negLimit)
   {
     config_->posPositiveLimit = posLimit;
@@ -275,38 +318,35 @@ public:
   }
 
   void setModeOfOperation(Cia402Mode mode);
+
 private:
   const ServoPara& defaultServoConfig() const
   {
-    // 旧调用点如果没有显式传入 ServoPara，就沿用第一个驱动器的比例。
-    // 在还没有添加伺服前使用安全回退配置，避免除零或空引用。
     static const ServoPara fallback{};
     return servoConfig_.empty() ? fallback : servoConfig_.front();
   }
-  double zeroOffset_ = 0;  // 用户零点偏移
+  double zeroOffset_ = 0;
 };
+
 class Io {
 public:
-  /// 急停相关接口
-  virtual bool isEmergencyStop() { return false;}  // 读取急停状态
-  virtual void setEmergencyStop(bool value) {}      // 设置急停状态
+  virtual bool isEmergencyStop() { return false;}
+  virtual void setEmergencyStop(bool value) { (void)value; }
 
-  virtual bool ioRead32(int index, int bitPos) = 0;                  // 32位IO读取
-  virtual bool ioRead16(int index, int bitPos) = 0;                  // 16位IO读取
-  virtual bool ioRead8(int index, int bitPos) = 0;                   // 8位IO读取
-  virtual void ioWrite32(int index, int bitPos, bool value) = 0;            // 32位IO写
-  virtual void ioWrite16(int index, int bitPos, bool value) = 0;            // 16位IO写
-  virtual void ioWrite8(int index, int bitPos, bool value) = 0;              // 8位IO写
+  virtual bool ioRead32(int index, int bitPos) = 0;
+  virtual bool ioRead16(int index, int bitPos) = 0;
+  virtual bool ioRead8(int index, int bitPos) = 0;
+  virtual void ioWrite32(int index, int bitPos, bool value) = 0;
+  virtual void ioWrite16(int index, int bitPos, bool value) = 0;
+  virtual void ioWrite8(int index, int bitPos, bool value) = 0;
 
-  /// 模拟量输出: 写入指定通道的模拟值 (如 DAC 电压)
-  virtual void aoWriteValue(int index, double value) {}
-  /// 模拟量输入: 读取指定通道的模拟值 (如 ADC 电压)
-  virtual double aoReadValue(int index) { return 0; }
+  virtual void aoWriteValue(int index, double value) { (void)index; (void)value; }
+  virtual double aoReadValue(int index) { (void)index; return 0; }
   virtual ~Io(){};
 };
+
 class Sensor 
 {
-
   virtual ~Sensor(){};
 };
 
@@ -335,4 +375,5 @@ public:
     virtual void send() = 0;
     virtual void receive() = 0;
 };
+
 } 

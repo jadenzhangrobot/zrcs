@@ -142,6 +142,7 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
         axis.posPositiveLimit = axisData.posPositiveLimit;
         axis.posNegativeLimit = axisData.posNegativeLimit;
         axis.maxPosDiff = axisData.maxPosDiff;
+        axis.lead = axisData.lead;
         config->axisParas.push_back(axis);
     }
     std::shared_ptr<Rtos> rtos;
@@ -227,7 +228,7 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
             if (useMujoco) {
                 mujocoSimulation->setAxisId(slaveId, it->axisId);
                 axis->pushServo(std::make_unique<MujocoServo>(
-                                    mujocoSimulation, slaveId, servoIt->second),
+                                    mujocoSimulation, slaveId),
                                 servoIt->second);
             } else
 #endif

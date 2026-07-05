@@ -51,6 +51,7 @@ struct AxisConfigData {
     double posPositiveLimit = 0.0;
     double posNegativeLimit = 0.0;
     double maxPosDiff = 0.0;
+    double lead = 0.0;
 
     template <class Archive>
     void serialize(Archive& ar)
@@ -58,7 +59,7 @@ struct AxisConfigData {
         ar(CEREAL_NVP(axisId), CEREAL_NVP(axisName), CEREAL_NVP(servoSlaveIds),
            CEREAL_NVP(maxVel), CEREAL_NVP(maxAcc), CEREAL_NVP(maxJerk),
            CEREAL_NVP(posPositiveLimit), CEREAL_NVP(posNegativeLimit),
-           CEREAL_NVP(maxPosDiff));
+           CEREAL_NVP(maxPosDiff), CEREAL_NVP(lead));
     }
 };
 

@@ -11,14 +11,16 @@ namespace ZrcsHardware {
 class MujocoServo : public Servo {
 public:
     MujocoServo(std::shared_ptr<MujocoSimulation> simulation,
-                uint32_t slaveId,
-                ServoPara servoConfig);
+                uint32_t slaveId);
     ~MujocoServo() override = default;
 
     MC_SERVO_CODE setPos(int32_t pos) override;
     MC_SERVO_CODE setVel(int32_t vel) override;
     MC_SERVO_CODE setTorque(int32_t torque) override;
     MC_SERVO_CODE setMode(Cia402Mode mode) override;
+
+    MC_SERVO_CODE setPosInTurns(double turns) override;
+    MC_SERVO_CODE setVelInTurns(double turns) override;
 
     int32_t pos() override;
     int32_t vel() override;
@@ -34,12 +36,8 @@ public:
     void emergStop() override;
 
 private:
-    double encoderToUser(int32_t value) const;
-    int32_t userToEncoder(double value) const;
-
     std::shared_ptr<MujocoSimulation> simulation_;
     uint32_t slaveId_;
-    ServoPara servoConfig_;
     Cia402Mode mode_ = Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION;
     int32_t torque_ = 0;
 };

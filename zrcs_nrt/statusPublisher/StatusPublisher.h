@@ -71,7 +71,11 @@ public:
     /// @brief 停止发布线程并关闭 socket（幂等，可在析构外主动调用）
     void stop() 
     {
-        if (!running_.exchange(false)) return;
+        const bool wasRunning = running_.exchange(false);
+        const bool hasThread = pub_thread_.joinable();
+        const bool hasSocket = static_cast<bool>(pub_socket_);
+        if (!wasRunning && !hasThread && !hasSocket) return;
+
         if (pub_thread_.joinable()) 
         {
             pub_thread_.join();
@@ -81,7 +85,9 @@ public:
             pub_socket_->close();
             pub_socket_.reset();
         }
-        spdlog::info("[StatusPublisher] Stopped");
+        if (wasRunning || hasThread) {
+            spdlog::info("[StatusPublisher] Stopped");
+        }
     }
 
     /// @brief 投递一条 RT 日志，将随下一次状态发布一并发送给 GUI

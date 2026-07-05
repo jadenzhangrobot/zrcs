@@ -1,5 +1,6 @@
 #include "ConfigManager.h"
 
+#include <cmath>
 #include <fstream>
 #include <stdexcept>
 
@@ -126,6 +127,10 @@ void ConfigManager::validate()
     for (const auto& axis : axisConfig_.axes) {
         if (!axisByAxisId_.emplace(axis.axisId, &axis).second) {
             throw std::runtime_error("Duplicate axisId: " + std::to_string(axis.axisId));
+        }
+        if (!std::isfinite(axis.lead) || axis.lead <= 0.0) {
+            throw std::runtime_error("Axis " + std::to_string(axis.axisId) +
+                                     " has invalid lead, expected > 0");
         }
         if (axis.servoSlaveIds.empty()) {
             throw std::runtime_error("Axis " + std::to_string(axis.axisId) +

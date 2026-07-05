@@ -19,7 +19,6 @@
 
 #include "AxisConfig.h"
 #include "ControllerInterface.h"
-#include "laser/LaserController.h"
 #include "shared_memory/ShmLayout.h"
 
 namespace ZrcsHardware {
@@ -53,12 +52,6 @@ public:
         ios_.push_back(std::move(io));
     }
 
-    /// 设置激光器控制器
-    void setLaser(std::unique_ptr<LaserController> laser) {
-        laser_ = std::move(laser);
-    }
-
-    LaserController* laser() const { return laser_.get(); }
 
     /// 每周期后端：处理轴指令 → 发送总线数据
     void sendData();
@@ -86,7 +79,6 @@ public:
 private:
     std::unique_ptr<AxisConfig>      axisConfig_;
     std::unique_ptr<HardwareBus>     hardwareBus_;
-    std::unique_ptr<LaserController> laser_;
 };
 
 } // namespace ZrcsHardware
