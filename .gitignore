@@ -2,3 +2,8 @@
 build/
 .cache/
 .codegraph/daemon.pid
+.codegraph/codegraph.lock
+
+# MuJoCo third-party build artifacts (keep *-src/ tracked)
+3rdParty/mujoco-3rdpart/*-build/
+3rdParty/mujoco-3rdpart/*-subbuild/

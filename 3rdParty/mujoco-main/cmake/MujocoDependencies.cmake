@@ -76,6 +76,22 @@ mark_as_advanced(MUJOCO_DEP_VERSION_benchmark)
 include(FetchContent)
 include(FindOrFetch)
 
+# ─── Use local third-party sources (no network download) ──────────────────
+# Set FETCHCONTENT_SOURCE_DIR_<name> as CACHE variables so FetchContent uses
+# the pre-downloaded sources instead of cloning from GitHub.
+set(MUJOCO_3RDPART_DIR "${mujoco_SOURCE_DIR}/../mujoco-3rdpart")
+get_filename_component(MUJOCO_3RDPART_DIR "${MUJOCO_3RDPART_DIR}" ABSOLUTE)
+foreach(_dep IN ITEMS lodepng marchingcubecpp qhull tinyobjloader ccd miniz)
+  set(_src_dir "${MUJOCO_3RDPART_DIR}/${_dep}-src")
+  if(EXISTS "${_src_dir}")
+    set(FETCHCONTENT_SOURCE_DIR_${_dep} "${_src_dir}" CACHE STRING "Local source for ${_dep}" FORCE)
+    message(STATUS "Using local source for ${_dep}: ${_src_dir}")
+  endif()
+endforeach()
+unset(_dep)
+unset(_src_dir)
+# ──────────────────────────────────────────────────────────────────────────
+
 # Override the BUILD_SHARED_LIBS setting, just for building third party libs (since we always want
 # static libraries). The ccd CMakeLists.txt doesn't expose an option to build a static ccd library,
 # unless BUILD_SHARED_LIBS is set.
@@ -91,8 +107,7 @@ set(BUILD_SHARED_LIBS
 if(NOT TARGET lodepng)
   FetchContent_Declare(
     lodepng
-    GIT_REPOSITORY https://github.com/lvandeve/lodepng.git
-    GIT_TAG ${MUJOCO_DEP_VERSION_lodepng}
+    SOURCE_DIR "${MUJOCO_3RDPART_DIR}/lodepng-src"
   )
 
   FetchContent_GetProperties(lodepng)
@@ -115,8 +130,7 @@ endif()
 if(NOT TARGET marchingcubecpp)
   FetchContent_Declare(
     marchingcubecpp
-    GIT_REPOSITORY https://github.com/aparis69/MarchingCubeCpp.git
-    GIT_TAG ${MUJOCO_DEP_VERSION_MarchingCubeCpp}
+    SOURCE_DIR "${MUJOCO_3RDPART_DIR}/marchingcubecpp-src"
   )
 
   FetchContent_GetProperties(marchingcubecpp)
@@ -126,28 +140,14 @@ if(NOT TARGET marchingcubecpp)
   endif()
 endif()
 
+# qhull — use local source via add_subdirectory (no FetchContent, no PATCH_COMMAND)
 set(QHULL_ENABLE_TESTING OFF)
-# Patch changes in https://github.com/qhull/qhull/pull/173.patch
-set(QHULL_PATCH_COMMAND
-  git apply --reject --whitespace=fix ${mujoco_SOURCE_DIR}/cmake/qhull-support-emscripten.patch
-)
-
-findorfetch(
-  USE_SYSTEM_PACKAGE
-  OFF
-  PACKAGE_NAME
-  qhull
-  LIBRARY_NAME
-  qhull
-  GIT_REPO
-  https://github.com/qhull/qhull.git
-  GIT_TAG
-  ${MUJOCO_DEP_VERSION_qhull}
-  TARGETS
-  qhull
-  EXCLUDE_FROM_ALL
-  PATCH_COMMAND ${QHULL_PATCH_COMMAND}
-)
+if(NOT TARGET qhull)
+  set(qhull_SOURCE_DIR "${MUJOCO_3RDPART_DIR}/qhull-src")
+  set(qhull_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/qhull-build")
+  add_subdirectory("${qhull_SOURCE_DIR}" "${qhull_BINARY_DIR}" EXCLUDE_FROM_ALL)
+  message(STATUS "Using local source for qhull: ${qhull_SOURCE_DIR}")
+endif()
 # MuJoCo includes a file from libqhull_r which is not exported by the qhull include directories.
 # Add it to the target.
 target_include_directories(
@@ -175,60 +175,35 @@ findorfetch(
 target_compile_options(tinyxml2 PRIVATE ${MUJOCO_MACOS_COMPILE_OPTIONS})
 target_link_options(tinyxml2 PRIVATE ${MUJOCO_MACOS_LINK_OPTIONS})
 
-# update cmake_minimum_required version for compatibility with newer version of cmake
+# tinyobjloader — use local source via add_subdirectory
 if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
   set(CMAKE_POLICY_VERSION_MINIMUM ${MUJOCO_CMAKE_MIN_REQ})
   set(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED ON)
 endif()
-findorfetch(
-  USE_SYSTEM_PACKAGE
-  OFF
-  PACKAGE_NAME
-  tinyobjloader
-  LIBRARY_NAME
-  tinyobjloader
-  GIT_REPO
-  https://github.com/tinyobjloader/tinyobjloader.git
-  GIT_TAG
-  ${MUJOCO_DEP_VERSION_tinyobjloader}
-  TARGETS
-  tinyobjloader
-  EXCLUDE_FROM_ALL
-)
+if(NOT TARGET tinyobjloader)
+  set(tinyobjloader_SOURCE_DIR "${MUJOCO_3RDPART_DIR}/tinyobjloader-src")
+  set(tinyobjloader_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/tinyobjloader-build")
+  add_subdirectory("${tinyobjloader_SOURCE_DIR}" "${tinyobjloader_BINARY_DIR}" EXCLUDE_FROM_ALL)
+  message(STATUS "Using local source for tinyobjloader: ${tinyobjloader_SOURCE_DIR}")
+endif()
 if(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED)
   unset(CMAKE_POLICY_VERSION_MINIMUM)
   unset(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED)
 endif()
 
+# ccd — use local source via add_subdirectory
 set(ENABLE_DOUBLE_PRECISION ON)
 set(CCD_HIDE_ALL_SYMBOLS ON)
-
-# Patch changes in https://github.com/danfis/libccd/pull/83.patch
-set(CCD_PATCH_COMMAND
-  git apply --reject --whitespace=fix ${mujoco_SOURCE_DIR}/cmake/ccd-support-emscripten.patch
-)
-
-# update cmake_minimum_required version for compatibility with newer version of cmake
 if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
   set(CMAKE_POLICY_VERSION_MINIMUM ${MUJOCO_CMAKE_MIN_REQ})
   set(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED ON)
 endif()
-findorfetch(
-  USE_SYSTEM_PACKAGE
-  OFF
-  PACKAGE_NAME
-  ccd
-  LIBRARY_NAME
-  ccd
-  GIT_REPO
-  https://github.com/danfis/libccd.git
-  GIT_TAG
-  ${MUJOCO_DEP_VERSION_ccd}
-  TARGETS
-  ccd
-  EXCLUDE_FROM_ALL
-  PATCH_COMMAND ${CCD_PATCH_COMMAND}
-)
+if(NOT TARGET ccd)
+  set(ccd_SOURCE_DIR "${MUJOCO_3RDPART_DIR}/ccd-src")
+  set(ccd_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/ccd-build")
+  add_subdirectory("${ccd_SOURCE_DIR}" "${ccd_BINARY_DIR}" EXCLUDE_FROM_ALL)
+  message(STATUS "Using local source for ccd: ${ccd_SOURCE_DIR}")
+endif()
 if(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED)
   unset(CMAKE_POLICY_VERSION_MINIMUM)
   unset(CMAKE_POLICY_VERSION_MINIMUM_LOCALLY_DEFINED)
@@ -247,6 +222,7 @@ if(WIN32)
   endif()
 endif()
 
+# miniz — use local source via add_subdirectory
 if(DEFINED BUILD_TESTS)
   set(_OLD_BUILD_TESTS "${BUILD_TESTS}")
   set(_BUILD_TESTS_WAS_DEFINED TRUE)
@@ -254,12 +230,12 @@ else()
   set(_BUILD_TESTS_WAS_DEFINED FALSE)
 endif()
 set(BUILD_TESTS OFF)
-fetchpackage(
-  PACKAGE_NAME  miniz
-  GIT_REPO      https://github.com/richgel999/miniz.git
-  GIT_TAG       ${MUJOCO_DEP_VERSION_miniz}
-  TARGETS       miniz
-)
+if(NOT TARGET miniz)
+  set(miniz_SOURCE_DIR "${MUJOCO_3RDPART_DIR}/miniz-src")
+  set(miniz_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/miniz-build")
+  add_subdirectory("${miniz_SOURCE_DIR}" "${miniz_BINARY_DIR}" EXCLUDE_FROM_ALL)
+  message(STATUS "Using local source for miniz: ${miniz_SOURCE_DIR}")
+endif()
 if(_BUILD_TESTS_WAS_DEFINED)
   set(BUILD_TESTS "${_OLD_BUILD_TESTS}")
 else()
