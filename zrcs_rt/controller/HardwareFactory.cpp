@@ -175,7 +175,7 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
     bus = std::move(ethercatMaster);
 #else
     rtos = std::make_shared<Nativelinux>();
-    void* masterPtr = nullptr;
+    [[maybe_unused]] void* masterPtr = nullptr;
 #endif
 
 #if defined(SIMULATION)

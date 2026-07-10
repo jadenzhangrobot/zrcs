@@ -18,7 +18,19 @@
       "Bash(cmake --build /e/zrcs-dev/build --target zrcsrt)",
       "Bash(awk -F'geomS=' '{split\\($2,a,\" \"\\); split\\($0,b,\"newVel=\"\\); split\\(b[2],c,\" \"\\); print a[1], c[1]}')",
       "Bash(awk 'NR%3==0 || $1>7 || $2<0')",
-      "Bash(awk '$2<0 || $1>15')"
+      "Bash(awk '$2<0 || $1>15')",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:docs.nav2.org)",
+      "WebFetch(domain:www.behaviortree.dev)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(codex --version)",
+      "Bash(Get-Command codex *)",
+      "mcp__codegraph__codegraph_files",
+      "mcp__codegraph__codegraph_context",
+      "mcp__codegraph__codegraph_explore",
+      "Bash(rg -n \"#include.*Parameter\" --glob \"*.{h,cpp}\" zrcs_rt zrcs_nrt zrcs_common test)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

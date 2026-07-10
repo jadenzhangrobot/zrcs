@@ -6,649 +6,228 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
+    <width>480</width>
     <height>720</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="mainLayout">
    <property name="leftMargin">
-    <number>8</number>
+    <number>0</number>
    </property>
    <property name="topMargin">
-    <number>8</number>
+    <number>0</number>
    </property>
    <property name="rightMargin">
-    <number>8</number>
+    <number>0</number>
    </property>
    <property name="bottomMargin">
-    <number>8</number>
+    <number>0</number>
    </property>
    <property name="spacing">
     <number>8</number>
    </property>
    <item>
-    <widget class="QSplitter" name="mainSplitter">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+    <widget class="QGroupBox" name="systemGroup">
+     <property name="title">
+      <string>系统命令</string>
      </property>
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="widgetResizable">
-       <bool>true</bool>
+     <layout class="QVBoxLayout" name="systemLayout">
+      <property name="spacing">
+       <number>6</number>
       </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <widget class="QWidget" name="scrollContent">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>604</width>
-         <height>498</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="scrollLayout">
-        <property name="leftMargin">
-         <number>4</number>
-        </property>
-        <property name="topMargin">
-         <number>4</number>
-        </property>
-        <property name="rightMargin">
-         <number>4</number>
-        </property>
-        <property name="bottomMargin">
-         <number>4</number>
-        </property>
-        <property name="spacing">
+      <item>
+       <layout class="QGridLayout" name="axisCmdGrid">
+        <property name="horizontalSpacing">
          <number>6</number>
         </property>
-        <item>
-         <widget class="QGroupBox" name="genericGroup">
-          <property name="title">
-           <string>通用命令</string>
+        <property name="verticalSpacing">
+         <number>6</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="btnEnable">
+          <property name="text">
+           <string>Enable</string>
           </property>
-          <layout class="QHBoxLayout" name="genericLayout">
-           <item>
-            <widget class="QLabel" name="cmdNameLabel">
-             <property name="text">
-              <string>命令名:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="cmdNameEdit">
-             <property name="placeholderText">
-              <string>如 Enable, MoveJ...</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="cmdArgsLabel">
-             <property name="text">
-              <string>参数:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="cmdArgsEdit">
-             <property name="placeholderText">
-              <string>逗号分隔, 如 0,100,50</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btnSendGeneric">
-             <property name="text">
-              <string>发送</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <property name="presetCommand" stdset="0">
+           <string>Enable</string>
+          </property>
+          <property name="presetInputs" stdset="0">
+           <string>inputEnableAxis</string>
+          </property>
          </widget>
         </item>
-        <item>
-         <widget class="QGroupBox" name="systemGroup">
-          <property name="title">
-           <string>系统命令</string>
+        <item row="0" column="1">
+         <widget class="QLabel" name="labelEnableAxis">
+          <property name="text">
+           <string>轴号:</string>
           </property>
-          <layout class="QVBoxLayout" name="systemLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="enableRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnEnable">
-               <property name="text">
-            <string>Enable</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>Enable</string>
-               </property>
-               <property name="presetInputs" stdset="0">
-            <string>inputEnableAxis</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="labelEnableAxis">
-               <property name="text">
-            <string>轴号:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="inputEnableAxis"/>
-             </item>
-             <item>
-              <spacer name="enableRowSpacer">
-               <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="disableRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnDisable">
-               <property name="text">
-            <string>Disable</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>Disable</string>
-               </property>
-               <property name="presetInputs" stdset="0">
-            <string>inputDisableAxis</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="labelDisableAxis">
-               <property name="text">
-            <string>轴号:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="inputDisableAxis"/>
-             </item>
-             <item>
-              <spacer name="disableRowSpacer">
-               <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="resetRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnReset">
-               <property name="text">
-            <string>Reset</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>Reset</string>
-               </property>
-               <property name="presetInputs" stdset="0">
-            <string>inputResetAxis</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="labelResetAxis">
-               <property name="text">
-            <string>轴号:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="inputResetAxis"/>
-             </item>
-             <item>
-              <spacer name="resetRowSpacer">
-               <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="setZeroRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnSetZero">
-               <property name="text">
-            <string>SetZero</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>SetZero</string>
-               </property>
-               <property name="presetInputs" stdset="0">
-            <string>inputSetZeroAxis</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="labelSetZeroAxis">
-               <property name="text">
-            <string>轴号:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="inputSetZeroAxis"/>
-             </item>
-             <item>
-              <spacer name="setZeroRowSpacer">
-               <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="systemButtonsRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnEmergStop">
-               <property name="text">
-            <string>EmergStop</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>EmergStop</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="btnMovehome">
-               <property name="text">
-            <string>Movehome</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>Movehome</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="btnGetFK">
-               <property name="text">
-            <string>GetFK</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>GetFK</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="btnGetJointPos">
-               <property name="text">
-            <string>GetJointPos</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>GetJointPos</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="systemButtonsSpacer">
-               <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-          </layout>
          </widget>
         </item>
-        <item>
-         <widget class="QGroupBox" name="singleAxisGroup">
-          <property name="title">
-           <string>单轴运动</string>
+        <item row="0" column="2">
+         <widget class="QDoubleSpinBox" name="inputEnableAxis"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="btnDisable">
+          <property name="text">
+           <string>Disable</string>
           </property>
-          <layout class="QVBoxLayout" name="singleAxisLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="moveAbsRowLayout">
-             <item>
-              <widget class="QPushButton" name="btnMoveAbs">
-               <property name="text">
-            <string>MoveAbs</string>
-               </property>
-               <property name="presetCommand" stdset="0">
-            <string>MoveAbs</string>
-               </property>
-               <property name="presetInputs" stdset="0">
-            <string>inputMoveAbsAxis,inputMoveAbsPosition,inputMoveAbsVelocity,inputMoveAbsAcceleration,inputMoveAbsJerk</string>
-               </property>
-              </widget>
-             </item>
-             <item><widget class="QLabel" name="labelMoveAbsAxis"><property name="text"><string>轴号:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveAbsAxis"/></item>
-             <item><widget class="QLabel" name="labelMoveAbsPosition"><property name="text"><string>位置:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveAbsPosition"/></item>
-             <item><widget class="QLabel" name="labelMoveAbsVelocity"><property name="text"><string>速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveAbsVelocity"><property name="value"><double>100.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveAbsAcceleration"><property name="text"><string>加速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveAbsAcceleration"><property name="value"><double>500.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveAbsJerk"><property name="text"><string>加加速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveAbsJerk"><property name="value"><double>5000.000000000000000</double></property></widget></item>
-             <item><spacer name="moveAbsSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="moveRelRowLayout">
-             <item><widget class="QPushButton" name="btnMoveRel"><property name="text"><string>MoveRel</string></property><property name="presetCommand" stdset="0"><string>MoveRel</string></property><property name="presetInputs" stdset="0"><string>inputMoveRelAxis,inputMoveRelDistance,inputMoveRelVelocity,inputMoveRelAcceleration,inputMoveRelJerk</string></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveRelAxis"><property name="text"><string>轴号:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveRelAxis"/></item>
-             <item><widget class="QLabel" name="labelMoveRelDistance"><property name="text"><string>距离:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveRelDistance"><property name="value"><double>10.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveRelVelocity"><property name="text"><string>速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveRelVelocity"><property name="value"><double>100.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveRelAcceleration"><property name="text"><string>加速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveRelAcceleration"><property name="value"><double>500.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveRelJerk"><property name="text"><string>加加速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveRelJerk"><property name="value"><double>5000.000000000000000</double></property></widget></item>
-             <item><spacer name="moveRelSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="jogAbsRowLayout">
-             <item><widget class="QPushButton" name="btnJogAbsJ"><property name="text"><string>JogabsJ</string></property><property name="presetCommand" stdset="0"><string>JogabsJ</string></property><property name="presetInputs" stdset="0"><string>inputJogAbsAxis,inputJogAbsTarget</string></property></widget></item>
-             <item><widget class="QLabel" name="labelJogAbsAxis"><property name="text"><string>轴号:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputJogAbsAxis"/></item>
-             <item><widget class="QLabel" name="labelJogAbsTarget"><property name="text"><string>目标位置:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputJogAbsTarget"/></item>
-             <item><spacer name="jogAbsSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="jogRowLayout">
-             <item><widget class="QPushButton" name="btnJogJ"><property name="text"><string>JogJ</string></property><property name="presetCommand" stdset="0"><string>JogJ</string></property><property name="presetInputs" stdset="0"><string>inputJogAxis,inputJogTarget</string></property></widget></item>
-             <item><widget class="QLabel" name="labelJogAxis"><property name="text"><string>轴号:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputJogAxis"/></item>
-             <item><widget class="QLabel" name="labelJogTarget"><property name="text"><string>目标位置:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputJogTarget"><property name="value"><double>10.000000000000000</double></property></widget></item>
-             <item><spacer name="jogSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="moveExciteRowLayout">
-             <item><widget class="QPushButton" name="btnMoveExcite"><property name="text"><string>MoveExcite</string></property><property name="toolTip"><string>AxisId 大于等于 0 时激励单轴；小于 0 时同时激励前 N 个轴，例如 -7 表示前 7 轴。</string></property><property name="presetCommand" stdset="0"><string>MoveExcite</string></property><property name="presetInputs" stdset="0"><string>inputMoveExciteAxis,inputMoveExciteDuration,inputMoveExciteAmplitude,inputMoveExciteCenter</string></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveExciteAxis"><property name="text"><string>轴号/数量:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveExciteAxis"><property name="value"><double>-7.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveExciteDuration"><property name="text"><string>时长s:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveExciteDuration"><property name="value"><double>20.000000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveExciteAmplitude"><property name="text"><string>幅值:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveExciteAmplitude"><property name="value"><double>0.100000000000000</double></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveExciteCenter"><property name="text"><string>中心偏置:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveExciteCenter"/></item>
-             <item><spacer name="moveExciteSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-          </layout>
+          <property name="presetCommand" stdset="0">
+           <string>Disable</string>
+          </property>
+          <property name="presetInputs" stdset="0">
+           <string>inputDisableAxis</string>
+          </property>
          </widget>
         </item>
-        <item>
-         <widget class="QGroupBox" name="multiAxisGroup">
-          <property name="title">
-           <string>多轴运动</string>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelDisableAxis">
+          <property name="text">
+           <string>轴号:</string>
           </property>
-          <layout class="QVBoxLayout" name="multiAxisLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="moveJRowLayout">
-             <item><widget class="QPushButton" name="btnMoveJ"><property name="text"><string>MoveJ</string></property><property name="presetCommand" stdset="0"><string>MoveJ</string></property><property name="presetInputs" stdset="0"><string>inputMoveJX,inputMoveJY,inputMoveJZ,inputMoveJRX,inputMoveJRY,inputMoveJRZ,inputMoveJVelocity</string></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveJX"><property name="text"><string>X:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJX"/></item>
-             <item><widget class="QLabel" name="labelMoveJY"><property name="text"><string>Y:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJY"/></item>
-             <item><widget class="QLabel" name="labelMoveJZ"><property name="text"><string>Z:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJZ"/></item>
-             <item><widget class="QLabel" name="labelMoveJRX"><property name="text"><string>RX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJRX"/></item>
-             <item><widget class="QLabel" name="labelMoveJRY"><property name="text"><string>RY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJRY"/></item>
-             <item><widget class="QLabel" name="labelMoveJRZ"><property name="text"><string>RZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJRZ"/></item>
-             <item><widget class="QLabel" name="labelMoveJVelocity"><property name="text"><string>速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveJVelocity"><property name="value"><double>50.000000000000000</double></property></widget></item>
-             <item><spacer name="moveJSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="moveLRowLayout">
-             <item><widget class="QPushButton" name="btnMoveL"><property name="text"><string>MoveL</string></property><property name="presetCommand" stdset="0"><string>MoveL</string></property><property name="presetInputs" stdset="0"><string>inputMoveLCurX,inputMoveLCurY,inputMoveLCurZ,inputMoveLCurRX,inputMoveLCurRY,inputMoveLCurRZ,inputMoveLX,inputMoveLY,inputMoveLZ,inputMoveLRX,inputMoveLRY,inputMoveLRZ,inputMoveLVelocity</string></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveLCurX"><property name="text"><string>CurX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurX"/></item>
-             <item><widget class="QLabel" name="labelMoveLCurY"><property name="text"><string>CurY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurY"/></item>
-             <item><widget class="QLabel" name="labelMoveLCurZ"><property name="text"><string>CurZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurZ"/></item>
-             <item><widget class="QLabel" name="labelMoveLCurRX"><property name="text"><string>CurRX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurRX"/></item>
-             <item><widget class="QLabel" name="labelMoveLCurRY"><property name="text"><string>CurRY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurRY"/></item>
-             <item><widget class="QLabel" name="labelMoveLCurRZ"><property name="text"><string>CurRZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLCurRZ"/></item>
-             <item><widget class="QLabel" name="labelMoveLX"><property name="text"><string>X:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLX"/></item>
-             <item><widget class="QLabel" name="labelMoveLY"><property name="text"><string>Y:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLY"/></item>
-             <item><widget class="QLabel" name="labelMoveLZ"><property name="text"><string>Z:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLZ"/></item>
-             <item><widget class="QLabel" name="labelMoveLRX"><property name="text"><string>RX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLRX"/></item>
-             <item><widget class="QLabel" name="labelMoveLRY"><property name="text"><string>RY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLRY"/></item>
-             <item><widget class="QLabel" name="labelMoveLRZ"><property name="text"><string>RZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLRZ"/></item>
-             <item><widget class="QLabel" name="labelMoveLVelocity"><property name="text"><string>速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveLVelocity"><property name="value"><double>50.000000000000000</double></property></widget></item>
-             <item><spacer name="moveLSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="moveCRowLayout">
-             <item><widget class="QPushButton" name="btnMoveC"><property name="text"><string>MoveC</string></property><property name="presetCommand" stdset="0"><string>MoveC</string></property><property name="presetInputs" stdset="0"><string>inputMoveCViaX,inputMoveCViaY,inputMoveCViaZ,inputMoveCEndX,inputMoveCEndY,inputMoveCEndZ,inputMoveCVelocity</string></property></widget></item>
-             <item><widget class="QLabel" name="labelMoveCViaX"><property name="text"><string>ViaX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCViaX"/></item>
-             <item><widget class="QLabel" name="labelMoveCViaY"><property name="text"><string>ViaY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCViaY"/></item>
-             <item><widget class="QLabel" name="labelMoveCViaZ"><property name="text"><string>ViaZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCViaZ"/></item>
-             <item><widget class="QLabel" name="labelMoveCEndX"><property name="text"><string>EndX:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCEndX"/></item>
-             <item><widget class="QLabel" name="labelMoveCEndY"><property name="text"><string>EndY:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCEndY"/></item>
-             <item><widget class="QLabel" name="labelMoveCEndZ"><property name="text"><string>EndZ:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCEndZ"/></item>
-             <item><widget class="QLabel" name="labelMoveCVelocity"><property name="text"><string>速度:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputMoveCVelocity"><property name="value"><double>50.000000000000000</double></property></widget></item>
-             <item><spacer name="moveCSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-          </layout>
          </widget>
         </item>
-        <item>
-         <widget class="QGroupBox" name="ioGroup">
-          <property name="title">
-           <string>IO 命令</string>
+        <item row="1" column="2">
+         <widget class="QDoubleSpinBox" name="inputDisableAxis"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="btnReset">
+          <property name="text">
+           <string>Reset</string>
           </property>
-          <layout class="QVBoxLayout" name="ioLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="setDORowLayout">
-             <item><widget class="QPushButton" name="btnSetDO"><property name="text"><string>SetDO</string></property><property name="presetCommand" stdset="0"><string>SetDO</string></property><property name="presetInputs" stdset="0"><string>inputSetDOModule,inputSetDOBit,inputSetDOValue</string></property></widget></item>
-             <item><widget class="QLabel" name="labelSetDOModule"><property name="text"><string>模块:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetDOModule"/></item>
-             <item><widget class="QLabel" name="labelSetDOBit"><property name="text"><string>位:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetDOBit"/></item>
-             <item><widget class="QLabel" name="labelSetDOValue"><property name="text"><string>值:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetDOValue"><property name="value"><double>1.000000000000000</double></property></widget></item>
-             <item><spacer name="setDOSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="setGORowLayout">
-             <item><widget class="QPushButton" name="btnSetGO"><property name="text"><string>SetGO</string></property><property name="presetCommand" stdset="0"><string>SetGO</string></property><property name="presetInputs" stdset="0"><string>inputSetGOModule,inputSetGOValue</string></property></widget></item>
-             <item><widget class="QLabel" name="labelSetGOModule"><property name="text"><string>模块:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetGOModule"/></item>
-             <item><widget class="QLabel" name="labelSetGOValue"><property name="text"><string>值:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetGOValue"/></item>
-             <item><spacer name="setGOSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="setAORowLayout">
-             <item><widget class="QPushButton" name="btnSetAO"><property name="text"><string>SetAO</string></property><property name="presetCommand" stdset="0"><string>SetAO</string></property><property name="presetInputs" stdset="0"><string>inputSetAOModule,inputSetAOChannel,inputSetAOValue</string></property></widget></item>
-             <item><widget class="QLabel" name="labelSetAOModule"><property name="text"><string>模块:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetAOModule"/></item>
-             <item><widget class="QLabel" name="labelSetAOChannel"><property name="text"><string>通道:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetAOChannel"/></item>
-             <item><widget class="QLabel" name="labelSetAOValue"><property name="text"><string>值:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSetAOValue"/></item>
-             <item><spacer name="setAOSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="pulseDORowLayout">
-             <item><widget class="QPushButton" name="btnPulseDO"><property name="text"><string>PulseDO</string></property><property name="presetCommand" stdset="0"><string>PulseDO</string></property><property name="presetInputs" stdset="0"><string>inputPulseDOModule,inputPulseDOBit,inputPulseDODuration</string></property></widget></item>
-             <item><widget class="QLabel" name="labelPulseDOModule"><property name="text"><string>模块:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputPulseDOModule"/></item>
-             <item><widget class="QLabel" name="labelPulseDOBit"><property name="text"><string>位:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputPulseDOBit"/></item>
-             <item><widget class="QLabel" name="labelPulseDODuration"><property name="text"><string>时长ms:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputPulseDODuration"><property name="value"><double>500.000000000000000</double></property></widget></item>
-             <item><spacer name="pulseDOSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-          </layout>
+          <property name="presetCommand" stdset="0">
+           <string>Reset</string>
+          </property>
+          <property name="presetInputs" stdset="0">
+           <string>inputResetAxis</string>
+          </property>
          </widget>
         </item>
-        <item>
-         <widget class="QGroupBox" name="schedulingGroup">
-          <property name="title">
-           <string>调度控制</string>
+        <item row="2" column="1">
+         <widget class="QLabel" name="labelResetAxis">
+          <property name="text">
+           <string>轴号:</string>
           </property>
-          <layout class="QVBoxLayout" name="schedulingLayout">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <layout class="QHBoxLayout" name="schedulingButtonsRowLayout">
-             <item><widget class="QPushButton" name="btnSysRun"><property name="text"><string>SYS_RUN</string></property><property name="presetCommand" stdset="0"><string>SYS_RUN</string></property></widget></item>
-             <item><widget class="QPushButton" name="btnSysStop"><property name="text"><string>SYS_STOP</string></property><property name="presetCommand" stdset="0"><string>SYS_STOP</string></property></widget></item>
-             <item><widget class="QPushButton" name="btnSysReset"><property name="text"><string>SYS_RESET</string></property><property name="presetCommand" stdset="0"><string>SYS_RESET</string></property></widget></item>
-             <item><widget class="QPushButton" name="btnSysEStop"><property name="text"><string>SYS_ESTOP</string></property><property name="presetCommand" stdset="0"><string>SYS_ESTOP</string></property></widget></item>
-             <item><spacer name="schedulingButtonsSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="sysJogStartRowLayout">
-             <item><widget class="QPushButton" name="btnSysJogStart"><property name="text"><string>SYS_JOG_START</string></property><property name="presetCommand" stdset="0"><string>SYS_JOG_START</string></property><property name="presetInputs" stdset="0"><string>inputSysJogStartAxis,inputSysJogStartDirection</string></property></widget></item>
-             <item><widget class="QLabel" name="labelSysJogStartAxis"><property name="text"><string>轴号:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSysJogStartAxis"/></item>
-             <item><widget class="QLabel" name="labelSysJogStartDirection"><property name="text"><string>方向(1正/0负):</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSysJogStartDirection"><property name="value"><double>1.000000000000000</double></property></widget></item>
-             <item><spacer name="sysJogStartSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="sysJogStopRowLayout">
-             <item><widget class="QPushButton" name="btnSysJogStop"><property name="text"><string>SYS_JOG_STOP</string></property><property name="presetCommand" stdset="0"><string>SYS_JOG_STOP</string></property></widget></item>
-             <item><spacer name="sysJogStopSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="sysMultiplierRowLayout">
-             <item><widget class="QPushButton" name="btnSysSetMultiplier"><property name="text"><string>SYS_SET_MULTIPLIER</string></property><property name="presetCommand" stdset="0"><string>SYS_SET_MULTIPLIER</string></property><property name="presetInputs" stdset="0"><string>inputSysSetMultiplierPercent</string></property></widget></item>
-             <item><widget class="QLabel" name="labelSysSetMultiplierPercent"><property name="text"><string>百分比:</string></property></widget></item>
-             <item><widget class="QDoubleSpinBox" name="inputSysSetMultiplierPercent"><property name="value"><double>100.000000000000000</double></property></widget></item>
-             <item><spacer name="sysMultiplierSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
-            </layout>
-           </item>
-          </layout>
          </widget>
         </item>
-        <item>
-         <spacer name="bottomSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+        <item row="2" column="2">
+         <widget class="QDoubleSpinBox" name="inputResetAxis"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="btnSetZero">
+          <property name="text">
+           <string>SetZero</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
+          <property name="presetCommand" stdset="0">
+           <string>SetZero</string>
           </property>
-         </spacer>
+          <property name="presetInputs" stdset="0">
+           <string>inputSetZeroAxis</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="labelSetZeroAxis">
+          <property name="text">
+           <string>轴号:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QDoubleSpinBox" name="inputSetZeroAxis"/>
         </item>
        </layout>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="logGroup">
-      <property name="title">
-       <string>命令日志</string>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="singleAxisGroup">
+     <property name="title">
+      <string>单轴运动</string>
+     </property>
+     <layout class="QVBoxLayout" name="singleAxisLayout">
+      <property name="spacing">
+       <number>8</number>
       </property>
-      <layout class="QVBoxLayout" name="logLayout">
-       <item>
-        <widget class="QTextEdit" name="logView">
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-         <property name="maximumHeight">
-          <number>150</number>
-         </property>
-         <property name="placeholderText">
-          <string>命令发送记录将显示在这里...</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
+      <item>
+       <layout class="QHBoxLayout" name="jogAbsRowLayout">
+        <item>
+         <widget class="QPushButton" name="btnJogAbsJ">
+          <property name="text">
+           <string>JogabsJ</string>
+          </property>
+          <property name="presetCommand" stdset="0">
+           <string>JogabsJ</string>
+          </property>
+          <property name="presetInputs" stdset="0">
+           <string>inputJogAbsAxis,inputJogAbsTarget</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelJogAbsAxis">
+          <property name="text">
+           <string>轴号:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="inputJogAbsAxis"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelJogAbsTarget">
+          <property name="text">
+           <string>目标位置:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="inputJogAbsTarget"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="jogRowLayout">
+        <item>
+         <widget class="QPushButton" name="btnJogJ">
+          <property name="text">
+           <string>JogJ</string>
+          </property>
+          <property name="presetCommand" stdset="0">
+           <string>JogJ</string>
+          </property>
+          <property name="presetInputs" stdset="0">
+           <string>inputJogAxis,inputJogTarget</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelJogAxis">
+          <property name="text">
+           <string>轴号:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="inputJogAxis"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelJogTarget">
+          <property name="text">
+           <string>目标位置:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="inputJogTarget">
+          <property name="value">
+           <double>10.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

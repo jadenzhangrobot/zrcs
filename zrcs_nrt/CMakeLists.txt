@@ -1,8 +1,5 @@
 project(zrcsnrt)
 
-find_package(Threads REQUIRED)
-find_package(Protobuf REQUIRED)
-
 include_directories(
     ${CMAKE_SOURCE_DIR}/zrcs_nrt
     ${CMAKE_SOURCE_DIR}/zrcs_rt
@@ -13,24 +10,13 @@ include_directories(
 
 set(SOURCES
     main.cpp
-    mujoco_identify/MujocoIdentifyWorker.cpp
+    dynamicsIdentification/MujocoIdentifyWorker.cpp
 )
 
-set(PROTO_FILES
-    ${CMAKE_SOURCE_DIR}/zrcs_common/message/message.proto
-)
-protobuf_generate_cpp(ZRCSNRT_PROTO_SRCS ZRCSNRT_PROTO_HDRS ${PROTO_FILES})
-
-add_executable(zrcsnrt ${SOURCES} ${ZRCSNRT_PROTO_SRCS} ${ZRCSNRT_PROTO_HDRS})
-target_include_directories(zrcsnrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_executable(zrcsnrt ${SOURCES})
 
 target_link_libraries(zrcsnrt PRIVATE
     zrcscommon
-    Threads::Threads
-    ruckig
-    tinyxml2
-    atomic
-    protobuf::libprotobuf
     cppzmq
     behaviortree_cpp_v3
     spdlog::spdlog

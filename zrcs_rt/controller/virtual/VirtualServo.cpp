@@ -2,7 +2,6 @@
  * @Description: virtualServo class method implementations
  */
 #include "controller/virtual/VirtualServo.h"
-#include "Parameter.h"
 
 namespace ZrcsHardware {
 

@@ -1,13 +1,10 @@
 #pragma once
 
 #include <QWidget>
-#include <QLineEdit>
-#include <QTextEdit>
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QStringList>
 #include <QVector>
-#include <QDateTime>
 
 class CommandPanel : public QWidget {
     Q_OBJECT
@@ -21,10 +18,5 @@ signals:
 private:
     void setupUI();
     QVector<QDoubleSpinBox*> resolvePresetInputs(const QStringList &inputNames) const;
-
-    void sendGenericCommand();
     void sendPreset(const QString &cmd, const QVector<QDoubleSpinBox*> &inputs);
-
-    QLineEdit *cmdNameEdit_;
-    QLineEdit *cmdArgsEdit_;
 };

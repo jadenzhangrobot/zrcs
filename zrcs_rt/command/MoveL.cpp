@@ -103,20 +103,21 @@ void MoveL::applyOutput()
     // output_ 已包含当前周期的轨迹输出，此处不再重复调用 update/pass_to_input。
 
     double s = output_->new_position[0];
-    const double pathVelocity = output_->new_velocity[0];
 
     // 线性插值得到当前笛卡尔位姿
     double u = (s-(arcOffset_-cartDist_)) / cartDist_;
     //u = std::clamp(u, 0.0, 1.0);
 
     Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
-    const Eigen::Vector3d pathDir = (targetPos_ - startPos_) / cartDist_;
 
     controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
     controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
 
     // 速度前馈：将弧长速度按路径方向分解到各平动轴，减少伺服跟踪滞后
+    // 恢复时需一并放开下方 pathVelocity / pathDir 计算：
+    // const double pathVelocity = output_->new_velocity[0];
+    // const Eigen::Vector3d pathDir = (targetPos_ - startPos_) / cartDist_;
    // controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
     //controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
     //controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());

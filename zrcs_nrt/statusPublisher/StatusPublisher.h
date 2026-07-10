@@ -14,8 +14,7 @@
 #include <spdlog/spdlog.h>
 
 #include "message.pb.h"
-#include "rtBridge/RtBridge.h"
-#include "config/Parameter.h"
+#include "command/RtBridge.h"
 
 /**
  * @brief 状态发布器 (ZMQ PUB)

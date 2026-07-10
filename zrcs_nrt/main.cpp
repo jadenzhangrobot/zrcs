@@ -16,13 +16,14 @@
 #include "log/NrtLogger.h"
 #include "log/RtLogConsumer.h"
 #include "zmq_server/ZmqServer.h"
+#include "command/CommandDispatcher.h"
 #include "statusPublisher/StatusPublisher.h"
-#include "rtBridge/RtBridge.h"
+#include "command/RtBridge.h"
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
 #include "config/ProjectConfig.h"
-#include "behavior_tree/BehaviorTreeRunner.h"
-#include "mujoco_identify/MujocoIdentifyWorker.h"
+#include "behaviorTree/BehaviorTreeRunner.h"
+#include "dynamicsIdentification/MujocoIdentifyWorker.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -260,7 +261,8 @@ int main(int argc, char **argv)
         mujocoIdentifyWorker.start();
 
         // 初始化 ZMQ 服务器
-        ZMQServer zmq_server(&bridge, &behaviorTreeRunner);
+        CommandDispatcher dispatcher(&bridge);
+        ZMQServer zmq_server(&bridge, &dispatcher, &behaviorTreeRunner);
         g_zmq_server = &zmq_server;
 
         if (!zmq_server.initialize()) {

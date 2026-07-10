@@ -22,7 +22,7 @@
 
 #include "config/CmdDefine.h"   // CmdId, Arg 枚举, magic_enum, kCmdArgsMax
 #include "motion/MotionPreprocessor.h"
-#include "rtBridge/RtBridge.h"  // RtBridge, SendResult
+#include "command/RtBridge.h"  // RtBridge, SendResult
 #include "BtSharedState.h"
 
 namespace zrcs_bt {
@@ -112,7 +112,9 @@ public:
         }
 
         const auto completion = sharedState_->bridge->lastCompletion();
-        const bool success = completion.seq == pendingSeq_ ? completion.success : completion.success;
+        // isCommandCompleted 已确保 completion.seq >= pendingSeq_，
+        // 此处直接采用最新完成记录的结果（与原三元恒等表达式行为一致）。
+        const bool success = completion.success;
         if (success)
         {
             sharedState_->setCurrentNode(name(), "completed seq=" + std::to_string(pendingSeq_));
@@ -219,7 +221,9 @@ public:
             return BT::NodeStatus::RUNNING;
 
         const auto completion = sharedState_->bridge->lastCompletion();
-        const bool success = completion.seq == pendingSeq_ ? completion.success : completion.success;
+        // isCommandCompleted 已确保 completion.seq >= pendingSeq_，
+        // 此处直接采用最新完成记录的结果（与原三元恒等表达式行为一致）。
+        const bool success = completion.success;
         if (success)
         {
             sharedState_->setCurrentNode(name(), "completed seq=" + std::to_string(pendingSeq_));
@@ -358,7 +362,9 @@ public:
             return BT::NodeStatus::RUNNING;
 
         const auto completion = sharedState_->bridge->lastCompletion();
-        const bool success = completion.seq == pendingSeq_ ? completion.success : completion.success;
+        // isCommandCompleted 已确保 completion.seq >= pendingSeq_，
+        // 此处直接采用最新完成记录的结果（与原三元恒等表达式行为一致）。
+        const bool success = completion.success;
         if (success)
         {
             sharedState_->setCurrentNode(name(), "batch completed seq=" + std::to_string(pendingSeq_));

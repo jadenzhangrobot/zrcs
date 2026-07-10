@@ -1,0 +1,60 @@
+{
+  "buildMode": {
+    "default": "simulation",
+    "description": "构建模式 (BUILD_MODE)",
+    "choices": {
+      "simulation": {
+        "short": "Simulation",
+        "long": "仿真模式 (-DSIMULATION)，编译 GUI",
+        "settings": { "BUILD_MODE": "simulation" }
+      },
+      "standard": {
+        "short": "Standard",
+        "long": "标准模式 (-DSTANDARD)，编译 GUI",
+        "settings": { "BUILD_MODE": "standard" }
+      },
+      "realtime": {
+        "short": "Realtime",
+        "long": "实时模式 (-DREALTIME -DETHERCAT)，需要 Xenomai，不编译 GUI",
+        "settings": { "BUILD_MODE": "realtime" }
+      }
+    }
+  },
+  "test": {
+    "default": "with-test",
+    "description": "测试程序 (test)",
+    "choices": {
+      "with-test": {
+        "short": "Test:ON",
+        "long": "编译 test/ 下的测试程序",
+        "settings": { "test": "ON" }
+      },
+      "no-test": {
+        "short": "Test:OFF",
+        "long": "不编译测试程序",
+        "settings": { "test": "OFF" }
+      }
+    }
+  },
+  "buildType": {
+    "default": "debug",
+    "description": "CMAKE_BUILD_TYPE",
+    "choices": {
+      "debug": {
+        "short": "Debug",
+        "long": "带调试符号",
+        "buildType": "Debug"
+      },
+      "release": {
+        "short": "Release",
+        "long": "优化，无调试符号",
+        "buildType": "Release"
+      },
+      "relwithdebinfo": {
+        "short": "RelWithDebInfo",
+        "long": "优化 + 调试符号",
+        "buildType": "RelWithDebInfo"
+      }
+    }
+  }
+}

@@ -25,8 +25,6 @@
 #include "ecrt.h"
 #include "tinyxml2.h"
 
-#include "config/Parameter.h"
-
 namespace ZrcsHardware {
 
 /**

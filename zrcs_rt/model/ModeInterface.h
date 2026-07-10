@@ -14,7 +14,6 @@
 #include "controller/Controller.h"
 #include <controller/ControllerInterface.h>
 #include "model/RobotModel.h"
-#include "config/Parameter.h"
 #include "shared_memory/ShmLayout.h"
 
 #include <ruckig/ruckig.hpp>
@@ -55,12 +54,12 @@ public:
     ModeInterface(const std::string& name, Controller* controller,
                   RobotModel* model, int dof)
         : modeName_(name),
-          controller_(controller),
-          model_(model),
           dof_(dof),
           otg_(dof, cycletime * 0.001),
           input_(dof),
-          output_(dof)
+          output_(dof),
+          controller_(controller),
+          model_(model)
     {
         if (model_)
         {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TrajectoryTypes.h"
-#include "config/Parameter.h"
 
 #include <algorithm>
 #include <cmath>

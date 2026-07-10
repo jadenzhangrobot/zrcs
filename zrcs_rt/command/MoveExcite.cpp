@@ -1,7 +1,5 @@
 #include "command/MoveExcite.h"
 
-#include "config/Parameter.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>

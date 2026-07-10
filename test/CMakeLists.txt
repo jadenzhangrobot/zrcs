@@ -46,17 +46,8 @@ target_link_libraries(test_motion_preprocessing PRIVATE
 )
 
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）
-find_package(Protobuf REQUIRED)
-
-set(ZMQ_TEST_PROTO ${DEVEL_INCLUDE_DIRS}/zrcs_common/message/message.proto)
-protobuf_generate_cpp(ZMQ_TEST_PROTO_SRCS ZMQ_TEST_PROTO_HDRS ${ZMQ_TEST_PROTO})
-
-add_executable(test_zmq_comm test_zmq_comm.cpp ${ZMQ_TEST_PROTO_SRCS} ${ZMQ_TEST_PROTO_HDRS})
-target_include_directories(test_zmq_comm PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_executable(test_zmq_comm test_zmq_comm.cpp)
 target_link_libraries(test_zmq_comm PRIVATE
-    protobuf::libprotobuf
+    zrcs::proto
     cppzmq
-    absl::log_internal_message
-    absl::log_internal_check_op
-    absl::log_globals
 )

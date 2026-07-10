@@ -96,18 +96,61 @@ void NodeManager::run()
             shm()->jogCtrl.active.store(false, std::memory_order_release);
         };
 
+        // 任一轴进入 ErrorStop 或存在错误码时，任务调度切到 ERROR_STATE。
+        // 覆盖：限位/方向禁用(cmdsProcessing)、多驱同步误差(statusSync)、以及后续扩展的伺服故障。
+        // 仅在 RUN 下自动切入，避免 RESET/IDLE 恢复过程中被立即打回 ERROR_STATE。
+        auto hasAxisFault = [this]() -> bool
+        {
+            for (const auto& axis : controller_->axes_)
+            {
+                if (axis->getAxisError() != MC_ERRORCODE_GOOD ||
+                    axis->getAxisState() == mcErrorStop)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        auto enterErrorStateFromAxisFault = [&](const char* reason)
+        {
+            if (taskScheduling_ != zrcs::TaskScheduling::RUN)
+            {
+                return;
+            }
+            for (const auto& axis : controller_->axes_)
+            {
+                if (axis->getAxisError() != MC_ERRORCODE_GOOD ||
+                    axis->getAxisState() == mcErrorStop)
+                {
+                    ERROR_PRINT("%s: axis error code=0x%X state=%d\n",
+                                reason,
+                                static_cast<unsigned>(axis->getAxisError()),
+                                static_cast<int>(axis->getAxisState()));
+                }
+            }
+            stopContinuousJog();
+            abortActiveCommand(reason);
+            taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
+        };
+
+        if (hasAxisFault())
+        {
+            enterErrorStateFromAxisFault("轴故障进入 ERROR_STATE");
+        }
+
         // ---- Input nodes ----------------------------------------------------
-           for (auto& node : factory_.inPutNodes) 
+           for (auto& node : factory_.inPutNodes)
             {
                 if (node->getNodeStatus() == NodeStatus::RTINIT)
                 {
                     node->init();
                     node->setNodeStatus(NodeStatus::EXECUTING);
-                } 
+                }
                 else if (node->getNodeStatus() == NodeStatus::EXECUTING)
                 {
                     node->execute();
-                } 
+                }
                 else
                 {
                     ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
@@ -218,6 +261,14 @@ void NodeManager::run()
                 stopContinuousJog();
                 abortActiveCommand("RESET abort active command");
                 stopHandled_ = false;
+                // 调度复位时同步清轴软件故障，否则 RUN 后会立刻再次进入 ERROR_STATE。
+                for (auto& axis : controller_->axes_)
+                {
+                    if (!axis->resetError())
+                    {
+                        ERROR_PRINT("RESET: 轴复位失败\n");
+                    }
+                }
                 taskScheduling_ = zrcs::TaskScheduling::IDLE;
                 break;
             case zrcs::TaskScheduling::SHUTDOWN:
@@ -240,6 +291,15 @@ void NodeManager::run()
             std::memory_order_acq_rel,
             std::memory_order_acquire);
         controller_->sendData();
+
+        // sendData/cmdsProcessing 可能在本周期末才置位轴故障，补一次切换，
+        // 避免要等到下一周期 GUI 才看到 ERROR。
+        if (taskScheduling_ == zrcs::TaskScheduling::RUN && hasAxisFault())
+        {
+            enterErrorStateFromAxisFault("sendData 后轴故障进入 ERROR_STATE");
+            shm()->taskSched.store(taskScheduling_, std::memory_order_release);
+        }
+
         // 心跳只用于 RT 存活监控，NRT 不依赖这个字段做业务决策。
         static uint64_t heartbeat = 0;
         heartbeat++;

@@ -36,8 +36,8 @@ public:
     Controller(std::unique_ptr<AxisConfig> config,
                std::shared_ptr<Rtos> rtos,
                std::unique_ptr<HardwareBus> bus = nullptr)
-        : axisConfig_(std::move(config))
-        , rtos_(rtos)
+        : rtos_(rtos)
+        , axisConfig_(std::move(config))
         , hardwareBus_(std::move(bus)) {}
 
     ~Controller() = default;

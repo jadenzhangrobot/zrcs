@@ -82,10 +82,6 @@ bool DeltaRobot::forwardKinematics(
         double cos_a = std::cos(angles[i]);
         double sin_a = std::sin(angles[i]);
 
-        // 固定平台关节位置
-        double bx = sb_ * cos_a;
-        double by = sb_ * sin_a;
-
         // 主动臂末端位置 (在支链对称平面内)
         double ex = (sb_ - L_ * std::cos(theta)) * cos_a;
         double ey = (sb_ - L_ * std::cos(theta)) * sin_a;

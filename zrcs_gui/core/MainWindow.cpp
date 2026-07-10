@@ -215,25 +215,19 @@ void MainWindowRefactored::createSettingsPanel() {}
 void MainWindowRefactored::createAdvancedModules()
 {
     behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
-    commandPanel = findChild<CommandPanel*>("commandPanel");
 }
 
 void MainWindowRefactored::createQuickActions()
 {
     quickActionGroup = findChild<QGroupBox*>("quickActionGroup");
-    auto *btnServo = findChild<QPushButton*>("btnQuickServo");
+    commandPanel = findChild<CommandPanel*>("commandPanel");
     auto *btnRun = findChild<QPushButton*>("btnQuickRun");
     auto *btnPause = findChild<QPushButton*>("btnQuickPause");
-    auto *btnStop = findChild<QPushButton*>("btnQuickStop");
     auto *btnEStop = findChild<QPushButton*>("btnQuickEStop");
     auto *btnReset = findChild<QPushButton*>("btnQuickReset");
     if (!quickActionGroup || !btnRun || !btnPause || !btnEStop || !btnReset) {
         return;
     }
-
-    // 隐藏不用的按钮 — 快捷操作只保留 taskSched 状态切换
-    if (btnServo) { btnServo->hide(); }
-    if (btnStop)  { btnStop->hide(); }
 
     connect(btnRun, &QPushButton::clicked, this, [this]() {
         sendMotionCommand("SYS_RUN");

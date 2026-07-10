@@ -1,10 +1,5 @@
 project(zrcsrt)
 
-
-# 查找依赖库
-find_package(Threads REQUIRED)
-find_package(Protobuf REQUIRED)
-
 set(CMD_SRC_DIR    ${CMAKE_SOURCE_DIR}/zrcs_rt/command)
 
 # 包含目录
@@ -24,22 +19,11 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "system/*.cpp"
 )
 
-set(PROTO_FILES
-    ${CMAKE_SOURCE_DIR}/zrcs_common/message/message.proto
-)
-protobuf_generate_cpp(ZRCSRT_PROTO_SRCS ZRCSRT_PROTO_HDRS ${PROTO_FILES})
-
-add_executable(zrcsrt ${SOURCES} ${ZRCSRT_PROTO_SRCS} ${ZRCSRT_PROTO_HDRS})
-target_include_directories(zrcsrt PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_executable(zrcsrt ${SOURCES})
 
 # 链接库
 target_link_libraries(zrcsrt PRIVATE
     zrcscommon
-    Threads::Threads
-    ruckig
-    tinyxml2
-    atomic
-    protobuf::libprotobuf
     Eigen3::Eigen
     ${MOTION_CONTROL_LIBS}
 )

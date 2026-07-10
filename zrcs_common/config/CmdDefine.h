@@ -90,7 +90,53 @@ enum class MoveExciteArg : std::size_t {
 
 
 
-inline const char* cmdIdToName(CmdId id) noexcept 
+// ============================================================================
+// 运动命令表 —— 唯一事实源
+//
+// 每行描述一个走 cmdQueue 的运动命令：X(CmdId 名, 对应 Arg 枚举类型)。
+// 无参数命令的 Arg 枚举填 void。
+//
+// 新增运动命令时：
+//   1. 在上方 CmdId 枚举加一个值（协议依赖显式数字，故枚举保持手写）
+//   2. 在上方定义对应的 XxxArg 参数枚举（无参可省略，表里填 void）
+//   3. 在本表加一行 X(...)
+// BehaviorTreeRunner 的节点注册、后续任何"遍历所有运动命令"的逻辑
+// 都从本表展开，无需再改 switch。
+// ============================================================================
+#define ZRCS_MOTION_COMMAND_TABLE(X) \
+    X(Enable,     EnableArg)         \
+    X(Disable,    DisableArg)        \
+    X(Reset,      ResetArg)          \
+    X(Setmode,    SetmodeArg)        \
+    X(SetZero,    SetZeroArg)        \
+    X(JogabsJ,    JogabsJArg)        \
+    X(JogJ,       JogJArg)           \
+    X(MoveAbs,    MoveAbsArg)        \
+    X(MoveAbsJ,   MoveAbsJArg)       \
+    X(MoveJ,      MoveJArg)          \
+    X(MoveL,      MoveLArg)          \
+    X(MoveC,      MoveCArg)          \
+    X(Movehome,   void)              \
+    X(MoveLGalvo, MoveLGalvoArg)     \
+    X(MoveCurve,  MoveCurveArg)      \
+    X(MovePath,   MovePathArg)       \
+    X(MoveExcite, MoveExciteArg)
+
+// 表条目数必须与 CmdId 可用值数量（INVALID 与 SENTINEL 之间）一致，
+// 漏加/多加表行会在编译期报错，防止表与枚举失步。
+namespace zrcs::detail {
+#define ZRCS_COUNT_ONE(CmdName, ArgType) +1
+inline constexpr std::size_t kMotionCommandTableSize =
+    0 ZRCS_MOTION_COMMAND_TABLE(ZRCS_COUNT_ONE);
+#undef ZRCS_COUNT_ONE
+static_assert(kMotionCommandTableSize ==
+                  static_cast<std::size_t>(CmdId::SENTINEL) - 1,
+              "ZRCS_MOTION_COMMAND_TABLE 与 CmdId 枚举数量不一致："
+              "新增/删除命令时请同步更新枚举和命令表。");
+} // namespace zrcs::detail
+
+
+inline const char* cmdIdToName(CmdId id) noexcept
 {
     const auto name = magic_enum::enum_name(id);
     return name.empty() ? "UNKNOWN" : name.data();

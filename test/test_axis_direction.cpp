@@ -78,10 +78,9 @@ int main()
     axis.pushServo(std::move(forward), forwardServo);
     axis.pushServo(std::move(reverse), reverseServo);
 
-    assert(axis.toServoUnit(2.5, forwardServo) == 0.5);
-    assert(axis.toServoUnit(2.5, reverseServo) == 0.5);
-    assert(axis.toUserUnit(0.5, forwardServo) == 2.5);
-    assert(axis.toUserUnit(0.5, reverseServo) == 2.5);
+    // lead 在轴侧：用户单位 ↔ 电机圈，与各伺服 direction 无关
+    assert(axis.toServoUnit(2.5) == 0.5);
+    assert(axis.toUserUnit(0.5) == 2.5);
 
     axis.setAxisPositionCmd(2.5);
     axis.updateMotionCmdsToServo();

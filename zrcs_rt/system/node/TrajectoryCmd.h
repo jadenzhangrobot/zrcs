@@ -7,7 +7,6 @@
  */
 #pragma once
 #include "system/node/BaseNodeInterface.h"
-#include "config/Parameter.h"
 #include <ruckig/ruckig.hpp>
 #include <memory>
 namespace zrcsSystem 

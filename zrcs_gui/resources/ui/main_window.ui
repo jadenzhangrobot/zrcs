@@ -126,19 +126,6 @@
                      <number>6</number>
                     </property>
                     <item row="0" column="0">
-                     <widget class="QPushButton" name="btnQuickServo">
-                        <property name="text">
-                         <string>伺服使能</string>
-                        </property>
-                        <property name="checkable">
-                         <bool>true</bool>
-                        </property>
-                        <property name="quickAction" stdset="0">
-                         <bool>true</bool>
-                        </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="1">
                      <widget class="QPushButton" name="btnQuickRun">
                         <property name="text">
                          <string>运行程序</string>
@@ -148,7 +135,7 @@
                         </property>
                      </widget>
                     </item>
-                    <item row="0" column="2">
+                    <item row="0" column="1">
                      <widget class="QPushButton" name="btnQuickPause">
                         <property name="text">
                          <string>暂停</string>
@@ -161,20 +148,7 @@
                         </property>
                      </widget>
                     </item>
-                    <item row="1" column="0">
-                     <widget class="QPushButton" name="btnQuickStop">
-                        <property name="text">
-                         <string>停止</string>
-                        </property>
-                        <property name="kind" stdset="0">
-                         <string>danger</string>
-                        </property>
-                        <property name="quickAction" stdset="0">
-                         <bool>true</bool>
-                        </property>
-                     </widget>
-                    </item>
-                    <item row="1" column="1">
+                    <item row="0" column="2">
                      <widget class="QPushButton" name="btnQuickEStop">
                         <property name="text">
                          <string>急停</string>
@@ -187,7 +161,7 @@
                         </property>
                      </widget>
                     </item>
-                    <item row="1" column="2">
+                    <item row="0" column="3">
                      <widget class="QPushButton" name="btnQuickReset">
                         <property name="text">
                          <string>复位</string>
@@ -202,6 +176,9 @@
                     </item>
                    </layout>
                   </widget>
+               </item>
+               <item>
+                  <widget class="CommandPanel" name="commandPanel"/>
                </item>
                <item>
                   <spacer name="leftBottomSpacer">
@@ -276,16 +253,6 @@
        <layout class="QVBoxLayout" name="alarmLayout">
         <item>
          <widget class="AlarmPanel" name="alarmPanel"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="commandTab">
-       <attribute name="title">
-        <string>命令面板</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="commandLayout">
-        <item>
-         <widget class="CommandPanel" name="commandPanel"/>
         </item>
        </layout>
       </widget>

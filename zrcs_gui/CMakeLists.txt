@@ -21,7 +21,6 @@ endif()
 
 # 查找库
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL OpenGLWidgets Multimedia Xml Svg Gui)
-find_package(Protobuf REQUIRED)
 find_package(OpenGL REQUIRED)
 
 if(NOT TARGET absl::base)
@@ -58,12 +57,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP/include
 )
 
-# Protobuf 文件
-set(PROTO_FILES
-    ${CMAKE_SOURCE_DIR}/zrcs_common/message/message.proto
-)
-protobuf_generate_cpp(GUI_PROTO_SRCS GUI_PROTO_HDRS ${PROTO_FILES})
-
 set(ZRCS_GUI_EXTRA_SOURCES)
 set(ZRCS_GUI_EXTRA_LIBS)
 if(TARGET zrcs_mujoco)
@@ -88,7 +81,6 @@ set(SOURCES
     modules/mujoco/MujocoVisualizer.cpp
     modules/behavior_tree/BehaviorTreePanel.cpp
     modules/command/CommandPanel.cpp
-    ${GUI_PROTO_SRCS}
     ${ZRCS_GUI_EXTRA_SOURCES}
 )
 
@@ -140,11 +132,8 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Svg
     atomic
     Threads::Threads
-    protobuf::libprotobuf
+    zrcs::proto
     cppzmq
-    absl::log_internal_message
-    absl::log_internal_check_op
-    absl::log_globals
     OpenGL::GL
     behavior_tree_editor
     ${ZRCS_GUI_EXTRA_LIBS}

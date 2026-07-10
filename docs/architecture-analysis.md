@@ -193,7 +193,7 @@ flowchart LR
 | `zrcs_common/message/message.proto` | GUI/NRT ZMQ protobuf 协议 | 字段编号必须保持兼容，新增字段优先追加 |
 | `zrcs_common/shared_memory/ShmLayout.h` | NRT/RT 共享内存唯一真相源 | 布局变化必须 bump `kShmVersion` 并验证 size |
 | `zrcs_common/config/CmdDefine.h` | 命令名、`CmdId`、参数枚举映射 | 必须与 RT command node、BT alias 保持一致 |
-| `zrcs_nrt/rtBridge/RtBridge.h` | NRT 访问 `SharedBlock` 的统一边界 | 保证 SPSC 单生产者语义和线程安全 |
+| `zrcs_nrt/command/RtBridge.h` | NRT 访问 `SharedBlock` 的统一边界 | 保证 SPSC 单生产者语义和线程安全 |
 | `zrcs_nrt/zmq_server/ZmqServer.h` | GUI 命令入口 | 维护 REQ/REP 语义和错误回复格式 |
 | `zrcs_rt/system/NodeManager.*` | RT 周期调度核心 | 影响任务状态机、命令生命周期、控制器 I/O |
 | GUI/motionGui ZMQ client/subscriber | GUI 通信封装 | 当前重复实现，协议变更时需同步两处 |

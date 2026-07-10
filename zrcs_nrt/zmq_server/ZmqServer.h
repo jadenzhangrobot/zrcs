@@ -6,8 +6,9 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 #include "message.pb.h"
-#include "behavior_tree/BehaviorTreeRunner.h"
-#include "rtBridge/RtBridge.h"
+#include "behaviorTree/BehaviorTreeRunner.h"
+#include "command/RtBridge.h"
+#include "command/CommandDispatcher.h"
 
 class ZMQServer {
 private:
@@ -17,14 +18,18 @@ private:
     std::thread server_thread_;
     RtBridge* bridge_;
     BehaviorTreeRunner* behaviorTreeRunner_;
+    CommandDispatcher* dispatcher_;
 
     static constexpr const char* ENDPOINT = "tcp://*:5555";
     static constexpr int RECV_TIMEOUT = 100; // ms
 
 public:
-    ZMQServer(RtBridge* bridge, BehaviorTreeRunner* behaviorTreeRunner = nullptr)
+    ZMQServer(RtBridge* bridge,
+              CommandDispatcher* dispatcher,
+              BehaviorTreeRunner* behaviorTreeRunner = nullptr)
         : context_(1), socket_(nullptr), running_(false),
-          bridge_(bridge), behaviorTreeRunner_(behaviorTreeRunner) {}
+          bridge_(bridge), behaviorTreeRunner_(behaviorTreeRunner),
+          dispatcher_(dispatcher) {}
 
     ~ZMQServer() {
         stop();
@@ -123,88 +128,10 @@ private:
         spdlog::info("[ZMQServer] Server thread exiting");
     }
 
+    // 命令语义分发交给 CommandDispatcher（领域层），本类只做传输编解码。
     void handleMotionCommand(const zrcs_message::MotionCommand& cmd) {
-        const std::string& name = cmd.command();
         std::vector<double> args(cmd.args().begin(), cmd.args().end());
-
-        if (name == "SYS_RUN") {
-            bridge_->requestRun();
-            spdlog::info("[ZMQServer] SYS_RUN: TaskScheduling -> RUN");
-            sendReply("OK");
-        } else if (name == "SYS_STOP") {
-            bridge_->requestStop();
-            spdlog::info("[ZMQServer] SYS_STOP: TaskScheduling -> STOP");
-            sendReply("OK");
-        } else if (name == "SYS_RESET") {
-            bridge_->requestReset();
-            spdlog::info("[ZMQServer] SYS_RESET: TaskScheduling -> RESET");
-            sendReply("OK");
-        } else if (name == "SYS_ESTOP") {
-            bridge_->requestStop();
-            spdlog::warn("[ZMQServer] SYS_ESTOP: STOP");
-            sendReply("OK");
-        } else if (name == "SYS_JOG_START") {
-            if (args.size() >= 2) {
-                int axisId = static_cast<int>(args[0]);
-                bool direction = args[1] > 0.0;
-                bridge_->startContinuousMotion(axisId, direction);
-                spdlog::info("[ZMQServer] SYS_JOG_START: axis={}, dir={}", axisId, direction);
-                sendReply("OK");
-            } else {
-                sendReply("ERROR: SYS_JOG_START requires 2 args (axisId, direction)");
-            }
-        } else if (name == "SYS_JOG_STOP") {
-            bridge_->stopContinuousMotion();
-            spdlog::info("[ZMQServer] SYS_JOG_STOP");
-            sendReply("OK");
-        } else if (name == "SYS_SET_MULTIPLIER") {
-            if (args.size() >= 1) {
-                bridge_->setSpeedMultiplier(static_cast<uint8_t>(args[0]));
-                spdlog::info("[ZMQServer] SYS_SET_MULTIPLIER: {}%", static_cast<int>(args[0]));
-                sendReply("OK");
-            } else {
-                sendReply("ERROR: SYS_SET_MULTIPLIER requires 1 arg (percent)");
-            }
-        } else if (name == "SYS_SET_ORIGIN") {
-            // SetZero all axes: pass axisId = axisCount as sentinel
-            double sentinel = static_cast<double>(bridge_->axisCount());
-            auto [send_result, seq] = bridge_->sendCommand("SetZero", std::vector<double>{sentinel});
-            if (send_result == RtBridge::SendResult::OK) {
-                spdlog::info("[ZMQServer] SYS_SET_ORIGIN -> SetZero(all) seq={}", seq);
-                sendReply("OK");
-            } else {
-                spdlog::error("[ZMQServer] SYS_SET_ORIGIN failed");
-                sendReply("ERROR: Queue full");
-            }
-        } else if (name == "SYS_SET_AXIS_ORIGIN") {
-            if (args.size() >= 1) {
-                auto [send_result, seq] = bridge_->sendCommand("SetZero", std::vector<double>(args));
-                if (send_result == RtBridge::SendResult::OK) {
-                    spdlog::info("[ZMQServer] SYS_SET_AXIS_ORIGIN -> SetZero(axis={}) seq={}", static_cast<int>(args[0]), seq);
-                    sendReply("OK");
-                } else {
-                    spdlog::error("[ZMQServer] SYS_SET_AXIS_ORIGIN failed");
-                    sendReply("ERROR: Queue full");
-                }
-            } else {
-                sendReply("ERROR: SYS_SET_AXIS_ORIGIN requires 1 arg (axisId)");
-            }
-        } else {
-            auto [send_result, seq] = bridge_->sendCommand(name, args);
-            if (send_result == RtBridge::SendResult::OK) {
-                spdlog::info("[ZMQServer] Command '{}' sent via RtBridge (seq={})", name, seq);
-                sendReply("OK");
-            } else if (send_result == RtBridge::SendResult::UNKNOWN_CMD) {
-                spdlog::error("[ZMQServer] Unknown command '{}'", name);
-                sendReply("ERROR: Unknown command");
-            } else if (send_result == RtBridge::SendResult::QUEUE_FULL) {
-                spdlog::error("[ZMQServer] Command queue full! cmd='{}'", name);
-                sendReply("ERROR: Queue full");
-            } else {
-                spdlog::error("[ZMQServer] Command '{}' failed: bridge not connected", name);
-                sendReply("ERROR: Not connected");
-            }
-        }
+        sendReply(dispatcher_->dispatch(cmd.command(), args));
     }
 
     void handleBehaviorTreeCommand(const zrcs_message::BehaviorTreeCommand& cmd) {

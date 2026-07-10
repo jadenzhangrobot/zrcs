@@ -49,11 +49,14 @@ if(ZRCS_ENABLE_MUJOCO)
         target_compile_options(mujoco PRIVATE -Wno-error)
     endif()
 
-    # 静态构建 MuJoCo：须定义 MJ_STATIC，否则 mjexport.h 将 MJAPI 解析为
-    # __declspec(dllimport)，导致 render_noop 等 stub 实现与头声明冲突
-    # (redeclared without dllimport attribute)。PUBLIC 传播给所有链接者
-    # （含 render_noop 与 zrcs::mujoco 消费方），无需逐目标单独设置。
-    target_compile_definitions(mujoco PUBLIC MJ_STATIC)
+    get_target_property(ZRCS_MUJOCO_TARGET_TYPE mujoco TYPE)
+    if(ZRCS_MUJOCO_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+        target_compile_definitions(mujoco PUBLIC MJ_STATIC)
+    elseif(TARGET render_noop)
+        # render_noop provides local mjr_* stubs; it must not inherit dllimport
+        # declarations when MuJoCo itself is built as a shared library.
+        target_compile_definitions(render_noop PUBLIC MJ_STATIC)
+    endif()
 
     foreach(ZRCS_MUJOCO_PLUGIN_TARGET elasticity actuator sensor sdf_plugin)
         if(TARGET ${ZRCS_MUJOCO_PLUGIN_TARGET})
@@ -120,4 +123,11 @@ if(Eigen3_FOUND)
     message(STATUS "Found Eigen3: ${Eigen3_VERSION}")
 endif()
 
-
+# 添加 BehaviorTree.CPP（zrcsnrt 核心依赖，所有模式都需要）
+# 注意：这些 BUILD_* 为通用缓存变量，故置于本文件末尾，避免影响上方其他库
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_MANUAL_SELECTOR OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP)

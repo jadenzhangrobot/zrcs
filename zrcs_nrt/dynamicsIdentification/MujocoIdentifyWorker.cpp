@@ -1,4 +1,4 @@
-#include "mujoco_identify/MujocoIdentifyWorker.h"
+#include "dynamicsIdentification/MujocoIdentifyWorker.h"
 
 #include <algorithm>
 #include <array>

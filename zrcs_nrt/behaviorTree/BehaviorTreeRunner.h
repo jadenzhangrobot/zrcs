@@ -181,40 +181,18 @@ private:
     }
 
     /**
-     * @brief 遍历 CmdId 枚举，为每个命令注册带命名输入端口的别名节点。
+     * @brief 为每个运动命令注册带命名输入端口的别名节点。
      *
-     * switch 分派将运行时 CmdId 映射到编译期 ArgEnum 类型，
-     * 然后调用 registerTypedAlias<ArgEnum>() 完成注册。
+     * 命令清单来自 CmdDefine.h 的 ZRCS_MOTION_COMMAND_TABLE（唯一事实源）。
+     * 表宏在编译期展开为对每个命令的 registerTypedAlias<ArgEnum>() 调用，
+     * 新增运动命令时只需在该表加一行，此处无需改动。
      */
     void registerCommandAliasNodes()
     {
-        for (int value = Enable; value < SENTINEL; ++value)
-        {
-            const auto commandId = static_cast<CmdId>(value);
-            const std::string commandName = zrcs::cmdIdToName(commandId);
-
-            switch (commandId)
-            {
-            case CmdId::Enable:     registerTypedAlias<EnableArg>(commandName);     break;
-            case CmdId::Disable:    registerTypedAlias<DisableArg>(commandName);    break;
-            case CmdId::Reset:      registerTypedAlias<ResetArg>(commandName);      break;
-            case CmdId::Setmode:    registerTypedAlias<SetmodeArg>(commandName);    break;
-            case CmdId::SetZero:    registerTypedAlias<SetZeroArg>(commandName);    break;
-            case CmdId::JogabsJ:    registerTypedAlias<JogabsJArg>(commandName);    break;
-            case CmdId::JogJ:       registerTypedAlias<JogJArg>(commandName);       break;
-            case CmdId::MoveAbs:    registerTypedAlias<MoveAbsArg>(commandName);    break;
-            case CmdId::MoveAbsJ:   registerTypedAlias<MoveAbsJArg>(commandName);   break;
-            case CmdId::MoveJ:      registerTypedAlias<MoveJArg>(commandName);      break;
-            case CmdId::MoveL:      registerTypedAlias<MoveLArg>(commandName);      break;
-            case CmdId::MoveC:      registerTypedAlias<MoveCArg>(commandName);      break;
-            case CmdId::Movehome:   registerTypedAlias<void>(commandName);          break;
-            case CmdId::MoveLGalvo: registerTypedAlias<MoveLGalvoArg>(commandName); break;
-            case CmdId::MoveCurve:  registerTypedAlias<MoveCurveArg>(commandName);  break;
-            case CmdId::MovePath:   registerTypedAlias<MovePathArg>(commandName);   break;
-            case CmdId::MoveExcite: registerTypedAlias<MoveExciteArg>(commandName); break;
-            default: break;
-            }
-        }
+#define ZRCS_REGISTER_ALIAS(CmdName, ArgType) \
+        registerTypedAlias<ArgType>(zrcs::cmdIdToName(CmdId::CmdName));
+        ZRCS_MOTION_COMMAND_TABLE(ZRCS_REGISTER_ALIAS)
+#undef ZRCS_REGISTER_ALIAS
     }
 
     /// 为单个命令注册 TypedSendCommandNode<ArgEnum> 别名节点。

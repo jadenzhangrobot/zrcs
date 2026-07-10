@@ -17,7 +17,6 @@
 #include <string>
 
 #include "config/CmdDefine.h"
-#include "config/Parameter.h"
 #include "controller/Controller.h"
 #include "shared_memory/RtProcess.h"
 #include "system/log/RtLog.h"

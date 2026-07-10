@@ -2,5 +2,22 @@
 {
     "github.copilot.chat.commitMessageGeneration.instructions": [
         "请强制使用简体中文生成 Git Commit Message。遵循常规的 Angular 规范（如 feat:, fix:, docs: 等保留英文前缀，但后面的描述必须是中文）。"
-    ]
+    ],
+
+    // ---- CMake Tools ----
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.generator": "MinGW Makefiles",
+    // variants 文件位置默认就是 .vscode/cmake-variants.json，此处显式声明
+    "cmake.variantsFileName": ".vscode/cmake-variants.json",
+
+    // 关键：注入 UCRT64 + Qt6 到 PATH，否则 moc.exe 找不到 DLL 而配置/构建失败
+    "cmake.environment": {
+        "PATH": "D:/msys2/ucrt64/bin;D:/msys2/ucrt64/share/qt6/bin;${env:PATH}"
+    },
+    // 指定编译器，避免 CMake Tools 扫到 MSVC
+    "cmake.configureSettings": {
+        "CMAKE_C_COMPILER": "D:/msys2/ucrt64/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "D:/msys2/ucrt64/bin/g++.exe"
+    }
 }

@@ -22,6 +22,12 @@ public:
     MC_SERVO_CODE setPosInTurns(double turns) override;
     MC_SERVO_CODE setVelInTurns(double turns) override;
 
+    // 仿真无编码器：直接返回 MuJoCo 浮点状态，绕开 int32 编码器计数往返量化。
+    // 否则反馈分辨率会受 servo.xml 的 encoderCountPerUnit 影响（=1 时量化到整单位，反馈跳变）。
+    double posInTurns() override { return simulation_->position(slaveId_); }
+    double velInTurns() override { return simulation_->velocity(slaveId_); }
+    double accInTurns() override { return simulation_->acceleration(slaveId_); }
+
     int32_t pos() override;
     int32_t vel() override;
     int32_t acc() override;

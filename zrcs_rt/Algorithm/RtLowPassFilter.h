@@ -7,7 +7,8 @@
 
 #include <cmath>
 
-class RtLowPassFilter {
+class RtLowPassFilter 
+{
 public:
     /// 配置滤波器参数
     /// @param cutoffHz 截止频率 (Hz)，通常设为平台伺服带宽的 30~50%

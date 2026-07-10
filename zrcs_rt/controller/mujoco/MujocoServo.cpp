@@ -34,13 +34,13 @@ MujocoServo::MujocoServo(std::shared_ptr<MujocoSimulation> simulation,
 
 MC_SERVO_CODE MujocoServo::setPos(int32_t position)
 {
-    simulation_->setTargetPosition(slaveId_, static_cast<double>(position));
+    simulation_->setTargetPosition(slaveId_, encoderCountToTurns(position));
     return SERVONOERROR;
 }
 
 MC_SERVO_CODE MujocoServo::setVel(int32_t velocity)
 {
-    simulation_->setTargetVelocity(slaveId_, static_cast<double>(velocity));
+    simulation_->setTargetVelocity(slaveId_, encoderCountToTurns(velocity));
     return SERVONOERROR;
 }
 
@@ -72,17 +72,17 @@ MC_SERVO_CODE MujocoServo::setMode(Cia402Mode mode)
 
 int32_t MujocoServo::pos()
 {
-    return clampToInt32(simulation_->position(slaveId_));
+    return turnsToEncoderCount(simulation_->position(slaveId_));
 }
 
 int32_t MujocoServo::vel()
 {
-    return clampToInt32(simulation_->velocity(slaveId_));
+    return turnsToEncoderCount(simulation_->velocity(slaveId_));
 }
 
 int32_t MujocoServo::acc()
 {
-    return clampToInt32(simulation_->acceleration(slaveId_));
+    return turnsToEncoderCount(simulation_->acceleration(slaveId_));
 }
 
 int32_t MujocoServo::torque()
@@ -94,13 +94,13 @@ bool MujocoServo::readVal(int index, double& value)
 {
     switch (index) {
     case 0:
-        value = pos();
+        value = encoderCountToTurns(pos());
         return true;
     case 1:
-        value = vel();
+        value = encoderCountToTurns(vel());
         return true;
     case 2:
-        value = acc();
+        value = encoderCountToTurns(acc());
         return true;
     case 3:
         value = torque();

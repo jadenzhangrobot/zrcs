@@ -3,7 +3,7 @@
 #include "config/CmdDefine.h"
 #include "motion/PathPreprocessor.h"
 #include "motion/VelocityPlanner3D.h"
-#include "rtBridge/RtBridge.h"
+#include "command/RtBridge.h"
 #include "shared_memory/ShmLayout.h"
 
 #include <algorithm>
