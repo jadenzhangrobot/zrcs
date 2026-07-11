@@ -105,6 +105,11 @@ MujocoConfig MujocoConfig::load(const std::filesystem::path& projectDir)
 
     config.timestepMs = optionalDouble(root, "timestepMs", config.timestepMs);
     config.substeps = optionalInt(root, "substeps", config.substeps);
+    // kinematicOnly: "true"/"1" 开，缺省或其它值为动力学
+    if (const char* kin = root->Attribute("kinematicOnly")) {
+        const std::string v(kin);
+        config.kinematicOnly = (v == "1" || v == "true" || v == "True" || v == "TRUE");
+    }
     if (config.timestepMs <= 0.0) {
         throw std::runtime_error("mujoco.xml timestepMs must be positive");
     }

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XLeRobot 配置工程（双臂 + 夹爪 + 云台，删除底盘关节）
+
+  轴编号约定（共 14 轴）：
+    0-5   左臂 SO-101: Rotation/Pitch/Elbow/Wrist_Pitch/Wrist_Roll/Jaw
+    6-11  右臂 SO-101: Rotation/Pitch/Elbow/Wrist_Pitch/Wrist_Roll/Jaw
+    12-13 云台: head_pan / head_tilt
+
+  单位：位置 rad，速度 rad/s
+  来源限位：XLeRobot simulation/mujoco/xlerobot.xml
+-->
+<axisConfig>
+  <!-- 左臂 -->
+  <axis id="0"  name="left_rotation"     maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="2.1"     minPos="-2.1"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="0"/></servos>
+  </axis>
+  <axis id="1"  name="left_pitch"        maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.45"    minPos="-0.1"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="1"/></servos>
+  </axis>
+  <axis id="2"  name="left_elbow"        maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-0.2"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="2"/></servos>
+  </axis>
+  <axis id="3"  name="left_wrist_pitch"  maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="1.8"     minPos="-1.8"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="3"/></servos>
+  </axis>
+  <axis id="4"  name="left_wrist_roll"   maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-3.14159" maxPosDiff="0" lead="1">
+    <servos><servo slaveId="4"/></servos>
+  </axis>
+  <axis id="5"  name="left_jaw"          maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-3.14159" maxPosDiff="0" lead="1">
+    <servos><servo slaveId="5"/></servos>
+  </axis>
+
+  <!-- 右臂 -->
+  <axis id="6"  name="right_rotation"    maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="2.1"     minPos="-2.1"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="6"/></servos>
+  </axis>
+  <axis id="7"  name="right_pitch"       maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.45"    minPos="-0.1"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="7"/></servos>
+  </axis>
+  <axis id="8"  name="right_elbow"       maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-0.2"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="8"/></servos>
+  </axis>
+  <axis id="9"  name="right_wrist_pitch" maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="1.8"     minPos="-1.8"    maxPosDiff="0" lead="1">
+    <servos><servo slaveId="9"/></servos>
+  </axis>
+  <axis id="10" name="right_wrist_roll"  maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-3.14159" maxPosDiff="0" lead="1">
+    <servos><servo slaveId="10"/></servos>
+  </axis>
+  <axis id="11" name="right_jaw"         maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="3.14159" minPos="-3.14159" maxPosDiff="0" lead="1">
+    <servos><servo slaveId="11"/></servos>
+  </axis>
+
+  <!-- 云台 -->
+  <axis id="12" name="head_pan"          maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="1.57"    minPos="-1.57"   maxPosDiff="0" lead="1">
+    <servos><servo slaveId="12"/></servos>
+  </axis>
+  <axis id="13" name="head_tilt"         maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="1.45"    minPos="-0.76"   maxPosDiff="0" lead="1">
+    <servos><servo slaveId="13"/></servos>
+  </axis>
+
+</axisConfig>

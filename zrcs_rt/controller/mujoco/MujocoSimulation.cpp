@@ -278,6 +278,76 @@ struct MujocoSimulation::Impl {
         }
     }
 
+    // 纯运动学：直接写 qpos/qvel，不走 mj_step / 力矩 / PD。
+    // 由 mujoco.xml kinematicOnly="true" 启用。
+    void applyKinematicState()
+    {
+        const double dt = model->opt.timestep;
+        if (model->nu > 0) {
+            std::fill(data->ctrl, data->ctrl + model->nu, 0.0);
+        }
+        if (model->nv > 0) {
+            std::fill(data->qfrc_applied, data->qfrc_applied + model->nv, 0.0);
+        }
+
+        for (const auto slaveId : order) {
+            auto& binding = require(slaveId);
+            binding.lastAppliedTorque = 0.0;
+            binding.lastCtrl = 0.0;
+            binding.lastSaturated = false;
+
+            const double qOld = data->qpos[binding.qposAdr];
+            const double vOld = data->qvel[binding.dofAdr];
+            double qNew = qOld;
+            double vNew = 0.0;
+
+            if (!binding.enabled) {
+                vNew = 0.0;
+                qNew = qOld;
+            } else if (binding.mode == Cia402Mode::CYCLIC_SYNCHRONOUS_VELOCITY) {
+                vNew = binding.targetVelocity * binding.config.qposScale;
+                qNew = qOld + vNew * dt;
+            } else if (binding.mode == Cia402Mode::CYCLIC_SYNCHRONOUS_TORQUE) {
+                vNew = 0.0;
+                qNew = qOld;
+            } else {
+                qNew = userToQpos(binding, binding.targetPosition);
+                if (dt > 0.0) {
+                    vNew = (qNew - qOld) / dt;
+                } else {
+                    vNew = binding.targetVelocity * binding.config.qposScale;
+                }
+            }
+
+            if (model->jnt_limited[binding.jointId]) {
+                const double lo = model->jnt_range[2 * binding.jointId];
+                const double hi = model->jnt_range[2 * binding.jointId + 1];
+                if (qNew < lo) {
+                    qNew = lo;
+                    vNew = 0.0;
+                    binding.lastSaturated = true;
+                } else if (qNew > hi) {
+                    qNew = hi;
+                    vNew = 0.0;
+                    binding.lastSaturated = true;
+                }
+            }
+
+            data->qpos[binding.qposAdr] = qNew;
+            data->qvel[binding.dofAdr] = vNew;
+            if (dt > 0.0) {
+                data->qacc[binding.dofAdr] = (vNew - vOld) / dt;
+            } else {
+                data->qacc[binding.dofAdr] = 0.0;
+            }
+            binding.lastCtrl = qNew;
+            if (binding.enabled &&
+                binding.mode != Cia402Mode::CYCLIC_SYNCHRONOUS_VELOCITY) {
+                binding.targetPosition = qposToUser(binding, qNew);
+            }
+        }
+    }
+
     double actuatorTorque(const BindingRuntime& binding) const
     {
         if (binding.actuatorId < 0 || !data->qfrc_actuator) {
@@ -488,8 +558,16 @@ double MujocoSimulation::time() const
 void MujocoSimulation::step()
 {
     for (int i = 0; i < impl_->config.substeps; ++i) {
-        impl_->applyControls();
-        mj_step(impl_->model, impl_->data.get());
+        if (impl_->config.kinematicOnly) {
+            // 运动学：写 qpos → mj_forward（无惯性/力）
+            impl_->applyKinematicState();
+            mj_forward(impl_->model, impl_->data.get());
+            impl_->data->time += impl_->model->opt.timestep;
+        } else {
+            // 动力学（默认）：PD/执行器 + mj_step
+            impl_->applyControls();
+            mj_step(impl_->model, impl_->data.get());
+        }
     }
 }
 

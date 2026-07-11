@@ -1,0 +1,192 @@
+<!--
+  zrcs 5-axis CNC visualizer (XYZAC / table-table trunnion)
+
+  Topology
+  --------
+  world
+    machine_base
+      trunnion_a  [a_hinge about X]
+        table_c   [c_hinge about Z]
+          workpiece
+      y_gantry    [y_slide]
+        x_carriage [x_slide]
+          z_head   [z_slide]
+            spindle + tool_tip
+
+  Joint names (must match mujoco.xml):
+    x_slide, y_slide, z_slide, a_hinge, c_hinge
+
+  Units: meter / radian
+-->
+<mujoco model="zrcs_5axis_cnc_xyzac">
+  <compiler angle="radian" autolimits="true"/>
+
+  <option timestep="0.001" gravity="0 0 -9.81"/>
+
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+    <quality shadowsize="4096" offsamples="4"/>
+    <headlight ambient="0.40 0.40 0.40" diffuse="0.65 0.65 0.65" specular="0.30 0.30 0.30"/>
+    <map znear="0.01"/>
+    <rgba haze="0.78 0.82 0.88 1"/>
+  </visual>
+
+  <statistic center="0 0 0.40" extent="1.80" meansize="0.05"/>
+
+  <default>
+    <joint damping="6" armature="0.02"/>
+    <!-- visual-only: disable structural self-collision -->
+    <geom contype="0" conaffinity="0" friction="0.45 0.02 0.001"/>
+  </default>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" width="512" height="512"
+             rgb1="0.72 0.78 0.86" rgb2="0.94 0.96 0.98"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512"
+             rgb1="0.62 0.67 0.72" rgb2="0.78 0.82 0.86"/>
+    <material name="floor_grid" texture="grid" texrepeat="10 10" reflectance="0.16"/>
+    <material name="cast_iron" rgba="0.22 0.22 0.23 1" specular="0.35" shininess="0.50"/>
+    <material name="blue_cover" rgba="0.10 0.35 0.60 1" specular="0.45" shininess="0.60"/>
+    <material name="rail_mat" rgba="0.88 0.88 0.88 1" specular="0.78" shininess="0.88"/>
+    <material name="spindle_mat" rgba="0.48 0.48 0.50 1" specular="0.58" shininess="0.72"/>
+    <material name="tool_mat" rgba="0.85 0.72 0.18 1" emission="0.08" specular="0.80" shininess="0.85"/>
+    <material name="trunnion_mat" rgba="0.35 0.37 0.40 1" specular="0.50" shininess="0.55"/>
+    <material name="table_mat" rgba="0.60 0.62 0.66 1" specular="0.55" shininess="0.70"/>
+    <material name="workpiece_mat" rgba="0.90 0.55 0.18 1" specular="0.40" shininess="0.45"/>
+    <material name="accent_red" rgba="0.85 0.20 0.18 1" specular="0.40" shininess="0.40"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="2.4 -2.4 3.4" dir="-0.5 0.5 -1" diffuse="1.0 0.98 0.92" specular="0.45 0.45 0.45"/>
+    <light name="fill_light" pos="-2.4 1.8 2.4" dir="0.7 -0.4 -1" diffuse="0.55 0.62 0.72" specular="0.16 0.16 0.20"/>
+    <camera name="overview" pos="1.70 -1.95 1.30" xyaxes="0.78 0.63 0 -0.35 0.43 0.83"/>
+    <camera name="iso" pos="1.80 -1.60 1.15" xyaxes="0.66 0.75 0 -0.40 0.35 0.85"/>
+    <camera name="side" pos="2.20 0 0.80" xyaxes="0 1 0 -0.30 0 0.95"/>
+    <geom name="floor" type="plane" size="3.0 3.0 0.02" material="floor_grid"/>
+
+    <body name="machine_base" pos="0 0 0">
+      <!--
+        Height stack (industrial trunnion viz, meters):
+          bed top          0.16
+          A pivot          0.38   (±110° disk clears bed)
+          platter top      ~0.445 (pivot + 0.05 offset + half thickness)
+          workpiece top    ~0.485
+          tool tip @ z=0   0.60   (~115 mm clear above part at home-low)
+          tool tip @ z=0.4 1.00
+          beam             ~1.05
+        Refs: Haas/Hurco trunnion guidance — measure pivot-to-platter,
+        prioritize Z clearance, check envelope at extreme A tilt.
+      -->
+      <geom name="pedestal" type="box" pos="0 0 0.04" size="0.72 0.72 0.04" material="cast_iron"/>
+      <geom name="bed" type="box" pos="0 0 0.12" size="0.64 0.64 0.04" material="cast_iron"/>
+
+      <geom name="y_rail_left"  type="box" pos="-0.52 0 0.165" size="0.015 0.56 0.008" material="rail_mat"/>
+      <geom name="y_rail_right" type="box" pos=" 0.52 0 0.165" size="0.015 0.56 0.008" material="rail_mat"/>
+
+      <!-- Fixed cheeks on bed; inner face spacing 0.40 > disk diameter 0.28 -->
+      <geom name="cradle_left"  type="box" pos="-0.24 0 0.27" size="0.040 0.12 0.15" material="trunnion_mat"/>
+      <geom name="cradle_right" type="box" pos=" 0.24 0 0.27" size="0.040 0.12 0.15" material="trunnion_mat"/>
+      <geom name="a_shaft" type="cylinder" pos="0 0 0.38" size="0.016 0.28" euler="0 1.5708 0" material="rail_mat"/>
+
+      <!-- A/C: only bridge + platter + part tilt/spin -->
+      <body name="trunnion_a" pos="0 0 0.38">
+        <joint name="a_hinge" type="hinge" axis="1 0 0" range="-1.920 1.920" damping="8" armature="0.05"/>
+        <geom name="cradle_bridge" type="box" pos="0 0 0.015" size="0.14 0.05 0.015" material="trunnion_mat"/>
+
+        <!-- low-profile platter: center 50 mm above A pivot -->
+        <body name="table_c" pos="0 0 0.05">
+          <joint name="c_hinge" type="hinge" axis="0 0 1" range="-6.2832 6.2832" damping="6" armature="0.03"/>
+          <geom name="rotary_table" type="cylinder" pos="0 0 0" size="0.14 0.015" material="table_mat"/>
+          <geom name="t_slot_x" type="box" pos="0 0 0.016" size="0.12 0.005 0.003" material="rail_mat"/>
+          <geom name="t_slot_y" type="box" pos="0 0 0.016" size="0.005 0.12 0.003" material="rail_mat"/>
+          <geom name="table_mark" type="box" pos="0.12 0 0.008" size="0.014 0.008 0.005" material="accent_red"/>
+
+          <!--
+            RTCP demo workpiece: hemisphere on a short pedestal.
+            - Sphere center sits on C-axis (table Z), good for tool-normal-to-surface demos.
+            - Red meridian mark makes C rotation obvious; hemisphere silhouette shows A tilt.
+            - workpiece_origin = sphere center (TCP target for RTCP).
+          -->
+          <body name="workpiece" pos="0 0 0.055">
+            <!-- pedestal under sphere -->
+            <geom name="workpiece_base" type="cylinder" pos="0 0 -0.025" size="0.035 0.010" material="cast_iron"/>
+            <!-- hemisphere-ish: full sphere half-sunk into base visually; radius 40 mm -->
+            <geom name="workpiece_sphere" type="sphere" pos="0 0 0.015" size="0.040" material="workpiece_mat"/>
+            <!-- orientation mark on sphere (+X) so C rotation is visible -->
+            <geom name="workpiece_mark" type="box" pos="0.038 0 0.015" size="0.004 0.008 0.008" material="accent_red"/>
+            <!-- meridian stripe for A-tilt cue -->
+            <geom name="workpiece_meridian" type="box" pos="0 0.038 0.020" size="0.006 0.003 0.018"
+                  rgba="0.95 0.75 0.20 1" contype="0" conaffinity="0"/>
+            <site name="workpiece_origin" pos="0 0 0.015" size="0.004" rgba="1 0.4 0 0.9"/>
+            <!-- surface contact demo point on top of sphere (tool-normal home pose) -->
+            <site name="workpiece_top" pos="0 0 0.055" size="0.003" rgba="0.2 0.9 0.3 0.9"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- Gantry: spindle well above platter at z_joint=0 -->
+      <body name="y_gantry" pos="0 0 0">
+        <joint name="y_slide" type="slide" axis="0 1 0" range="-0.30 0.30" damping="6"/>
+
+        <geom name="foot_left"  type="box" pos="-0.52 0 0.19" size="0.05 0.08 0.02" material="blue_cover"/>
+        <geom name="foot_right" type="box" pos=" 0.52 0 0.19" size="0.05 0.08 0.02" material="blue_cover"/>
+        <geom name="pillar_left"  type="box" pos="-0.52 0 0.60" size="0.05 0.07 0.40" material="blue_cover"/>
+        <geom name="pillar_right" type="box" pos=" 0.52 0 0.60" size="0.05 0.07 0.40" material="blue_cover"/>
+
+        <geom name="x_beam" type="box" pos="0 0 1.02" size="0.57 0.07 0.05" material="cast_iron"/>
+        <geom name="x_beam_cap" type="box" pos="0 0 1.08" size="0.57 0.08 0.012" material="blue_cover"/>
+        <geom name="x_rail_front" type="box" pos="0  0.035 1.075" size="0.50 0.010 0.008" material="rail_mat"/>
+        <geom name="x_rail_rear"  type="box" pos="0 -0.035 1.075" size="0.50 0.010 0.008" material="rail_mat"/>
+
+        <body name="x_carriage" pos="0 0 0">
+          <joint name="x_slide" type="slide" axis="1 0 0" range="-0.40 0.40" damping="6"/>
+          <geom name="x_block" type="box" pos="0 0 1.10" size="0.08 0.06 0.035" material="blue_cover"/>
+
+          <!--
+            Z joint: 0 = lowest (still clear of part), +up.
+            tip_z = 0.60 + z_slide  →  home 0.60, max 1.00
+            workpiece top ~0.485 → ~115 mm clear at z=0
+          -->
+          <body name="z_head" pos="0 0 0">
+            <joint name="z_slide" type="slide" axis="0 0 1" range="0.0 0.40" damping="5"/>
+            <geom name="z_ram" type="box" pos="0 0 0.92" size="0.045 0.04 0.10" material="cast_iron"/>
+            <geom name="spindle_housing" type="cylinder" pos="0 0 0.76" size="0.038 0.07" material="spindle_mat"/>
+            <geom name="spindle_nose" type="cylinder" pos="0 0 0.67" size="0.026 0.020" material="cast_iron"/>
+            <geom name="collet" type="cylinder" pos="0 0 0.64" size="0.016 0.010" material="cast_iron"/>
+            <!-- tool: shank (thick upper) + flute (thin lower) -->
+            <geom name="tool_shank" type="cylinder" pos="0 0 0.622" size="0.007 0.012" material="tool_mat"/>
+            <geom name="tool_flute" type="cylinder" pos="0 0 0.606" size="0.0035 0.010" material="tool_mat"/>
+            <site name="tool_tip" pos="0 0 0.596" size="0.003" rgba="1 0 0 0.95"/>
+            <geom name="tool_tip_vis" type="sphere" pos="0 0 0.596" size="0.0028"
+                  rgba="1 0.1 0.1 1"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="act_x" joint="x_slide" kp="2e4" kv="200" ctrlrange="-0.40 0.40"/>
+    <position name="act_y" joint="y_slide" kp="2e4" kv="200" ctrlrange="-0.30 0.30"/>
+    <position name="act_z" joint="z_slide" kp="2e4" kv="200" ctrlrange="0.0 0.40"/>
+    <position name="act_a" joint="a_hinge" kp="5e3" kv="80" ctrlrange="-1.920 1.920"/>
+    <position name="act_c" joint="c_hinge" kp="5e3" kv="80" ctrlrange="-6.2832 6.2832"/>
+  </actuator>
+
+  <sensor>
+    <framepos name="tool_pos" objtype="site" objname="tool_tip"/>
+    <framequat name="tool_quat" objtype="site" objname="tool_tip"/>
+    <framepos name="work_pos" objtype="site" objname="workpiece_origin"/>
+    <framequat name="work_quat" objtype="site" objname="workpiece_origin"/>
+    <jointpos name="x_pos" joint="x_slide"/>
+    <jointpos name="y_pos" joint="y_slide"/>
+    <jointpos name="z_pos" joint="z_slide"/>
+    <jointpos name="a_pos" joint="a_hinge"/>
+    <jointpos name="c_pos" joint="c_hinge"/>
+  </sensor>
+
+  <keyframe>
+    <!-- depth-first: a_hinge, c_hinge, y_slide, x_slide, z_slide -->
+    <key name="home" qpos="0 0 0 0 0"/>
+  </keyframe>
+</mujoco>

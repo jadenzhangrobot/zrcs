@@ -1,11 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  5轴机床模型 (XYZAC / table-table 转台结构)
+
+  结构说明（参考 LinuxCNC xyzac-trt 与常见摇篮式五轴）:
+    - X/Y/Z : 直线轴，刀尖相对工件的平移
+    - A     : 绕 X 轴旋转（摇篮倾转，典型范围约 ±110°）
+    - C     : 绕 Z 轴旋转（转台回转，可连续 360°）
+
+  运动链简化（控制器侧笛卡尔模型）:
+    toolPose = baseTf * Trans(X) * Trans(Y) * Trans(Z) * RotX(A) * RotZ(C) * toolTf
+
+  单位约定:
+    - 直线轴: 米 (m)
+    - 旋转轴: 弧度 (rad)
+    - 姿态角 rx/ry/rz: 弧度
+
+  注意:
+    1. 真实机床的转台偏心 (pivot offset) 未建模，需要时可写进 baseFrame/toolFrame
+       或关节 offset。
+    2. CartesianRobot 的 IK 对旋转轴用 ZYX 欧拉角提取，适合正交五轴近似；
+       若需要精确机床后处理 IK，应扩展专用机床运动学。
+-->
 <cereal>
 	<modelConfig>
 		<models size="dynamic">
 			<value0>
-				<name>cartesian</name>
+				<name>xyzac-5axis</name>
 				<type>cartesian</type>
-				<dof>3</dof>
+				<dof>5</dof>
 				<baseFrame>
 					<x>0</x>
 					<y>0</y>
@@ -14,6 +36,7 @@
 					<ry>0</ry>
 					<rz>0</rz>
 				</baseFrame>
+				<!-- toolFrame.z 可填刀具长度补偿，默认 0 -->
 				<toolFrame>
 					<x>0</x>
 					<y>0</y>
@@ -27,6 +50,7 @@
 				<upperArmLength>0</upperArmLength>
 				<lowerArmLength>0</lowerArmLength>
 				<joints size="dynamic">
+					<!-- J0: X 直线轴 -->
 					<value0>
 						<axisId>0</axisId>
 						<type>prismatic</type>
@@ -37,6 +61,7 @@
 						<dh_theta>0</dh_theta>
 						<axis>X</axis>
 					</value0>
+					<!-- J1: Y 直线轴 -->
 					<value1>
 						<axisId>1</axisId>
 						<type>prismatic</type>
@@ -47,6 +72,7 @@
 						<dh_theta>0</dh_theta>
 						<axis>Y</axis>
 					</value1>
+					<!-- J2: Z 直线轴 -->
 					<value2>
 						<axisId>2</axisId>
 						<type>prismatic</type>
@@ -57,9 +83,30 @@
 						<dh_theta>0</dh_theta>
 						<axis>Z</axis>
 					</value2>
+					<!-- J3: A 倾转轴 (绕 X) -->
+					<value3>
+						<axisId>3</axisId>
+						<type>revolute</type>
+						<offset>0</offset>
+						<dh_a>0</dh_a>
+						<dh_alpha>0</dh_alpha>
+						<dh_d>0</dh_d>
+						<dh_theta>0</dh_theta>
+						<axis>X</axis>
+					</value3>
+					<!-- J4: C 回转轴 (绕 Z) -->
+					<value4>
+						<axisId>4</axisId>
+						<type>revolute</type>
+						<offset>0</offset>
+						<dh_a>0</dh_a>
+						<dh_alpha>0</dh_alpha>
+						<dh_d>0</dh_d>
+						<dh_theta>0</dh_theta>
+						<axis>Z</axis>
+					</value4>
 				</joints>
 			</value0>
 		</models>
 	</modelConfig>
 </cereal>
-

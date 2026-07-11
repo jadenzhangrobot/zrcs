@@ -1,78 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  5轴机床逻辑轴配置 (XYZAC)
+
+  软限位与 mujoco/robot.xml 关节 range 对齐：
+    X  x_slide  [-0.40,  0.40] m
+    Y  y_slide  [-0.30,  0.30] m
+    Z  z_slide  [ 0.00,  0.40] m
+    A  a_hinge  [-1.920, 1.920] rad  (±110°)
+    C  c_hinge  [-6.2832, 6.2832] rad (±360°)
+
+  单位:
+    - 直线轴 X/Y/Z: 位置 m, 速度 m/s, 加速度 m/s^2, jerk m/s^3
+    - 旋转轴 A/C  : 位置 rad, 速度 rad/s, 加速度 rad/s^2, jerk rad/s^3
+-->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">
 			<value0>
 				<axisId>0</axisId>
-				<axisName>xAxis</axisName>
+				<axisName>X</axisName>
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.5</maxVel>
+				<maxAcc>2.0</maxAcc>
+				<maxJerk>20.0</maxJerk>
+				<posPositiveLimit>0.4</posPositiveLimit>
+				<posNegativeLimit>-0.4</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value0>
 			<value1>
 				<axisId>1</axisId>
-				<axisName>xAxis1</axisName>
+				<axisName>Y</axisName>
 				<servoSlaveIds size="dynamic">
 					<value0>1</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.5</maxVel>
+				<maxAcc>2.0</maxAcc>
+				<maxJerk>20.0</maxJerk>
+				<posPositiveLimit>0.3</posPositiveLimit>
+				<posNegativeLimit>-0.3</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value1>
 			<value2>
 				<axisId>2</axisId>
-				<axisName>xAxis2</axisName>
+				<axisName>Z</axisName>
 				<servoSlaveIds size="dynamic">
 					<value0>2</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.3</maxVel>
+				<maxAcc>1.5</maxAcc>
+				<maxJerk>15.0</maxJerk>
+				<posPositiveLimit>0.4</posPositiveLimit>
+				<posNegativeLimit>0.0</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value2>
 			<value3>
 				<axisId>3</axisId>
-				<axisName>xAxis3</axisName>
+				<axisName>A</axisName>
 				<servoSlaveIds size="dynamic">
 					<value0>3</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<!-- ~60 deg/s, ~120 deg/s^2 -->
+				<maxVel>1.047</maxVel>
+				<maxAcc>2.094</maxAcc>
+				<maxJerk>20.0</maxJerk>
+				<!-- ±110 deg -->
+				<posPositiveLimit>1.920</posPositiveLimit>
+				<posNegativeLimit>-1.920</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value3>
 			<value4>
 				<axisId>4</axisId>
-				<axisName>xAxis4</axisName>
+				<axisName>C</axisName>
 				<servoSlaveIds size="dynamic">
 					<value0>4</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<!-- ~90 deg/s, ~180 deg/s^2 -->
+				<maxVel>1.571</maxVel>
+				<maxAcc>3.142</maxAcc>
+				<maxJerk>30.0</maxJerk>
+				<!-- ±360 deg soft limit -->
+				<posPositiveLimit>6.2832</posPositiveLimit>
+				<posNegativeLimit>-6.2832</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value4>
 		</axes>
 	</axisConfig>
 </cereal>
-

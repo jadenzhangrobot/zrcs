@@ -212,42 +212,187 @@ double Axis::toServoUnit(double axisUnit) const
 
 bool Axis::cmdsProcessing(double frequency)
 {
+    // 软限位安全网：限位前按 v_cap=√(2a·s) + |Δv|≤a·dt 平滑刹停；
+    // 贴边只锁超限方向，允许反向退出；边沿告警；不置 axisError_。
+    if (frequency <= 0.0 || !std::isfinite(frequency))
+    {
+        ERROR_PRINT("axis%d: invalid cmdsProcessing frequency=%.6f\n", axisId_, frequency);
+        return false;
+    }
+
+    const double dt = 1.0 / frequency;
+    const double aMax = std::max(0.0, config_->maxAcc);
+    const double vMax = std::max(0.0, config_->maxVel);
+
     double vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
-    double acc_cmd = (vel_cmd - lastAxisVelCmd_) * frequency;
+    const double lastRaw = lastAxisPosCmd_ + zeroOffset_;
+
+    // —— 正软限位 ——
+    // remPos<=0 时只禁止继续正向，不得清零反向速度（否则无法退出限位）。
+    {
+        const double remPos = config_->posPositiveLimit - lastRaw;
+        if (remPos <= 0.0)
+        {
+            if (enablePositive_)
+            {
+                WARN_PRINT("axis%d: soft +limit reached pos=%.4f limit=%.4f\n",
+                           axisId_, lastRaw, config_->posPositiveLimit);
+            }
+            enablePositive_ = false;
+            if (vel_cmd > 0.0)
+            {
+                axisPosCmd_ = config_->posPositiveLimit - zeroOffset_;
+                vel_cmd = 0.0;
+            }
+            // vel_cmd < 0：放行反向退出，不改写 axisPosCmd_
+        }
+        else if (vel_cmd > 0.0)
+        {
+            if (aMax > 0.0)
+            {
+                double vCap = std::sqrt(2.0 * aMax * remPos);
+                double vUp = lastAxisVelCmd_ + aMax * dt;
+                double vDn = lastAxisVelCmd_ - aMax * dt;
+                double v = std::clamp(vel_cmd, vDn, vUp);
+                v = std::min(v, vCap);
+                if (vMax > 0.0)
+                {
+                    v = std::min(v, vMax);
+                }
+                v = std::max(0.0, v);
+
+                double nextRaw = lastRaw + v * dt;
+                if (nextRaw > config_->posPositiveLimit)
+                {
+                    nextRaw = config_->posPositiveLimit;
+                }
+                axisPosCmd_ = nextRaw - zeroOffset_;
+                vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
+
+                if (nextRaw >= config_->posPositiveLimit)
+                {
+                    if (enablePositive_)
+                    {
+                        WARN_PRINT("axis%d: soft +limit reached pos=%.4f limit=%.4f\n",
+                                   axisId_, nextRaw, config_->posPositiveLimit);
+                    }
+                    enablePositive_ = false;
+                    vel_cmd = 0.0;
+                }
+            }
+            else
+            {
+                double nextRaw = lastRaw + vel_cmd * dt;
+                if (nextRaw > config_->posPositiveLimit)
+                {
+                    nextRaw = config_->posPositiveLimit;
+                    axisPosCmd_ = nextRaw - zeroOffset_;
+                    vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
+                    if (enablePositive_)
+                    {
+                        WARN_PRINT("axis%d: soft +limit clamp (no maxAcc) pos=%.4f\n",
+                                   axisId_, nextRaw);
+                    }
+                    enablePositive_ = false;
+                }
+            }
+        }
+    }
+
+    // —— 负软限位（对称）：只禁止继续负向 ——
+    {
+        const double remNeg = lastRaw - config_->posNegativeLimit;
+        if (remNeg <= 0.0)
+        {
+            if (enableNegative_)
+            {
+                WARN_PRINT("axis%d: soft -limit reached pos=%.4f limit=%.4f\n",
+                           axisId_, lastRaw, config_->posNegativeLimit);
+            }
+            enableNegative_ = false;
+            if (vel_cmd < 0.0)
+            {
+                axisPosCmd_ = config_->posNegativeLimit - zeroOffset_;
+                vel_cmd = 0.0;
+            }
+            // vel_cmd > 0：放行反向（向正）退出
+        }
+        else if (vel_cmd < 0.0)
+        {
+            if (aMax > 0.0)
+            {
+                double vCap = std::sqrt(2.0 * aMax * remNeg);
+                double vUp = lastAxisVelCmd_ + aMax * dt;
+                double vDn = lastAxisVelCmd_ - aMax * dt;
+                double v = std::clamp(vel_cmd, vDn, vUp);
+                v = std::max(v, -vCap);
+                if (vMax > 0.0)
+                {
+                    v = std::max(v, -vMax);
+                }
+                v = std::min(0.0, v);
+
+                double nextRaw = lastRaw + v * dt;
+                if (nextRaw < config_->posNegativeLimit)
+                {
+                    nextRaw = config_->posNegativeLimit;
+                }
+                axisPosCmd_ = nextRaw - zeroOffset_;
+                vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
+
+                if (nextRaw <= config_->posNegativeLimit)
+                {
+                    if (enableNegative_)
+                    {
+                        WARN_PRINT("axis%d: soft -limit reached pos=%.4f limit=%.4f\n",
+                                   axisId_, nextRaw, config_->posNegativeLimit);
+                    }
+                    enableNegative_ = false;
+                    vel_cmd = 0.0;
+                }
+            }
+            else
+            {
+                double nextRaw = lastRaw + vel_cmd * dt;
+                if (nextRaw < config_->posNegativeLimit)
+                {
+                    nextRaw = config_->posNegativeLimit;
+                    axisPosCmd_ = nextRaw - zeroOffset_;
+                    vel_cmd = (axisPosCmd_ - lastAxisPosCmd_) * frequency;
+                    if (enableNegative_)
+                    {
+                        WARN_PRINT("axis%d: soft -limit clamp (no maxAcc) pos=%.4f\n",
+                                   axisId_, nextRaw);
+                    }
+                    enableNegative_ = false;
+                }
+            }
+        }
+    }
+
+    // 方向锁：仅拦截被锁方向；反向请求在此之前已保留
+    if (vel_cmd > 0.0 && !enablePositive_)
+    {
+        axisPosCmd_ = lastAxisPosCmd_;
+        vel_cmd = 0.0;
+    }
+    if (vel_cmd < 0.0 && !enableNegative_)
+    {
+        axisPosCmd_ = lastAxisPosCmd_;
+        vel_cmd = 0.0;
+    }
+
+    // 反向运动自动解锁对侧
+    if (vel_cmd < 0.0)
+    {
+        enablePositive_ = true;
+    }
+    if (vel_cmd > 0.0)
+    {
+        enableNegative_ = true;
+    }
+
     axisVelCmd_ = vel_cmd;
-
-    if (vel_cmd > 0 && !enablePositive_)
-    {
-        axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_POSITIVE;
-        ERROR_PRINT("axis%d: positive direction disabled\n", axisId_);
-        return false;
-    }
-    if (vel_cmd < 0 && !enableNegative_)
-    {
-        axisError_ = MC_ERRORCODE_INVALID_DIRTCTION_NEGATIVE;
-        ERROR_PRINT("axis%d: negative direction disabled\n", axisId_);
-        return false;
-    }
-
-    (void)acc_cmd;
-
-    double rawPosCmd = axisPosCmd_ + zeroOffset_;
-    if (rawPosCmd > config_->posPositiveLimit && vel_cmd > 0)
-    {
-        axisError_ = MC_ERRORCODE_CMDPPOSOVERLIMIT;
-        ERROR_PRINT("axis%d: positive limit exceeded pos=%.4f, limit=%.4f\n",
-                    axisId_, rawPosCmd, config_->posPositiveLimit);
-        return false;
-    }
-
-    if (rawPosCmd < config_->posNegativeLimit && vel_cmd < 0)
-    {
-        axisError_ = MC_ERRORCODE_CMDNPOSOVERLIMIT;
-        ERROR_PRINT("axis%d: negative limit exceeded pos=%.4f, limit=%.4f\n",
-                    axisId_, rawPosCmd, config_->posNegativeLimit);
-        return false;
-    }
-
     lastAxisPosCmd_ = axisPosCmd_;
     lastAxisVelCmd_ = vel_cmd;
     return true;
@@ -420,6 +565,15 @@ bool Axis::resetError(void)
     {
         setAxisState(mcStandstill);
     }
+
+    // 恢复软限位方向锁，并把命令对齐到实际位置，清零速度历史，
+    // 避免复位后残留超限命令或虚假 vel_cmd 再次触发保护。
+    enablePositive_ = true;
+    enableNegative_ = true;
+    axisPosCmd_ = actualPos();
+    lastAxisPosCmd_ = axisPosCmd_;
+    lastAxisVelCmd_ = 0.0;
+    axisVelCmd_ = 0.0;
     return true;
 }
 

@@ -22,7 +22,24 @@
       "Bash(cd \"c:/Users/64989/Desktop/zrcs-dev\" grep -rl \"^#ifndef\" zrcs_common/)",
       "Bash(wc -l /c/Users/64989/Desktop/zrcs-dev/zrcs_rt/include/**/*.h /c/Users/64989/Desktop/zrcs-dev/zrcs_rt/src/**/*.cpp)",
       "Bash(ls -d zrcs_rt/*/)",
-      "Bash(cmake -B build -G Ninja -DCMAKE_C_COMPILER=D:/msys2/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=D:/msys2/ucrt64/bin/g++.exe -DCMAKE_PREFIX_PATH=D:/msys2/ucrt64 -DCMAKE_BUILD_TYPE=Debug)"
+      "Bash(cmake -B build -G Ninja -DCMAKE_C_COMPILER=D:/msys2/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=D:/msys2/ucrt64/bin/g++.exe -DCMAKE_PREFIX_PATH=D:/msys2/ucrt64 -DCMAKE_BUILD_TYPE=Debug)",
+      "Bash(curl -fsSL \"https://api.github.com/repos/Vector-Wangel/XLeRobot/git/trees/main?recursive=1\" -o /tmp/xle_tree.json)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/Maniskill/assets/xlerobot/xlerobot.urdf\" -o /tmp/xlerobot.urdf)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/Maniskill/agents/xlerobot/xlerobot.py\" -o /tmp/xlerobot_agent.py)",
+      "Bash(python -)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/mujoco/xlerobot.xml\" -o /tmp/xlerobot_official.xml)",
+      "Bash(python /e/zrcs-dev/config/XLeRobot/_patch_complete_body.py)",
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_explore",
+      "mcp__codegraph__codegraph_context",
+      "WebFetch(domain:www.linuxcnc.org)",
+      "Bash(python3 -c \"import mujoco; print\\(mujoco.__version__\\)\")",
+      "Bash(python -c \"import mujoco; print\\(mujoco.__version__\\)\")",
+      "Bash(rm -f \"E:/zrcs-dev/build/bin/mj_check.exe\" /tmp/mj_check.exe /tmp/mj_check.c /tmp/libmujoco.dll *)",
+      "Bash(tasklist)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

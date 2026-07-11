@@ -21,6 +21,9 @@ struct MujocoConfig {
     std::filesystem::path modelPath;
     double timestepMs = 1.0;
     int substeps = 1;
+    /// false: mj_step 动力学（默认，辨识/力控用）
+    /// true : 直接写 qpos + mj_forward，纯运动学可视化
+    bool kinematicOnly = false;
     std::vector<MujocoServoConfig> servos;
 
     const MujocoServoConfig* findServo(uint32_t slaveId) const;

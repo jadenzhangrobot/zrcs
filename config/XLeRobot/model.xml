@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  XLeRobot kinematic placeholder:
+  - Registers the 14 non-chassis logical axes used by axis.xml and mujoco.xml.
+  - Uses the existing cartesian model implementation so ModelFactory can load it.
+  - Exact bimanual/mobile IK should be added later with real SO-101 parameters.
+-->
+<modelConfig>
+  <model name="XLeRobot" type="cartesian" dof="14">
+    <baseFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
+    <toolFrame x="0" y="0" z="0" rx="0" ry="0" rz="0"/>
+    <joints>
+      <!-- 左臂 -->
+      <joint axisId="0"  type="revolute" axis="Y"/>
+      <joint axisId="1"  type="revolute" axis="X"/>
+      <joint axisId="2"  type="revolute" axis="X"/>
+      <joint axisId="3"  type="revolute" axis="X"/>
+      <joint axisId="4"  type="revolute" axis="Y"/>
+      <joint axisId="5"  type="revolute" axis="Z"/>
+      <!-- 右臂 -->
+      <joint axisId="6"  type="revolute" axis="Y"/>
+      <joint axisId="7"  type="revolute" axis="X"/>
+      <joint axisId="8"  type="revolute" axis="X"/>
+      <joint axisId="9"  type="revolute" axis="X"/>
+      <joint axisId="10" type="revolute" axis="Y"/>
+      <joint axisId="11" type="revolute" axis="Z"/>
+      <!-- 云台 -->
+      <joint axisId="12" type="revolute" axis="Z"/>
+      <joint axisId="13" type="revolute" axis="Y"/>
+    </joints>
+  </model>
+</modelConfig>

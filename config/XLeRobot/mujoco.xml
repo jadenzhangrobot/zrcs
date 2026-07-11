@@ -1,0 +1,24 @@
+<!--
+  XLeRobot MuJoCo binding
+  - scene.xml includes xlerobot.xml
+  - complete cart body meshes come from ManiSkill URDF
+  - rest pose offsets: Pitch/Elbow=3.14, Wrist_Roll=1.57 (ManiSkill Keyframe)
+-->
+<mujocoConfig model="mujoco/scene.xml" timestepMs="2.0" substeps="1">
+  <servo slaveId="0"  joint="Rotation_L"     kp="50.0" kd="2.0" qposScale="1.0" qposOffset="0.0"/>
+  <servo slaveId="1"  joint="Pitch_L"        kp="50.0" kd="2.0" qposScale="1.0" qposOffset="3.14"/>
+  <servo slaveId="2"  joint="Elbow_L"        kp="50.0" kd="2.0" qposScale="1.0" qposOffset="3.14"/>
+  <servo slaveId="3"  joint="Wrist_Pitch_L"  kp="30.0" kd="1.5" qposScale="1.0" qposOffset="0.0"/>
+  <servo slaveId="4"  joint="Wrist_Roll_L"   kp="30.0" kd="1.5" qposScale="1.0" qposOffset="1.57"/>
+  <servo slaveId="5"  joint="Jaw_L"          kp="20.0" kd="0.5" qposScale="1.0" qposOffset="0.0"/>
+
+  <servo slaveId="6"  joint="Rotation_R"     kp="50.0" kd="2.0" qposScale="1.0" qposOffset="0.0"/>
+  <servo slaveId="7"  joint="Pitch_R"        kp="50.0" kd="2.0" qposScale="1.0" qposOffset="3.14"/>
+  <servo slaveId="8"  joint="Elbow_R"        kp="50.0" kd="2.0" qposScale="1.0" qposOffset="3.14"/>
+  <servo slaveId="9"  joint="Wrist_Pitch_R"  kp="30.0" kd="1.5" qposScale="1.0" qposOffset="0.0"/>
+  <servo slaveId="10" joint="Wrist_Roll_R"   kp="30.0" kd="1.5" qposScale="1.0" qposOffset="1.57"/>
+  <servo slaveId="11" joint="Jaw_R"          kp="20.0" kd="0.5" qposScale="1.0" qposOffset="0.0"/>
+
+  <servo slaveId="12" joint="head_pan_joint"  kp="30.0" kd="1.0" qposScale="1.0" qposOffset="0.0"/>
+  <servo slaveId="13" joint="head_tilt_joint" kp="30.0" kd="1.0" qposScale="1.0" qposOffset="0.0"/>
+</mujocoConfig>

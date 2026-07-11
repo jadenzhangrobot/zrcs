@@ -16,48 +16,45 @@ bool Reset::init()
 
 zrcsSystem::RunResult Reset::run()
 {
-    if (controller_->axes_.size() > static_cast<size_t>(axisId_))
+    const int axisCount = static_cast<int>(controller_->axes_.size());
+
+    auto resetOne = [this](int id) -> bool {
+        if (!controller_->axes_[id]->resetError())
+        {
+            ERROR_PRINT("Reset: 轴%d 操作失败\n", id);
+            return false;
+        }
+        // resetError() 内部已对齐命令位置；这里再显式同步一次，保持接口语义清晰。
+        controller_->axes_[id]->setAxisPositionCmd(
+            controller_->axes_[id]->actualPos());
+        controller_->axes_[id]->syncCmdHistory();
+        INFO_PRINT("Reset: 轴%d 操作成功\n", id);
+        return true;
+    };
+
+    if (axisId_ >= 0 && axisId_ < axisCount)
     {
-        if (!controller_->axes_[axisId_]->resetError())
-        {
-            ERROR_PRINT("Reset: 轴%d 操作失败\n", axisId_);
-            return zrcsSystem::RunResult::FAILED;
-        }
-        else
-        {
-            controller_->axes_[axisId_]->setAxisPositionCmd(
-                controller_->axes_[axisId_]->actualPos());
-            controller_->axes_[axisId_]->syncCmdHistory();
-            INFO_PRINT("Reset: 轴%d 操作成功\n", axisId_);
-            return zrcsSystem::RunResult::SUCCESS;
-        }
-        return zrcsSystem::RunResult::EXECUTING;
+        return resetOne(axisId_) ? zrcsSystem::RunResult::SUCCESS
+                                 : zrcsSystem::RunResult::FAILED;
     }
-    else if (static_cast<int>(controller_->axes_.size()) == axisId_)
+
+    // axisId == 轴总数：复位全部轴（禁止中途成功就 return）
+    if (axisId_ == axisCount)
     {
-        for (int i = 0; i < axisId_; i++)
+        bool anyFail = false;
+        for (int i = 0; i < axisCount; ++i)
         {
-            if (!controller_->axes_[i]->resetError())
+            if (!resetOne(i))
             {
-                ERROR_PRINT("Reset: 轴%d 操作失败\n", i);
-                return zrcsSystem::RunResult::FAILED;
-            }
-            else
-            {
-                controller_->axes_[i]->setAxisPositionCmd(
-                    controller_->axes_[i]->actualPos());
-                controller_->axes_[i]->syncCmdHistory();
-                INFO_PRINT("Reset: 轴%d 操作成功\n", i);
-                return zrcsSystem::RunResult::SUCCESS;
+                anyFail = true;
             }
         }
-        return zrcsSystem::RunResult::EXECUTING;
+        return anyFail ? zrcsSystem::RunResult::FAILED
+                       : zrcsSystem::RunResult::SUCCESS;
     }
-    else
-    {
-        ERROR_PRINT("Reset: 轴索引%d 超出范围(max=%zu)\n", axisId_, controller_->axes_.size());
-        return zrcsSystem::RunResult::FAILED;
-    }
+
+    ERROR_PRINT("Reset: 轴索引%d 超出范围(max=%d)\n", axisId_, axisCount);
+    return zrcsSystem::RunResult::FAILED;
 }
 
 bool Reset::exit()

@@ -30,7 +30,23 @@
       "mcp__codegraph__codegraph_context",
       "mcp__codegraph__codegraph_explore",
       "Bash(rg -n \"#include.*Parameter\" --glob \"*.{h,cpp}\" zrcs_rt zrcs_nrt zrcs_common test)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Read(//tmp/**)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/mujoco/scene.xml\" -o /tmp/xlerobot_scene.xml)",
+      "Bash(curl -fsSL \"https://api.github.com/repos/Vector-Wangel/XLeRobot/git/trees/main?recursive=1\")",
+      "Bash(python -c ' *)",
+      "Bash(sed -n '269,300p' /tmp/xlerobot.xml *)",
+      "Bash(set -e)",
+      "Bash(mkdir -p __TRACKED_VAR__/mujoco/assets)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/mujoco/xlerobot.xml -o __TRACKED_VAR__/mujoco/xlerobot.xml)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/mujoco/scene.xml -o __TRACKED_VAR__/mujoco/scene.xml)",
+      "Bash(python -)",
+      "Bash(# check download progress *)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/Vector-Wangel/XLeRobot/main/simulation/mujoco/xlerobot.xml\" -o /tmp/xlerobot_official.xml)",
+      "Bash(python \"E:/zrcs-dev/config/XLeRobot/_fix_model.py\")",
+      "Bash(python /e/zrcs-dev/config/XLeRobot/_fix_model.py)",
+      "Bash(curl -fsSL \"https://api.github.com/repos/Vector-Wangel/XLeRobot/contents/simulation\")",
+      "Bash(python -c \"import sys,json; [print\\(x['name'], x['type']\\) for x in json.load\\(sys.stdin\\)]\")"
     ]
   }
 }
