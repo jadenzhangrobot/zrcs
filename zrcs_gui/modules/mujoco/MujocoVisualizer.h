@@ -18,6 +18,9 @@ public:
     void setAxisPositions(const QVector<double> &positions);
     void reloadModel();
     void clearTrajectory();
+    /// 显示/隐藏并启停刀末端轨迹采样（默认开启）
+    void setToolTrailVisible(bool visible);
+    bool isToolTrailVisible() const;
 
     void clearState();
     void resetView();
@@ -50,6 +53,7 @@ public:
     void updateAxisPositions(const QVector<double> &positions);
     void reloadModel();
     void clearTrajectory();
+    void setToolTrailVisible(bool visible);
 
 signals:
     void modelLoaded(int jointCount);

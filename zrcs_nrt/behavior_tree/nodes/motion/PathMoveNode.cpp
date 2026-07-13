@@ -1,5 +1,9 @@
 #include "behavior_tree/nodes/motion/PathMoveNode.h"
 
+#include <vector>
+
+#include <spdlog/spdlog.h>
+
 #include "algorithm/path_planning/MotionPlanner.h"
 #include "algorithm/path_planning/TrajectoryTypes.h"
 #include "behavior_tree/nodes/motion/PathMoveSupport.h"
@@ -14,54 +18,28 @@ MotionPlanner::Config defaultPathConfig()
     cfg.maxAccel = 300.0;
     cfg.maxJerk = 3000.0;
     cfg.cornerTol = 1.0;
-    cfg.galvoMode = false;
     return cfg;
 }
 
-std::vector<Point3D> butterflyWaypoints()
+MotionPlanner::Config configFromPorts(BT::TreeNode& node, const MotionPlanner::Config& defaults)
 {
-    return {
-        {0.0, 84.0, 0.0},   {-16.0, 68.0, 0.0},  {-48.0, 92.0, 0.0},
-        {-90.0, 104.0, 0.0}, {-124.0, 80.0, 0.0}, {-104.0, 40.0, 0.0},
-        {-68.0, 14.0, 0.0},  {-110.0, -24.0, 0.0},{-90.0, -76.0, 0.0},
-        {-48.0, -62.0, 0.0}, {-16.0, -28.0, 0.0}, {0.0, -72.0, 0.0},
-        {16.0, -28.0, 0.0},  {48.0, -62.0, 0.0},  {90.0, -76.0, 0.0},
-        {110.0, -24.0, 0.0}, {68.0, 14.0, 0.0},   {104.0, 40.0, 0.0},
-        {124.0, 80.0, 0.0},  {90.0, 104.0, 0.0},  {48.0, 92.0, 0.0},
-        {16.0, 68.0, 0.0},   {0.0, 84.0, 0.0},
-    };
+    MotionPlanner::Config cfg = defaults;
+    if (auto v = node.getInput<double>("maxVel")) {
+        cfg.maxVel = *v;
+    }
+    if (auto v = node.getInput<double>("maxAccel")) {
+        cfg.maxAccel = *v;
+    }
+    if (auto v = node.getInput<double>("maxJerk")) {
+        cfg.maxJerk = *v;
+    }
+    if (auto v = node.getInput<double>("cornerTol")) {
+        cfg.cornerTol = *v;
+    }
+    return cfg;
 }
 
 } // namespace
-
-ButterflyPathNode::ButterflyPathNode(const std::string& name,
-                                     const BT::NodeConfiguration& config,
-                                     std::shared_ptr<SharedState> sharedState)
-    : BT::SyncActionNode(name, config)
-    , sharedState_(std::move(sharedState))
-{
-}
-
-BT::PortsList ButterflyPathNode::providedPorts()
-{
-    return {};
-}
-
-BT::NodeStatus ButterflyPathNode::tick()
-{
-    sharedState_->setCurrentNode(name(), "send butterfly path");
-    if (!queuePathFromWaypoints(sharedState_->bridge,
-                                butterflyWaypoints(),
-                                0.1,
-                                -0.2,
-                                0.3,
-                                defaultPathConfig())) {
-        sharedState_->setCurrentNode(name(), "failed to queue butterfly path");
-        return BT::NodeStatus::FAILURE;
-    }
-    sharedState_->setCurrentNode(name(), "butterfly path queued");
-    return BT::NodeStatus::SUCCESS;
-}
 
 PathMoveNode::PathMoveNode(const std::string& name,
                            const BT::NodeConfiguration& config,
@@ -73,24 +51,43 @@ PathMoveNode::PathMoveNode(const std::string& name,
 
 BT::PortsList PathMoveNode::providedPorts()
 {
-    // 后续可扩展：filePath / maxVel / cornerTol 等端口
-    return {};
+    return {
+        BT::InputPort<std::vector<Point3D>>("waypoints", "Path points from NcParse (mm)"),
+        BT::InputPort<double>("rx", 0.0, "Constant orientation RX (rad)"),
+        BT::InputPort<double>("ry", 0.0, "Constant orientation RY (rad)"),
+        BT::InputPort<double>("rz", 0.0, "Constant orientation RZ (rad)"),
+        BT::InputPort<double>("maxVel", 100.0, "Max path velocity (mm/s)"),
+        BT::InputPort<double>("maxAccel", 300.0, "Max path acceleration (mm/s^2)"),
+        BT::InputPort<double>("maxJerk", 3000.0, "Max path jerk (mm/s^3)"),
+        BT::InputPort<double>("cornerTol", 1.0, "Corner blend tolerance (mm)"),
+    };
 }
 
 BT::NodeStatus PathMoveNode::tick()
 {
-    // 通用路径运动节点：当前默认跑 butterfly 示例；后续接端口/文件。
     sharedState_->setCurrentNode(name(), "send path move");
-    if (!queuePathFromWaypoints(sharedState_->bridge,
-                                butterflyWaypoints(),
-                                0.0,
-                                0.0,
-                                0.0,
-                                defaultPathConfig())) {
+
+    auto waypointsOpt = getInput<std::vector<Point3D>>("waypoints");
+    if (!waypointsOpt || waypointsOpt->size() < 2) {
+        sharedState_->setCurrentNode(name(), "waypoints missing or < 2 points (use NcParse first)");
+        spdlog::error("[PathMove] waypoints port empty or too short");
+        return BT::NodeStatus::FAILURE;
+    }
+
+    const double rx = getInput<double>("rx").value_or(0.0);
+    const double ry = getInput<double>("ry").value_or(0.0);
+    const double rz = getInput<double>("rz").value_or(0.0);
+    const MotionPlanner::Config cfg = configFromPorts(*this, defaultPathConfig());
+
+    if (!queuePathFromWaypoints(sharedState_->bridge, *waypointsOpt, rx, ry, rz, cfg)) {
         sharedState_->setCurrentNode(name(), "failed to queue path move");
         return BT::NodeStatus::FAILURE;
     }
-    sharedState_->setCurrentNode(name(), "path move queued");
+
+    const std::string msg = "path move queued (" +
+                            std::to_string(waypointsOpt->size()) + " waypoints)";
+    sharedState_->setCurrentNode(name(), msg);
+    spdlog::info("[PathMove] {}", msg);
     return BT::NodeStatus::SUCCESS;
 }
 

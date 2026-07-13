@@ -70,8 +70,11 @@
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_NcPath">
         <Sequence>
-            <Action ID="NcParse" filePath="config/3axis/program/demo_rect.nc" waypoints="{path_pts}"/>
-            <Action ID="PathMove" waypoints="{path_pts}" maxVel="100" maxAccel="300" maxJerk="3000" cornerTol="1"/>
+            <Action ID="NcParse" filePath="config/5axis/program/demo_rect.nc" waypoints="{path_pts}"/>
+            <Action ID="PathMove" waypoints="{path_pts}"
+                    rx="0.0" ry="0.0" rz="0.0"
+                    endRx="0.5" endRy="0.0" endRz="1.57"
+                    maxVel="0.15" maxAccel="0.8" maxJerk="8.0" cornerTol="0.003"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -110,14 +113,17 @@
             <output_port name="waypoints">Parsed path points (mm)</output_port>
         </Action>
         <Action ID="PathMove">
-            <input_port name="waypoints">Path points from NcParse (mm)</input_port>
-            <input_port default="0.0" name="rx" type="double">Constant orientation RX (rad)</input_port>
-            <input_port default="0.0" name="ry" type="double">Constant orientation RY (rad)</input_port>
-            <input_port default="0.0" name="rz" type="double">Constant orientation RZ (rad)</input_port>
-            <input_port default="100.0" name="maxVel" type="double">Max path velocity (mm/s)</input_port>
-            <input_port default="300.0" name="maxAccel" type="double">Max path acceleration (mm/s^2)</input_port>
-            <input_port default="3000.0" name="maxJerk" type="double">Max path jerk (mm/s^3)</input_port>
-            <input_port default="1.0" name="cornerTol" type="double">Corner blend tolerance (mm)</input_port>
+            <input_port name="waypoints">Path points from NcParse</input_port>
+            <input_port default="0.0" name="rx" type="double">Start RX / A (rad)</input_port>
+            <input_port default="0.0" name="ry" type="double">Start RY (rad)</input_port>
+            <input_port default="0.0" name="rz" type="double">Start RZ / C (rad)</input_port>
+            <input_port default="0.0" name="endRx" type="double">End RX / A (rad)</input_port>
+            <input_port default="0.0" name="endRy" type="double">End RY (rad)</input_port>
+            <input_port default="0.0" name="endRz" type="double">End RZ / C (rad)</input_port>
+            <input_port default="0.15" name="maxVel" type="double">Max path velocity (m/s)</input_port>
+            <input_port default="0.8" name="maxAccel" type="double">Max path acceleration</input_port>
+            <input_port default="8.0" name="maxJerk" type="double">Max path jerk</input_port>
+            <input_port default="0.003" name="cornerTol" type="double">Corner blend tolerance (m)</input_port>
         </Action>
         <Action ID="Disable">
             <input_port default="0.0" name="AxisId" type="double">Axis ID (0=all axes)</input_port>

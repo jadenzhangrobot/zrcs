@@ -65,6 +65,22 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btnShowTrail">
+       <property name="text">
+        <string>Tool Path</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <property name="toolTip">
+        <string>显示/隐藏刀末端轨迹</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnClearTrail">
        <property name="text">
         <string>Clear Path</string>

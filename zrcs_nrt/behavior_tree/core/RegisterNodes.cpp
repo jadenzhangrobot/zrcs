@@ -4,6 +4,7 @@
 #include "behavior_tree/core/BtNodeRegistry.h"
 #include "behavior_tree/nodes/rtcommand/BtCommandNodes.h"
 #include "behavior_tree/nodes/motion/PathMoveNode.h"
+#include "behavior_tree/nodes/nc/NcParseNode.h"
 #include "config/CmdDefine.h"
 
 namespace {
@@ -51,16 +52,21 @@ void registerCommandNodes(BtNodeRegistry& registry,
 void registerMotionNodes(BtNodeRegistry& registry,
                          const std::shared_ptr<zrcs_bt::SharedState>& sharedState)
 {
-    registry.factory().registerBuilder<zrcs_bt::ButterflyPathNode>(
-        "ButterflyPath",
-        [sharedState](const std::string& name, const BT::NodeConfiguration& config) {
-            return std::make_unique<zrcs_bt::ButterflyPathNode>(name, config, sharedState);
-        });
-
+    // 连续路径唯一节点：PathMove → MovePath
     registry.factory().registerBuilder<zrcs_bt::PathMoveNode>(
         "PathMove",
         [sharedState](const std::string& name, const BT::NodeConfiguration& config) {
             return std::make_unique<zrcs_bt::PathMoveNode>(name, config, sharedState);
+        });
+}
+
+void registerNcNodes(BtNodeRegistry& registry,
+                     const std::shared_ptr<zrcs_bt::SharedState>& sharedState)
+{
+    registry.factory().registerBuilder<zrcs_bt::NcParseNode>(
+        "NcParse",
+        [sharedState](const std::string& name, const BT::NodeConfiguration& config) {
+            return std::make_unique<zrcs_bt::NcParseNode>(name, config, sharedState);
         });
 }
 
@@ -75,5 +81,5 @@ void registerAllBehaviorTreeNodes(BtNodeRegistry& registry, const BtContext& con
 
     registerCommandNodes(registry, sharedState);
     registerMotionNodes(registry, sharedState);
-    // 后续视觉 / AI 节点在此追加即可，不必再拆 modules/
+    registerNcNodes(registry, sharedState);
 }

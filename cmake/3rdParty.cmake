@@ -131,3 +131,17 @@ set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_MANUAL_SELECTOR OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/3rdParty/Groot/depend/BehaviorTree.CPP)
+
+# gpr：G-code 词法/句法解析（仅 parser 库，不编其自带 test/exe）
+add_library(gpr STATIC
+    ${CMAKE_SOURCE_DIR}/3rdParty/gpr/src/parser.cpp
+    ${CMAKE_SOURCE_DIR}/3rdParty/gpr/src/gcode_program.cpp
+)
+add_library(gpr::gpr ALIAS gpr)
+target_include_directories(gpr PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/gpr/src)
+target_compile_features(gpr PUBLIC cxx_std_11)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # gpr 源码有若干未使用/有符号比较告警，作三方库不升为 error
+    target_compile_options(gpr PRIVATE -Wno-error -Wno-unused-parameter -Wno-sign-compare)
+endif()
+message(STATUS "Using bundled gpr from 3rdParty/gpr")

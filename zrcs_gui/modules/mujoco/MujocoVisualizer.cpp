@@ -44,6 +44,7 @@ struct MujocoVisualizer3D::Impl {
     QVector<JointBinding> bindings;
     int toolTipGeomId = -1;
     QVector<std::array<mjtNum, 3>> toolTrail;
+    bool toolTrailVisible = true; ///< 采样 + 绘制开关
     static constexpr int kMaxTrailPoints = 20000;
     static constexpr int kMaxRenderedTrailSegments = 2500;
     static constexpr mjtNum kMinTrailDistance = 0.0005;
@@ -95,7 +96,7 @@ struct MujocoVisualizer3D::Impl {
 
     void appendToolTipSample()
     {
-        if (!model || !data || toolTipGeomId < 0) {
+        if (!toolTrailVisible || !model || !data || toolTipGeomId < 0) {
             return;
         }
 
@@ -120,7 +121,7 @@ struct MujocoVisualizer3D::Impl {
 
     void addTrailToScene()
     {
-        if (!sceneReady || toolTrail.isEmpty()) {
+        if (!toolTrailVisible || !sceneReady || toolTrail.isEmpty()) {
             return;
         }
 
@@ -323,11 +324,34 @@ void MujocoVisualizer3D::clearTrajectory()
 {
 #ifdef ZRCS_HAS_MUJOCO
     impl_->toolTrail.clear();
-    if (impl_->model && impl_->data) {
+    if (impl_->toolTrailVisible && impl_->model && impl_->data) {
         impl_->appendToolTipSample();
     }
 #endif
     update();
+}
+
+void MujocoVisualizer3D::setToolTrailVisible(bool visible)
+{
+#ifdef ZRCS_HAS_MUJOCO
+    impl_->toolTrailVisible = visible;
+    if (visible && impl_->model && impl_->data) {
+        // 重新打开时打一个当前刀尖点，避免轨迹从空跳起
+        impl_->appendToolTipSample();
+    }
+#else
+    Q_UNUSED(visible);
+#endif
+    update();
+}
+
+bool MujocoVisualizer3D::isToolTrailVisible() const
+{
+#ifdef ZRCS_HAS_MUJOCO
+    return impl_->toolTrailVisible;
+#else
+    return false;
+#endif
 }
 
 void MujocoVisualizer3D::paintGL()
@@ -495,8 +519,10 @@ void MujocoPanel::setupUI()
     QPushButton *btn3D = findChild<QPushButton *>("btn3D");
     QPushButton *btnResetView = findChild<QPushButton *>("btnResetView");
     QPushButton *btnReload = findChild<QPushButton *>("btnReload");
+    QPushButton *btnShowTrail = findChild<QPushButton *>("btnShowTrail");
     QPushButton *btnClearTrail = findChild<QPushButton *>("btnClearTrail");
-    if (!mujocoView || !btn2D || !btn3D || !btnResetView || !btnReload || !btnClearTrail) {
+    if (!mujocoView || !btn2D || !btn3D || !btnResetView || !btnReload || !btnShowTrail ||
+        !btnClearTrail) {
         return;
     }
 
@@ -504,18 +530,24 @@ void MujocoPanel::setupUI()
     btn3D->setText(QStringLiteral("Free"));
     btnResetView->setText(QStringLiteral("Reset"));
     btnReload->setText(QStringLiteral("Reload"));
+    btnShowTrail->setText(QStringLiteral("Tool Path"));
+    btnShowTrail->setCheckable(true);
+    btnShowTrail->setChecked(mujocoView->isToolTrailVisible());
+    btnShowTrail->setToolTip(QStringLiteral("显示/隐藏刀末端轨迹"));
     btnClearTrail->setText(QStringLiteral("Clear Path"));
 
     btn2D->setProperty("kind", "accent");
     btn3D->setProperty("kind", "accentBlue");
     btnResetView->setProperty("kind", "neutral");
     btnReload->setProperty("kind", "neutral");
+    btnShowTrail->setProperty("kind", "accent");
     btnClearTrail->setProperty("kind", "neutral");
 
     connect(btn2D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::setTopView);
     connect(btn3D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::resetView);
     connect(btnResetView, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::resetView);
     connect(btnReload, &QPushButton::clicked, this, &MujocoPanel::reloadModel);
+    connect(btnShowTrail, &QPushButton::toggled, this, &MujocoPanel::setToolTrailVisible);
     connect(btnClearTrail, &QPushButton::clicked, this, &MujocoPanel::clearTrajectory);
 }
 
@@ -523,6 +555,13 @@ void MujocoPanel::clearState()
 {
     if (mujocoView) {
         mujocoView->clearState();
+    }
+}
+
+void MujocoPanel::setToolTrailVisible(bool visible)
+{
+    if (mujocoView) {
+        mujocoView->setToolTrailVisible(visible);
     }
 }
 

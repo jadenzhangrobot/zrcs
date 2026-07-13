@@ -1,6 +1,5 @@
 #include "behavior_tree/nodes/motion/PathMoveSupport.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -48,34 +47,6 @@ QuaternionArgs rpyToQuaternion(double rx, double ry, double rz)
     return q;
 }
 
-template <typename Arg>
-void fillMoveArgs(std::array<double, zrcs::kCmdArgsMax>& args,
-                  const Point3D& start,
-                  const Point3D& end,
-                  const QuaternionArgs& quat,
-                  double maxVel,
-                  double targetVel,
-                  double sync)
-{
-    args[static_cast<size_t>(Arg::CurrentX)] = start.x;
-    args[static_cast<size_t>(Arg::CurrentY)] = start.y;
-    args[static_cast<size_t>(Arg::CurrentZ)] = start.z;
-    args[static_cast<size_t>(Arg::CurrentQ1)] = quat.w;
-    args[static_cast<size_t>(Arg::CurrentQ2)] = quat.x;
-    args[static_cast<size_t>(Arg::CurrentQ3)] = quat.y;
-    args[static_cast<size_t>(Arg::CurrentQ4)] = quat.z;
-    args[static_cast<size_t>(Arg::X)] = end.x;
-    args[static_cast<size_t>(Arg::Y)] = end.y;
-    args[static_cast<size_t>(Arg::Z)] = end.z;
-    args[static_cast<size_t>(Arg::Q1)] = quat.w;
-    args[static_cast<size_t>(Arg::Q2)] = quat.x;
-    args[static_cast<size_t>(Arg::Q3)] = quat.y;
-    args[static_cast<size_t>(Arg::Q4)] = quat.z;
-    args[static_cast<size_t>(Arg::Vel)] = maxVel;
-    args[static_cast<size_t>(Arg::TargetVel)] = targetVel;
-    args[static_cast<size_t>(Arg::Sync)] = sync;
-}
-
 double segmentVelocityLimit(const TrajectorySegment& segment, double fallback)
 {
     double limit = segment.v_max_local > 0.0 ? segment.v_max_local : segment.feedrate_limit;
@@ -83,13 +54,6 @@ double segmentVelocityLimit(const TrajectorySegment& segment, double fallback)
         limit = fallback;
     }
     return std::min(limit, fallback);
-}
-
-bool containsNonLineSegment(const std::vector<TrajectorySegment>& segments)
-{
-    return std::any_of(segments.begin(), segments.end(), [](const TrajectorySegment& segment) {
-        return segment.type != TrajectorySegmentType::Line;
-    });
 }
 
 void fillMovePathArgs(std::array<double, zrcs::kCmdArgsMax>& args,
@@ -146,56 +110,6 @@ bool argsAreFinite(const std::array<double, zrcs::kCmdArgsMax>& args, size_t cou
     return true;
 }
 
-bool sendSegmentsAsMoveL(RtBridge* bridge,
-                         const std::vector<TrajectorySegment>& segments,
-                         double rx,
-                         double ry,
-                         double rz,
-                         const MotionPlanner::Config& cfg)
-{
-    const QuaternionArgs quat = rpyToQuaternion(rx, ry, rz);
-    const char* commandName = cfg.galvoMode ? "MoveLGalvo" : "MoveL";
-    const size_t argCount = cfg.galvoMode
-        ? static_cast<size_t>(MoveLGalvoArg::Sync) + 1
-        : static_cast<size_t>(MoveLArg::Sync) + 1;
-
-    for (size_t i = 0; i < segments.size(); ++i) {
-        const auto& segment = segments[i];
-        if (segment.type != TrajectorySegmentType::Line) {
-            spdlog::error("[PathMove] {} cannot execute non-line segment without sampling",
-                          commandName);
-            return false;
-        }
-
-        const Point3D start = evaluateSegment(segment, 0.0);
-        const Point3D end = evaluateSegment(segment, 1.0);
-        const double segmentMaxVel = segmentVelocityLimit(segment, cfg.maxVel);
-        std::array<double, zrcs::kCmdArgsMax> args{};
-        if (cfg.galvoMode) {
-            fillMoveArgs<MoveLGalvoArg>(args, start, end, quat, segmentMaxVel,
-                                        segment.v_exit, (i == 0) ? 1.0 : 0.0);
-        } else {
-            fillMoveArgs<MoveLArg>(args, start, end, quat, segmentMaxVel,
-                                   segment.v_exit, (i == 0) ? 1.0 : 0.0);
-        }
-
-        if (!argsAreFinite(args, argCount)) {
-            spdlog::error("[PathMove] Non-finite MoveL args at segment {}/{}",
-                          i + 1, segments.size());
-            return false;
-        }
-
-        auto [result, seq] = bridge->sendCommand(commandName, args.data(), argCount);
-        (void)seq;
-        if (result != RtBridge::SendResult::OK) {
-            spdlog::error("[PathMove] sendCommand MoveL failed at segment {}/{}",
-                          i + 1, segments.size());
-            return false;
-        }
-    }
-    return true;
-}
-
 bool sendSegmentsAsMovePath(RtBridge* bridge,
                             const std::vector<TrajectorySegment>& segments,
                             double rx,
@@ -229,23 +143,6 @@ bool sendSegmentsAsMovePath(RtBridge* bridge,
     return true;
 }
 
-bool sendSegmentsAsCommands(RtBridge* bridge,
-                            const std::vector<TrajectorySegment>& segments,
-                            double rx,
-                            double ry,
-                            double rz,
-                            const MotionPlanner::Config& cfg)
-{
-    if (!cfg.galvoMode) {
-        return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, cfg);
-    }
-    if (containsNonLineSegment(segments)) {
-        spdlog::error("[PathMove] MoveLGalvo cannot execute blended arc segments without sampling");
-        return false;
-    }
-    return sendSegmentsAsMoveL(bridge, segments, rx, ry, rz, cfg);
-}
-
 } // namespace
 
 bool queuePlannedSegments(RtBridge* bridge,
@@ -260,7 +157,7 @@ bool queuePlannedSegments(RtBridge* bridge,
         return false;
     }
     bridge->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
-    return sendSegmentsAsCommands(bridge, segments, rx, ry, rz, cfg);
+    return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, cfg);
 }
 
 bool queuePathFromWaypoints(RtBridge* bridge,

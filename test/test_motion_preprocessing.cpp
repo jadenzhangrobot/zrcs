@@ -176,50 +176,6 @@ std::vector<zrcs::Command> collect_commands(zrcs::SharedBlock& block)
     return commands;
 }
 
-template <typename Arg>
-void assert_lookahead_commands(const std::vector<zrcs::Command>& commands,
-                               CmdId expected_cmd,
-                               const std::vector<Point3D>& waypoints,
-                               const MotionPlanner::Config& cfg)
-{
-    assert(!commands.empty());
-
-    Point3D previous_target = command_current_point<Arg>(commands.front());
-    for (size_t i = 0; i < commands.size(); ++i)
-    {
-        const auto& command = commands[i];
-        assert(command.cmdId == static_cast<uint16_t>(expected_cmd));
-
-        const Point3D current = command_current_point<Arg>(command);
-        const Point3D target = command_target_point<Arg>(command);
-        if (i == 0)
-        {
-            assert(is_same_point(current, waypoints.front(), 1e-6));
-        }
-        else
-        {
-            assert(is_same_point(current, previous_target, 1e-5));
-        }
-
-        assert_quaternion_layout<Arg>(command);
-
-        const double max_vel = command_arg(command, Arg::Vel);
-        const double target_vel = command_arg(command, Arg::TargetVel);
-        assert(std::isfinite(max_vel));
-        assert(std::isfinite(target_vel));
-        assert(max_vel > 0.0);
-        assert(max_vel <= cfg.maxVel + 1e-9);
-        assert(target_vel >= -1e-9);
-        assert(target_vel <= max_vel + 1e-9);
-        assert(is_near(command_arg(command, Arg::Sync), i == 0 ? 1.0 : 0.0));
-
-        previous_target = target;
-    }
-
-    assert(is_same_point(previous_target, waypoints.back(), 1e-5));
-    assert(is_near(command_arg(commands.back(), Arg::TargetVel), 0.0, 1e-6));
-}
-
 void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
                                const std::vector<Point3D>& waypoints,
                                const MotionPlanner::Config& cfg)
@@ -273,32 +229,6 @@ void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
     assert(has_arc_segment);
     assert(is_same_point(previous_target, waypoints.back(), 1e-5));
     assert(is_near(command_arg(commands.back(), MovePathArg::TargetVel), 0.0, 1e-6));
-}
-
-template <typename Arg>
-void run_motion_preprocessor_queue_test(bool galvo_mode, CmdId expected_cmd)
-{
-    auto block = std::make_unique<zrcs::SharedBlock>();
-    RtBridge bridge(block.get());
-    MotionPlanner::Config cfg;
-    cfg.maxVel = 5.0;
-    cfg.maxAccel = 40.0;
-    cfg.maxJerk = 200.0;
-    cfg.cornerTol = 0.2;
-    cfg.galvoMode = galvo_mode;
-
-    const std::vector<Point3D> waypoints = {
-        {0.0, 0.0, 0.0},
-        {4.0, 0.0, 0.0},
-    };
-
-    assert(zrcs_bt::queuePathFromWaypoints(&bridge, waypoints, 0.1, -0.2, 0.3, cfg));
-    assert(is_near(block->pathMoveCfg.maxVel.load(std::memory_order_acquire), cfg.maxVel));
-    assert(is_near(block->pathMoveCfg.maxAccel.load(std::memory_order_acquire), cfg.maxAccel));
-    assert(is_near(block->pathMoveCfg.maxJerk.load(std::memory_order_acquire), cfg.maxJerk));
-
-    const auto commands = collect_commands(*block);
-    assert_lookahead_commands<Arg>(commands, expected_cmd, waypoints, cfg);
 }
 
 bool matplotlib_available()
@@ -857,7 +787,6 @@ void test_motion_preprocessor_queues_move_path_commands()
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
     cfg.cornerTol = 0.2;
-    cfg.galvoMode = false;
 
     const std::vector<Point3D> waypoints = {
         {0.0, 0.0, 0.0},
@@ -875,11 +804,6 @@ void test_motion_preprocessor_queues_move_path_commands()
     assert_move_path_commands(commands, waypoints, cfg);
 }
 
-void test_motion_preprocessor_queues_move_l_galvo_commands()
-{
-    run_motion_preprocessor_queue_test<MoveLGalvoArg>(true, CmdId::MoveLGalvo);
-}
-
 } // namespace
 
 int main()
@@ -889,7 +813,6 @@ int main()
     test_velocity_lookahead_on_segments();
     test_curvature_limits_local_velocity();
     test_motion_preprocessor_queues_move_path_commands();
-    test_motion_preprocessor_queues_move_l_galvo_commands();
     std::cout << "Motion preprocessing segment test passed." << std::endl;
     return 0;
 }

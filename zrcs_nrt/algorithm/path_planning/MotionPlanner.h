@@ -22,7 +22,6 @@ public:
         double cornerTol = 0.5;
         double startVel = 0.0;
         double endVel = 0.0;
-        bool galvoMode = false; ///< 仅语义标记；纯规划不读此字段发令
     };
 
     MotionPlanner() = default;

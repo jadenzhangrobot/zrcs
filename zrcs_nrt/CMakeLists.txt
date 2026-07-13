@@ -42,12 +42,13 @@ set(SOURCES
     behavior_tree/nodes/rtcommand/BtCommandNodes.cpp
     behavior_tree/nodes/motion/PathMoveSupport.cpp
     behavior_tree/nodes/motion/PathMoveNode.cpp
+    behavior_tree/nodes/nc/NcParseNode.cpp
 
     # pure algorithms
     algorithm/path_planning/MotionPlanner.cpp
     algorithm/path_planning/PathPreprocessor.cpp
     algorithm/path_planning/VelocityPlanner3D.cpp
-    # motion orchestration (send planned segments)
+    algorithm/path_planning/NcParser.cpp
 
     algorithm/dynamics_identification/MujocoIdentifyWorker.cpp
 )
@@ -59,6 +60,7 @@ target_link_libraries(zrcsnrt PRIVATE
     cppzmq
     behaviortree_cpp_v3
     spdlog::spdlog
+    gpr::gpr
     ${MOTION_CONTROL_LIBS}
 )
 
