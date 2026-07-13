@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZRCS 速度前瞻与轨迹拟合详解</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6470;
+      --line: #d7dee8;
+      --soft: #edf2f7;
+      --code: #0f1724;
+      --blue: #1f5aa6;
+      --green: #176b4d;
+      --red: #a43232;
+      --amber: #8a5b13;
+      --violet: #5b4a98;
+      --cyan: #0f6c7a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.72 "Segoe UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px 40px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+
+    nav h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    nav .nav-meta {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    nav li {
+      margin: 7px 0;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    nav a { color: #31425a; }
+
+    main {
+      max-width: 1180px;
+      padding: 34px 42px 80px;
+    }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 38px 44px;
+      box-shadow: 0 12px 34px rgba(23, 32, 42, 0.05);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.22;
+    }
+
+    h2 {
+      margin: 40px 0 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-size: 25px;
+      line-height: 1.3;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 19px;
+    }
+
+    h4 {
+      margin: 20px 0 8px;
+      font-size: 16px;
+    }
+
+    p { margin: 10px 0; }
+
+    ul, ol {
+      margin: 10px 0 10px 24px;
+      padding: 0;
+    }
+
+    li { margin: 5px 0; }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #eef1f5;
+      color: #172033;
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+      font-size: 0.93em;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 12px 0 18px;
+      padding: 15px 17px;
+      border-radius: 8px;
+      background: var(--code);
+      color: #eef4ff;
+      font: 13px/1.55 Consolas, "Cascadia Mono", "Courier New", monospace;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    table {
+      width: 100%;
+      margin: 14px 0 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef3f8;
+      font-weight: 650;
+    }
+
+    .meta {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .lead {
+      padding: 15px 18px;
+      border-left: 4px solid var(--blue);
+      background: #f0f5fc;
+      border-radius: 6px;
+    }
+
+    .note, .warn, .good, .info {
+      margin: 15px 0;
+      padding: 13px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .note strong, .warn strong, .good strong, .info strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .warn {
+      border-color: #efd39d;
+      background: #fff7e8;
+    }
+
+    .warn strong { color: var(--amber); }
+
+    .good {
+      border-color: #b8dccd;
+      background: #edf8f3;
+    }
+
+    .good strong { color: var(--green); }
+
+    .info {
+      border-color: #c6d9f0;
+      background: #f3f8ff;
+    }
+
+    .info strong { color: var(--blue); }
+
+    .formula {
+      overflow: auto;
+      margin: 13px 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #d6deea;
+      background: #fbfcff;
+      color: #111827;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.75;
+      white-space: nowrap;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0 18px;
+    }
+
+    .node {
+      min-height: 92px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .node b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue);
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e8eef8;
+      color: #24405f;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .tag.green { background: #e0f3ea; color: var(--green); }
+    .tag.red { background: #f8e5e5; color: var(--red); }
+    .tag.amber { background: #fff0d0; color: var(--amber); }
+    .tag.violet { background: #eeeafa; color: var(--violet); }
+    .tag.cyan { background: #e3f4f6; color: var(--cyan); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+
+    .card {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .card h4 { margin-top: 0; }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .diagram {
+      margin: 16px 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 12.5px;
+      line-height: 1.45;
+      white-space: pre;
+      overflow: auto;
+      color: #1d2a3a;
+    }
+
+    @media (max-width: 980px) {
+      .layout { display: block; }
+      nav {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main { padding: 18px; }
+      article { padding: 24px 18px; }
+      .flow, .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      nav { display: none; }
+      .layout { display: block; }
+      main { max-width: none; padding: 0; }
+      article {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <h2>速度前瞻与轨迹拟合</h2>
+      <p class="nav-meta">基于当前源码：zrcs_nrt/motion + MovePath</p>
+      <ol>
+        <li><a href="#overview">1. 概述与结论</a></li>
+        <li><a href="#pipeline">2. 处理流水线</a></li>
+        <li><a href="#data-model">3. 数据模型</a></li>
+        <li><a href="#fitting">4. 轨迹拟合</a></li>
+        <li><a href="#lookahead">5. 速度前瞻</a></li>
+        <li><a href="#integration">6. NRT 集成</a></li>
+        <li><a href="#rt">7. RT 弧长执行</a></li>
+        <li><a href="#math">8. 关键公式汇总</a></li>
+        <li><a href="#params">9. 参数与调参</a></li>
+        <li><a href="#example">10. 工作示例</a></li>
+        <li><a href="#limitations">11. 限制与已知问题</a></li>
+        <li><a href="#code-map">12. 代码地图</a></li>
+        <li><a href="#faq">13. FAQ / 诊断</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <article>
+        <h1>ZRCS 速度前瞻与轨迹拟合详解</h1>
+        <div class="meta">
+          文档日期：2026-07-13 · 范围：<code>zrcs_nrt/motion/*</code>、<code>zrcs_rt/command/MovePath.*</code> · 关联文档：
+          <a href="./trajectory-fitting.md">trajectory-fitting.md</a>、
+          <a href="./trajectory-fitting-velocity-feedforward.html">trajectory-fitting-velocity-feedforward.html</a>、
+          <a href="./motion-review.md">motion-review.md</a>
+        </div>
+
+        <p class="lead">
+          本工程的连续路径运动分两层：NRT 侧先把离散路径点拟合成
+          <strong>直线段 + 拐角圆弧段</strong>，再做
+          <strong>jerk 受限的速度前瞻</strong>；RT 侧对每一段用 1D 弧长 Ruckig
+          生成平滑进度，并映射成 XYZ 位置命令。几何与全局速度约束在非实时侧完成，实时侧只做确定性执行。
+        </p>
+
+        <!-- ===================== 1 ===================== -->
+        <section id="overview">
+          <h2>1. 概述与结论</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>状态</th>
+                <th>实现位置</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>轨迹拟合 / 拐角圆角</td>
+                <td><span class="tag green">已实现并接入</span></td>
+                <td><code>PathPreprocessor</code></td>
+                <td>折线路径在内部拐角插入圆弧，输出 <code>Line</code> / <code>CircularArc</code> 段。</td>
+              </tr>
+              <tr>
+                <td>局部速度限制</td>
+                <td><span class="tag green">已实现</span></td>
+                <td><code>VelocityPlanner3D</code></td>
+                <td>全局速度、编程进给、曲率向心加速度共同限速。</td>
+              </tr>
+              <tr>
+                <td>段间拐角速度</td>
+                <td><span class="tag green">已实现</span></td>
+                <td><code>calculateJunctionVelocityLimit()</code></td>
+                <td>基于夹角、cornerTol、曲率跳变 jerk 约束。</td>
+              </tr>
+              <tr>
+                <td>前后向速度扫描</td>
+                <td><span class="tag green">已实现</span></td>
+                <td><code>planSegments()</code></td>
+                <td>backward/forward scan 保证 S 曲线距离可达。</td>
+              </tr>
+              <tr>
+                <td>三次多项式段</td>
+                <td><span class="tag amber">代码保留未走主路径</span></td>
+                <td><code>makeCubicSpanSegment()</code></td>
+                <td>B 样条采样拟合成 cubic 的函数仍在，但当前 <code>fitCornerBlendSegments()</code> 不调用。</td>
+              </tr>
+              <tr>
+                <td>RT 弧长执行</td>
+                <td><span class="tag green">已实现</span></td>
+                <td><code>MovePath</code></td>
+                <td>1D Ruckig 规划弧长 <code>s</code>，再映射到路径参数 <code>u</code> 与 XYZ。</td>
+              </tr>
+              <tr>
+                <td>速度前馈真正下发</td>
+                <td><span class="tag amber">接口存在但会被覆盖</span></td>
+                <td><code>Axis::cmdsProcessing()</code></td>
+                <td><code>setAxisVelocityCmd()</code> 写入后会被位置差分重算覆盖。详见前馈文档。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="good">
+            <strong>设计原则</strong>
+            NRT 负责“看全局、做几何、做前瞻”，RT 负责“看当前段、做平滑执行”。
+            段与段之间通过 <code>v_exit → TargetVel</code> 与 Ruckig 状态接力保持速度连续。
+          </div>
+        </section>
+
+        <!-- ===================== 2 ===================== -->
+        <section id="pipeline">
+          <h2>2. 处理流水线</h2>
+
+          <div class="flow">
+            <div class="node">
+              <b>1. Waypoints</b>
+              离散 XYZ 点 + 统一 RPY 姿态。
+            </div>
+            <div class="node">
+              <b>2. PathMoveBlock</b>
+              相邻点连成原始折线块。
+            </div>
+            <div class="node">
+              <b>3. PathPreprocessor</b>
+              过滤零长度段，插入拐角圆弧。
+            </div>
+            <div class="node">
+              <b>4. VelocityPlanner3D</b>
+              局部限速 + junction 限速 + 前后扫描。
+            </div>
+            <div class="node">
+              <b>5. MovePath / MoveL*</b>
+              打包 RT 命令，弧长 Ruckig 执行。
+            </div>
+          </div>
+
+          <h3>2.1 调用链</h3>
+          <div class="diagram">waypoints
+   │
+   ▼
+MotionPreprocessor::process()
+   │  bridge_->setPathMoveConfig(maxVel, maxAccel, maxJerk)
+   │  makeBlocksFromWaypoints()
+   ▼
+PathPreprocessor::fitCornerBlendSegments(blocks, cornerTol)
+   │  buildCornerBlends()
+   │  makeLineSegment() / makeArcSegment()
+   │  finalizeGeometry()  → length, max_curvature
+   ▼
+VelocityPlanner3D::setConfig(...)
+VelocityPlanner3D::planSegments(segments)
+   │  calculateLocalVelocityLimit()
+   │  calculateJunctionVelocityLimit()
+   │  backward scan / forward scan
+   │  estimateSegmentDuration()
+   ▼
+sendSegmentsAsMovePath()  或  sendSegmentsAsMoveL()
+   │  TargetVel = segment.v_exit
+   │  Sync = 1 only for first segment
+   ▼
+RT: MovePath::initTrajectory() + applyOutput()</div>
+
+          <h3>2.2 NRT / RT 职责边界</h3>
+          <table>
+            <thead>
+              <tr><th>侧</th><th>做什么</th><th>不做什么</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>NRT</td>
+                <td>几何拟合、曲率估计、全局速度前瞻、命令打包</td>
+                <td>不在实时周期内做重计算；不等待每段执行完成</td>
+              </tr>
+              <tr>
+                <td>RT</td>
+                <td>1D 弧长 S 曲线、s→u→XYZ、轴命令下发、倍率控制</td>
+                <td>不做全局路径重规划；不重新做拐角圆角</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ===================== 3 ===================== -->
+        <section id="data-model">
+          <h2>3. 数据模型</h2>
+
+          <h3>3.1 分层数据结构</h3>
+          <table>
+            <thead>
+              <tr><th>结构</th><th>角色</th><th>关键字段</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Point3D</code></td>
+                <td>纯几何点</td>
+                <td><code>x, y, z</code></td>
+              </tr>
+              <tr>
+                <td><code>PathMoveBlock</code></td>
+                <td>原始编程线段</td>
+                <td><code>start/end</code>、<code>rx/ry/rz</code>、<code>feedrate</code></td>
+              </tr>
+              <tr>
+                <td><code>TrajectorySegment</code></td>
+                <td>拟合 + 前瞻共用的段表示</td>
+                <td>几何字段 + 动态字段（见下）</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>3.2 <code>TrajectorySegment</code> 字段分工</h3>
+          <div class="two-col">
+            <div class="card">
+              <h4>几何阶段写入</h4>
+              <ul>
+                <li><code>type</code>：Line / CubicPolynomial / CircularArc</li>
+                <li><code>coeff[6][4]</code>：轴多项式 <code>c0+c1u+c2u²+c3u³</code></li>
+                <li><code>arc_*</code>：圆心、基向量、半径、扫角</li>
+                <li><code>length</code>：真实弧长</li>
+                <li><code>max_curvature</code>：最大曲率</li>
+                <li><code>feedrate_limit</code>：编程进给</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>速度前瞻写入</h4>
+              <ul>
+                <li><code>v_max_local</code>：本段允许最大速度</li>
+                <li><code>v_enter / v_exit</code>：段首 / 段尾速度</li>
+                <li><code>a_max_local / jerk_max_local</code></li>
+                <li><code>duration</code>：估算执行时间</li>
+                <li><code>is_lookahead_optimized</code></li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>3.3 段类型</h3>
+          <table>
+            <thead>
+              <tr><th>类型</th><th>主路径是否产生</th><th>参数化</th><th>曲率</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Line</code></td>
+                <td><span class="tag green">是</span></td>
+                <td><code>p(u)=P0+u(P1-P0)</code>，用 <code>coeff</code> 存线性项</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td><code>CircularArc</code></td>
+                <td><span class="tag green">是</span></td>
+                <td><code>p(u)=C+r[cos(θu)U+sin(θu)V]</code></td>
+                <td><code>1/r</code></td>
+              </tr>
+              <tr>
+                <td><code>CubicPolynomial</code></td>
+                <td><span class="tag amber">否（预留）</span></td>
+                <td>三次多项式，弧长用高斯积分</td>
+                <td>采样估计 max κ</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="note">
+            <strong>姿态轴</strong>
+            <code>coeff[3..5]</code> 预留给姿态，但当前拟合阶段对姿态写入常量，不随路径参数变化；
+            <code>MovePath</code> 的姿态 SLERP 输出也处于注释状态。
+          </div>
+        </section>
+
+        <!-- ===================== 4 ===================== -->
+        <section id="fitting">
+          <h2>4. 轨迹拟合（PathPreprocessor）</h2>
+
+          <h3>4.1 入口与过滤</h3>
+          <p>
+            入口函数：
+          </p>
+          <pre><code>std::vector&lt;TrajectorySegment&gt;
+PathPreprocessor::fitCornerBlendSegments(
+    const std::vector&lt;PathMoveBlock&gt;&amp; blocks,
+    double cornerTol);</code></pre>
+          <p>处理步骤：</p>
+          <ol>
+            <li>只保留 <code>PathMoveType::Line</code> 且长度 &gt; 1e-9 的块。</li>
+            <li>还原原始路径点序列 <code>raw = [P0, P1, ..., PN-1]</code>。</li>
+            <li>对内部点 <code>P1..PN-2</code> 尝试构造圆角 <code>CornerBlend</code>。</li>
+            <li>按“直线残段 + 后续圆角弧”的顺序输出段列表。</li>
+          </ol>
+
+          <h3>4.2 拐角圆弧几何</h3>
+          <p>对内部点 <code>P<sub>i</sub></code>：</p>
+          <div class="formula">
+            v<sub>in</sub> = normalize(P<sub>i</sub> − P<sub>i−1</sub>)，&nbsp;
+            v<sub>out</sub> = normalize(P<sub>i+1</sub> − P<sub>i</sub>)
+          </div>
+          <div class="formula">
+            θ = acos(clamp(v<sub>in</sub> · v<sub>out</sub>, −1, 1))
+          </div>
+          <p>
+            若 <code>θ &lt; 0.01</code>（几乎共线）或 <code>θ &gt; π − 0.01</code>（接近折返），跳过圆角。
+          </p>
+
+          <h4>切除长度</h4>
+          <div class="formula">
+            α = θ/2，&nbsp;
+            d<sub>tol</sub> = cornerTol · cos(α) / (1 − cos(α))
+          </div>
+          <div class="formula">
+            d<sub>max</sub> = 0.5 · min(|P<sub>i</sub>−P<sub>i−1</sub>|, |P<sub>i+1</sub>−P<sub>i</sub>|)
+          </div>
+          <div class="formula">
+            d = min(d<sub>tol</sub>, d<sub>max</sub>)
+          </div>
+
+          <h4>圆弧参数</h4>
+          <div class="formula">
+            S = P<sub>i</sub> − d·v<sub>in</sub>，&nbsp; E = P<sub>i</sub> + d·v<sub>out</sub>
+          </div>
+          <div class="formula">
+            r = d / tan(α)
+          </div>
+          <div class="formula">
+            n = normalize(v<sub>in</sub> × v<sub>out</sub>)，&nbsp;
+            c<sub>dir</sub> = normalize(n × v<sub>in</sub>)，&nbsp;
+            C = S + r·c<sub>dir</sub>
+          </div>
+          <div class="formula">
+            U = normalize(S − C)，&nbsp; V = v<sub>in</sub>，&nbsp; sweep = θ
+          </div>
+
+          <div class="info">
+            <strong>cornerTol 的几何含义</strong>
+            它控制“允许偏离原始拐角顶点的最大弦高/偏差尺度”。
+            角度越大，同样 cornerTol 下切除长度 d 越小；角度越小（缓弯），d 可以更大。
+            同时 d 不会超过相邻段长度的一半，避免吃光整条边。
+          </div>
+
+          <h3>4.3 输出段拼接规则</h3>
+          <p>对第 i 条原始直线块：</p>
+          <ol>
+            <li>若起点处存在上一拐角圆角，直线起点取该圆角终点；</li>
+            <li>若终点处存在下一拐角圆角，直线终点取该圆角起点；</li>
+            <li>若直线残段长度 &gt; 1e-9，输出 <code>Line</code>；</li>
+            <li>若终点拐角激活，再输出对应 <code>CircularArc</code>。</li>
+          </ol>
+
+          <div class="diagram">原始:   P0 -------- P1 -------- P2 -------- P3
+
+拟合后:
+  Line(P0 → S1)
+  Arc (S1 → E1)   // 绕过 P1 的圆角
+  Line(E1 → S2)
+  Arc (S2 → E2)   // 绕过 P2 的圆角
+  Line(E2 → P3)</div>
+
+          <h3>4.4 段几何最终化</h3>
+          <p><code>finalizeGeometry()</code> 对每段写入：</p>
+          <table>
+            <thead>
+              <tr><th>字段</th><th>Line</th><th>CircularArc</th><th>CubicPolynomial</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>length</code></td>
+                <td>两端欧氏距离</td>
+                <td><code>|r · sweep|</code></td>
+                <td>8 点高斯-勒让德积分 <code>∫|p'(u)| du</code></td>
+              </tr>
+              <tr>
+                <td><code>max_curvature</code></td>
+                <td>0</td>
+                <td><code>1/r</code></td>
+                <td>u∈[0,1] 上 33 点采样最大值</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>4.5 圆弧参数方程与导数</h3>
+          <div class="formula">
+            p(u) = C + r [ cos(θu) U + sin(θu) V ]
+          </div>
+          <div class="formula">
+            p'(u) = rθ [ −sin(θu) U + cos(θu) V ]
+          </div>
+          <div class="formula">
+            p''(u) = rθ² [ −cos(θu) U − sin(θu) V ]
+          </div>
+          <div class="formula">
+            κ = |p' × p''| / |p'|³ = 1/r &nbsp;（圆弧常数）
+          </div>
+
+          <h3>4.6 进给速度合并</h3>
+          <p>
+            圆角段的进给速度取相邻两直线块进给的“有效合并”：
+          </p>
+          <pre><code>// mergeFeedrate(a, b)
+if (a &gt; 0 &amp;&amp; b &gt; 0) return min(a, b);
+return a &gt; 0 ? a : b;</code></pre>
+          <p>
+            当前 <code>MotionPreprocessor</code> 从 waypoints 建块时，所有块的 feedrate 都设为
+            <code>cfg.maxVel</code>，因此圆角进给通常等于全局最大速度；真正限制圆角速度的主要是曲率与 junction 约束。
+          </p>
+
+          <h3>4.7 预留：三次多项式 / B 样条</h3>
+          <p>
+            代码中仍保留：
+          </p>
+          <ul>
+            <li><code>evalClampedCubicBSpline()</code>：5 控制点、clamped cubic B-spline，内部 knot 0.5</li>
+            <li><code>makeCubicSpanSegment()</code>：在 [u0,u1] 采样 4 点，高斯消元拟合三次多项式</li>
+            <li><code>fitCubicFromSamples()</code>：解 <code>c1,c2,c3</code>（c0 取 y0）</li>
+          </ul>
+          <div class="warn">
+            <strong>当前主路径不走 cubic</strong>
+            <code>fitCornerBlendSegments()</code> 只调用 <code>makeLineSegment</code> 与 <code>makeArcSegment</code>。
+            cubic 路径是历史/预留实现，测试与 RT 的多项式 LUT 能力仍可支持，但 NRT 默认不会生成。
+          </div>
+        </section>
+
+        <!-- ===================== 5 ===================== -->
+        <section id="lookahead">
+          <h2>5. 速度前瞻（VelocityPlanner3D）</h2>
+
+          <h3>5.1 配置接口</h3>
+          <pre><code>void VelocityPlanner3D::setConfig(
+    double max_v,      // 全局最大速度
+    double max_a,      // 最大加速度
+    double start_v,    // 路径起点速度
+    double end_v,      // 路径终点速度
+    double corner_tol, // 拐角容差（与拟合共用语义）
+    double max_j);     // 最大 jerk</code></pre>
+          <p>
+            当前 <code>MotionPreprocessor</code> 传入：
+            <code>start_v = 0</code>、<code>end_v = 0</code>，即整条路径“起停”。
+          </p>
+
+          <h3>5.2 算法总览（planSegments）</h3>
+          <ol>
+            <li><strong>局部限速</strong>：对每段算 <code>v_max_local</code>，并写入 a/j 限制。</li>
+            <li><strong>初始化 junction 数组</strong>：长度 = 段数 + 1。</li>
+            <li><strong>几何 junction 限速</strong>：相邻段夹角、曲率跳变约束内部节点。</li>
+            <li><strong>Backward scan</strong>：保证能在本段距离内减速到下一 junction。</li>
+            <li><strong>Forward scan</strong>：保证能在本段距离内从当前 junction 加速到下一 junction。</li>
+            <li><strong>回写</strong>：<code>v_enter</code>、<code>v_exit</code>、<code>duration</code>。</li>
+          </ol>
+
+          <div class="diagram">junctionVel indices:   0     1     2     3     4
+segments:             [seg0][seg1][seg2][seg3]
+                      v_enter/v_exit 取相邻 junction
+
+Step A: local limit per segment
+Step B: junction geometry limits
+Step C: backward reachability (from end to start)
+Step D: forward reachability  (from start to end)
+Step E: write v_enter, v_exit, duration</div>
+
+          <h3>5.3 局部速度限制</h3>
+          <div class="formula">
+            v<sub>max_local</sub> = min( v<sub>global</sub>,&nbsp; v<sub>feedrate</sub>,&nbsp; v<sub>curvature</sub> )
+          </div>
+          <p>其中曲率限速来自向心加速度约束：</p>
+          <div class="formula">
+            a<sub>n</sub> = v² κ ≤ a<sub>max</sub> &nbsp;⇒&nbsp;
+            v<sub>curvature</sub> = √(a<sub>max</sub> / κ<sub>max</sub>)
+          </div>
+          <ul>
+            <li>直线：κ=0，无曲率限速。</li>
+            <li>圆弧：κ=1/r，半径越小允许速度越低。</li>
+            <li><code>feedrate_limit ≤ 0</code> 时忽略编程进给限制。</li>
+          </ul>
+
+          <h3>5.4 段间（junction）速度限制</h3>
+          <p>取相邻段端点切向：</p>
+          <div class="formula">
+            t<sub>prev</sub> = normalize(p'<sub>prev</sub>(1))，&nbsp;
+            t<sub>next</sub> = normalize(p'<sub>next</sub>(0))
+          </div>
+          <div class="formula">
+            cosθ = clamp(t<sub>prev</sub> · t<sub>next</sub>, −1, 1)
+          </div>
+
+          <h4>拐角速度</h4>
+          <div class="formula">
+            v<sub>corner</sub> = √( a<sub>max</sub> · cornerTol / max(1 − cosθ, 1e−6) )
+          </div>
+          <div class="formula">
+            v<sub>junction</sub> = v<sub>corner</sub> · max(0, cosθ)
+          </div>
+
+          <div class="warn">
+            <strong>关于 dir_factor = max(0, cosθ)</strong>
+            当转角 ≥ 90°（cosθ ≤ 0）时，junction 速度被压到 0。
+            这对“无几何混合的硬拐角”是安全的；但本工程已经插入圆弧圆角时，圆弧本身的曲率限速通常已足够，
+            该因子在大角度下偏保守。相关讨论见 <code>docs/motion-review.md</code>。
+          </div>
+
+          <h4>曲率跳变 / jerk 窗口约束</h4>
+          <div class="formula">
+            Δκ = |κ<sub>next</sub>(0) − κ<sub>prev</sub>(1)|
+          </div>
+          <div class="formula">
+            Δa<sub>max</sub> = j<sub>max</sub> · max(0.02 s, cycletime·0.001)
+          </div>
+          <div class="formula">
+            v<sub>curvatureJump</sub> = √(Δa<sub>max</sub> / Δκ)
+          </div>
+          <p>
+            最终 junction 上限再与两段 <code>v_max_local</code> 取 min。
+            物理含义：曲率突变导致法向加速度突变，需要用 jerk 能力限制通过速度。
+          </p>
+
+          <h3>5.5 S 曲线速度过渡模型</h3>
+          <p>
+            前瞻在估算“从一个速度变到另一个速度需要多少距离/时间”时，使用 jerk-limited 模型，
+            而不是简单匀加速。
+          </p>
+
+          <h4>过渡时间 <code>transitionTime(v0, v1)</code></h4>
+          <div class="formula">
+            Δv = |v1 − v0|
+          </div>
+          <p>若三角 jerk 峰值加速度不超过 a_max：</p>
+          <div class="formula">
+            a<sub>peak</sub> = √(j<sub>max</sub> · Δv) ≤ a<sub>max</sub>
+            &nbsp;⇒&nbsp; T = 2 √(Δv / j<sub>max</sub>)
+          </div>
+          <p>否则进入带恒加速度平台的 S 曲线：</p>
+          <div class="formula">
+            t<sub>j</sub> = a<sub>max</sub>/j<sub>max</sub>，&nbsp;
+            t<sub>a</sub> = Δv/a<sub>max</sub> − t<sub>j</sub>，&nbsp;
+            T = 2t<sub>j</sub> + t<sub>a</sub>
+          </div>
+
+          <h4>过渡距离 <code>dMinTransition(v0, v1)</code></h4>
+          <div class="formula">
+            d = ½ (v0 + v1) · T
+          </div>
+          <p class="small">
+            这是对单调速度变化的平均速度近似，用于前后扫描中的可达性判断。
+          </p>
+
+          <h4>最大可达速度 <code>maxReachableVel(v0, distance)</code></h4>
+          <p>
+            在给定距离内，从 <code>v0</code> 最多能加速到多少。
+            实现为对目标速度的二分搜索（最多 64 次），判定条件为
+            <code>dMinTransition(v0, v*) ≤ distance</code>。
+          </p>
+
+          <h3>5.6 Backward / Forward Scan</h3>
+          <h4>Backward（从终点往前）</h4>
+          <pre><code>for i = n-1 .. 0:
+  reachable = maxReachableVel(junction[i+1], length[i])
+  junction[i] = min(junction[i], reachable)</code></pre>
+          <p>
+            含义：若后面必须降到某个低速，前面就不能太高，否则本段距离不够减速。
+          </p>
+
+          <h4>Forward（从起点往后）</h4>
+          <pre><code>for i = 0 .. n-1:
+  reachable = maxReachableVel(junction[i], length[i])
+  junction[i+1] = min(junction[i+1], reachable)</code></pre>
+          <p>
+            含义：从当前速度出发，后面节点不能超过本段加速能力。
+          </p>
+
+          <h3>5.7 段时间估算</h3>
+          <p><code>estimateSegmentDuration()</code>：</p>
+          <ol>
+            <li>先算加速到 <code>v_max_local</code> 与从 <code>v_max_local</code> 减速到 <code>v_exit</code> 所需距离；</li>
+            <li>若 <code>d_accel + d_decel ≤ length</code>，中间有巡航：
+              <div class="formula">
+                T = T(v<sub>enter</sub>→v<sub>max</sub>) + (L − d<sub>a</sub> − d<sub>d</sub>)/v<sub>max</sub> + T(v<sub>exit</sub>→v<sub>max</sub>)
+              </div>
+            </li>
+            <li>否则没有巡航，用二分搜索峰值速度 <code>v*</code>，使
+              <code>d(v_enter→v*) + d(v_exit→v*) = length</code>，再累加两段过渡时间。
+            </li>
+          </ol>
+          <div class="note">
+            <strong>duration 的用途</strong>
+            当前主要是 NRT 侧的估算字段；RT 真正执行时间由 Ruckig 在线规划决定。
+            它适合调试、日志和上层粗略节拍估计。
+          </div>
+        </section>
+
+        <!-- ===================== 6 ===================== -->
+        <section id="integration">
+          <h2>6. NRT 集成（MotionPreprocessor）</h2>
+
+          <h3>6.1 配置</h3>
+          <pre><code>struct MotionPreprocessor::Config {
+    double maxVel    = 10.0;
+    double maxAccel  = 20.0;
+    double maxJerk   = 30.0;
+    double cornerTol = 0.5;
+    bool   galvoMode = false;
+};</code></pre>
+
+          <h3>6.2 process() 主流程</h3>
+          <ol>
+            <li>校验 waypoints ≥ 2，且 <code>RtBridge*</code> 非空。</li>
+            <li><code>setPathMoveConfig(maxVel, maxAccel, maxJerk)</code> 写入共享内存，供 RT 读取 a/j 限制。</li>
+            <li><code>makeBlocksFromWaypoints()</code>：相邻点 → <code>PathMoveBlock</code>，feedrate = maxVel。</li>
+            <li><code>fitCornerBlendSegments(blocks, cornerTol)</code> 生成几何段。</li>
+            <li><code>velPlanner_.setConfig(maxVel, maxAccel, 0, 0, cornerTol, maxJerk)</code>。</li>
+            <li><code>planSegments(segments)</code> 填 v_enter/v_exit。</li>
+            <li><code>sendSegmentsAsCommands()</code>：
+              <ul>
+                <li>默认：<code>sendSegmentsAsMovePath()</code></li>
+                <li>振镜模式：仅直线，走 <code>MoveLGalvo</code></li>
+              </ul>
+            </li>
+          </ol>
+
+          <h3>6.3 命令字段映射（MovePath）</h3>
+          <table>
+            <thead>
+              <tr><th>MovePathArg</th><th>直线</th><th>圆弧</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>Shape</code></td><td>0</td><td>1</td></tr>
+              <tr><td><code>P0*</code></td><td>起点</td><td>圆心</td></tr>
+              <tr><td><code>P1*</code></td><td>终点</td><td>起点径向单位向量 U</td></tr>
+              <tr><td><code>P2*</code></td><td>未使用</td><td>起点切向单位向量 V</td></tr>
+              <tr><td><code>Radius / Sweep</code></td><td>—</td><td>半径 / 扫角(rad)</td></tr>
+              <tr><td><code>Length</code></td><td colspan="2"><code>segment.length</code></td></tr>
+              <tr><td><code>Vel</code></td><td colspan="2"><code>min(v_max_local, cfg.maxVel)</code></td></tr>
+              <tr><td><code>TargetVel</code></td><td colspan="2"><code>segment.v_exit</code></td></tr>
+              <tr><td><code>Sync</code></td><td colspan="2">首段 1，后续 0</td></tr>
+            </tbody>
+          </table>
+
+          <div class="info">
+            <strong>v_enter 如何生效？</strong>
+            命令参数没有单独的 CurrentVel 字段。段首速度依赖：
+            1) 首段 Sync=1 时强制从 0 开始；
+            2) 后续段 Sync=0，Ruckig 状态由上一段 <code>pass_to_input()</code> 接力，
+            而上一段的 <code>TargetVel = v_exit</code> 应等于本段期望 <code>v_enter</code>（前瞻已保证相邻 junction 一致）。
+          </div>
+
+          <h3>6.4 振镜模式限制</h3>
+          <pre><code>if (cfg.galvoMode &amp;&amp; containsNonLineSegment(segments)) {
+    // 失败：MoveLGalvo 不能直接执行圆角弧
+}</code></pre>
+          <p>
+            因此振镜模式下若 <code>cornerTol</code> 产生了圆弧，当前会直接报错。
+            需要要么把 cornerTol 设到不产生有效圆角，要么先把圆弧采样成折线，要么实现 <code>MovePathGalvo</code>。
+          </p>
+        </section>
+
+        <!-- ===================== 7 ===================== -->
+        <section id="rt">
+          <h2>7. RT 弧长执行（MovePath）</h2>
+
+          <h3>7.1 为什么用 1D 弧长 Ruckig</h3>
+          <p>
+            几何已经固定，RT 只需规划沿路径前进的标量弧长：
+          </p>
+          <div class="formula">
+            s(t) : 0 → Σ L<sub>i</sub>
+          </div>
+          <p>
+            每个段把目标位置设为累计弧长 <code>arcOffset_</code>，目标速度设为该段
+            <code>TargetVel</code>，速度/加速度/jerk 上限来自命令与共享内存。
+          </p>
+
+          <h3>7.2 段初始化要点</h3>
+          <ul>
+            <li><code>Sync==1</code>：清零 <code>arcOffset_</code> 与 Ruckig 当前 p/v/a。</li>
+            <li>直线：重建线性系数；圆弧：读取 center/U/V/radius/sweep 并单位化 U/V。</li>
+            <li>重新计算 <code>geometryLength_</code>（直线距离或 |r·θ|）。</li>
+            <li>校验命令 Length、Vel、TargetVel 与共享内存 maxAccel/maxJerk。</li>
+            <li><code>arcOffset_ += geometryLength_</code>，作为本段 Ruckig 目标位置。</li>
+          </ul>
+
+          <h3>7.3 周期输出</h3>
+          <div class="formula">
+            geometryS = s − (arcOffset − geometryLength)
+          </div>
+          <div class="formula">
+            u = geometryS / geometryLength &nbsp;（直线 / 圆弧）
+          </div>
+          <div class="formula">
+            p = evaluate(u)，&nbsp;
+            T = p'/|p'|，&nbsp;
+            v<sub>xyz</sub> = v<sub>s</sub> · T
+          </div>
+          <p>
+            位置写入 <code>setAxisPositionCmd</code>，速度写入 <code>setAxisVelocityCmd</code>。
+            注意：后续轴处理链路会用位置差分覆盖速度命令（见前馈文档）。
+          </p>
+
+          <h3>7.4 多项式段的弧长 LUT（预留）</h3>
+          <p>
+            若未来启用 cubic 段，RT 会：
+          </p>
+          <ol>
+            <li>高斯积分求总弧长；</li>
+            <li>建立 u→s 查找表；</li>
+            <li>执行时用 LUT 反查 + 牛顿迭代求 s→u。</li>
+          </ol>
+          <p class="small">
+            直线与圆弧因参数与弧长线性相关，不需要 LUT。
+          </p>
+        </section>
+
+        <!-- ===================== 8 ===================== -->
+        <section id="math">
+          <h2>8. 关键公式汇总</h2>
+
+          <table>
+            <thead>
+              <tr><th>主题</th><th>公式</th><th>代码位置</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>圆角切除长度</td>
+                <td><code>d = min( cornerTol·cosα/(1−cosα), 0.5·min(Lin,Lout) )</code></td>
+                <td><code>buildCornerBlends</code></td>
+              </tr>
+              <tr>
+                <td>圆角半径</td>
+                <td><code>r = d / tan(α)</code></td>
+                <td><code>buildCornerBlends</code></td>
+              </tr>
+              <tr>
+                <td>圆弧位置</td>
+                <td><code>p = C + r(cos(θu)U + sin(θu)V)</code></td>
+                <td><code>evaluateSegment</code></td>
+              </tr>
+              <tr>
+                <td>曲率</td>
+                <td><code>κ = |p'×p''| / |p'|³</code></td>
+                <td><code>segmentCurvature</code></td>
+              </tr>
+              <tr>
+                <td>曲率限速</td>
+                <td><code>v ≤ √(a_max / κ)</code></td>
+                <td><code>calculateLocalVelocityLimit</code></td>
+              </tr>
+              <tr>
+                <td>拐角速度</td>
+                <td><code>v = √(a·tol/(1−cosθ)) · max(0, cosθ)</code></td>
+                <td><code>calculateJunctionVelocityLimit</code></td>
+              </tr>
+              <tr>
+                <td>曲率跳变限速</td>
+                <td><code>v ≤ √(j_max·Δt / Δκ)</code></td>
+                <td><code>calculateJunctionVelocityLimit</code></td>
+              </tr>
+              <tr>
+                <td>S 曲线过渡时间</td>
+                <td>三角：<code>2√(Δv/j)</code>；梯形：<code>2a/j + Δv/a − a/j</code></td>
+                <td><code>transitionTime</code></td>
+              </tr>
+              <tr>
+                <td>过渡距离</td>
+                <td><code>0.5(v0+v1)T</code></td>
+                <td><code>dMinTransition</code></td>
+              </tr>
+              <tr>
+                <td>笛卡尔速度前馈</td>
+                <td><code>v_xyz = vs · T(u)</code></td>
+                <td><code>MovePath::applyOutput</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ===================== 9 ===================== -->
+        <section id="params">
+          <h2>9. 参数与调参</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>作用阶段</th>
+                <th>调大</th>
+                <th>调小</th>
+                <th>注意</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>maxVel</code></td>
+                <td>局部限速 + RT Vel</td>
+                <td>整体更快</td>
+                <td>整体更慢更稳</td>
+                <td>当前也用作默认 feedrate</td>
+              </tr>
+              <tr>
+                <td><code>maxAccel</code></td>
+                <td>曲率限速 / 拐角速度 / S 曲线</td>
+                <td>圆弧与加减速更激进</td>
+                <td>更保守</td>
+                <td>写入共享内存供 RT 使用</td>
+              </tr>
+              <tr>
+                <td><code>maxJerk</code></td>
+                <td>过渡时间 / 曲率跳变</td>
+                <td>速度变化更陡</td>
+                <td>更柔和、总时长更长</td>
+                <td>过小会使短段很难加速</td>
+              </tr>
+              <tr>
+                <td><code>cornerTol</code></td>
+                <td>圆角几何 + junction 公式</td>
+                <td>圆角更大、拐角速度更高</td>
+                <td>更贴近折线、更慢过弯</td>
+                <td>过大可能过度削角</td>
+              </tr>
+              <tr>
+                <td><code>galvoMode</code></td>
+                <td>命令发送路径</td>
+                <td>走平台/振镜分解</td>
+                <td>默认 MovePath</td>
+                <td>当前不支持圆弧段</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>9.1 推荐起步值（示例）</h3>
+          <pre><code>MotionPreprocessor::Config cfg;
+cfg.maxVel    = 100.0;   // mm/s 或工程统一单位
+cfg.maxAccel  = 300.0;
+cfg.maxJerk   = 3000.0;
+cfg.cornerTol = 1.0;
+cfg.galvoMode = false;</code></pre>
+          <p class="small">
+            实际单位需与机床/模型配置保持一致；上表数值来自行为树示例量级，不是通用最优。
+          </p>
+        </section>
+
+        <!-- ===================== 10 ===================== -->
+        <section id="example">
+          <h2>10. 工作示例</h2>
+
+          <h3>10.1 三点折线 + 一个拐角</h3>
+          <pre><code>waypoints = {
+  {0, 0, 0},
+  {100, 0, 0},
+  {100, 80, 0}
+};</code></pre>
+          <p>拟合结果通常类似：</p>
+          <pre><code>Line  : (0,0,0) → 靠近 (100,0,0) 的圆角起点 S
+Arc   : S → E   // 绕过 (100,0,0)，约 90°
+Line  : E → (100,80,0)</code></pre>
+          <p>速度前瞻典型特征：</p>
+          <ul>
+            <li>两直线局部限速 ≈ maxVel；</li>
+            <li>圆弧受 <code>√(a/κ)=√(a·r)</code> 限制；</li>
+            <li>路径起终点速度为 0；</li>
+            <li>圆弧入口/出口速度由 junction + 可达性共同决定，不一定等于圆弧局部限速。</li>
+          </ul>
+
+          <h3>10.2 从代码调用</h3>
+          <pre><code>MotionPreprocessor mp(bridge);
+MotionPreprocessor::Config cfg;
+cfg.maxVel = 100.0;
+cfg.maxAccel = 300.0;
+cfg.maxJerk = 3000.0;
+cfg.cornerTol = 1.0;
+
+bool ok = mp.process(waypoints, /*rx*/0.0, /*ry*/0.0, /*rz*/0.0, cfg);</code></pre>
+
+          <h3>10.3 测试与可视化</h3>
+          <p>
+            <code>test/test_motion_preprocessing.cpp</code> 会：
+          </p>
+          <ul>
+            <li>跑拟合与前瞻断言；</li>
+            <li>可选绘制段轮廓与速度-弧长曲线（依赖 matplotlib-cpp / Python matplotlib）；</li>
+            <li>可用 <code>ZRCS_SKIP_PLOTS=1</code> 跳过绘图。</li>
+          </ul>
+        </section>
+
+        <!-- ===================== 11 ===================== -->
+        <section id="limitations">
+          <h2>11. 限制与已知问题</h2>
+
+          <table>
+            <thead>
+              <tr><th>级别</th><th>问题</th><th>影响</th><th>建议</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tag amber">P1</span></td>
+                <td>拐角速度公式与 GRBL junction deviation 几何模型不同</td>
+                <td>小角度可能偏激进，大角度因 dir_factor 偏保守</td>
+                <td>对照 <code>motion-review.md</code>，评估是否改用 sin(θ/2) 模型</td>
+              </tr>
+              <tr>
+                <td><span class="tag amber">P2</span></td>
+                <td>dir_factor 在 θ≥90° 强制 v=0</td>
+                <td>即使有圆角也可能被过度降速（取决于段切向）</td>
+                <td>圆角路径可考虑只保留曲率限速</td>
+              </tr>
+              <tr>
+                <td><span class="tag amber">P2</span></td>
+                <td>过渡距离用 0.5(v0+v1)T 近似</td>
+                <td>与真实 S 曲线积分略有偏差</td>
+                <td>对多数场景可接受；高精度可改为精确积分</td>
+              </tr>
+              <tr>
+                <td><span class="tag cyan">现状</span></td>
+                <td>cubic 拟合未接入主路径</td>
+                <td>复杂自由曲线不能直接从 waypoints 光滑拟合</td>
+                <td>需要时恢复 B 样条路径或外部曲线输入</td>
+              </tr>
+              <tr>
+                <td><span class="tag cyan">现状</span></td>
+                <td>振镜模式不支持圆弧段</td>
+                <td>galvo + corner blend 失败</td>
+                <td>采样折线或实现 MovePathGalvo</td>
+              </tr>
+              <tr>
+                <td><span class="tag cyan">现状</span></td>
+                <td>速度前馈被轴差分覆盖</td>
+                <td>解析前馈未真正下发</td>
+                <td>见前馈专项文档</td>
+              </tr>
+              <tr>
+                <td><span class="tag cyan">现状</span></td>
+                <td>MovePath 姿态输出注释</td>
+                <td>路径运动只控 XYZ</td>
+                <td>恢复 SLERP 前需处理欧拉奇异与限位</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ===================== 12 ===================== -->
+        <section id="code-map">
+          <h2>12. 代码地图</h2>
+
+          <table>
+            <thead>
+              <tr><th>文件</th><th>关键符号</th><th>职责</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>zrcs_nrt/motion/TrajectoryTypes.h</code></td>
+                <td><code>Point3D</code>, <code>PathMoveBlock</code>, <code>TrajectorySegment</code>, <code>evaluateSegment</code>, <code>segmentCurvature</code></td>
+                <td>数据模型与几何求值</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_nrt/motion/PathPreprocessor.h/.cpp</code></td>
+                <td><code>fitCornerBlendSegments</code>, <code>buildCornerBlends</code>, <code>makeLineSegment</code>, <code>makeArcSegment</code></td>
+                <td>轨迹拟合 / 拐角圆角</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_nrt/motion/VelocityPlanner3D.h/.cpp</code></td>
+                <td><code>planSegments</code>, <code>calculateLocalVelocityLimit</code>, <code>calculateJunctionVelocityLimit</code>, <code>maxReachableVel</code></td>
+                <td>速度前瞻</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_nrt/motion/MotionPreprocessor.h/.cpp</code></td>
+                <td><code>process</code>, <code>sendSegmentsAsMovePath</code>, <code>fillMovePathArgs</code></td>
+                <td>集成与命令发送</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_common/config/CmdDefine.h</code></td>
+                <td><code>MovePathArg</code>, <code>MoveLArg</code>, <code>MoveLGalvoArg</code></td>
+                <td>命令参数协议</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/command/MovePath.h/.cpp</code></td>
+                <td><code>initTrajectory</code>, <code>applyOutput</code>, <code>arcLengthToParameter</code></td>
+                <td>RT 弧长执行</td>
+              </tr>
+              <tr>
+                <td><code>zrcs_rt/system/node/TrajectoryCmd.*</code></td>
+                <td><code>run</code>, <code>updateOverride</code></td>
+                <td>Ruckig 生命周期与倍率</td>
+              </tr>
+              <tr>
+                <td><code>test/test_motion_preprocessing.cpp</code></td>
+                <td>拟合 / 前瞻测试与绘图</td>
+                <td>回归验证</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ===================== 13 ===================== -->
+        <section id="faq">
+          <h2>13. FAQ / 诊断</h2>
+
+          <h3>Q1：为什么没有圆角？</h3>
+          <ul>
+            <li>只有 2 个点：没有内部拐角。</li>
+            <li>夹角过小/接近 180° 折返：被 <code>θ</code> 阈值跳过。</li>
+            <li>相邻边太短：<code>d</code> 被压到 &lt; 1e-6。</li>
+            <li><code>cornerTol</code> 过小。</li>
+          </ul>
+
+          <h3>Q2：为什么拐角速度变成 0？</h3>
+          <ul>
+            <li>相邻段切向夹角 ≥ 90°，dir_factor 归零。</li>
+            <li>终点被配置为 <code>end_vel=0</code>，且靠近终点的段不够长，backward scan 把上游速度一路压下来。</li>
+            <li>曲率很大（小半径圆弧）导致局部限速极低。</li>
+          </ul>
+
+          <h3>Q3：NRT 规划了 v_enter/v_exit，RT 用了吗？</h3>
+          <p>
+            用了 <code>v_exit</code>（作为 <code>TargetVel</code>）和 <code>v_max_local</code>（作为 <code>Vel</code>）。
+            <code>v_enter</code> 通过上一段目标速度 + Ruckig 状态接力间接生效，而不是命令显式字段。
+          </p>
+
+          <h3>Q4：报 <code>MovePath: velocity, acceleration or jerk limit is invalid</code>？</h3>
+          <ul>
+            <li>未调用 <code>setPathMoveConfig</code>，共享内存 a/j 无效。</li>
+            <li>某段 <code>Vel ≤ 0</code> 或非有限数。</li>
+            <li>手动拼命令时漏了 Length/Vel/TargetVel。</li>
+          </ul>
+
+          <h3>Q5：振镜模式为什么失败？</h3>
+          <p>
+            开启圆角后段序列含 <code>CircularArc</code>，而 <code>MoveLGalvo</code> 只接受直线。
+            关闭 galvo，或禁用圆角，或先采样。
+          </p>
+
+          <h3>Q6：如何单独验证拟合/前瞻？</h3>
+          <pre><code># 构建并运行运动预处理测试（按工程构建规范）
+# 可观察断言结果与可选 PNG 图：
+#   motion_preprocessing_segments.png
+#   motion_preprocessing_velocity.png</code></pre>
+        </section>
+
+        <section id="summary-final">
+          <h2>一句话总结</h2>
+          <p>
+            <strong>轨迹拟合</strong>把折线变成“直线 + 拐角圆弧”的可执行几何；
+            <strong>速度前瞻</strong>在这些段上叠加曲率、夹角、jerk 与距离可达约束，算出每段入口/出口速度；
+            <strong>RT MovePath</strong>再用 1D 弧长 Ruckig 把这些边界条件平滑执行成连续笛卡尔运动。
+          </p>
+        </section>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

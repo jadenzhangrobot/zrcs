@@ -1,7 +1,9 @@
 #include "config/CmdDefine.h"
-#include "motion/PathPreprocessor.h"
-#include "motion/MotionPreprocessor.h"
-#include "motion/VelocityPlanner3D.h"
+#include "algorithm/path_planning/PathPreprocessor.h"
+#include "algorithm/path_planning/MotionPlanner.h"
+#include "behavior_tree/nodes/motion/PathMoveSupport.h"
+#include "rtBridge/RtBridge.h"
+#include "algorithm/path_planning/VelocityPlanner3D.h"
 #include "shared_memory/ShmLayout.h"
 
 #include <matplotlibcpp.h>
@@ -178,7 +180,7 @@ template <typename Arg>
 void assert_lookahead_commands(const std::vector<zrcs::Command>& commands,
                                CmdId expected_cmd,
                                const std::vector<Point3D>& waypoints,
-                               const MotionPreprocessor::Config& cfg)
+                               const MotionPlanner::Config& cfg)
 {
     assert(!commands.empty());
 
@@ -220,7 +222,7 @@ void assert_lookahead_commands(const std::vector<zrcs::Command>& commands,
 
 void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
                                const std::vector<Point3D>& waypoints,
-                               const MotionPreprocessor::Config& cfg)
+                               const MotionPlanner::Config& cfg)
 {
     assert(!commands.empty());
 
@@ -278,9 +280,7 @@ void run_motion_preprocessor_queue_test(bool galvo_mode, CmdId expected_cmd)
 {
     auto block = std::make_unique<zrcs::SharedBlock>();
     RtBridge bridge(block.get());
-    MotionPreprocessor preprocessor(&bridge);
-
-    MotionPreprocessor::Config cfg;
+    MotionPlanner::Config cfg;
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
@@ -292,7 +292,7 @@ void run_motion_preprocessor_queue_test(bool galvo_mode, CmdId expected_cmd)
         {4.0, 0.0, 0.0},
     };
 
-    assert(preprocessor.process(waypoints, 0.1, -0.2, 0.3, cfg));
+    assert(zrcs_bt::queuePathFromWaypoints(&bridge, waypoints, 0.1, -0.2, 0.3, cfg));
     assert(is_near(block->pathMoveCfg.maxVel.load(std::memory_order_acquire), cfg.maxVel));
     assert(is_near(block->pathMoveCfg.maxAccel.load(std::memory_order_acquire), cfg.maxAccel));
     assert(is_near(block->pathMoveCfg.maxJerk.load(std::memory_order_acquire), cfg.maxJerk));
@@ -852,9 +852,7 @@ void test_motion_preprocessor_queues_move_path_commands()
 {
     auto block = std::make_unique<zrcs::SharedBlock>();
     RtBridge bridge(block.get());
-    MotionPreprocessor preprocessor(&bridge);
-
-    MotionPreprocessor::Config cfg;
+    MotionPlanner::Config cfg;
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
@@ -868,7 +866,7 @@ void test_motion_preprocessor_queues_move_path_commands()
         {7.0, 3.0, 0.0},
     };
 
-    assert(preprocessor.process(waypoints, 0.1, -0.2, 0.3, cfg));
+    assert(zrcs_bt::queuePathFromWaypoints(&bridge, waypoints, 0.1, -0.2, 0.3, cfg));
     assert(is_near(block->pathMoveCfg.maxVel.load(std::memory_order_acquire), cfg.maxVel));
     assert(is_near(block->pathMoveCfg.maxAccel.load(std::memory_order_acquire), cfg.maxAccel));
     assert(is_near(block->pathMoveCfg.maxJerk.load(std::memory_order_acquire), cfg.maxJerk));

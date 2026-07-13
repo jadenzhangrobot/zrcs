@@ -36,7 +36,14 @@
       "Bash(python3 -c \"import mujoco; print\\(mujoco.__version__\\)\")",
       "Bash(python -c \"import mujoco; print\\(mujoco.__version__\\)\")",
       "Bash(rm -f \"E:/zrcs-dev/build/bin/mj_check.exe\" /tmp/mj_check.exe /tmp/mj_check.c /tmp/libmujoco.dll *)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "mcp__codegraph__codegraph_files",
+      "Bash(rg -n \"cycletime\" \"e:/zrcs-dev\" --glob '!3rdParty/**' --glob '!build/**' -g'*.h' -g'*.cpp' -g'*.hpp')",
+      "Bash(cat)",
+      "Bash(python /tmp/patch_test_cmake.py)",
+      "Bash(cmake --build \"E:/zrcs-dev/build\" --target help)",
+      "Bash(# Also check if IDE might be building a different target *)",
+      "Read(//c/Users/64989/AppData/Roaming/Code/logs/**)"
     ],
     "additionalDirectories": [
       "\\tmp"

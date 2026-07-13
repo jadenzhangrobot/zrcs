@@ -34,7 +34,14 @@ target_include_directories(test_axis_direction PRIVATE
 )
 target_link_libraries(test_axis_direction PRIVATE atomic)
 
-add_executable(test_motion_preprocessing test_motion_preprocessing.cpp)
+add_executable(test_motion_preprocessing
+    test_motion_preprocessing.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/PathPreprocessor.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/VelocityPlanner3D.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/MotionPlanner.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/behavior_tree/nodes/motion/PathMoveSupport.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/rtBridge/RtBridge.cpp
+)
 target_include_directories(test_motion_preprocessing PRIVATE
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt
     ${DEVEL_INCLUDE_DIRS}/3rdParty/magic_enum/include
@@ -43,6 +50,7 @@ target_compile_definitions(test_motion_preprocessing PRIVATE WITHOUT_NUMPY)
 target_link_libraries(test_motion_preprocessing PRIVATE
     matplotlib_cpp::matplotlib_cpp
     spdlog::spdlog
+    zrcscommon
 )
 
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）

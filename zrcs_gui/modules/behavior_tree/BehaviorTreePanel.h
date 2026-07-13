@@ -37,6 +37,11 @@ public:
     void loadFromXML(const QString &xmlText);
     QString saveToXML() const;
 
+    /// 当前工程程序目录：config/<project>/program（行为树 XML 与 NC 约定位置）
+    static QString defaultProgramDirectory();
+    /// 打开/保存对话框的起始目录：优先记忆路径，失效则回落到 program/
+    static QString dialogStartDirectory(const QString &settingsKey);
+
 public slots:
     void onNewTree();
     void onLoadTree();

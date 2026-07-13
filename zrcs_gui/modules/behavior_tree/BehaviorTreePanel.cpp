@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QCoreApplication>
 
 #include <nodes/Node>
 #include <nodes/NodeData>
@@ -222,11 +223,100 @@ void BehaviorTreePanel::onNewTree()
     clearUndoStacks();
 }
 
+QString BehaviorTreePanel::defaultProgramDirectory()
+{
+    // 从可执行文件目录与当前工作目录向上查找 config/project.txt，
+    // 解析当前工程名后返回 config/<project>/program。
+    QStringList seeds;
+    seeds << QCoreApplication::applicationDirPath()
+          << QDir::currentPath();
+
+    QString projectRoot;
+    for (const QString &seed : seeds) {
+        QDir dir(seed);
+        for (int i = 0; i < 8; ++i) {
+            const QString candidate = dir.filePath(QStringLiteral("config/project.txt"));
+            if (QFileInfo::exists(candidate)) {
+                projectRoot = dir.absolutePath();
+                break;
+            }
+            if (!dir.cdUp()) {
+                break;
+            }
+        }
+        if (!projectRoot.isEmpty()) {
+            break;
+        }
+    }
+
+    if (projectRoot.isEmpty()) {
+        return QDir::currentPath();
+    }
+
+    QFile projectFile(QDir(projectRoot).filePath(QStringLiteral("config/project.txt")));
+    QString projectName;
+    if (projectFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        projectName = QString::fromUtf8(projectFile.readLine()).trimmed();
+    }
+
+    if (projectName.isEmpty()) {
+        return QDir(projectRoot).filePath(QStringLiteral("config"));
+    }
+
+    const QString programDir =
+        QDir(projectRoot).filePath(QStringLiteral("config/%1/program").arg(projectName));
+    if (QDir(programDir).exists()) {
+        return QDir(programDir).absolutePath();
+    }
+
+    // 兼容尚未建 program/ 的工程：退回工程配置根
+    const QString projectDir =
+        QDir(projectRoot).filePath(QStringLiteral("config/%1").arg(projectName));
+    if (QDir(projectDir).exists()) {
+        return QDir(projectDir).absolutePath();
+    }
+    return QDir(projectRoot).filePath(QStringLiteral("config"));
+}
+
+QString BehaviorTreePanel::dialogStartDirectory(const QString &settingsKey)
+{
+    QSettings settings;
+    const QString remembered = settings.value(settingsKey).toString();
+    const QString programDir = defaultProgramDirectory();
+
+    if (remembered.isEmpty()) {
+        return programDir;
+    }
+
+    const QDir rememberedDir(remembered);
+    if (!rememberedDir.exists()) {
+        return programDir;
+    }
+
+    const QString abs = QDir::cleanPath(rememberedDir.absolutePath());
+    // 忽略过于笼统的旧默认（家目录 / cwd），强制回到工程 program/
+    if (abs == QDir::cleanPath(QDir::homePath()) ||
+        abs == QDir::cleanPath(QDir::currentPath())) {
+        return programDir;
+    }
+
+    // 旧布局：config/<proj>/motion.xml → 目录记忆在 config/<proj>
+    // 若存在同级 program/，自动切过去
+    if (QFileInfo(abs).fileName() != QStringLiteral("program")) {
+        const QString siblingProgram = QDir(abs).filePath(QStringLiteral("program"));
+        if (QDir(siblingProgram).exists()) {
+            return QDir(siblingProgram).absolutePath();
+        }
+    }
+
+    return abs;
+}
+
 void BehaviorTreePanel::onLoadTree()
 {
     QSettings settings;
-    QString directory_path = settings.value("BehaviorTreePanel.lastLoadDirectory",
-                                             QDir::homePath()).toString();
+    QString directory_path = dialogStartDirectory(
+        QStringLiteral("BehaviorTreePanel.lastLoadDirectory"));
 
     QString fileName = QFileDialog::getOpenFileName(this, tr("从文件加载行为树"),
                                                      directory_path,
@@ -264,15 +354,15 @@ void BehaviorTreePanel::onSaveTree()
     }
 
     QSettings settings;
-    QString directory_path = settings.value("BehaviorTreePanel.lastSaveDirectory",
-                                             QDir::currentPath()).toString();
+    QString directory_path = dialogStartDirectory(
+        QStringLiteral("BehaviorTreePanel.lastSaveDirectory"));
 
-    auto fileName = QFileDialog::getSaveFileName(this, "保存行为树到文件",
+    auto fileName = QFileDialog::getSaveFileName(this, tr("保存行为树到文件"),
                                                   directory_path,
-                                                  "行为树文件 (*.xml)");
+                                                  tr("行为树文件 (*.xml)"));
     if (fileName.isEmpty()) return;
-    if (!fileName.endsWith(".xml")) {
-        fileName += ".xml";
+    if (!fileName.endsWith(QStringLiteral(".xml"))) {
+        fileName += QStringLiteral(".xml");
     }
 
     QString xml_text = saveToXML();
