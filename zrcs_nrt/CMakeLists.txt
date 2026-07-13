@@ -10,6 +10,18 @@ include_directories(
 
 set(SOURCES
     main.cpp
+    command/CommandDispatcher.cpp
+    command/RtBridge.cpp
+    log/NrtLogger.cpp
+    log/RtLogConsumer.cpp
+    statusPublisher/StatusPublisher.cpp
+    zmq_server/ZmqServer.cpp
+    behaviorTree/BtSharedState.cpp
+    behaviorTree/BehaviorTreeRunner.cpp
+    behaviorTree/BtCommandNodes.cpp
+    motion/MotionPreprocessor.cpp
+    motion/PathPreprocessor.cpp
+    motion/VelocityPlanner3D.cpp
     dynamicsIdentification/MujocoIdentifyWorker.cpp
 )
 
