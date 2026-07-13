@@ -81,10 +81,9 @@ private:
     double axisVelCmd_ = 0;
     double lastAxisVelCmd_ = 0;
     double axisTorCmd_ = 0;
-    MC_AXIS_STATES axisState_ = MC_AXIS_STATES::mcStandstill;
+    MC_AXIS_STATES axisState_ = MC_AXIS_STATES::mcDisabled;
     MC_ERROR_CODE axisError_ = MC_ERRORCODE_GOOD;
 
-    bool powerOn_ = false;
     bool powerStatus_ = false;
     bool reset_ = false;
     bool enablePositive_ = true;

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTCP 功能文档 — zrcs</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel2: #1e222b;
+    --border: #2a2f3a;
+    --fg: #d7dbe3;
+    --muted: #8b93a3;
+    --accent: #4ea1ff;
+    --accent2: #7ee787;
+    --warn: #ffb454;
+    --code-bg: #11141a;
+    --mono: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 24px 80px; }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 8px;
+  }
+  header h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: .5px; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  header .tag {
+    display: inline-block; margin-top: 12px; padding: 3px 10px;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 12px; font-family: var(--mono); font-size: 12px; color: var(--accent2);
+  }
+  h2 {
+    margin: 44px 0 14px; font-size: 21px; padding-left: 12px;
+    border-left: 3px solid var(--accent);
+  }
+  h3 { margin: 28px 0 10px; font-size: 16px; color: var(--accent); }
+  p { margin: 10px 0; }
+  code {
+    font-family: var(--mono); font-size: 13px;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    border: 1px solid var(--border); color: #e6c07b;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 13px; line-height: 1.55;
+  }
+  pre code { background: none; border: none; padding: 0; color: var(--fg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 16px 0; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .card p { margin: 0; color: var(--muted); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--panel2); color: var(--fg); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .flow {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; margin: 16px 0;
+    font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--muted);
+    overflow-x: auto;
+  }
+  .flow b { color: var(--accent2); }
+  .note {
+    background: rgba(78,161,255,.08); border-left: 3px solid var(--accent);
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px;
+  }
+  .warn {
+    background: rgba(255,180,84,.08); border-left: 3px solid var(--warn);
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px;
+  }
+  .file { color: var(--accent); font-family: var(--mono); font-size: 12px; }
+  ul, ol { margin: 10px 0; padding-left: 24px; }
+  li { margin: 5px 0; }
+  .kbd { color: var(--accent2); font-family: var(--mono); }
+  .muted { color: var(--muted); }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+  .eq { font-family: var(--mono); background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; display: inline-block; margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>RTCP 刀具中心点保持</h1>
+  <div class="sub">XYZAC 五轴（table-table / TRT）RTCP 演示功能 — 本次 git 修改说明</div>
+  <span class="tag">ShmVersion 15 · CmdId Rtcp=18</span>
+</header>
+
+<h2>1. 这是什么</h2>
+<p>
+RTCP（Rotational Tool Center Point，刀具中心点保持）让刀尖在旋转轴 A/C 转动时始终停留在同一个工件坐标点上。
+本次改动为 XYZAC 五轴机床新增了一条一次性 RT 指令 <code>Rtcp</code>：开启后锁定当前刀尖对应的工件点，
+然后自动演示一段 A/C 摆动轨迹，每个周期用运动学反算把刀尖拉回锁定点，实现 XYZ 同步补偿。
+</p>
+
+<div class="grid">
+  <div class="card">
+    <h4>运动学模型</h4>
+    <p>新增轻量 TRT 运动学 <span class="file">MachineToolXyzac</span>，无需继承 RobotModel。</p>
+  </div>
+  <div class="card">
+    <h4>RT 指令</h4>
+    <p>新增 <span class="file">Rtcp</span> 命令节点，用 Ruckig 规划 A/C 轨迹并逐周期补偿 XYZ。</p>
+  </div>
+  <div class="card">
+    <h4>共享内存</h4>
+    <p>新增 <code>RtcpCtrl</code> 状态块，NRT/RT 通过原子变量交换锁定点与开关。</p>
+  </div>
+  <div class="card">
+    <h4>GUI 入口</h4>
+    <p>点动面板新增「RTCP 演示」勾选框，下发 <code>Rtcp</code> 命令。</p>
+  </div>
+</div>
+
+<h2>2. 在加工中的作用</h2>
+<p>
+五轴加工里,旋转轴(A/C)的作用是调整刀具相对工件的<strong>姿态</strong>(法向对刀、避免干涉、侧刃切削)。
+但旋转轴的回转中心(pivot)通常并不在刀尖上——转台一转,刀尖就会绕着回转中心画出一段圆弧,离开原来的切削点。
+</p>
+
+<div class="grid">
+  <div class="card">
+    <h4>没有 RTCP</h4>
+    <p>程序里 A/C 一变,刀尖位置随之偏移,必须由 CAM 后处理把每个点的 XYZ 都算进去。换刀长、改姿态就得重新后处理。</p>
+  </div>
+  <div class="card">
+    <h4>开启 RTCP</h4>
+    <p>数控系统实时补偿:程序只需给出刀尖在工件上的目标点 + 刀轴姿态,XYZ 由控制器自动跟随,刀尖始终贴着编程点。</p>
+  </div>
+</div>
+
+<p>具体价值:</p>
+<ul>
+  <li><strong>编程解耦</strong> — CAM 按刀尖轨迹(工件坐标)编程,与机床结构、刀长无关。同一程序换机床/换刀只改参数,不重新后处理。</li>
+  <li><strong>手动示教/对刀友好</strong> — 摇动 A/C 找姿态时刀尖不跑位,便于贴合曲面、找法向。本次的演示指令正是展示这一点:锁定刀尖后摆动 A/C,刀尖钉在原地。</li>
+  <li><strong>精度</strong> — 补偿在插补周期内完成,回转误差不累积到工件轮廓;刀长变化只改一个参数。</li>
+  <li><strong>表面质量</strong> — 姿态平滑变化时刀尖轨迹连续,避免因回转导致的过切/欠切。</li>
+</ul>
+
+<h2>3. RTCP 数学原理</h2>
+<p>
+RTCP 的核心是一个约束:<strong>无论旋转轴怎么转,刀尖在工件坐标系里的点 <code>p_work</code> 保持不变</strong>。
+控制器每个周期做的,就是解一个逆运动学——已知 <code>p_work</code> 和当前旋转角,反求平动轴 XYZ。
+</p>
+
+<h3>3.1 通用形式</h3>
+<p>
+设刀尖在机床世界坐标系(machine base)的位置为 <code>tip_world</code>,平动轴贡献 <code>d(X,Y,Z)</code>,
+旋转轴把工件坐标系变换到世界坐标系的位姿为 <code>T_wc(θ)</code>(θ 为旋转轴角度)。刀尖同时属于"刀侧"和"工件侧",于是有一致性约束:
+</p>
+<div class="eq">tip_world = f_tool(X, Y, Z) &nbsp;=&nbsp; T_wc(θ) · p_work</div>
+<p>
+左边是刀具链(平动轴 → 刀尖),右边是工件链(旋转轴 → 工件上的锁定点)。RTCP 就是在 <code>p_work</code> 与 θ 已知时解出左边的 XYZ:
+</p>
+<div class="eq">(X, Y, Z) = f_tool⁻¹ ( T_wc(θ) · p_work )</div>
+
+<h3>3.2 三类结构</h3>
+<table>
+  <tr><th>结构</th><th>旋转轴在</th><th>说明</th></tr>
+  <tr><td>Head-Head (RRT)</td><td>刀侧(主轴摆头)</td><td>回转让刀尖摆动,补偿量含摆长(pivot 到刀尖距离)</td></tr>
+  <tr><td>Table-Table (TRT)</td><td>工件侧(双转台)</td><td>回转让<em>工件</em>动,刀尖不动;补偿是把编程点随台面变换回来 —— <strong>本机型</strong></td></tr>
+  <tr><td>Head-Table</td><td>各一个</td><td>混合,刀侧摆 + 台侧转</td></tr>
+</table>
+<p>本项目是 XYZAC 双转台(TRT):A 绕 X、C 绕 Z,均作用于工件台,主轴垂直不摆。</p>
+
+<h3>3.3 本机型推导(XYZAC / TRT)</h3>
+<p>工件坐标系到世界坐标系的位姿由旋转轴链串联而成(右乘顺序即从工件侧往世界侧读):</p>
+<div class="eq">T_wc(A, C) = Trans(pivot) · RotX(A) · Trans(tableOffset) · RotZ(C)</div>
+<p>其中各 4×4 齐次矩阵为:</p>
+<pre><code>          ⎡1        ⎤          ⎡1              ⎤          ⎡cosC −sinC     ⎤
+RotX(A) = ⎢  cA −sA ⎥  RotZ(C)=⎢  cosC −sinC   ⎥→（绕Z）⎢sinC  cosC     ⎥
+          ⎢  sA  cA ⎥          ⎢  sinC  cosC   ⎥          ⎢          1    ⎥
+          ⎣        1⎦          ⎣            1  ⎦          ⎣            1  ⎦
+                        （cA=cosA, sA=sinA；RotX 绕 X 轴）
+
+Trans(t) = I₄ 的第 4 列置 (tx, ty, tz, 1)</code></pre>
+
+<p><b>正解</b>:锁定点经台面变换得到刀尖世界坐标,再由垂直主轴几何得到关节 XYZ(Z 正方向朝下):</p>
+<pre><code>tip_world  = T_wc(A,C) · [p_work; 1]        // workToWorld
+X = tip_world.x
+Y = tip_world.y
+Z = toolTipZ0 − tip_world.z                 // zPositiveDown 反解</code></pre>
+
+<p><b>锁定(取 p_work)</b>:开启 RTCP 那一刻,用当前关节值反推工件点并存下来:</p>
+<pre><code>tip0     = ( X₀, Y₀, toolTipZ0 − Z₀ )        // toolTipWorld(当前 XYZ)
+p_work   = T_wc(A₀, C₀)⁻¹ · [tip0; 1]        // worldToWork</code></pre>
+<p>
+之后无论 A/C 怎么动,<code>p_work</code> 不变,每周期用 <code>rtcpXyz(p_work, A, C)</code> 重算 XYZ,即完成补偿。
+代码对应 <span class="file">MachineToolXyzac::tablePose / workToWorld / worldToWork / rtcpXyz</span>。
+</p>
+
+<div class="note">
+<strong>直觉</strong>:TRT 结构下"刀尖不动、工件在转"。把工件想成一张贴着锁定点的转台,台子绕 A/C 转了,
+控制器就反向把平动轴 XYZ 挪一挪,让垂直主轴的刀尖重新对准转过去的那个点 —— 相对工件看,刀尖纹丝不动。
+</div>
+
+<h3>3.4 行程约束</h3>
+<p>
+补偿量受平动轴行程限制。A 倾角越大,刀尖绕 pivot 画的弧越大,需要的 Z 补偿越多。
+本演示把 A 软限位在约 ±25°(<code>softMax = 0.45 rad</code>),保证反算出的 Z 落在 <code>[0, 0.40]</code> 行程内,针尖接触约在 <code>z = 0.16</code>。
+实际加工中,若姿态需求超出行程或触发奇异(如 A 接近 ±90° 时 C 方向不定),需要在 CAM 侧规划或做奇异规避。
+</p>
+
+<h2>4. 坐标与运动学模型</h2>
+<p>
+模型定义在 <span class="file">zrcs_rt/model/MachineToolXyzac.h / .cpp</span>，几何与 <span class="file">config/5axis/mujoco/robot.xml</span> 保持一致。单位为米 / 弧度。
+</p>
+
+<h3>刀尖正解（垂直主轴）</h3>
+<p>Z 轴正方向朝下（CNC 风格，<code>zPositiveDown = true</code>），对应 MuJoCo 中 <code>axis 0 0 -1</code>：</p>
+<div class="eq">tip_world = ( X, Y, toolTipZ0 − Z )</div>
+
+<h3>工作台位姿（table pose）</h3>
+<p>工件坐标系 → 机床世界坐标系的齐次变换，A 绕 X 转、C 绕 Z 转：</p>
+<div class="eq">T(a, c) = Trans(pivot) · RotX(A) · Trans(tableOffset) · RotZ(C)</div>
+<p>
+其中 <code>pivot = (0, 0, 0.38)</code> 为 A 轴摆动中心，<code>tableOffset = (0, 0, 0.05)</code> 为 pivot 到转台面中心的偏移，
+<code>toolTipZ0 = 0.70</code> 为 Z=0 时刀尖世界高度。
+</p>
+
+<h3>RTCP 反解</h3>
+<p>锁定的工件点 <code>p_work</code> 加上目标 A/C，反算需要的机床 XYZ 指令：</p>
+<pre><code>rtcpXyz(p_work, a, c) :
+    tip_world = T(a, c) · p_work        // workToWorld
+    X = tip_world.x
+    Y = tip_world.y
+    Z = toolTipZ0 − tip_world.z         // worldTipToXyz (zPositiveDown)</code></pre>
+
+<table>
+  <tr><th>方法</th><th>作用</th></tr>
+  <tr><td><code>tablePose(a, c)</code></td><td>返回工作台 4×4 齐次位姿矩阵</td></tr>
+  <tr><td><code>workToWorld(pWork, a, c)</code></td><td>工件点 → 世界坐标</td></tr>
+  <tr><td><code>worldToWork(pWorld, a, c)</code></td><td>世界坐标 → 工件点（锁定时用，取 <code>T⁻¹</code>）</td></tr>
+  <tr><td><code>toolTipWorld(x, y, z)</code></td><td>关节 XYZ → 刀尖世界坐标</td></tr>
+  <tr><td><code>worldTipToXyz(tip, x, y, z)</code></td><td>刀尖世界坐标 → 关节 XYZ（反解）</td></tr>
+  <tr><td><code>rtcpXyz(pWork, a, c, x, y, z)</code></td><td>RTCP 主入口：锁定点 + A/C → 机床 XYZ</td></tr>
+</table>
+
+<h2>5. Rtcp 指令</h2>
+<p>定义在 <span class="file">zrcs_rt/command/Rtcp.h / .cpp</span>，注册为 <code>CMD_REGISTER(Rtcp)</code>，CmdId = 18。</p>
+
+<h3>参数（RtcpArg）</h3>
+<table>
+  <tr><th>索引</th><th>参数</th><th>含义</th></tr>
+  <tr><td><code>0</code></td><td><code>Enable</code></td><td>1 = 锁定当前刀尖并开始演示；0 = 关闭（立即返回 SUCCESS）</td></tr>
+  <tr><td><code>1</code></td><td><code>ToolLength</code></td><td>预留刀长（m），写入 <code>rtcpCtrl.toolLength</code></td></tr>
+</table>
+
+<h3>执行流程</h3>
+<div class="flow">
+<b>init()</b> &nbsp;→ 复位 locked_ / active_ / wpIndex_<br>
+<b>run()</b> 首帧 &nbsp;→ lockWorkPoint()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;读取 A0/C0 与当前 XYZ &nbsp;→ toolTipWorld &nbsp;→ worldToWork &nbsp;→ 得到 p_work<br>
+&nbsp;&nbsp;&nbsp;&nbsp;写入 shm.rtcpCtrl（pWork / lockValid=true / enabled=true）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;buildDemoWaypoints() &nbsp;→ 生成 6 个 A/C 航点<br>
+<b>run()</b> 每周期 &nbsp;→ otg_.update() 规划 A/C &nbsp;→ setAxisPositionCmd(A,C)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;applyRtcpXyz(a, c) &nbsp;→ rtcpXyz 反算 &nbsp;→ setAxisPositionCmd(X,Y,Z)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;段完成 → 切下一航点；6 段跑完 → 关闭并 <b>SUCCESS</b><br>
+<b>exit()</b> &nbsp;→ enabled=false, lockValid=false, 复位状态
+</div>
+
+<h3>演示航点</h3>
+<p>
+<code>buildDemoWaypoints()</code> 生成 6 段 A/C 动作，A 倾角经 <code>clampA</code> 软限位在约 <span class="kbd">±25°</span>（softMax=0.45 rad），
+避免大倾角把针尖甩出 Z 行程 <code>[0, 0.40]</code>。C 从起点依次转到 +60° / +120° / 180° / +240° / +300°，最后一段 A/C 回到起点。
+每段用 <code>setupSegment()</code> 配置 Ruckig 的速度/加速度/jerk（演示用中等速度，便于观察球面跟踪）。
+</p>
+
+<div class="note">
+Rtcp 是<strong>一次性演示</strong>指令：开启后自动跑完 6 段就关闭并返回 SUCCESS。它不是持续跟随外部 A/C 输入的常驻 RTCP 模式。
+</div>
+
+<h2>6. 共享内存 RtcpCtrl</h2>
+<p>
+<span class="file">zrcs_common/shared_memory/ShmLayout.h</span> 新增 <code>RtcpCtrl</code> 块，
+<code>kShmVersion</code> 由 14 升到 <strong>15</strong>（ABI 变更，NRT 与 RT 必须同版本重编）。
+</p>
+<pre><code>struct alignas(64) RtcpCtrl {
+    std::atomic&lt;bool&gt;   enabled{false};   // 是否补偿
+    std::atomic&lt;bool&gt;   lockValid{false}; // 锁定点是否有效
+    std::atomic&lt;double&gt; toolLength{0.0};  // m，预留
+    std::atomic&lt;double&gt; pWorkX{0.0};      // 锁定工件点
+    std::atomic&lt;double&gt; pWorkY{0.0};
+    std::atomic&lt;double&gt; pWorkZ{0.0};
+};</code></pre>
+<div class="warn">
+ShmVersion 已从 14 升到 15。升级后务必重新编译并重启 NRT 与 RT，否则会因 magic/version 校验失败而拒绝挂载共享内存。
+</div>
+
+<h2>7. NRT / GUI 链路</h2>
+
+<h3>命令派发</h3>
+<p>
+<span class="file">zrcs_nrt/command/CommandDispatcher.h</span> 保留 <code>SYS_RTCP_ENABLE</code> 作为别名，
+内部透传为运动命令 <code>Rtcp</code>（走 cmdQueue）。<code>args[0]</code> = 1 开启 / 0 关闭。
+</p>
+
+<h3>RtBridge 接口</h3>
+<p><span class="file">zrcs_nrt/command/RtBridge.h</span> 新增 RTCP 的 setter/getter（直接读写共享内存原子量）：</p>
+<table>
+  <tr><th>方法</th><th>作用</th></tr>
+  <tr><td><code>setRtcpEnabled(bool)</code></td><td>写 <code>rtcpCtrl.enabled</code></td></tr>
+  <tr><td><code>rtcpEnabled()</code></td><td>读 <code>rtcpCtrl.enabled</code></td></tr>
+  <tr><td><code>setRtcpToolLength(double)</code></td><td>写 <code>rtcpCtrl.toolLength</code>（m）</td></tr>
+  <tr><td><code>rtcpToolLength()</code></td><td>读 <code>rtcpCtrl.toolLength</code></td></tr>
+</table>
+
+<h3>GUI 入口</h3>
+<p>
+<span class="file">zrcs_gui/components/JogAndIOPanel.cpp</span> 在点动面板代码内新增「RTCP 演示」勾选框（不改 .ui），
+勾选变化发出 <code>rtcpToggled(bool)</code> 信号。<span class="file">zrcs_gui/core/MainWindow.cpp</span> 的
+<code>onRtcpToggled()</code> 据此下发 <code>sendMotionCommand("Rtcp", {enabled?1:0, 0})</code>。
+</p>
+
+<h2>8. Controller 变更</h2>
+<p>
+<span class="file">zrcs_rt/controller/Controller.h/.cpp</span> 把 <code>bindSharedBlock()</code> 从头文件内联挪到 cpp，
+并新增成员 <code>sharedBlock_</code>（注释：RTCP 等周期补偿用），同时把 block 透传给 <code>hardwareBus_</code>。
+</p>
+
+<h2>9. 涉及文件一览</h2>
+<table>
+  <tr><th>文件</th><th>变更</th></tr>
+  <tr><td><span class="file">zrcs_rt/model/MachineToolXyzac.h/.cpp</span></td><td>新增 · TRT 运动学模型</td></tr>
+  <tr><td><span class="file">zrcs_rt/command/Rtcp.h/.cpp</span></td><td>新增 · Rtcp 演示指令</td></tr>
+  <tr><td><span class="file">zrcs_common/config/CmdDefine.h</span></td><td>新增 CmdId::Rtcp=18、RtcpArg、命令表 X(Rtcp, RtcpArg)</td></tr>
+  <tr><td><span class="file">zrcs_common/shared_memory/ShmLayout.h</span></td><td>新增 RtcpCtrl；ShmVersion 14→15</td></tr>
+  <tr><td><span class="file">zrcs_rt/command/CmdHead.h</span></td><td>include Rtcp.h</td></tr>
+  <tr><td><span class="file">zrcs_rt/command/ContinuousJog.h/.cpp</span></td><td>格式整理（含头文件顺序、构造函数排版）</td></tr>
+  <tr><td><span class="file">zrcs_rt/controller/Controller.h/.cpp</span></td><td>bindSharedBlock 移到 cpp；新增 sharedBlock_</td></tr>
+  <tr><td><span class="file">zrcs_nrt/command/CommandDispatcher.h</span></td><td>SYS_RTCP_ENABLE 透传为 Rtcp 命令</td></tr>
+  <tr><td><span class="file">zrcs_nrt/command/RtBridge.h</span></td><td>新增 RTCP setter/getter</td></tr>
+  <tr><td><span class="file">zrcs_gui/components/JogAndIOPanel.cpp</span></td><td>新增 RTCP 演示勾选框</td></tr>
+  <tr><td><span class="file">zrcs_gui/core/MainWindow.h/.cpp</span></td><td>rtcpToggled 信号 + onRtcpToggled 槽</td></tr>
+  <tr><td><span class="file">config/5axis/axis.xml · robot.xml</span></td><td>Z 轴方向注释 · 5 轴模型几何</td></tr>
+</table>
+
+<footer>
+  zrcs · RTCP 功能文档 · 生成于 2026-07-12 · 基于当前 git 工作区改动整理
+</footer>
+
+</div>
+</body>
+</html>

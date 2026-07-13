@@ -137,8 +137,10 @@ public:
             OutputOffset[i].resize(OutputPdoCount);
             InputOffset[i].resize(InputPdoCount);
         }
-        domain_output_reg_.resize(all_output_pdo_count_);
-        domain_input_reg_.resize(all_input_pdo_count_);
+        // IgH expects each PDO registration list to end with a zeroed entry.
+        // assign() also clears stale data if a master is created again.
+        domain_output_reg_.assign(all_output_pdo_count_ + 1, {});
+        domain_input_reg_.assign(all_input_pdo_count_ + 1, {});
 
         master_ = ecrt_request_master(0);
         if (master_ == nullptr) {
