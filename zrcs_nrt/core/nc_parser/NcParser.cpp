@@ -1,4 +1,4 @@
-#include "algorithm/path_planning/NcParser.h"
+#include "core/nc_parser/NcParser.h"
 
 #include <algorithm>
 #include <cctype>

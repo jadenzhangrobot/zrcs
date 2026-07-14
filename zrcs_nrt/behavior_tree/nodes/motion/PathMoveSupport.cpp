@@ -1,5 +1,6 @@
 #include "behavior_tree/nodes/motion/PathMoveSupport.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -47,6 +48,16 @@ QuaternionArgs rpyToQuaternion(double rx, double ry, double rz)
     return q;
 }
 
+QuaternionArgs lerpRpyToQuaternion(double rx0, double ry0, double rz0,
+                                   double rx1, double ry1, double rz1,
+                                   double t)
+{
+    t = std::clamp(t, 0.0, 1.0);
+    return rpyToQuaternion(rx0 + (rx1 - rx0) * t,
+                           ry0 + (ry1 - ry0) * t,
+                           rz0 + (rz1 - rz0) * t);
+}
+
 double segmentVelocityLimit(const TrajectorySegment& segment, double fallback)
 {
     double limit = segment.v_max_local > 0.0 ? segment.v_max_local : segment.feedrate_limit;
@@ -58,7 +69,8 @@ double segmentVelocityLimit(const TrajectorySegment& segment, double fallback)
 
 void fillMovePathArgs(std::array<double, zrcs::kCmdArgsMax>& args,
                       const TrajectorySegment& segment,
-                      const QuaternionArgs& quat,
+                      const QuaternionArgs& qStart,
+                      const QuaternionArgs& qEnd,
                       double maxVel,
                       double sync)
 {
@@ -86,14 +98,14 @@ void fillMovePathArgs(std::array<double, zrcs::kCmdArgsMax>& args,
         args[static_cast<size_t>(MovePathArg::P1Y)] = end.y;
         args[static_cast<size_t>(MovePathArg::P1Z)] = end.z;
     }
-    args[static_cast<size_t>(MovePathArg::QStartW)] = quat.w;
-    args[static_cast<size_t>(MovePathArg::QStartX)] = quat.x;
-    args[static_cast<size_t>(MovePathArg::QStartY)] = quat.y;
-    args[static_cast<size_t>(MovePathArg::QStartZ)] = quat.z;
-    args[static_cast<size_t>(MovePathArg::QEndW)] = quat.w;
-    args[static_cast<size_t>(MovePathArg::QEndX)] = quat.x;
-    args[static_cast<size_t>(MovePathArg::QEndY)] = quat.y;
-    args[static_cast<size_t>(MovePathArg::QEndZ)] = quat.z;
+    args[static_cast<size_t>(MovePathArg::QStartW)] = qStart.w;
+    args[static_cast<size_t>(MovePathArg::QStartX)] = qStart.x;
+    args[static_cast<size_t>(MovePathArg::QStartY)] = qStart.y;
+    args[static_cast<size_t>(MovePathArg::QStartZ)] = qStart.z;
+    args[static_cast<size_t>(MovePathArg::QEndW)] = qEnd.w;
+    args[static_cast<size_t>(MovePathArg::QEndX)] = qEnd.x;
+    args[static_cast<size_t>(MovePathArg::QEndY)] = qEnd.y;
+    args[static_cast<size_t>(MovePathArg::QEndZ)] = qEnd.z;
     args[static_cast<size_t>(MovePathArg::Length)] = segment.length;
     args[static_cast<size_t>(MovePathArg::Vel)] = maxVel;
     args[static_cast<size_t>(MovePathArg::TargetVel)] = segment.v_exit;
@@ -115,16 +127,35 @@ bool sendSegmentsAsMovePath(RtBridge* bridge,
                             double rx,
                             double ry,
                             double rz,
+                            double endRx,
+                            double endRy,
+                            double endRz,
                             const MotionPlanner::Config& cfg)
 {
-    const QuaternionArgs quat = rpyToQuaternion(rx, ry, rz);
     const size_t argCount = static_cast<size_t>(MovePathArg::Sync) + 1;
 
+    double totalLength = 0.0;
+    for (const auto& segment : segments) {
+        totalLength += segment.length;
+    }
+    if (totalLength < 1e-12) {
+        spdlog::error("[PathMove] total path length is zero");
+        return false;
+    }
+
+    double arcBefore = 0.0;
     for (size_t i = 0; i < segments.size(); ++i) {
         const auto& segment = segments[i];
+        const double t0 = arcBefore / totalLength;
+        const double t1 = (arcBefore + segment.length) / totalLength;
+        const QuaternionArgs qStart =
+            lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t0);
+        const QuaternionArgs qEnd =
+            lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t1);
+
         std::array<double, zrcs::kCmdArgsMax> args{};
         const double maxVel = segmentVelocityLimit(segment, cfg.maxVel);
-        fillMovePathArgs(args, segment, quat, maxVel, (i == 0) ? 1.0 : 0.0);
+        fillMovePathArgs(args, segment, qStart, qEnd, maxVel, (i == 0) ? 1.0 : 0.0);
 
         if (!argsAreFinite(args, argCount)) {
             spdlog::error("[PathMove] Non-finite MovePath args at segment {}/{}",
@@ -139,6 +170,7 @@ bool sendSegmentsAsMovePath(RtBridge* bridge,
                           i + 1, segments.size());
             return false;
         }
+        arcBefore += segment.length;
     }
     return true;
 }
@@ -150,6 +182,9 @@ bool queuePlannedSegments(RtBridge* bridge,
                           double rx,
                           double ry,
                           double rz,
+                          double endRx,
+                          double endRy,
+                          double endRz,
                           const MotionPlanner::Config& cfg)
 {
     if (!bridge) {
@@ -157,7 +192,7 @@ bool queuePlannedSegments(RtBridge* bridge,
         return false;
     }
     bridge->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
-    return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, cfg);
+    return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, endRx, endRy, endRz, cfg);
 }
 
 bool queuePathFromWaypoints(RtBridge* bridge,
@@ -165,6 +200,9 @@ bool queuePathFromWaypoints(RtBridge* bridge,
                             double rx,
                             double ry,
                             double rz,
+                            double endRx,
+                            double endRy,
+                            double endRz,
                             const MotionPlanner::Config& cfg)
 {
     if (!bridge) {
@@ -180,7 +218,7 @@ bool queuePathFromWaypoints(RtBridge* bridge,
         return false;
     }
 
-    if (!queuePlannedSegments(bridge, segments, rx, ry, rz, cfg)) {
+    if (!queuePlannedSegments(bridge, segments, rx, ry, rz, endRx, endRy, endRz, cfg)) {
         return false;
     }
 

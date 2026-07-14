@@ -70,11 +70,11 @@
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_NcPath">
         <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/demo_rect.nc" waypoints="{path_pts}"/>
+            <Action ID="NcParse" filePath="config/5axis/program/demo_butterfly.nc" waypoints="{path_pts}"/>
             <Action ID="PathMove" waypoints="{path_pts}"
                     rx="0.0" ry="0.0" rz="0.0"
                     endRx="0.5" endRy="0.0" endRz="1.57"
-                    maxVel="0.15" maxAccel="0.8" maxJerk="8.0" cornerTol="0.003"/>
+                    maxVel="0.12" maxAccel="0.8" maxJerk="8.0" cornerTol="0.004"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->

@@ -4,7 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "algorithm/path_planning/NcParser.h"
+#include "core/nc_parser/NcParser.h"
 #include "algorithm/path_planning/TrajectoryTypes.h"
 #include "config/ProjectConfig.h"
 

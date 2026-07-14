@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @file NcParser.h
- * @brief NC/G-code → 路径点序列（纯算法）。
+ * @brief NC/G-code → 路径点序列。
  *
  * 词法/句法：3rdParty/gpr（parse_gcode）
  * 语义：本文件将 G0/G1/G2/G3 解释为 waypoints（mm）

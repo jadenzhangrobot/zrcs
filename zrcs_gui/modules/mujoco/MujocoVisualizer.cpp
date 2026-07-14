@@ -42,14 +42,15 @@ struct MujocoVisualizer3D::Impl {
     bool sceneReady = false;
     bool renderContextReady = false;
     QVector<JointBinding> bindings;
-    int toolTipGeomId = -1;
+    // 刀尖绑定：优先 site "tool_tip"，否则 geom "tool_tip" / "tool_tip_vis"
+    int toolTipObjType = -1; // mjOBJ_SITE 或 mjOBJ_GEOM
+    int toolTipObjId = -1;
     QVector<std::array<mjtNum, 3>> toolTrail;
     bool toolTrailVisible = true; ///< 采样 + 绘制开关
     static constexpr int kMaxTrailPoints = 20000;
     static constexpr int kMaxRenderedTrailSegments = 2500;
     static constexpr mjtNum kMinTrailDistance = 0.0005;
-    static constexpr mjtNum kTrailDisplayZ = 0.121;
-    static constexpr mjtNum kTrailRadius = 0.0005;
+    static constexpr mjtNum kTrailRadius = 0.0012;
 
     Impl()
     {
@@ -85,7 +86,8 @@ struct MujocoVisualizer3D::Impl {
             model = nullptr;
         }
         bindings.clear();
-        toolTipGeomId = -1;
+        toolTipObjType = -1;
+        toolTipObjId = -1;
         toolTrail.clear();
     }
 
@@ -94,14 +96,69 @@ struct MujocoVisualizer3D::Impl {
         return model && data && sceneReady && renderContextReady;
     }
 
+    bool resolveToolTip()
+    {
+        toolTipObjType = -1;
+        toolTipObjId = -1;
+        if (!model) {
+            return false;
+        }
+        // 5axis 等模型用 site "tool_tip"；旧模型可能是 geom
+        int id = mj_name2id(model, mjOBJ_SITE, "tool_tip");
+        if (id >= 0) {
+            toolTipObjType = mjOBJ_SITE;
+            toolTipObjId = id;
+            return true;
+        }
+        id = mj_name2id(model, mjOBJ_GEOM, "tool_tip");
+        if (id >= 0) {
+            toolTipObjType = mjOBJ_GEOM;
+            toolTipObjId = id;
+            return true;
+        }
+        id = mj_name2id(model, mjOBJ_GEOM, "tool_tip_vis");
+        if (id >= 0) {
+            toolTipObjType = mjOBJ_GEOM;
+            toolTipObjId = id;
+            return true;
+        }
+        return false;
+    }
+
+    bool readToolTipWorldPos(mjtNum out[3]) const
+    {
+        if (!model || !data || toolTipObjId < 0) {
+            return false;
+        }
+        if (toolTipObjType == mjOBJ_SITE) {
+            const mjtNum *p = data->site_xpos + 3 * toolTipObjId;
+            out[0] = p[0];
+            out[1] = p[1];
+            out[2] = p[2];
+            return true;
+        }
+        if (toolTipObjType == mjOBJ_GEOM) {
+            const mjtNum *p = data->geom_xpos + 3 * toolTipObjId;
+            out[0] = p[0];
+            out[1] = p[1];
+            out[2] = p[2];
+            return true;
+        }
+        return false;
+    }
+
     void appendToolTipSample()
     {
-        if (!toolTrailVisible || !model || !data || toolTipGeomId < 0) {
+        if (!toolTrailVisible || !model || !data || toolTipObjId < 0) {
             return;
         }
 
-        const mjtNum *p = data->geom_xpos + 3 * toolTipGeomId;
-        std::array<mjtNum, 3> point{p[0], p[1], kTrailDisplayZ};
+        mjtNum p[3] = {0, 0, 0};
+        if (!readToolTipWorldPos(p)) {
+            return;
+        }
+        // 使用刀尖真实世界坐标（含 Z），便于 5 轴 / 立体路径观察
+        std::array<mjtNum, 3> point{p[0], p[1], p[2]};
         if (!toolTrail.isEmpty()) {
             const auto &last = toolTrail.back();
             const mjtNum dx = point[0] - last[0];
@@ -270,11 +327,12 @@ void MujocoVisualizer3D::reloadModel()
             throw std::runtime_error("No axis.xml servo maps to mujoco.xml servo.");
         }
 
-        impl_->toolTipGeomId = mj_name2id(impl_->model, mjOBJ_GEOM, "tool_tip");
+        const bool hasTip = impl_->resolveToolTip();
 
         mj_forward(impl_->model, impl_->data);
         impl_->appendToolTipSample();
-        mjv_makeScene(impl_->model, &impl_->scene, 3500);
+        // maxgeom 需容纳机床几何 + 轨迹线段
+        mjv_makeScene(impl_->model, &impl_->scene, 5000);
         impl_->sceneReady = true;
         impl_->scene.flags[mjRND_SHADOW] = 1;
         impl_->scene.flags[mjRND_REFLECTION] = 1;
@@ -284,7 +342,9 @@ void MujocoVisualizer3D::reloadModel()
         impl_->renderContextReady = true;
 
         resetView();
-        impl_->message = QStringLiteral("MuJoCo model loaded.");
+        impl_->message = hasTip
+            ? QStringLiteral("MuJoCo model loaded.")
+            : QStringLiteral("MuJoCo loaded, but no tool tip (site/geom 'tool_tip').");
         setAxisPositions(impl_->latestAxisPositions);
     } catch (const std::exception &e) {
         impl_->message = QString::fromStdString(e.what());
@@ -376,10 +436,17 @@ void MujocoVisualizer3D::paintGL()
         mjr_render(viewport, &impl_->scene, &impl_->context);
 
         const std::string left = "MuJoCo";
-        const std::string right =
+        std::string right =
             "axes " + std::to_string(impl_->latestAxisPositions.size()) +
             " / joints " + std::to_string(impl_->bindings.size()) +
             " / trail " + std::to_string(impl_->toolTrail.size());
+        if (impl_->toolTipObjId < 0) {
+            right += " / tip: none";
+        } else if (impl_->toolTipObjType == mjOBJ_SITE) {
+            right += " / tip: site";
+        } else {
+            right += " / tip: geom";
+        }
         mjr_overlay(mjFONT_NORMAL,
                     mjGRID_TOPLEFT,
                     viewport,
@@ -530,11 +597,11 @@ void MujocoPanel::setupUI()
     btn3D->setText(QStringLiteral("Free"));
     btnResetView->setText(QStringLiteral("Reset"));
     btnReload->setText(QStringLiteral("Reload"));
-    btnShowTrail->setText(QStringLiteral("Tool Path"));
+    btnShowTrail->setText(QStringLiteral("刀尖轨迹"));
     btnShowTrail->setCheckable(true);
     btnShowTrail->setChecked(mujocoView->isToolTrailVisible());
-    btnShowTrail->setToolTip(QStringLiteral("显示/隐藏刀末端轨迹"));
-    btnClearTrail->setText(QStringLiteral("Clear Path"));
+    btnShowTrail->setToolTip(QStringLiteral("显示/隐藏刀尖轨迹（site/geom tool_tip）"));
+    btnClearTrail->setText(QStringLiteral("清空轨迹"));
 
     btn2D->setProperty("kind", "accent");
     btn3D->setProperty("kind", "accentBlue");

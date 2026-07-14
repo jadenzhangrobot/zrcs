@@ -53,9 +53,12 @@ BT::PortsList PathMoveNode::providedPorts()
 {
     return {
         BT::InputPort<std::vector<Point3D>>("waypoints", "Path points from NcParse (mm)"),
-        BT::InputPort<double>("rx", 0.0, "Constant orientation RX (rad)"),
-        BT::InputPort<double>("ry", 0.0, "Constant orientation RY (rad)"),
-        BT::InputPort<double>("rz", 0.0, "Constant orientation RZ (rad)"),
+        BT::InputPort<double>("rx", 0.0, "Start RX / A (rad)"),
+        BT::InputPort<double>("ry", 0.0, "Start RY (rad)"),
+        BT::InputPort<double>("rz", 0.0, "Start RZ / C (rad)"),
+        BT::InputPort<double>("endRx", 0.0, "End RX / A (rad)"),
+        BT::InputPort<double>("endRy", 0.0, "End RY (rad)"),
+        BT::InputPort<double>("endRz", 0.0, "End RZ / C (rad)"),
         BT::InputPort<double>("maxVel", 100.0, "Max path velocity (mm/s)"),
         BT::InputPort<double>("maxAccel", 300.0, "Max path acceleration (mm/s^2)"),
         BT::InputPort<double>("maxJerk", 3000.0, "Max path jerk (mm/s^3)"),
@@ -77,9 +80,14 @@ BT::NodeStatus PathMoveNode::tick()
     const double rx = getInput<double>("rx").value_or(0.0);
     const double ry = getInput<double>("ry").value_or(0.0);
     const double rz = getInput<double>("rz").value_or(0.0);
+    // 未给 end* 时默认保持起点姿态（常量姿态）
+    const double endRx = getInput<double>("endRx").value_or(rx);
+    const double endRy = getInput<double>("endRy").value_or(ry);
+    const double endRz = getInput<double>("endRz").value_or(rz);
     const MotionPlanner::Config cfg = configFromPorts(*this, defaultPathConfig());
 
-    if (!queuePathFromWaypoints(sharedState_->bridge, *waypointsOpt, rx, ry, rz, cfg)) {
+    if (!queuePathFromWaypoints(sharedState_->bridge, *waypointsOpt,
+                                rx, ry, rz, endRx, endRy, endRz, cfg)) {
         sharedState_->setCurrentNode(name(), "failed to queue path move");
         return BT::NodeStatus::FAILURE;
     }

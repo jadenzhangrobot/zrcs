@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZRCS 路径规划流水线（path_planning）</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6470;
+      --line: #d7dee8;
+      --soft: #edf2f7;
+      --code: #0f1724;
+      --blue: #1f5aa6;
+      --green: #176b4d;
+      --red: #a43232;
+      --amber: #8a5b13;
+      --violet: #5b4a98;
+      --cyan: #0f6c7a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.72 "Segoe UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 18px 40px;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+    nav h2 { margin: 0 0 6px; font-size: 18px; line-height: 1.3; }
+    nav .nav-meta { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+    nav ol { margin: 0; padding-left: 18px; }
+    nav li { margin: 7px 0; color: var(--muted); font-size: 13.5px; }
+    nav a { color: #31425a; }
+    main { max-width: 1180px; padding: 34px 42px 80px; }
+    header.hero {
+      background: linear-gradient(135deg, #173a63, #1f5aa6 55%, #2a7abf);
+      color: #fff;
+      border-radius: 18px;
+      padding: 28px 30px;
+      box-shadow: 0 12px 30px rgba(23, 58, 99, 0.18);
+      margin-bottom: 28px;
+    }
+    header.hero h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0.2px; }
+    header.hero p { margin: 0; opacity: 0.92; max-width: 70ch; }
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12.5px;
+    }
+    section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px 24px 18px;
+      margin: 0 0 18px;
+      box-shadow: 0 1px 0 rgba(16,24,40,0.02);
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      border-left: 4px solid var(--blue);
+      padding-left: 10px;
+    }
+    h3 { margin: 18px 0 8px; font-size: 16px; color: #243447; }
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 12px; padding-left: 22px; }
+    li { margin: 4px 0; }
+    code, .mono {
+      font-family: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+      font-size: 0.92em;
+    }
+    pre {
+      background: var(--code);
+      color: #e8eef7;
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow: auto;
+      font: 12.5px/1.55 Consolas, "Cascadia Mono", Menlo, monospace;
+      margin: 10px 0 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--soft); font-weight: 600; }
+    .note {
+      background: #f3f8ff;
+      border: 1px solid #c9ddf5;
+      border-left: 4px solid var(--blue);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 10px 0 14px;
+      color: #243b55;
+    }
+    .warn {
+      background: #fff8eb;
+      border: 1px solid #f0d7a0;
+      border-left: 4px solid var(--amber);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 10px 0 14px;
+    }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .step {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .step .n {
+      display: inline-block;
+      width: 24px; height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+    .step h4 { margin: 8px 0 6px; font-size: 14.5px; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; }
+    .file { color: var(--cyan); }
+    .tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #e8f0fb;
+      color: var(--blue);
+      margin-right: 4px;
+    }
+    .tag.g { background: #e5f5ee; color: var(--green); }
+    .tag.a { background: #fff3db; color: var(--amber); }
+    .tag.v { background: #eee9fb; color: var(--violet); }
+    .diagram {
+      background: #0f1724;
+      color: #d7e3f4;
+      border-radius: 12px;
+      padding: 16px 18px;
+      overflow: auto;
+      font: 12.5px/1.55 Consolas, "Cascadia Mono", Menlo, monospace;
+      white-space: pre;
+      margin: 10px 0 14px;
+    }
+    footer {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      main { padding: 20px 16px 48px; }
+      .pipeline { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <h2>路径规划流水线</h2>
+    <p class="nav-meta">zrcs_nrt/algorithm/path_planning</p>
+    <ol>
+      <li><a href="#overview">1. 总览</a></li>
+      <li><a href="#pipeline">2. 四步流水线</a></li>
+      <li><a href="#data">3. 数据模型</a></li>
+      <li><a href="#simplify">4. ① 路径简化</a></li>
+      <li><a href="#corner">5. ② 拐角处理</a></li>
+      <li><a href="#merge">6. ③ 短段合并</a></li>
+      <li><a href="#lookahead">7. ④ 速度前瞻</a></li>
+      <li><a href="#geometry">8. 几何工具</a></li>
+      <li><a href="#api">9. 对外 API</a></li>
+      <li><a href="#params">10. 关键建议</a></li>
+      <li><a href="#files">11. 文件地图</a></li>
+      <li><a href="#flow">12. 调用链</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>ZRCS 路径规划流水线文档</h1>
+      <p>
+        本文档描述 <span class="mono">zrcs_nrt/algorithm/path_planning</span> 模块：
+        如何把 waypoints / NC 折线变成「几何段 + 速度前瞻结果」，供行为树与 RT 路径运动使用。
+      </p>
+      <div class="meta-row">
+        <span class="chip">减点 → 拐角 → 短段合并 → 前瞻</span>
+        <span class="chip">对齐 LinuxCNC G64 P/Q 思路</span>
+        <span class="chip">纯算法，无 RT/ZMQ 依赖</span>
+      </div>
+    </header>
+
+    <section id="overview">
+      <h2>1. 总览</h2>
+      <p>
+        路径规划模块解决的核心问题：CAM/NC 输出的密折线不能直接高速连续切削——
+        微段过多、假拐角多、真拐角又需要容差过渡，且必须在动力学约束下规划速度。
+      </p>
+      <p>模块边界：</p>
+      <ul>
+        <li><strong>输入</strong>：<code>std::vector&lt;Point3D&gt;</code> 或 <code>PathMoveBlock[]</code>（通常由 <code>core/nc_parser/NcParser</code> 产出）</li>
+        <li><strong>输出</strong>：<code>TrajectorySegment[]</code>（Line/Arc 几何 + <code>v_enter/v_exit</code> 等）</li>
+        <li><strong>下游</strong>：<code>PathMoveSupport</code> 转成 RT <code>MovePath</code> 命令</li>
+        <li><strong>不做</strong>：G 代码词法解析、实时插补、Ruckig OTG（在 RT 侧）</li>
+      </ul>
+      <div class="note">
+        单位约定（5axis 配置下）：位置 mm，速度 mm/s，姿态 rad。
+        容差参数与路径单位一致。
+      </div>
+    </section>
+
+    <section id="pipeline">
+      <h2>2. 四步流水线</h2>
+      <div class="pipeline">
+        <div class="step">
+          <div><span class="n">1</span><span class="tag">G64 Q</span></div>
+          <h4>路径简化</h4>
+          <p><code>PathSimplifier</code><br>共线折叠，去掉假拐角密点</p>
+        </div>
+        <div class="step">
+          <div><span class="n">2</span><span class="tag g">G64 P</span></div>
+          <h4>拐角处理</h4>
+          <p><code>CornerBlender</code><br>真拐角圆弧过渡</p>
+        </div>
+        <div class="step">
+          <div><span class="n">3</span><span class="tag a">清理</span></div>
+          <h4>短段合并</h4>
+          <p><code>ShortSegmentMerger</code><br>合并过短/近共线残段</p>
+        </div>
+        <div class="step">
+          <div><span class="n">4</span><span class="tag v">前瞻</span></div>
+          <h4>速度前瞻</h4>
+          <p><code>LookAheadPlanner</code><br>接点限速 + 双向扫描</p>
+        </div>
+      </div>
+
+      <div class="diagram">waypoints / PathMoveBlock[]
+        │
+        ▼
+┌───────────────────┐
+│ ① PathSimplifier  │  collapseCollinearWaypoints
+│    共线折叠减点    │  （弦高 ≤ collinearTol，进给一致）
+└─────────┬─────────┘
+          ▼
+┌───────────────────┐
+│ ② CornerBlender   │  fitCornerBlendSegments
+│    角点圆弧过渡    │  （路径偏差 ≤ cornerTol）
+└─────────┬─────────┘
+          ▼
+┌───────────────────┐
+│ ③ ShortSegment    │  merge → mergeShortLineSegments
+│    Merger 短段合并 │  （minSegLen / 近共线）
+└─────────┬─────────┘
+          ▼
+┌───────────────────┐
+│ ④ LookAheadPlanner│  planSegments
+│    速度前瞻        │  v_max / v_enter / v_exit / duration
+└─────────┬─────────┘
+          ▼
+   TrajectorySegment[]  →  PathMoveSupport → RT MovePath</div>
+    </section>
+
+    <section id="data">
+      <h2>3. 数据模型</h2>
+      <p>定义于 <span class="file">TrajectoryTypes.h</span>。</p>
+
+      <h3>3.1 输入：PathMoveBlock</h3>
+      <table>
+        <tr><th>字段</th><th>含义</th></tr>
+        <tr><td><code>block_id</code></td><td>源块编号，便于回溯</td></tr>
+        <tr><td><code>start / end</code></td><td>直线起终点</td></tr>
+        <tr><td><code>rx, ry, rz</code></td><td>姿态（当前整段常数）</td></tr>
+        <tr><td><code>feedrate</code></td><td>编程进给；≤0 时用全局 maxVel</td></tr>
+      </table>
+
+      <h3>3.2 输出：TrajectorySegment</h3>
+      <table>
+        <tr><th>类别</th><th>字段</th><th>含义</th></tr>
+        <tr><td rowspan="2">标识</td><td><code>segment_id</code></td><td>段序号</td></tr>
+        <tr><td><code>source_block_id</code></td><td>来源 block_id</td></tr>
+        <tr><td rowspan="3">几何</td><td><code>type</code></td><td><code>Line</code> 或 <code>CircularArc</code></td></tr>
+        <tr><td><code>coeff[6][4]</code></td><td>轴多项式 c0+c1·u+c2·u²+c3·u³；直线 c2=c3=0</td></tr>
+        <tr><td><code>arc_*</code></td><td>圆弧圆心/基向量/半径/扫角</td></tr>
+        <tr><td rowspan="4">速度</td><td><code>feedrate_limit</code></td><td>编程进给上限</td></tr>
+        <tr><td><code>v_max_local</code></td><td>段内允许最大速度</td></tr>
+        <tr><td><code>v_enter / v_exit</code></td><td>入口/出口速度</td></tr>
+        <tr><td><code>duration</code></td><td>估计时长</td></tr>
+      </table>
+
+      <h3>3.3 参数域</h3>
+      <p>
+        段几何用参数 <code>u ∈ [0,1]</code> 求值。
+        <code>evaluateSegment</code> / <code>segmentTangent</code> / <code>segmentCurvature</code>
+        均定义在 Types 头文件中。
+      </p>
+    </section>
+
+    <section id="simplify">
+      <h2>4. ① 路径简化 — PathSimplifier</h2>
+      <p><span class="file">PathSimplifier.h / .cpp</span></p>
+      <p>
+        对应 LinuxCNC <strong>Naive CAM Detector（G64 Q）</strong>：
+        折叠近共线中间点，减少 CAM 密化微段。
+      </p>
+
+      <h3>算法：collapseCollinearWaypoints</h3>
+      <ol>
+        <li>维护 anchor（已确认保留的链起点）</li>
+        <li>对每个候选中间点 i，检查 <code>[anchor+1 .. i]</code> 到弦 <code>[anchor, i+1]</code> 的垂距是否都 ≤ <code>collinearTol</code></li>
+        <li>且相邻进给足够接近（相对误差 ≤ 1e-9 量级）</li>
+        <li>满足则丢弃中间点；否则在 i 处断链并输出</li>
+      </ol>
+      <div class="diagram">原始:  A · b · c · d · E · F
+          垂距(b,c,d 到 AE) ≤ Q 且进给一致
+折叠后: A ──────── E · F</div>
+      <div class="warn">
+        <strong>注意：</strong>本步<strong>不按段长剔除</strong>。
+        再短的段，只要方向拐了或进给变了，都会留下。
+        短段处理在第 ③ 步合并。
+      </div>
+
+      <h3>算法：mergeShortLineSegments</h3>
+      <p>段级贪心合并（也被 ShortSegmentMerger 调用）：</p>
+      <ul>
+        <li>只合并直线，圆弧打断合并链</li>
+        <li>必须首尾相接</li>
+        <li>近共线：<code>cosθ &gt; 0.999</code>（约 &lt;2.5°）</li>
+        <li>或过短强制：当前长 &lt; <code>minSegLen</code> 且 <code>cosθ &gt; 0.98</code></li>
+        <li>非 shortMerge 时还要满足弦高 ≤ <code>collinearTol</code></li>
+        <li>进给取 min；最后滤掉 length ≤ 1e-9 的数值零长段</li>
+      </ul>
+    </section>
+
+    <section id="corner">
+      <h2>5. ② 拐角处理 — CornerBlender</h2>
+      <p><span class="file">CornerBlender.h / .cpp</span></p>
+      <p>
+        对应 <strong>G64 P</strong>：在真拐角插入与两侧直线相切的圆弧，
+        使路径偏离原角点不超过 <code>cornerTol</code>。
+      </p>
+
+      <h3>几何关系</h3>
+      <div class="diagram">入边方向 vIn，出边方向 vOut，转角 θ = angle(vIn, vOut)
+半角 α = θ/2
+
+截断距 d：从角点沿入/出边回退距离
+半径   R = d / tan(α)
+路径偏差 δ 与 d 的关系：
+  d = δ · cos(α) / (1 - cos(α))   （δ = cornerTol）
+
+实际 d = min(d_tol, d_max)
+  d_max = 0.5*min(lIn,lOut) - minRemain
+  保证两侧至少留下 minSegLen 直线</div>
+
+      <h3>跳过圆角的情况</h3>
+      <ul>
+        <li>近共线（θ 很小）或近折返（θ 接近 π）</li>
+        <li>入/出弦过短：<code>min(lIn,lOut) &lt; minChordForBlend</code>（默认 4×minSegLen）</li>
+        <li>算得 d 过小或半径/法向退化</li>
+      </ul>
+
+      <h3>输出结构</h3>
+      <p>
+        对每段边输出「截断后的直线」；在启用圆角的角点后插入 <code>CircularArc</code>。
+        圆角进给取相邻两段进给的 min。
+      </p>
+    </section>
+
+    <section id="merge">
+      <h2>6. ③ 短段合并 — ShortSegmentMerger</h2>
+      <p><span class="file">ShortSegmentMerger.h / .cpp</span></p>
+      <p>
+        圆角后可能留下过短直线残段。本阶段调用
+        <code>PathSimplifier::mergeShortLineSegments</code>，并重编号 <code>segment_id</code>。
+      </p>
+      <div class="note">
+        名字刻意不用 “Smoother”：这里不是样条/G2 连续平滑，而是<strong>几何清理</strong>。
+        真正“平滑感”主要来自第 ② 步的圆弧过渡。
+      </div>
+    </section>
+
+    <section id="lookahead">
+      <h2>7. ④ 速度前瞻 — LookAheadPlanner</h2>
+      <p><span class="file">LookAheadPlanner.h / .cpp</span></p>
+
+      <h3>步骤</h3>
+      <ol>
+        <li><strong>段内上限</strong>：<code>v_max = min(全局, 进给, √(a/κ))</code></li>
+        <li><strong>接点几何限速</strong>：拐角容差模型 + 曲率跳变 jerk 限制</li>
+        <li><strong>反向扫描</strong>：保证能减速到后续接点</li>
+        <li><strong>正向扫描</strong>：保证能从入口加速到后续接点</li>
+        <li>写回 <code>v_enter / v_exit / duration</code></li>
+      </ol>
+
+      <h3>拐角限速模型</h3>
+<pre>// 切向夹角 θ，路径容差 cornerTol
+v_corner ≈ sqrt( maxAccel * cornerTol / (1 - cosθ) )
+v      *= max(0, cosθ)   // 大折角/反向更慢
+
+// 曲率跳变：Δa ≈ v²·Δκ ≤ jerk * Δt
+v_curv = sqrt( (jerk*Δt) / Δκ )
+limit  = min(v_corner, v_curv, maxVel)</pre>
+
+      <h3>速度切换距离</h3>
+      <p>
+        使用简化 S 曲线：在 jerk 与加速度约束下计算 <code>transitionTime(v0,v1)</code>，
+        最短距离 <code>dMin = 0.5*(v0+v1)*T</code>。
+        双向扫描用二分求「在段长内可达的最大速度」。
+      </p>
+      <div class="note">
+        控制周期默认 <code>ZRCS_CYCLE_TIME_MS=10</code>（CMake 可注入），
+        用于曲率跳变的最小时间窗。
+      </div>
+    </section>
+
+    <section id="geometry">
+      <h2>8. 几何工具 — TrajectoryGeometry</h2>
+      <p><span class="file">TrajectoryGeometry.h / .cpp</span></p>
+      <table>
+        <tr><th>API</th><th>作用</th></tr>
+        <tr><td><code>pointLineDistance</code></td><td>点到直线垂距（弦高）</td></tr>
+        <tr><td><code>mergeFeedrate</code></td><td>进给取 min</td></tr>
+        <tr><td><code>makeLineSegment</code></td><td>直线段工厂（coeff + 姿态常数）</td></tr>
+        <tr><td><code>makeArcSegment</code></td><td>圆弧段工厂</td></tr>
+        <tr><td><code>finalizeGeometry</code></td><td>填 length / max_curvature</td></tr>
+        <tr><td><code>CornerBlendGeom</code></td><td>圆角几何中间结构</td></tr>
+      </table>
+    </section>
+
+    <section id="api">
+      <h2>9. 对外 API — MotionPlanner</h2>
+      <p><span class="file">MotionPlanner.h / .cpp</span> 是唯一推荐入口。</p>
+
+      <h3>buildGeometry（仅几何 ①–③）</h3>
+<pre>static std::vector&lt;TrajectorySegment&gt; buildGeometry(
+    const std::vector&lt;PathMoveBlock&gt;&amp; blocks,
+    double cornerTol,
+    double collinearTol = -1.0,  // &lt;=0 → cornerTol
+    double minSegLen = -1.0);    // &lt;=0 → 3*cornerTol</pre>
+
+      <h3>plan（几何 + 前瞻）</h3>
+<pre>bool plan(const std::vector&lt;Point3D&gt;&amp; waypoints,
+          double rx, double ry, double rz,
+          const Config&amp; cfg,
+          std::vector&lt;TrajectorySegment&gt;&amp; segments,
+          std::string* error = nullptr);</pre>
+
+      <h3>Config 字段</h3>
+      <table>
+        <tr><th>字段</th><th>默认</th><th>含义</th></tr>
+        <tr><td><code>maxVel</code></td><td>10</td><td>全局最大速度</td></tr>
+        <tr><td><code>maxAccel</code></td><td>20</td><td>最大加速度</td></tr>
+        <tr><td><code>maxJerk</code></td><td>30</td><td>最大 jerk</td></tr>
+        <tr><td><code>cornerTol</code></td><td>0.5</td><td>拐角路径容差；默认共线容差同源</td></tr>
+        <tr><td><code>startVel / endVel</code></td><td>0</td><td>路径起终速度</td></tr>
+        <tr><td><code>collinearTol</code></td><td>-1</td><td>≤0 时 = cornerTol</td></tr>
+        <tr><td><code>minSegLen</code></td><td>-1</td><td>≤0 时 = 3×cornerTol</td></tr>
+      </table>
+    </section>
+
+    <section id="params">
+      <h2>10. 参数建议</h2>
+      <table>
+        <tr><th>场景</th><th>cornerTol</th><th>说明</th></tr>
+        <tr><td>精加工</td><td>较小（如 0.01–0.1 mm）</td><td>贴形，速度更保守</td></tr>
+        <tr><td>粗加工</td><td>较大（如 0.2–1 mm）</td><td>更圆滑、更快</td></tr>
+        <tr><td>密化自由曲线</td><td>配合显式 minSegLen</td><td>默认 3×cornerTol 可能大于弦长，导致不做圆角</td></tr>
+      </table>
+      <div class="warn">
+        <strong>蝴蝶线类路径：</strong>若 <code>cornerTol=0.25</code> 且用默认
+        <code>minSegLen=0.75</code>，则 <code>minChordForBlend=3.0</code>，
+        弦长短于此值时全部跳过圆角。测试中需显式传入合适的 <code>minSegLen</code>。
+      </div>
+      <p>
+        <code>minSegLen</code> 应明显大于「控制周期 × 典型进给」：
+        周期 10 ms、进给 150 mm/s 时一周期约 1.5 mm，微段远小于此会拖垮 OTG。
+      </p>
+    </section>
+
+    <section id="files">
+      <h2>11. 文件地图</h2>
+      <table>
+        <tr><th>文件</th><th>角色</th></tr>
+        <tr><td class="file">TrajectoryTypes.h</td><td>公共类型 + 点运算 + 段求值</td></tr>
+        <tr><td class="file">TrajectoryGeometry.*</td><td>弦高、进给合并、Line/Arc 工厂</td></tr>
+        <tr><td class="file">PathSimplifier.*</td><td>① 共线折叠 + 段合并实现</td></tr>
+        <tr><td class="file">CornerBlender.*</td><td>② 角点圆弧过渡</td></tr>
+        <tr><td class="file">ShortSegmentMerger.*</td><td>③ 短段合并门面</td></tr>
+        <tr><td class="file">LookAheadPlanner.*</td><td>④ 速度前瞻</td></tr>
+        <tr><td class="file">MotionPlanner.*</td><td>编排入口</td></tr>
+      </table>
+      <p>相关但不在本目录：</p>
+      <ul>
+        <li><code>core/nc_parser/NcParser</code> — G 代码 → waypoints</li>
+        <li><code>behavior_tree/nodes/motion/PathMove*</code> — 规划结果发往 RT</li>
+      </ul>
+    </section>
+
+    <section id="flow">
+      <h2>12. 调用链（运行时）</h2>
+      <div class="diagram">NcParseNode
+  └─ NcParser::parseFile  →  waypoints
+PathMoveNode
+  └─ PathMoveSupport::queuePathFromWaypoints
+       └─ MotionPlanner::plan
+            ├─ buildGeometry
+            │    ├─ PathSimplifier::collapseCollinearWaypoints
+            │    ├─ CornerBlender::fitCornerBlendSegments
+            │    │    └─ TrajectoryGeometry::makeLine/ArcSegment
+            │    └─ ShortSegmentMerger::merge
+            │         └─ PathSimplifier::mergeShortLineSegments
+            └─ LookAheadPlanner::planSegments
+       └─ 逐段发送 MovePath（Line / CircularArc）</div>
+      <p>
+        更细的速度前瞻数学也可参考同目录文档
+        <a href="./velocity-lookahead-trajectory-fitting.html">velocity-lookahead-trajectory-fitting.html</a>。
+      </p>
+    </section>
+
+    <footer>
+      生成自 zrcs 源码目录 <span class="mono">zrcs_nrt/algorithm/path_planning</span>。
+      与实现同步维护；若接口变更请同步更新本文档。
+    </footer>
+  </main>
+</div>
+</body>
+</html>

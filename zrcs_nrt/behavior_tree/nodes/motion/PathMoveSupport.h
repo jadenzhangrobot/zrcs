@@ -17,11 +17,15 @@ class RtBridge;
 namespace zrcs_bt {
 
 /// 规划 waypoints 并下发 MovePath。
+/// 姿态沿路径弧长从 (rx,ry,rz) 插到 (endRx,endRy,endRz)。
 bool queuePathFromWaypoints(RtBridge* bridge,
                             const std::vector<Point3D>& waypoints,
                             double rx,
                             double ry,
                             double rz,
+                            double endRx,
+                            double endRy,
+                            double endRz,
                             const MotionPlanner::Config& cfg);
 
 /// 仅下发已规划段为 MovePath。
@@ -30,6 +34,9 @@ bool queuePlannedSegments(RtBridge* bridge,
                           double rx,
                           double ry,
                           double rz,
+                          double endRx,
+                          double endRy,
+                          double endRz,
                           const MotionPlanner::Config& cfg);
 
 } // namespace zrcs_bt

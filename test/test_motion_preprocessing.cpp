@@ -1,9 +1,8 @@
 #include "config/CmdDefine.h"
-#include "algorithm/path_planning/PathPreprocessor.h"
 #include "algorithm/path_planning/MotionPlanner.h"
 #include "behavior_tree/nodes/motion/PathMoveSupport.h"
 #include "rtBridge/RtBridge.h"
-#include "algorithm/path_planning/VelocityPlanner3D.h"
+#include "algorithm/path_planning/LookAheadPlanner.h"
 #include "shared_memory/ShmLayout.h"
 
 #include <matplotlibcpp.h>
@@ -679,8 +678,7 @@ void test_line_block_generates_single_segment()
     block.end = {10.0, 0.0, 0.0};
     block.feedrate = 5.0;
 
-    PathPreprocessor fitter;
-    const auto segments = fitter.fitCornerBlendSegments({block}, 0.1);
+    const auto segments = MotionPlanner::buildGeometry({block}, 0.1);
 
     assert(segments.size() == 1);
     assert(segments[0].type == TrajectorySegmentType::Line);
@@ -691,13 +689,70 @@ void test_line_block_generates_single_segment()
     assert(is_same_point(evaluateSegment(segments[0], 1.0), block.end));
 }
 
+void test_collinear_waypoints_are_collapsed()
+{
+    // 近共线密化点应被折叠为更少段（LinuxCNC G64 Q / naive CAM 同类行为）
+    const std::vector<Point3D> raw = {
+        {0.0, 0.0, 0.0},
+        {1.0, 0.0, 0.0},
+        {2.0, 0.001, 0.0}, // 弦高约 0.001，容差 0.01 时应折叠
+        {3.0, 0.0, 0.0},
+        {3.0, 1.0, 0.0},   // 直角，不可折叠
+        {4.0, 1.0, 0.0},
+    };
+    const auto blocks = make_blocks(raw, 5.0);
+
+    // cornerTol 很小避免直角被大幅圆角；collinearTol=0.01 折叠近共线
+    const auto segments = MotionPlanner::buildGeometry(blocks, 0.001, 0.01, 0.0005);
+
+    assert_segments_are_continuous(segments);
+    assert(is_same_point(evaluateSegment(segments.front(), 0.0), raw.front()));
+    assert(is_same_point(evaluateSegment(segments.back(), 1.0), raw.back()));
+
+    // 无折叠时 5 段直线 + 圆角；折叠后共线区变 1 段，总直线段应明显减少
+    int lineCount = 0;
+    for (const auto& segment : segments) {
+        if (segment.type == TrajectorySegmentType::Line) {
+            ++lineCount;
+            // 不应残留过短微段
+            assert(segment.length + 1e-12 >= 0.0005 || segment.length > 0.5);
+        }
+    }
+    assert(lineCount <= 3);
+}
+
+void test_corner_blend_keeps_min_line_remainder()
+{
+    // 密集折线 + 较大 cornerTol 时，残段不得被圆角吃到亚毫米微段
+    std::vector<Point3D> raw;
+    raw.push_back({0.06, 0.0, 0.1});
+    for (int i = 1; i <= 16; ++i) {
+        const double a = 2.0 * 3.14159265358979323846 * i / 16.0;
+        raw.push_back({0.06 * std::cos(a), 0.06 * std::sin(a), 0.1});
+    }
+    const auto blocks = make_blocks(raw, 0.15);
+
+    const double cornerTol = 0.003;
+    const double minSegLen = 0.0015;
+    const auto segments = MotionPlanner::buildGeometry(blocks, cornerTol, cornerTol, minSegLen);
+
+    assert(!segments.empty());
+    assert_segments_are_continuous(segments);
+    for (const auto& segment : segments) {
+        if (segment.type == TrajectorySegmentType::Line) {
+            assert(segment.length + 1e-9 >= minSegLen);
+        }
+    }
+}
+
 void test_corner_blend_fits_butterfly_segments()
 {
     const auto raw = make_butterfly_path();
     const auto blocks = make_blocks(raw, 12.0);
 
-    PathPreprocessor fitter;
-    const auto segments = fitter.fitCornerBlendSegments(blocks, 0.25);
+    // cornerTol=0.25 时默认 minSegLen=0.75、minChordForBlend=3.0，
+    // 会大于蝴蝶线弦长导致不做圆角；这里显式给适合该路径尺度的 minSegLen。
+    const auto segments = MotionPlanner::buildGeometry(blocks, 0.25, 0.25, 0.05);
 
     assert(!segments.empty());
     assert(segments.size() > blocks.size());
@@ -727,10 +782,9 @@ void test_velocity_lookahead_on_segments()
     const auto raw = make_butterfly_path();
     const auto blocks = make_blocks(raw, 5.0);
 
-    PathPreprocessor fitter;
-    auto segments = fitter.fitCornerBlendSegments(blocks, 0.25);
+    auto segments = MotionPlanner::buildGeometry(blocks, 0.25, 0.25, 0.05);
 
-    VelocityPlanner3D planner;
+    LookAheadPlanner planner;
     planner.setConfig(20.0, 40.0, 0.0, 0.0, 1.0, 200.0);
     assert(planner.planSegments(segments));
 
@@ -769,7 +823,7 @@ void test_curvature_limits_local_velocity()
 
     std::vector<TrajectorySegment> segments = {segment};
 
-    VelocityPlanner3D planner;
+    LookAheadPlanner planner;
     planner.setConfig(20.0, 16.0, 0.0, 0.0, 1.0, 200.0);
     assert(planner.planSegments(segments));
 
@@ -795,7 +849,8 @@ void test_motion_preprocessor_queues_move_path_commands()
         {7.0, 3.0, 0.0},
     };
 
-    assert(zrcs_bt::queuePathFromWaypoints(&bridge, waypoints, 0.1, -0.2, 0.3, cfg));
+    assert(zrcs_bt::queuePathFromWaypoints(&bridge, waypoints, 0.1, -0.2, 0.3,
+                                           0.1, -0.2, 0.3, cfg));
     assert(is_near(block->pathMoveCfg.maxVel.load(std::memory_order_acquire), cfg.maxVel));
     assert(is_near(block->pathMoveCfg.maxAccel.load(std::memory_order_acquire), cfg.maxAccel));
     assert(is_near(block->pathMoveCfg.maxJerk.load(std::memory_order_acquire), cfg.maxJerk));
@@ -809,6 +864,8 @@ void test_motion_preprocessor_queues_move_path_commands()
 int main()
 {
     test_line_block_generates_single_segment();
+    test_collinear_waypoints_are_collapsed();
+    test_corner_blend_keeps_min_line_remainder();
     test_corner_blend_fits_butterfly_segments();
     test_velocity_lookahead_on_segments();
     test_curvature_limits_local_velocity();

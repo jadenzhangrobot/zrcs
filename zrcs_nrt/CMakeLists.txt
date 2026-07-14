@@ -44,11 +44,17 @@ set(SOURCES
     behavior_tree/nodes/motion/PathMoveNode.cpp
     behavior_tree/nodes/nc/NcParseNode.cpp
 
-    # pure algorithms
+    # core — G-code / NC 解析
+    core/nc_parser/NcParser.cpp
+
+    # pure algorithms — path pipeline:
+    # simplify → corner blend → short-segment merge → look-ahead
+    algorithm/path_planning/TrajectoryGeometry.cpp
+    algorithm/path_planning/PathSimplifier.cpp
+    algorithm/path_planning/CornerBlender.cpp
+    algorithm/path_planning/ShortSegmentMerger.cpp
+    algorithm/path_planning/LookAheadPlanner.cpp
     algorithm/path_planning/MotionPlanner.cpp
-    algorithm/path_planning/PathPreprocessor.cpp
-    algorithm/path_planning/VelocityPlanner3D.cpp
-    algorithm/path_planning/NcParser.cpp
 
     algorithm/dynamics_identification/MujocoIdentifyWorker.cpp
 )

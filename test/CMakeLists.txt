@@ -36,8 +36,11 @@ target_link_libraries(test_axis_direction PRIVATE atomic)
 
 add_executable(test_motion_preprocessing
     test_motion_preprocessing.cpp
-    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/PathPreprocessor.cpp
-    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/VelocityPlanner3D.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/TrajectoryGeometry.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/PathSimplifier.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/CornerBlender.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/ShortSegmentMerger.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/LookAheadPlanner.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/MotionPlanner.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/behavior_tree/nodes/motion/PathMoveSupport.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/rtBridge/RtBridge.cpp
