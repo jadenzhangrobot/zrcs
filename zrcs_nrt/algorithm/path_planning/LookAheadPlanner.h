@@ -8,7 +8,8 @@
 /// 2) 接点速度上限（拐角容差、曲率跳变/jerk）
 /// 3) 反向扫描：保证能减速到后续接点
 /// 4) 正向扫描：保证能从入口加速到后续接点
-/// 5) 写入 v_enter / v_exit / duration
+/// 5) 对固定接点速度执行 (v,a) 联合规划
+/// 6) 写入 v_enter / v_exit / a_enter / a_exit / duration
 ///
 /// 不依赖 RT 头文件；控制周期用 ZRCS_CYCLE_TIME_MS（默认 10ms）。
 
@@ -33,7 +34,7 @@ public:
                    double cornerTol = 0.5,
                    double maxJ = 1000.0);
 
-    /// 就地写入 v_max_local / v_enter / v_exit / duration / is_lookahead_optimized。
+    /// 就地写入速度、边界加速度、持续时间及优化标志。
     bool planSegments(std::vector<TrajectorySegment>& segments);
 
 private:
@@ -60,6 +61,15 @@ private:
     /// 从 v0 出发、在 distance 内最多能达到的速度
     double maxReachableVel(double v0, double distance) const;
 
-    /// 估计单段时间（含加减速三角形/梯形简化模型）
-    double estimateSegmentDuration(const TrajectorySegment& segment) const;
+    /// 在固定接点速度下，用 Ruckig 可行转移做离散动态规划，联合选择接点加速度。
+    bool planJunctionAccelerations(const std::vector<double>& junctionVel,
+                                   std::vector<TrajectorySegment>& segments) const;
+
+    /// 返回给定边界状态的最短转移时间；不可行时返回正无穷。
+    double transitionDuration(double distance,
+                              double velocityLimit,
+                              double v0,
+                              double a0,
+                              double v1,
+                              double a1) const;
 };

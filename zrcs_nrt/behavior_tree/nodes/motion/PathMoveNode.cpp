@@ -17,7 +17,8 @@ MotionPlanner::Config defaultPathConfig()
     cfg.maxVel = 100.0;
     cfg.maxAccel = 300.0;
     cfg.maxJerk = 3000.0;
-    cfg.cornerTol = 1.0;
+    cfg.cornerTol = 0.25;
+    cfg.minSegLen = 0.05;
     return cfg;
 }
 
@@ -35,6 +36,9 @@ MotionPlanner::Config configFromPorts(BT::TreeNode& node, const MotionPlanner::C
     }
     if (auto v = node.getInput<double>("cornerTol")) {
         cfg.cornerTol = *v;
+    }
+    if (auto v = node.getInput<double>("minSegLen")) {
+        cfg.minSegLen = *v;
     }
     return cfg;
 }
@@ -62,7 +66,8 @@ BT::PortsList PathMoveNode::providedPorts()
         BT::InputPort<double>("maxVel", 100.0, "Max path velocity (mm/s)"),
         BT::InputPort<double>("maxAccel", 300.0, "Max path acceleration (mm/s^2)"),
         BT::InputPort<double>("maxJerk", 3000.0, "Max path jerk (mm/s^3)"),
-        BT::InputPort<double>("cornerTol", 1.0, "Corner blend tolerance (mm)"),
+        BT::InputPort<double>("cornerTol", 0.25, "Corner blend tolerance (mm)"),
+        BT::InputPort<double>("minSegLen", 0.05, "Minimum retained line length (mm)"),
     };
 }
 

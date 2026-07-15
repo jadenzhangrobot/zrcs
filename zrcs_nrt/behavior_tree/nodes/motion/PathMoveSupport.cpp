@@ -109,6 +109,7 @@ void fillMovePathArgs(std::array<double, zrcs::kCmdArgsMax>& args,
     args[static_cast<size_t>(MovePathArg::Length)] = segment.length;
     args[static_cast<size_t>(MovePathArg::Vel)] = maxVel;
     args[static_cast<size_t>(MovePathArg::TargetVel)] = segment.v_exit;
+    args[static_cast<size_t>(MovePathArg::TargetAcc)] = segment.a_exit;
     args[static_cast<size_t>(MovePathArg::Sync)] = sync;
 }
 
@@ -222,8 +223,10 @@ bool queuePathFromWaypoints(RtBridge* bridge,
         return false;
     }
 
-    spdlog::info("[PathMove] {} trajectory segments planned, maxVel={}, cornerTol={}",
-                 segments.size(), cfg.maxVel, cfg.cornerTol);
+    spdlog::info("[PathMove] {} trajectory segments planned, maxVel={}, cornerTol={}, "
+                 "minSegLen={}, minChordForBlend={}",
+                 segments.size(), cfg.maxVel, cfg.cornerTol,
+                 cfg.minSegLen, 4.0 * cfg.minSegLen);
     return true;
 }
 

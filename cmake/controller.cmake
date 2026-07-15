@@ -24,7 +24,7 @@ elseif(BUILD_MODE STREQUAL "simulation")
     message(STATUS "simulation模式")
     add_compile_definitions(SIMULATION)
     # 控制周期 (ms)：仿真/非实时 10 ms
-    set(ZRCS_CYCLE_TIME_MS 10)
+    set(ZRCS_CYCLE_TIME_MS 1)
 elseif(BUILD_MODE STREQUAL "standard")
     message(STATUS "standard模式")
     add_compile_definitions(STANDARD)

@@ -126,12 +126,14 @@ bool MovePath::initTrajectory()
 
     const double maxVel = command_->args[static_cast<size_t>(MovePathArg::Vel)];
     const double targetVel = command_->args[static_cast<size_t>(MovePathArg::TargetVel)];
+    const double targetAcc = command_->args[static_cast<size_t>(MovePathArg::TargetAcc)];
     const double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
     const double maxJerk = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
     if (!std::isfinite(maxVel) || maxVel <= 0.0 ||
         !std::isfinite(targetVel) || targetVel < 0.0 ||
         !std::isfinite(maxAccel) || maxAccel <= 0.0 ||
+        !std::isfinite(targetAcc) || std::abs(targetAcc) > maxAccel ||
         !std::isfinite(maxJerk) || maxJerk <= 0.0)
     {
         ERROR_PRINT("MovePath: velocity, acceleration or jerk limit is invalid\n");
@@ -141,8 +143,9 @@ bool MovePath::initTrajectory()
     arcOffset_ = arcOffset_ + geometryLength_;
     input_->target_position[0] = arcOffset_;
     input_->target_velocity[0] = targetVel;
-    input_->target_acceleration[0] = 0.0;
+    input_->target_acceleration[0] = targetAcc;
     input_->max_velocity[0] = maxVel;
+    input_->min_velocity = std::vector<double>{0.0};
     input_->max_acceleration[0] = maxAccel;
     input_->max_jerk[0] = maxJerk;
 
@@ -154,8 +157,8 @@ void MovePath::applyOutput()
     // otg_->update() 已由 TrajectoryCmd::run() -> updateTrajectory() 完成
     const double s = output_->new_position[0];
     const double geometryS = s - (arcOffset_ - geometryLength_);
-    const double u = geometryLength_ > 1e-12
-                         ? std::clamp(geometryS / geometryLength_, 0.0, 1.0)
+    const double u = geometryLength_ > 1e-13
+                         ? geometryS / geometryLength_
                          : 0.0;
 
     Eigen::Vector3d pos;
@@ -187,6 +190,7 @@ void MovePath::applyOutput()
     controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
     controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
     controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
+    controller_->axes_[axisIds_[3]]->setAxisPositionCmd(output_->new_velocity[0]);
 }
 
 CMD_REGISTER(MovePath);

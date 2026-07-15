@@ -71,7 +71,8 @@
     <BehaviorTree ID="Cmd_NcPath">
         <Sequence>
             <Action ID="NcParse" filePath="config/3axis/program/demo_rect.nc" waypoints="{path_pts}"/>
-            <Action ID="PathMove" waypoints="{path_pts}" maxVel="100" maxAccel="300" maxJerk="3000" cornerTol="1"/>
+            <Action ID="PathMove" waypoints="{path_pts}" maxVel="100" maxAccel="300" maxJerk="3000"
+                    cornerTol="0.25" minSegLen="0.05"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -117,7 +118,8 @@
             <input_port default="100.0" name="maxVel" type="double">Max path velocity (mm/s)</input_port>
             <input_port default="300.0" name="maxAccel" type="double">Max path acceleration (mm/s^2)</input_port>
             <input_port default="3000.0" name="maxJerk" type="double">Max path jerk (mm/s^3)</input_port>
-            <input_port default="1.0" name="cornerTol" type="double">Corner blend tolerance (mm)</input_port>
+            <input_port default="0.25" name="cornerTol" type="double">Corner blend tolerance (mm)</input_port>
+            <input_port default="0.05" name="minSegLen" type="double">Minimum retained line length (mm)</input_port>
         </Action>
         <Action ID="Disable">
             <input_port default="0.0" name="AxisId" type="double">Axis ID (0=all axes)</input_port>

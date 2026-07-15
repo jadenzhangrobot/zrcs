@@ -54,6 +54,7 @@ target_link_libraries(test_motion_preprocessing PRIVATE
     matplotlib_cpp::matplotlib_cpp
     spdlog::spdlog
     zrcscommon
+    ruckig
 )
 
 # ZMQ 通信层测试（Protobuf + ZMQ REQ/REP）

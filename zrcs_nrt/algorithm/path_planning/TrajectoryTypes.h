@@ -60,7 +60,8 @@ enum class TrajectorySegmentType {
 /// - feedrate_limit：段编程进给上限
 /// - v_max_local：综合曲率/进给后的局部速度上限
 /// - v_enter / v_exit：段入口/出口速度
-/// - duration：估计持续时间（非实时插补用）
+/// - a_enter / a_exit：段入口/出口切向加速度
+/// - duration：规划持续时间（非实时插补用）
 struct TrajectorySegment {
     int segment_id = 0;                       ///< 段序号（流水线末尾会重编号）
     int source_block_id = 0;                  ///< 来源 PathMoveBlock::block_id
@@ -85,7 +86,9 @@ struct TrajectorySegment {
 
     double v_enter = 0.0;                     ///< 入口速度
     double v_exit = 0.0;                      ///< 出口速度
-    double duration = 0.0;                    ///< 估计时长 (s)
+    double a_enter = 0.0;                     ///< 入口切向加速度 (mm/s^2)
+    double a_exit = 0.0;                      ///< 出口切向加速度 (mm/s^2)
+    double duration = 0.0;                    ///< 规划时长 (s)
 
     bool is_lookahead_optimized = false;      ///< 是否已完成速度前瞻
 };

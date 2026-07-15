@@ -74,7 +74,8 @@
             <Action ID="PathMove" waypoints="{path_pts}"
                     rx="0.0" ry="0.0" rz="0.0"
                     endRx="0.5" endRy="0.0" endRz="1.57"
-                    maxVel="0.12" maxAccel="0.8" maxJerk="8.0" cornerTol="0.004"/>
+                    maxVel="1.2" maxAccel="2.5" maxJerk="15.0"
+                    cornerTol="0.001" minSegLen="0.00005"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -123,7 +124,8 @@
             <input_port default="0.15" name="maxVel" type="double">Max path velocity (m/s)</input_port>
             <input_port default="0.8" name="maxAccel" type="double">Max path acceleration</input_port>
             <input_port default="8.0" name="maxJerk" type="double">Max path jerk</input_port>
-            <input_port default="0.003" name="cornerTol" type="double">Corner blend tolerance (m)</input_port>
+            <input_port default="0.00025" name="cornerTol" type="double">Corner blend tolerance (m)</input_port>
+            <input_port default="0.00005" name="minSegLen" type="double">Minimum retained line length (m)</input_port>
         </Action>
         <Action ID="Disable">
             <input_port default="0.0" name="AxisId" type="double">Axis ID (0=all axes)</input_port>

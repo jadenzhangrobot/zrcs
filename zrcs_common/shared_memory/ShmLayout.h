@@ -35,9 +35,9 @@ inline constexpr size_t   kCmdQueueCap   = 4096; // 必须为 2 的幂（扩容�
 inline constexpr size_t   kLogQueueCap   = 1024; // 必须为 2 的幂（扩容以缓解消费滞后时的帧丢弃）
 inline constexpr size_t   kMujocoIdentQueueCap = 1024;
 inline constexpr size_t   kMujocoParamQueueCap = 256;
-inline constexpr size_t   kCmdArgsMax    = 24;
+inline constexpr size_t   kCmdArgsMax    = 25;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 14;           // ABI 变更时必须 +1 (14: kLogQueueCap 256→1024)
+inline constexpr uint32_t kShmVersion    = 15;           // ABI 变更时必须 +1 (15: MovePath TargetAcc)
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -94,7 +94,7 @@ struct Command {
     uint32_t seq               = 0;
     uint16_t cmdId             = 0;  // 对应 CmdId 枚举（定义在 CmdArgs.h）
     uint8_t  _pad[2]           = {};
-    // sizeof = 20*8 + 4 + 2 + 2 = 172 bytes（旧版 268 bytes）
+    // sizeof = 25*8 + 4 + 2 + 2 = 208 bytes
 };
 
 struct CmdCompletionData {

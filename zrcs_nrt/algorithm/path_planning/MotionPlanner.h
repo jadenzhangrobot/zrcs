@@ -31,11 +31,11 @@ public:
         double maxVel = 10.0;         ///< 全局最大速度 (mm/s)
         double maxAccel = 20.0;       ///< 最大加速度
         double maxJerk = 30.0;        ///< 最大加加速度
-        double cornerTol = 0.5;       ///< 拐角路径容差 (mm)，兼作默认共线容差
+        double cornerTol = 0.25;      ///< 拐角路径容差 (mm)，兼作默认共线容差
         double startVel = 0.0;        ///< 路径起点速度
         double endVel = 0.0;          ///< 路径终点速度
         double collinearTol = -1.0;   ///< 共线折叠弦高；<=0 时默认 = cornerTol
-        double minSegLen = -1.0;      ///< 最短直线段；<=0 时默认 = 3*cornerTol
+        double minSegLen = 0.05;      ///< 最短直线段；minChordForBlend = 4*minSegLen
     };
 
     MotionPlanner() = default;
@@ -46,7 +46,7 @@ public:
         const std::vector<PathMoveBlock>& blocks,
         double cornerTol,
         double collinearTol = -1.0,
-        double minSegLen = -1.0);
+        double minSegLen = 0.05);
 
     /// 完整规划：几何 + 速度前瞻。
     /// @return true 成功；false 时 error 有说明，segments 清空

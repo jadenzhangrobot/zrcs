@@ -1,8 +1,12 @@
 #include "algorithm/path_planning/LookAheadPlanner.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
+#include <limits>
+
+#include <ruckig/ruckig.hpp>
 
 // 算法层不依赖 RT 头文件；周期来自 CMake 注入的 ZRCS_CYCLE_TIME_MS（ms）。
 #ifndef ZRCS_CYCLE_TIME_MS
@@ -32,6 +36,14 @@ bool LookAheadPlanner::planSegments(std::vector<TrajectorySegment>& segments)
         std::cerr << "Error: trajectory must contain at least one segment." << std::endl;
         return false;
     }
+    if (!std::isfinite(maxVelGlobal_) || maxVelGlobal_ <= 0.0 ||
+        !std::isfinite(maxAccel_) || maxAccel_ <= 0.0 ||
+        !std::isfinite(maxJerk_) || maxJerk_ <= 0.0 ||
+        !std::isfinite(startVel_) || !std::isfinite(endVel_) ||
+        !std::isfinite(cornerTolerance_) || cornerTolerance_ < 0.0) {
+        std::cerr << "Error: invalid velocity planning configuration." << std::endl;
+        return false;
+    }
 
     // ---- 1) 段内速度上限 ----
     for (auto& segment : segments) {
@@ -44,8 +56,8 @@ bool LookAheadPlanner::planSegments(std::vector<TrajectorySegment>& segments)
 
     // junctionVel[i]：第 i 个接点速度；共 N+1 个接点（含起终点）
     std::vector<double> junctionVel(segments.size() + 1, maxVelGlobal_);
-    junctionVel.front() = std::clamp(startVel_, 0.0, maxVelGlobal_);
-    junctionVel.back() = std::clamp(endVel_, 0.0, maxVelGlobal_);
+    junctionVel.front() = std::clamp(startVel_, 0.0, segments.front().v_max_local);
+    junctionVel.back() = std::clamp(endVel_, 0.0, segments.back().v_max_local);
 
     // ---- 2) 几何接点限速 ----
     for (size_t i = 1; i < junctionVel.size() - 1; ++i) {
@@ -67,12 +79,20 @@ bool LookAheadPlanner::planSegments(std::vector<TrajectorySegment>& segments)
         junctionVel[i + 1] = std::min(junctionVel[i + 1], reachable);
     }
 
-    // ---- 5) 写回每段 ----
+    // ---- 5) 先写回接点速度 ----
     for (size_t i = 0; i < segments.size(); ++i) {
         auto& segment = segments[i];
         segment.v_enter = std::clamp(junctionVel[i], 0.0, segment.v_max_local);
         segment.v_exit = std::clamp(junctionVel[i + 1], 0.0, segment.v_max_local);
-        segment.duration = estimateSegmentDuration(segment);
+    }
+
+    // ---- 6) 在固定接点速度下联合选择接点加速度 ----
+    if (!planJunctionAccelerations(junctionVel, segments)) {
+        std::cerr << "Error: no jerk-limited acceleration plan for trajectory." << std::endl;
+        return false;
+    }
+
+    for (auto& segment : segments) {
         segment.is_lookahead_optimized = true;
     }
 
@@ -168,37 +188,148 @@ double LookAheadPlanner::maxReachableVel(double v0, double distance) const
     return lo;
 }
 
-double LookAheadPlanner::estimateSegmentDuration(const TrajectorySegment& segment) const
+double LookAheadPlanner::transitionDuration(double distance,
+                                            double velocityLimit,
+                                            double v0,
+                                            double a0,
+                                            double v1,
+                                            double a1) const
 {
-    const double vmax = std::max({segment.v_enter, segment.v_exit, segment.v_max_local});
-    if (vmax <= 1e-9) {
-        return 0.0;
+    if (distance <= 1e-9 || velocityLimit <= 0.0) {
+        return std::numeric_limits<double>::infinity();
     }
 
-    // 若能加速到 v_max_local 再减速：梯形速度
-    const double dAccel = dMinTransition(segment.v_enter, segment.v_max_local);
-    const double dDecel = dMinTransition(segment.v_exit, segment.v_max_local);
-    if (dAccel + dDecel <= segment.length) {
-        const double cruise = segment.length - dAccel - dDecel;
-        return transitionTime(segment.v_enter, segment.v_max_local) +
-               transitionTime(segment.v_exit, segment.v_max_local) +
-               cruise / segment.v_max_local;
+    ruckig::Ruckig<1> otg;
+    ruckig::InputParameter<1> input;
+    ruckig::Trajectory<1> trajectory;
+
+    input.current_position = {0.0};
+    input.current_velocity = {v0};
+    input.current_acceleration = {a0};
+    input.target_position = {distance};
+    input.target_velocity = {v1};
+    input.target_acceleration = {a1};
+    input.max_velocity = {velocityLimit};
+    input.min_velocity = std::array<double, 1>{0.0};
+    input.max_acceleration = {maxAccel_};
+    input.max_jerk = {maxJerk_};
+
+    const auto result = otg.calculate(input, trajectory);
+    if (result < ruckig::Result::Working ||
+        !std::isfinite(trajectory.get_duration()) ||
+        trajectory.get_duration() <= 0.0) {
+        return std::numeric_limits<double>::infinity();
     }
 
-    // 否则三角形：找段内峰值速度 lo，使加减速距离刚好吃满段长
-    double lo = std::max(segment.v_enter, segment.v_exit);
-    double hi = segment.v_max_local;
-    for (int iter = 0; iter < 64; ++iter) {
-        const double mid = 0.5 * (lo + hi);
-        const double needed = dMinTransition(segment.v_enter, mid) +
-                              dMinTransition(segment.v_exit, mid);
-        if (needed <= segment.length) {
-            lo = mid;
-        } else {
-            hi = mid;
+    return trajectory.get_duration();
+}
+
+bool LookAheadPlanner::planJunctionAccelerations(
+    const std::vector<double>& junctionVel,
+    std::vector<TrajectorySegment>& segments) const
+{
+    constexpr int kHalfUniformSamples = 8;
+    constexpr double kStateEpsilon = 1e-9;
+    const double infinity = std::numeric_limits<double>::infinity();
+    const size_t junctionCount = junctionVel.size();
+
+    std::vector<std::vector<double>> accelerationCandidates(junctionCount);
+    for (size_t i = 0; i < junctionCount; ++i) {
+        auto& candidates = accelerationCandidates[i];
+        if (i == 0 || i + 1 == junctionCount || junctionVel[i] <= kStateEpsilon) {
+            candidates.push_back(0.0);
+            continue;
+        }
+
+        candidates.reserve(2 * kHalfUniformSamples + 4);
+        for (int sample = -kHalfUniformSamples; sample <= kHalfUniformSamples; ++sample) {
+            candidates.push_back(maxAccel_ * static_cast<double>(sample) /
+                                 static_cast<double>(kHalfUniformSamples));
+        }
+
+        const double leftEquivalent =
+            (junctionVel[i] * junctionVel[i] - junctionVel[i - 1] * junctionVel[i - 1]) /
+            (2.0 * segments[i - 1].length);
+        const double rightEquivalent =
+            (junctionVel[i + 1] * junctionVel[i + 1] - junctionVel[i] * junctionVel[i]) /
+            (2.0 * segments[i].length);
+        const double centralEstimate =
+            (junctionVel[i + 1] * junctionVel[i + 1] -
+             junctionVel[i - 1] * junctionVel[i - 1]) /
+            (2.0 * (segments[i - 1].length + segments[i].length));
+
+        candidates.push_back(std::clamp(leftEquivalent, -maxAccel_, maxAccel_));
+        candidates.push_back(std::clamp(rightEquivalent, -maxAccel_, maxAccel_));
+        candidates.push_back(std::clamp(centralEstimate, -maxAccel_, maxAccel_));
+
+        std::sort(candidates.begin(), candidates.end());
+        candidates.erase(
+            std::unique(candidates.begin(), candidates.end(), [](double lhs, double rhs) {
+                return std::abs(lhs - rhs) <= 1e-10;
+            }),
+            candidates.end());
+    }
+
+    std::vector<std::vector<double>> costToEnd(junctionCount);
+    std::vector<std::vector<int>> nextChoice(segments.size());
+    std::vector<std::vector<double>> chosenDuration(segments.size());
+
+    costToEnd.back().assign(accelerationCandidates.back().size(), infinity);
+    costToEnd.back()[0] = 0.0;
+
+    for (size_t reverse = segments.size(); reverse > 0; --reverse) {
+        const size_t i = reverse - 1;
+        const auto& currentCandidates = accelerationCandidates[i];
+        const auto& nextCandidates = accelerationCandidates[i + 1];
+
+        costToEnd[i].assign(currentCandidates.size(), infinity);
+        nextChoice[i].assign(currentCandidates.size(), -1);
+        chosenDuration[i].assign(currentCandidates.size(), infinity);
+
+        for (size_t currentIndex = 0; currentIndex < currentCandidates.size(); ++currentIndex) {
+            for (size_t nextIndex = 0; nextIndex < nextCandidates.size(); ++nextIndex) {
+                if (!std::isfinite(costToEnd[i + 1][nextIndex])) {
+                    continue;
+                }
+
+                const double duration = transitionDuration(
+                    segments[i].length,
+                    segments[i].v_max_local,
+                    junctionVel[i],
+                    currentCandidates[currentIndex],
+                    junctionVel[i + 1],
+                    nextCandidates[nextIndex]);
+                if (!std::isfinite(duration)) {
+                    continue;
+                }
+
+                const double candidateCost = duration + costToEnd[i + 1][nextIndex];
+                if (candidateCost + 1e-12 < costToEnd[i][currentIndex]) {
+                    costToEnd[i][currentIndex] = candidateCost;
+                    nextChoice[i][currentIndex] = static_cast<int>(nextIndex);
+                    chosenDuration[i][currentIndex] = duration;
+                }
+            }
         }
     }
 
-    return transitionTime(segment.v_enter, lo) +
-           transitionTime(segment.v_exit, lo);
+    if (costToEnd.empty() || costToEnd.front().empty() ||
+        !std::isfinite(costToEnd.front()[0])) {
+        return false;
+    }
+
+    size_t currentIndex = 0;
+    for (size_t i = 0; i < segments.size(); ++i) {
+        const int selectedNext = nextChoice[i][currentIndex];
+        if (selectedNext < 0) {
+            return false;
+        }
+
+        segments[i].a_enter = accelerationCandidates[i][currentIndex];
+        segments[i].a_exit = accelerationCandidates[i + 1][static_cast<size_t>(selectedNext)];
+        segments[i].duration = chosenDuration[i][currentIndex];
+        currentIndex = static_cast<size_t>(selectedNext);
+    }
+
+    return true;
 }

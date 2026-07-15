@@ -209,14 +209,17 @@ void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
         const double length = command_arg(command, MovePathArg::Length);
         const double max_vel = command_arg(command, MovePathArg::Vel);
         const double target_vel = command_arg(command, MovePathArg::TargetVel);
+        const double target_acc = command_arg(command, MovePathArg::TargetAcc);
         assert(std::isfinite(length));
         assert(length > 0.0);
         assert(std::isfinite(max_vel));
         assert(std::isfinite(target_vel));
+        assert(std::isfinite(target_acc));
         assert(max_vel > 0.0);
         assert(max_vel <= cfg.maxVel + 1e-9);
         assert(target_vel >= -1e-9);
         assert(target_vel <= max_vel + 1e-9);
+        assert(std::abs(target_acc) <= cfg.maxAccel + 1e-9);
         assert(is_near(command_arg(command, MovePathArg::Sync), i == 0 ? 1.0 : 0.0));
 
         has_arc_segment = has_arc_segment ||
@@ -228,6 +231,7 @@ void assert_move_path_commands(const std::vector<zrcs::Command>& commands,
     assert(has_arc_segment);
     assert(is_same_point(previous_target, waypoints.back(), 1e-5));
     assert(is_near(command_arg(commands.back(), MovePathArg::TargetVel), 0.0, 1e-6));
+    assert(is_near(command_arg(commands.back(), MovePathArg::TargetAcc), 0.0, 1e-6));
 }
 
 bool matplotlib_available()
@@ -750,9 +754,8 @@ void test_corner_blend_fits_butterfly_segments()
     const auto raw = make_butterfly_path();
     const auto blocks = make_blocks(raw, 12.0);
 
-    // cornerTol=0.25 时默认 minSegLen=0.75、minChordForBlend=3.0，
-    // 会大于蝴蝶线弦长导致不做圆角；这里显式给适合该路径尺度的 minSegLen。
-    const auto segments = MotionPlanner::buildGeometry(blocks, 0.25, 0.25, 0.05);
+    // 默认 minSegLen=0.05、minChordForBlend=0.20，毫米级密集路径也应生成圆角。
+    const auto segments = MotionPlanner::buildGeometry(blocks, 0.25, 0.25);
 
     assert(!segments.empty());
     assert(segments.size() > blocks.size());
@@ -789,23 +792,35 @@ void test_velocity_lookahead_on_segments()
     assert(planner.planSegments(segments));
 
     bool reached_nonzero_cruise = false;
-    for (const auto& segment : segments)
+    for (size_t i = 0; i < segments.size(); ++i)
     {
+        const auto& segment = segments[i];
         assert(segment.is_lookahead_optimized);
         assert(std::isfinite(segment.v_max_local));
         assert(std::isfinite(segment.v_enter));
         assert(std::isfinite(segment.v_exit));
+        assert(std::isfinite(segment.a_enter));
+        assert(std::isfinite(segment.a_exit));
         assert(std::isfinite(segment.duration));
         assert(segment.v_max_local <= 5.0 + 1e-9);
         assert(segment.v_enter >= -1e-9);
         assert(segment.v_exit >= -1e-9);
         assert(segment.v_enter <= segment.v_max_local + 1e-9);
         assert(segment.v_exit <= segment.v_max_local + 1e-9);
+        assert(std::abs(segment.a_enter) <= 40.0 + 1e-9);
+        assert(std::abs(segment.a_exit) <= 40.0 + 1e-9);
         assert(segment.duration >= -1e-9);
+        if (i > 0)
+        {
+            assert(is_near(segments[i - 1].v_exit, segment.v_enter, 1e-9));
+            assert(is_near(segments[i - 1].a_exit, segment.a_enter, 1e-9));
+        }
         reached_nonzero_cruise = reached_nonzero_cruise ||
                                  segment.v_enter > 1.0 ||
                                  segment.v_exit > 1.0;
     }
+    assert(is_near(segments.front().a_enter, 0.0, 1e-9));
+    assert(is_near(segments.back().a_exit, 0.0, 1e-9));
     assert(reached_nonzero_cruise);
 
     show_velocity_lookahead_plot(segments);
@@ -832,11 +847,77 @@ void test_curvature_limits_local_velocity()
     assert(segments[0].duration > 0.0);
 }
 
+void test_acceleration_lookahead_spans_segments()
+{
+    constexpr double maxVel = 50.0;
+    constexpr double maxAccel = 10.0;
+    constexpr double maxJerk = 100.0;
+    std::vector<TrajectorySegment> segments;
+    for (int i = 0; i < 4; ++i)
+    {
+        TrajectorySegment segment;
+        segment.segment_id = i;
+        segment.type = TrajectorySegmentType::Line;
+        segment.length = 5.0;
+        segment.feedrate_limit = 50.0;
+        segment.coeff[0][0] = static_cast<double>(i) * segment.length;
+        segment.coeff[0][1] = segment.length;
+        segments.push_back(segment);
+    }
+
+    LookAheadPlanner planner;
+    planner.setConfig(maxVel, maxAccel, 0.0, 0.0, 0.5, maxJerk);
+    assert(planner.planSegments(segments));
+
+    bool has_nonzero_junction_acceleration = false;
+    assert(is_near(segments.front().a_enter, 0.0, 1e-9));
+    assert(is_near(segments.back().a_exit, 0.0, 1e-9));
+    for (size_t i = 0; i < segments.size(); ++i)
+    {
+        assert(std::abs(segments[i].a_enter) <= 10.0 + 1e-9);
+        assert(std::abs(segments[i].a_exit) <= 10.0 + 1e-9);
+        assert(segments[i].duration > 0.0);
+        if (i > 0)
+        {
+            assert(is_near(segments[i - 1].v_exit, segments[i].v_enter, 1e-9));
+            assert(is_near(segments[i - 1].a_exit, segments[i].a_enter, 1e-9));
+        }
+        if (i + 1 < segments.size() && std::abs(segments[i].a_exit) > 1e-6)
+        {
+            has_nonzero_junction_acceleration = true;
+        }
+    }
+    assert(has_nonzero_junction_acceleration);
+
+    auto block = std::make_unique<zrcs::SharedBlock>();
+    RtBridge bridge(block.get());
+    MotionPlanner::Config cfg;
+    cfg.maxVel = maxVel;
+    cfg.maxAccel = maxAccel;
+    cfg.maxJerk = maxJerk;
+    assert(zrcs_bt::queuePlannedSegments(&bridge, segments,
+                                         0.0, 0.0, 0.0,
+                                         0.0, 0.0, 0.0,
+                                         cfg));
+
+    const auto commands = collect_commands(*block);
+    assert(commands.size() == segments.size());
+    for (size_t i = 0; i < commands.size(); ++i)
+    {
+        assert(is_near(command_arg(commands[i], MovePathArg::TargetVel),
+                       segments[i].v_exit, 1e-9));
+        assert(is_near(command_arg(commands[i], MovePathArg::TargetAcc),
+                       segments[i].a_exit, 1e-9));
+    }
+}
+
 void test_motion_preprocessor_queues_move_path_commands()
 {
     auto block = std::make_unique<zrcs::SharedBlock>();
     RtBridge bridge(block.get());
     MotionPlanner::Config cfg;
+    assert(is_near(cfg.cornerTol, 0.25));
+    assert(is_near(cfg.minSegLen, 0.05));
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
@@ -869,6 +950,7 @@ int main()
     test_corner_blend_fits_butterfly_segments();
     test_velocity_lookahead_on_segments();
     test_curvature_limits_local_velocity();
+    test_acceleration_lookahead_spans_segments();
     test_motion_preprocessor_queues_move_path_commands();
     std::cout << "Motion preprocessing segment test passed." << std::endl;
     return 0;

@@ -7,7 +7,8 @@
  *   <Sequence>
  *     <Action ID="NcParse" filePath="config/demo/program/demo_rect.nc"
  *             waypoints="{path_pts}"/>
- *     <Action ID="PathMove" waypoints="{path_pts}" maxVel="100" cornerTol="1"/>
+ *     <Action ID="PathMove" waypoints="{path_pts}" maxVel="100"
+ *             cornerTol="0.25" minSegLen="0.05"/>
  *   </Sequence>
  */
 

@@ -33,7 +33,7 @@ void test_command_values()
 
 void test_constants()
 {
-    assert(zrcs::kCmdArgsMax == 24);
+    assert(zrcs::kCmdArgsMax == 25);
     assert((zrcs::kCmdQueueCap & (zrcs::kCmdQueueCap - 1)) == 0);
     assert((zrcs::kLogQueueCap & (zrcs::kLogQueueCap - 1)) == 0);
 }

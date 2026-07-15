@@ -473,7 +473,7 @@ limit  = min(v_corner, v_curv, maxVel)</pre>
     const std::vector&lt;PathMoveBlock&gt;&amp; blocks,
     double cornerTol,
     double collinearTol = -1.0,  // &lt;=0 → cornerTol
-    double minSegLen = -1.0);    // &lt;=0 → 3*cornerTol</pre>
+    double minSegLen = 0.05);    // minChordForBlend = 4*minSegLen</pre>
 
       <h3>plan（几何 + 前瞻）</h3>
 <pre>bool plan(const std::vector&lt;Point3D&gt;&amp; waypoints,
@@ -488,10 +488,11 @@ limit  = min(v_corner, v_curv, maxVel)</pre>
         <tr><td><code>maxVel</code></td><td>10</td><td>全局最大速度</td></tr>
         <tr><td><code>maxAccel</code></td><td>20</td><td>最大加速度</td></tr>
         <tr><td><code>maxJerk</code></td><td>30</td><td>最大 jerk</td></tr>
-        <tr><td><code>cornerTol</code></td><td>0.5</td><td>拐角路径容差；默认共线容差同源</td></tr>
+        <tr><td><code>cornerTol</code></td><td>0.25</td><td>拐角路径容差；默认共线容差同源</td></tr>
         <tr><td><code>startVel / endVel</code></td><td>0</td><td>路径起终速度</td></tr>
         <tr><td><code>collinearTol</code></td><td>-1</td><td>≤0 时 = cornerTol</td></tr>
-        <tr><td><code>minSegLen</code></td><td>-1</td><td>≤0 时 = 3×cornerTol</td></tr>
+        <tr><td><code>minSegLen</code></td><td>0.05</td><td>圆角后保留的最短直线段</td></tr>
+        <tr><td><code>minChordForBlend</code></td><td>0.20</td><td>内部派生值：4×minSegLen</td></tr>
       </table>
     </section>
 
@@ -501,12 +502,12 @@ limit  = min(v_corner, v_curv, maxVel)</pre>
         <tr><th>场景</th><th>cornerTol</th><th>说明</th></tr>
         <tr><td>精加工</td><td>较小（如 0.01–0.1 mm）</td><td>贴形，速度更保守</td></tr>
         <tr><td>粗加工</td><td>较大（如 0.2–1 mm）</td><td>更圆滑、更快</td></tr>
-        <tr><td>密化自由曲线</td><td>配合显式 minSegLen</td><td>默认 3×cornerTol 可能大于弦长，导致不做圆角</td></tr>
+        <tr><td>密化自由曲线</td><td>0.25 mm</td><td>默认 minSegLen=0.05 mm，弦长达到 0.20 mm 即允许圆角</td></tr>
       </table>
       <div class="warn">
-        <strong>蝴蝶线类路径：</strong>若 <code>cornerTol=0.25</code> 且用默认
-        <code>minSegLen=0.75</code>，则 <code>minChordForBlend=3.0</code>，
-        弦长短于此值时全部跳过圆角。测试中需显式传入合适的 <code>minSegLen</code>。
+        <strong>蝴蝶线类路径默认值：</strong><code>cornerTol=0.25 mm</code>、
+        <code>minSegLen=0.05 mm</code>、<code>minChordForBlend=0.20 mm</code>。
+        未生成圆角的硬拐点仍应降速或停车。
       </div>
       <p>
         <code>minSegLen</code> 应明显大于「控制周期 × 典型进给」：

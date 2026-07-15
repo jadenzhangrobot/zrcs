@@ -64,6 +64,7 @@ enum class MovePathArg : std::size_t {
     Length,
     Vel,
     TargetVel,
+    TargetAcc,
     Sync
 };
 
