@@ -122,6 +122,9 @@ private slots:
     void onAxisPositionsUpdated(QVector<double> positions);
     void onTaskSchedulingUpdated(const QString &state);
     void onRtLogReceived(quint32 level, const QString &message, const QString &timestamp);
+    void onBtStatusUpdated(const QString &treeState,
+                           const QString &currentNode,
+                           const QString &message);
 
 private:
     void setControlPanelExpanded(bool expanded);

@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @file StatusCollector.h
- * @brief 唯一从 RtBridge 采集轴反馈与任务状态并写入 StatusStore 的线程。
+ * @brief 从 RtBridge / BehaviorTreeService 采集状态并写入 StatusStore 的线程。
  */
 
 #include <atomic>
@@ -13,11 +13,13 @@
 
 class RtBridge;
 class StatusStore;
+class BehaviorTreeService;
 
 class StatusCollector {
 public:
     StatusCollector(RtBridge* bridge,
                     StatusStore* store,
+                    BehaviorTreeService* behaviorTree = nullptr,
                     std::chrono::milliseconds interval = std::chrono::milliseconds(10));
     ~StatusCollector();
 
@@ -33,6 +35,7 @@ private:
 
     RtBridge* bridge_;
     StatusStore* store_;
+    BehaviorTreeService* behaviorTree_;
     std::chrono::milliseconds interval_;
     std::atomic<bool> running_{false};
     std::thread thread_;

@@ -44,6 +44,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
             this, &MainWindowRefactored::onRtLogReceived);
+    connect(statusSubscriber, &ZMQStatusSubscriber::btStatusUpdated,
+            this, &MainWindowRefactored::onBtStatusUpdated);
     statusSubscriber->start();
 
     // 连接命令面板信号
@@ -282,6 +284,15 @@ void MainWindowRefactored::onUpdateTimer()
 }
 void MainWindowRefactored::updateGlobalStatus() {}
 void MainWindowRefactored::updateCommunicationStatus() {}
+
+void MainWindowRefactored::onBtStatusUpdated(const QString &treeState,
+                                             const QString &currentNode,
+                                             const QString &message)
+{
+    if (behaviorTreePanel) {
+        behaviorTreePanel->onBtStatusUpdated(treeState, currentNode, message);
+    }
+}
 void MainWindowRefactored::onJogPressed(int axis, int direction)
 {
     if (currentStepSize == 0.0) {
@@ -479,5 +490,7 @@ void MainWindowRefactored::onConnectClicked()
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
             this, &MainWindowRefactored::onRtLogReceived);
+    connect(statusSubscriber, &ZMQStatusSubscriber::btStatusUpdated,
+            this, &MainWindowRefactored::onBtStatusUpdated);
     statusSubscriber->start();
 }

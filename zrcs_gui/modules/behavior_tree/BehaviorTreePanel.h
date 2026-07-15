@@ -5,6 +5,7 @@
 #include <QSplitter>
 #include <QToolBar>
 #include <QTabWidget>
+#include <QLabel>
 #include <QShortcut>
 #include <QTransform>
 #include <QRectF>
@@ -55,6 +56,11 @@ public slots:
     void onSendToController();
     void onStartExecution();
     void onStopExecution();
+
+    /// 接收 NRT 推送的行为树运行状态（treeState / currentNode / message）
+    void onBtStatusUpdated(const QString &treeState,
+                           const QString &currentNode,
+                           const QString &message);
 
     void onSceneChanged();
     void onPushUndo();
@@ -123,6 +129,7 @@ private:
     QToolBar *_toolbar;
     QSplitter *_splitter;
     QTabWidget *_treeTabWidget;
+    QLabel *_btStatusLabel = nullptr;
 
     // Groot components
     SidepanelEditor *_editorWidget;

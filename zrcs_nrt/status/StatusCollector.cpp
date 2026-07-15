@@ -1,16 +1,17 @@
 #include "status/StatusCollector.h"
 
+#include "behavior_tree/core/BehaviorTreeService.h"
 #include "rtBridge/RtBridge.h"
 #include "shared_memory/ShmLayout.h"
 #include "status/StatusStore.h"
 
-// StatusCollector.h only forward-declares; need full TaskScheduling here.
-
 StatusCollector::StatusCollector(RtBridge* bridge,
                                  StatusStore* store,
+                                 BehaviorTreeService* behaviorTree,
                                  std::chrono::milliseconds interval)
     : bridge_(bridge)
     , store_(store)
+    , behaviorTree_(behaviorTree)
     , interval_(interval)
 {
 }
@@ -74,6 +75,12 @@ void StatusCollector::run()
                                      bridge_->droppedCount(),
                                      taskStateToString(bridge_->getTaskScheduling()));
         }
+
+        // 周期同步行为树状态，保证 GUI 能在运行中看到 currentNode 变化
+        if (behaviorTree_) {
+            behaviorTree_->syncStatusToStore();
+        }
+
         std::this_thread::sleep_for(interval_);
     }
 }

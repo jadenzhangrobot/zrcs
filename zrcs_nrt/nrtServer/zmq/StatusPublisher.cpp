@@ -87,7 +87,12 @@ void StatusPublisher::run()
     while (running_.load(std::memory_order_acquire)) {
         if (store_ && pub_socket_) {
             const auto snap = store_->snapshot();
-            if (snap.hasAxisFeedback || !snap.rtLogs.empty()) {
+            // 有轴反馈、日志，或任意系统/BT 状态时都发布，保证 GUI 能拿到行为树状态
+            const bool hasBt = !snap.bt.treeState.empty() ||
+                               !snap.bt.currentNode.empty() ||
+                               !snap.bt.message.empty();
+            if (snap.hasAxisFeedback || !snap.rtLogs.empty() || hasBt ||
+                !snap.systemState.empty()) {
                 zrcs_message::SystemStatus status;
                 for (const auto& a : snap.axes) {
                     auto* axis = status.add_axes();
@@ -110,6 +115,11 @@ void StatusPublisher::run()
                     log->set_line(entry.line);
                     log->set_message(entry.message);
                 }
+
+                auto* bt = status.mutable_bt_status();
+                bt->set_tree_state(snap.bt.treeState);
+                bt->set_current_node(snap.bt.currentNode);
+                bt->set_message(snap.bt.message);
 
                 std::string serialized;
                 if (status.SerializeToString(&serialized)) {

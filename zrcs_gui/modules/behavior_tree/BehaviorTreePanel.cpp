@@ -14,6 +14,11 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QCoreApplication>
+#include <QLabel>
+#include <QSizePolicy>
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QToolBar>
 
 #include <nodes/Node>
 #include <nodes/NodeData>
@@ -82,6 +87,50 @@ void BehaviorTreePanel::setupUI()
     if (!_toolbar || !_splitter || !_treeTabWidget || !editorHost) {
         return;
     }
+
+    // 主布局：工具栏固定高度，splitter 占满剩余空间（防止误加入的中间控件撑高）
+    if (auto *mainLayout = qobject_cast<QVBoxLayout*>(layout())) {
+        for (int i = 0; i < mainLayout->count(); ++i) {
+            if (auto *item = mainLayout->itemAt(i)) {
+                if (item->widget() == _toolbar) {
+                    mainLayout->setStretch(i, 0);
+                } else if (item->widget() == _splitter) {
+                    mainLayout->setStretch(i, 1);
+                } else if (item->widget() && item->widget() != _splitter && item->widget() != _toolbar) {
+                    // 清理历史误加的中间控件（如曾作为独立行的状态标签）
+                    QWidget *orphan = item->widget();
+                    mainLayout->removeWidget(orphan);
+                    orphan->hide();
+                    orphan->deleteLater();
+                    --i;
+                }
+            }
+        }
+    }
+    _toolbar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    _toolbar->setMovable(false);
+    _splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _splitter->setOrientation(Qt::Horizontal);
+    editorHost->setMinimumWidth(220);
+    editorHost->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _treeTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    // 状态条挂到工具栏右侧，绝不作为主垂直布局子项
+    _btStatusLabel = new QLabel(QStringLiteral("BT: IDLE"), _toolbar);
+    _btStatusLabel->setObjectName(QStringLiteral("btStatusLabel"));
+    _btStatusLabel->setToolTip(QStringLiteral("行为树运行状态（来自 NRT 状态流）"));
+    _btStatusLabel->setMinimumWidth(220);
+    _btStatusLabel->setMaximumHeight(28);
+    _btStatusLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    _btStatusLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    _btStatusLabel->setStyleSheet(
+        QStringLiteral("QLabel { padding: 2px 10px; border-radius: 4px; "
+                       "background: #edf2f7; color: #31425a; "
+                       "font-family: Consolas, 'Cascadia Mono', monospace; font-size: 12px; }"));
+    auto *statusSpacer = new QWidget(_toolbar);
+    statusSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    _toolbar->addWidget(statusSpacer);
+    _toolbar->addWidget(_btStatusLabel);
 
     auto *btnNew = findChild<QAction*>("actionNewTree");
     auto *btnLoad = findChild<QAction*>("actionLoadTree");
@@ -591,6 +640,48 @@ void BehaviorTreePanel::onStartExecution()
 void BehaviorTreePanel::onStopExecution()
 {
     emit requestBTStop();
+}
+
+void BehaviorTreePanel::onBtStatusUpdated(const QString &treeState,
+                                          const QString &currentNode,
+                                          const QString &message)
+{
+    if (!_btStatusLabel) {
+        return;
+    }
+
+    const QString state = treeState.isEmpty() ? QStringLiteral("IDLE") : treeState;
+    QString text = QStringLiteral("BT: %1").arg(state);
+    if (!currentNode.isEmpty()) {
+        text += QStringLiteral("  |  节点: %1").arg(currentNode);
+    }
+    if (!message.isEmpty()) {
+        text += QStringLiteral("  |  %1").arg(message);
+    }
+    _btStatusLabel->setText(text);
+    _btStatusLabel->setToolTip(text);
+
+    // 按树状态着色，便于运行时一眼识别
+    QString bg = QStringLiteral("#edf2f7");
+    QString fg = QStringLiteral("#31425a");
+    if (state == QLatin1String("RUNNING")) {
+        bg = QStringLiteral("#e6f4ea");
+        fg = QStringLiteral("#176b4d");
+    } else if (state == QLatin1String("SUCCESS")) {
+        bg = QStringLiteral("#e8f0fb");
+        fg = QStringLiteral("#1f5aa6");
+    } else if (state == QLatin1String("FAILURE") || state == QLatin1String("HALTED")) {
+        bg = QStringLiteral("#fdecea");
+        fg = QStringLiteral("#a43232");
+    } else if (state == QLatin1String("LOADED")) {
+        bg = QStringLiteral("#fff8eb");
+        fg = QStringLiteral("#8a5b13");
+    }
+    _btStatusLabel->setStyleSheet(
+        QStringLiteral("QLabel { padding: 4px 10px; border-radius: 4px; "
+                       "background: %1; color: %2; "
+                       "font-family: Consolas, 'Cascadia Mono', monospace; font-size: 12px; }")
+            .arg(bg, fg));
 }
 
 // =========== Toolbar actions ===========

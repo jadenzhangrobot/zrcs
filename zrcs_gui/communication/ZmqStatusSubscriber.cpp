@@ -81,6 +81,13 @@ void ZMQStatusWorker::pollLoop()
                 emit rtLogReceived(log.level(), message, timestamp);
             }
 
+            if (status.has_bt_status()) {
+                const auto& bt = status.bt_status();
+                emit btStatusUpdated(QString::fromStdString(bt.tree_state()),
+                                     QString::fromStdString(bt.current_node()),
+                                     QString::fromStdString(bt.message()));
+            }
+
         } catch (const zmq::error_t& e) {
             if (running_ && e.num() != EAGAIN) {
                 emit errorOccurred(QString("SUB recv error: %1").arg(e.what()));
@@ -117,25 +124,23 @@ ZMQStatusSubscriber::ZMQStatusSubscriber(const QString& host, int port, QObject*
             this, &ZMQStatusSubscriber::taskSchedulingUpdated);
     connect(worker_, &ZMQStatusWorker::rtLogReceived,
             this, &ZMQStatusSubscriber::rtLogReceived);
+    connect(worker_, &ZMQStatusWorker::btStatusUpdated,
+            this, &ZMQStatusSubscriber::btStatusUpdated);
     connect(worker_, &ZMQStatusWorker::errorOccurred,
             this, &ZMQStatusSubscriber::errorOccurred);
 
-    workerThread_->start();
+    connect(workerThread_, &QThread::started, worker_, &ZMQStatusWorker::start);
 }
 
 ZMQStatusSubscriber::~ZMQStatusSubscriber()
 {
     stop();
-    if (workerThread_) {
-        workerThread_->quit();
-        workerThread_->wait();
-    }
 }
 
 void ZMQStatusSubscriber::start()
 {
-    if (worker_) {
-        QMetaObject::invokeMethod(worker_, "start", Qt::QueuedConnection);
+    if (workerThread_ && !workerThread_->isRunning()) {
+        workerThread_->start();
     }
 }
 
@@ -143,5 +148,9 @@ void ZMQStatusSubscriber::stop()
 {
     if (worker_) {
         worker_->stop();
+    }
+    if (workerThread_) {
+        workerThread_->quit();
+        workerThread_->wait(1000);
     }
 }

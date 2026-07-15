@@ -37,6 +37,9 @@ public:
     void stop(const std::string& reason = "Stopped");
     StatusSnapshot status() const;
 
+    /// 将当前 BT 状态写入 StatusStore（供 StatusCollector 周期调用）。
+    void syncStatusToStore();
+
     BehaviorTreeRunner* runner() const { return runner_.get(); }
     const BtContext& context() const { return context_; }
 

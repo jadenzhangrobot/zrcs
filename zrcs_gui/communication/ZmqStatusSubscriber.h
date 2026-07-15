@@ -10,7 +10,7 @@
 
 /**
  * @class ZMQStatusWorker
- * @brief ZMQ SUB 后台工作线程，接收 NRT 发布的轴状态数据
+ * @brief ZMQ SUB 后台工作线程，接收 NRT 发布的系统/行为树状态
  */
 class ZMQStatusWorker : public QObject {
     Q_OBJECT
@@ -28,6 +28,7 @@ signals:
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
     void rtLogReceived(quint32 level, QString message, QString timestamp);
+    void btStatusUpdated(QString treeState, QString currentNode, QString message);
     void errorOccurred(const QString& error);
 
 private:
@@ -61,6 +62,7 @@ signals:
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
     void rtLogReceived(quint32 level, QString message, QString timestamp);
+    void btStatusUpdated(QString treeState, QString currentNode, QString message);
     void errorOccurred(const QString& error);
 
 private:

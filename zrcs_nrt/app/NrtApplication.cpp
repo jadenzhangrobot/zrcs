@@ -304,7 +304,8 @@ int NrtApplication::run()
     zmqServer_->start();
     spdlog::info("ZMQ server started, waiting for commands...");
 
-    statusCollector_ = std::make_unique<StatusCollector>(bridge_.get(), statusStore_.get());
+    statusCollector_ = std::make_unique<StatusCollector>(
+        bridge_.get(), statusStore_.get(), behaviorTreeService_.get());
     statusCollector_->start();
     spdlog::info("Status collector started");
 

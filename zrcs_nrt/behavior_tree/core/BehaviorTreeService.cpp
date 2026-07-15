@@ -62,3 +62,8 @@ BehaviorTreeService::StatusSnapshot BehaviorTreeService::status() const
     const auto s = runner_->status();
     return StatusSnapshot{s.treeState, s.currentNode, s.message};
 }
+
+void BehaviorTreeService::syncStatusToStore()
+{
+    publishStatusToStore();
+}
