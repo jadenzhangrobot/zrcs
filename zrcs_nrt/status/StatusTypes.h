@@ -23,6 +23,12 @@ struct AxisStatusSnapshot {
     double torque = 0.0;
 };
 
+struct AxisFeedbackFrameSnapshot {
+    uint64_t sequence = 0;
+    uint64_t simulationTimeNs = 0;
+    std::vector<AxisStatusSnapshot> axes;
+};
+
 struct BtStatusSnapshot {
     std::string treeState;    ///< IDLE / LOADED / RUNNING / ...
     std::string currentNode;
@@ -31,6 +37,7 @@ struct BtStatusSnapshot {
 
 struct SystemStatusSnapshot {
     std::vector<AxisStatusSnapshot> axes;
+    std::vector<AxisFeedbackFrameSnapshot> axisFeedbackFrames;
     std::string systemState;  ///< IDLE / RUN / STOP / ERROR / ...
     uint64_t heartbeat = 0;
     uint64_t droppedCommands = 0;

@@ -13,8 +13,10 @@
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kInchToMm = 25.4;
-constexpr double kEps = 1e-9;
+// 程序侧：G21 数值为 mm，G20 为 inch；控制器内部统一为 m。
+constexpr double kMmToM = 0.001;
+constexpr double kInchToM = 0.0254;
+constexpr double kEps = 1e-12;
 
 double addrAsDouble(const gpr::addr& a)
 {
@@ -38,15 +40,24 @@ void collectWords(const gpr::block& b, std::unordered_map<char, double>& words)
     }
 }
 
-void appendIfMoved(std::vector<Point3D>& waypoints, const Point3D& p)
+// 追加路径点；若实际新增点且提供 feedOut，则为上一→本点段写入 feedrateMs（m/s）。
+bool appendIfMoved(std::vector<Point3D>& waypoints,
+                   const Point3D& p,
+                   std::vector<double>* feedOut = nullptr,
+                   double feedrateMs = 0.0)
 {
     if (waypoints.empty()) {
         waypoints.push_back(p);
-        return;
+        return true;
     }
     if (pointDistance(waypoints.back(), p) > kEps) {
         waypoints.push_back(p);
+        if (feedOut) {
+            feedOut->push_back(feedrateMs);
+        }
+        return true;
     }
+    return false;
 }
 
 std::vector<Point3D> sampleArc(const Point3D& start,
@@ -207,6 +218,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
     bool absolute = true; // G90
     bool metric = true;   // G21
     int motion = 1;       // 默认 G1 模态
+    double modalFeedMs = 0.0; // 模态 F，单位 m/s；<=0 表示未指定
 
     for (int bi = 0; bi < program.num_blocks(); ++bi) {
         gpr::block b = program.get_block(static_cast<size_t>(bi));
@@ -246,6 +258,19 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             }
         }
 
+        // G21: program units mm → m; G20: program units inch → m.
+        // F: program length-unit / s → m/s（本项目约定，非 mm/min）。
+        auto scale = [metric](double v) {
+            return metric ? (v * kMmToM) : (v * kInchToM);
+        };
+
+        if (words.count('F')) {
+            const double fProg = words['F'];
+            if (std::isfinite(fProg) && fProg > 0.0) {
+                modalFeedMs = scale(fProg);
+            }
+        }
+
         const bool hasAxis = words.count('X') || words.count('Y') || words.count('Z') ||
                              words.count('I') || words.count('J') || words.count('K') ||
                              words.count('R');
@@ -263,7 +288,8 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             }
         }
 
-        auto scale = [metric](double v) { return metric ? v : v * kInchToMm; };
+        // G0 快速移动：进给记 0，规划侧回退到全局 maxVel。
+        const double segFeed = (thisMotion == 0) ? 0.0 : modalFeedMs;
 
         Point3D target = pos;
         if (absolute) {
@@ -300,7 +326,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
         }
 
         if (thisMotion == 0 || thisMotion == 1) {
-            appendIfMoved(result.waypoints, target);
+            appendIfMoved(result.waypoints, target, &result.segmentFeedrates, segFeed);
             pos = target;
             ++result.moveCount;
             continue;
@@ -317,6 +343,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
                                  &parseErr)) {
                     result.error = "Block " + std::to_string(bi + 1) + ": " + parseErr;
                     result.waypoints.clear();
+                    result.segmentFeedrates.clear();
                     return result;
                 }
             } else {
@@ -334,6 +361,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
                     result.error = "Block " + std::to_string(bi + 1) +
                                    ": G2/G3 requires IJK or R";
                     result.waypoints.clear();
+                    result.segmentFeedrates.clear();
                     return result;
                 }
             }
@@ -341,7 +369,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             auto samples = sampleArc(pos, target, iOff, jOff, kOff, clockwise,
                                      cfg_.arcChordTol, cfg_.arcMinSegments);
             for (const auto& p : samples) {
-                appendIfMoved(result.waypoints, p);
+                appendIfMoved(result.waypoints, p, &result.segmentFeedrates, segFeed);
             }
             pos = target;
             ++result.moveCount;
@@ -352,7 +380,13 @@ NcParser::Result NcParser::parseText(const std::string& text) const
     if (result.waypoints.size() < 2) {
         result.error = "NC program produced fewer than 2 waypoints";
         result.waypoints.clear();
+        result.segmentFeedrates.clear();
         return result;
+    }
+
+    // 段进给与折线边一一对应；若因去重点导致长度不齐，用 0 补齐（回退 maxVel）。
+    if (result.segmentFeedrates.size() + 1 != result.waypoints.size()) {
+        result.segmentFeedrates.resize(result.waypoints.size() - 1, 0.0);
     }
     return result;
 }

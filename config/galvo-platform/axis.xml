@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  振镜-平台联动轴配置
+
+  单位（控制器 SI）:
+    - 位置 m, 速度 m/s, 加速度 m/s^2, jerk m/s^3
+  原 mm 标定：平台 ±500 mm / 500 mm/s；振镜 ±50 mm / 10000 mm/s。
+-->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">
@@ -8,12 +15,12 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>500</maxVel>
-				<maxAcc>5000</maxAcc>
-				<maxJerk>50000</maxJerk>
-				<posPositiveLimit>500</posPositiveLimit>
-				<posNegativeLimit>-500</posNegativeLimit>
-				<maxPosDiff>1</maxPosDiff>
+				<maxVel>0.5</maxVel>
+				<maxAcc>5.0</maxAcc>
+				<maxJerk>50.0</maxJerk>
+				<posPositiveLimit>0.5</posPositiveLimit>
+				<posNegativeLimit>-0.5</posNegativeLimit>
+				<maxPosDiff>0.001</maxPosDiff>
 				<lead>1</lead>
 			</value0>
 			<value1>
@@ -22,12 +29,12 @@
 				<servoSlaveIds size="dynamic">
 					<value0>1</value0>
 				</servoSlaveIds>
-				<maxVel>500</maxVel>
-				<maxAcc>5000</maxAcc>
-				<maxJerk>50000</maxJerk>
-				<posPositiveLimit>500</posPositiveLimit>
-				<posNegativeLimit>-500</posNegativeLimit>
-				<maxPosDiff>1</maxPosDiff>
+				<maxVel>0.5</maxVel>
+				<maxAcc>5.0</maxAcc>
+				<maxJerk>50.0</maxJerk>
+				<posPositiveLimit>0.5</posPositiveLimit>
+				<posNegativeLimit>-0.5</posNegativeLimit>
+				<maxPosDiff>0.001</maxPosDiff>
 				<lead>1</lead>
 			</value1>
 			<value2>
@@ -36,12 +43,12 @@
 				<servoSlaveIds size="dynamic">
 					<value0>2</value0>
 				</servoSlaveIds>
-				<maxVel>10000</maxVel>
-				<maxAcc>500000</maxAcc>
-				<maxJerk>10000000</maxJerk>
-				<posPositiveLimit>50</posPositiveLimit>
-				<posNegativeLimit>-50</posNegativeLimit>
-				<maxPosDiff>5</maxPosDiff>
+				<maxVel>10.0</maxVel>
+				<maxAcc>500.0</maxAcc>
+				<maxJerk>10000.0</maxJerk>
+				<posPositiveLimit>0.05</posPositiveLimit>
+				<posNegativeLimit>-0.05</posNegativeLimit>
+				<maxPosDiff>0.005</maxPosDiff>
 				<lead>1</lead>
 			</value2>
 			<value3>
@@ -50,15 +57,14 @@
 				<servoSlaveIds size="dynamic">
 					<value0>3</value0>
 				</servoSlaveIds>
-				<maxVel>10000</maxVel>
-				<maxAcc>500000</maxAcc>
-				<maxJerk>10000000</maxJerk>
-				<posPositiveLimit>50</posPositiveLimit>
-				<posNegativeLimit>-50</posNegativeLimit>
-				<maxPosDiff>5</maxPosDiff>
+				<maxVel>10.0</maxVel>
+				<maxAcc>500.0</maxAcc>
+				<maxJerk>10000.0</maxJerk>
+				<posPositiveLimit>0.05</posPositiveLimit>
+				<posNegativeLimit>-0.05</posNegativeLimit>
+				<maxPosDiff>0.005</maxPosDiff>
 				<lead>1</lead>
 			</value3>
 		</axes>
 	</axisConfig>
 </cereal>
-

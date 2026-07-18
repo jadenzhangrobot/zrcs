@@ -58,13 +58,14 @@ void ZMQStatusWorker::pollLoop()
                 continue;
             }
 
-            QVector<double> positions;
-            positions.reserve(status.axes_size());
-            for (int i = 0; i < status.axes_size(); ++i) {
-                positions.append(status.axes(i).position());
+            if (status.axes_size() > 0) {
+                QVector<double> positions;
+                positions.reserve(status.axes_size());
+                for (int i = 0; i < status.axes_size(); ++i) {
+                    positions.append(status.axes(i).position());
+                }
+                emit axisPositionsUpdated(positions);
             }
-
-            emit axisPositionsUpdated(positions);
 
             if (status.heartbeat() > 0) {
                 emit heartbeatReceived(status.heartbeat());

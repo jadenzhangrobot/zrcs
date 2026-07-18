@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  hg-5axis 逻辑轴配置
+  单位：位置 m, 速度 m/s, 加速度 m/s^2, jerk m/s^3
+  限位保留为极大值（原 mm 量级 1e9 → m 量级 1e6）。
+-->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">
@@ -8,11 +13,11 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.01</maxVel>
+				<maxAcc>0.004</maxAcc>
+				<maxJerk>0.001</maxJerk>
+				<posPositiveLimit>1000000</posPositiveLimit>
+				<posNegativeLimit>-1000000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value0>
@@ -22,11 +27,11 @@
 				<servoSlaveIds size="dynamic">
 					<value0>1</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.01</maxVel>
+				<maxAcc>0.004</maxAcc>
+				<maxJerk>0.001</maxJerk>
+				<posPositiveLimit>1000000</posPositiveLimit>
+				<posNegativeLimit>-1000000</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value1>
@@ -37,12 +42,12 @@
 					<value0>2</value0>
 					<value1>3</value1>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
-				<maxPosDiff>0.05</maxPosDiff>
+				<maxVel>0.01</maxVel>
+				<maxAcc>0.004</maxAcc>
+				<maxJerk>0.001</maxJerk>
+				<posPositiveLimit>1000000</posPositiveLimit>
+				<posNegativeLimit>-1000000</posNegativeLimit>
+				<maxPosDiff>0.00005</maxPosDiff>
 				<lead>1</lead>
 			</value2>
 			<value3>
@@ -51,15 +56,14 @@
 				<servoSlaveIds size="dynamic">
 					<value0>4</value0>
 				</servoSlaveIds>
-				<maxVel>10</maxVel>
-				<maxAcc>4</maxAcc>
-				<maxJerk>1</maxJerk>
-				<posPositiveLimit>1000000000</posPositiveLimit>
-				<posNegativeLimit>-1000000000</posNegativeLimit>
+				<maxVel>0.01</maxVel>
+				<maxAcc>0.004</maxAcc>
+				<maxJerk>0.001</maxJerk>
+				<posPositiveLimit>1000000</posPositiveLimit>
+				<posNegativeLimit>-1000000</posNegativeLimit>
 				<maxPosDiff>0.00</maxPosDiff>
 				<lead>1</lead>
 			</value3>
 		</axes>
 	</axisConfig>
 </cereal>
-

@@ -190,7 +190,7 @@ controller_->axiss[0]->setAxisVelocityCmd(vel);
 ```
 
 这里将 Ruckig 的弧长标量速度直接作为轴 0 的速度指令。但：
-1. `vel` 是弧长参数速度（mm/s），不是关节速度或笛卡尔轴速度
+1. `vel` 是弧长参数速度（m/s，控制器 SI），不是关节速度或笛卡尔轴速度
 2. 轴 0 的 ID 硬编码为 0，而其他位置指令通过 `galvoCfg` 读取轴 ID（`platXId` 等）
 3. 该行与后续的 LPF 分解指令（正确使用配置的轴 ID）自相矛盾
 

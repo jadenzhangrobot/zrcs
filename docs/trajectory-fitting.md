@@ -26,9 +26,13 @@ struct PathMoveBlock {
     double rx = 0.0;
     double ry = 0.0;
     double rz = 0.0;
-    double feedrate = 0.0; // mm/s, <= 0 falls back to global maxVel
+    double feedrate = 0.0; // m/s, <= 0 falls back to global maxVel
 };
 ```
+
+**Units (controller SI):** position **m**, velocity **m/s**, acceleration **m/s²**, orientation **rad**.  
+G-code programs use standard G21 (**mm**) / G20 (**inch**); `NcParser` converts position to meters.  
+**F feed:** this project treats F as program-length-unit **per second** (G21 → mm/s → m/s), not mm/min.
 
 Path fitting outputs `TrajectorySegment`. The fitting stage fills geometry fields
 such as `length`, `coeff`, `max_curvature`, and `feedrate_limit`. Velocity

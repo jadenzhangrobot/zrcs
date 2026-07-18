@@ -754,7 +754,7 @@ void test_corner_blend_fits_butterfly_segments()
     const auto raw = make_butterfly_path();
     const auto blocks = make_blocks(raw, 12.0);
 
-    // 默认 minSegLen=0.05、minChordForBlend=0.20，毫米级密集路径也应生成圆角。
+    // butterfly 测试路径坐标量级约 ±6（任意长度单位）；cornerTol=0.25 同量级。
     const auto segments = MotionPlanner::buildGeometry(blocks, 0.25, 0.25);
 
     assert(!segments.empty());

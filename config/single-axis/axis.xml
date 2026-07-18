@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  single-axis 逻辑轴配置
+  单位：位置 m, 速度 m/s, 加速度 m/s^2, jerk m/s^3
+-->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">
@@ -8,15 +12,14 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>100</maxVel>
-				<maxAcc>400</maxAcc>
-				<maxJerk>3000</maxJerk>
-				<posPositiveLimit>10000</posPositiveLimit>
-				<posNegativeLimit>-10000</posNegativeLimit>
+				<maxVel>0.1</maxVel>
+				<maxAcc>0.4</maxAcc>
+				<maxJerk>3.0</maxJerk>
+				<posPositiveLimit>10.0</posPositiveLimit>
+				<posNegativeLimit>-10.0</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value0>
 		</axes>
 	</axisConfig>
 </cereal>
-

@@ -38,11 +38,15 @@ void JogControlPanel::setupUI()
     axisScrollBar->setPageStep(1);
 
     stepSizeCombo->clear();
+    // 界面按机床习惯显示 mm；发出的 stepSize 已是控制器单位 m（×0.001）。
     stepSizeCombo->addItems({"连续", "10mm", "1mm", "0.1mm", "0.01mm"});
 
     connect(stepSizeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
-        double sizes[] = {0, 10, 1, 0.1, 0.01};
-        emit stepSizeChanged(sizes[index]);
+        // UI mm → 控制器 m
+        constexpr double kMmToM = 0.001;
+        const double sizesMm[] = {0.0, 10.0, 1.0, 0.1, 0.01};
+        const int i = qBound(0, index, 4);
+        emit stepSizeChanged(sizesMm[i] * kMmToM);
     });
     connect(axisScrollBar, &QScrollBar::valueChanged, this, [this](int) {
         refreshAxisButtons();
@@ -145,7 +149,9 @@ void JogControlPanel::refreshAxisButtons()
             minusButtons[i]->setText(QString("J%1 -").arg(axis + 1));
             homeButtons[i]->setText(QString("J%1 回零").arg(axis + 1));
             originButtons[i]->setText(QString("J%1 设原点").arg(axis + 1));
-            axisPositionLabels[i]->setText(QString::number(axisPositions.value(axis), 'f', 3));
+            // 控制器 SI：直线 m / 旋转 rad；多显示几位避免 m 下只剩 mm 级分辨率。
+            axisPositionLabels[i]->setText(
+                QString::number(axisPositions.value(axis), 'f', 5));
         }
     }
 }
@@ -164,6 +170,7 @@ void JogControlPanel::setAxisPosition(int axis, double position)
     const int startAxis = axisScrollBar ? axisScrollBar->value() : 0;
     const int localIndex = axis - startAxis;
     if (localIndex >= 0 && localIndex < axisPositionLabels.size()) {
-        axisPositionLabels[localIndex]->setText(QString::number(position, 'f', 3));
+        // position 为控制器单位（m 或 rad）
+        axisPositionLabels[localIndex]->setText(QString::number(position, 'f', 5));
     }
 }

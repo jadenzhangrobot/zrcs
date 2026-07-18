@@ -5,6 +5,8 @@
 #include "shared_memory/ShmLayout.h"
 #include "status/StatusStore.h"
 
+#include <vector>
+
 StatusCollector::StatusCollector(RtBridge* bridge,
                                  StatusStore* store,
                                  BehaviorTreeService* behaviorTree,
@@ -63,12 +65,13 @@ void StatusCollector::run()
     while (running_.load(std::memory_order_acquire)) {
         if (bridge_ && store_) {
             zrcs::AxisFeedbackData feedback{};
-            bool gotFeedback = false;
+            std::vector<zrcs::AxisFeedbackData> feedbackBatch;
+            feedbackBatch.reserve(64);
             while (bridge_->readLatestAxisFeedback(feedback)) {
-                gotFeedback = true;
+                feedbackBatch.push_back(feedback);
             }
-            if (gotFeedback) {
-                store_->updateAxisFeedback(feedback, bridge_->axisCount());
+            if (!feedbackBatch.empty()) {
+                store_->updateAxisFeedbackBatch(feedbackBatch);
             }
 
             store_->updateSystemMeta(bridge_->heartbeat(),

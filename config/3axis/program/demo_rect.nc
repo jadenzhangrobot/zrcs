@@ -1,5 +1,5 @@
 ( demo_rect.nc — simple rectangle for path pipeline bring-up )
-( units: mm, absolute )
+( Program units: G21 = mm absolute; NcParser outputs meters for the controller )
 G21
 G90
 G0 Z5.0

@@ -204,7 +204,8 @@ bool queuePathFromWaypoints(RtBridge* bridge,
                             double endRx,
                             double endRy,
                             double endRz,
-                            const MotionPlanner::Config& cfg)
+                            const MotionPlanner::Config& cfg,
+                            const std::vector<double>* segmentFeedrates)
 {
     if (!bridge) {
         spdlog::error("[PathMove] RtBridge is null");
@@ -214,7 +215,7 @@ bool queuePathFromWaypoints(RtBridge* bridge,
     MotionPlanner planner;
     std::vector<TrajectorySegment> segments;
     std::string error;
-    if (!planner.plan(waypoints, rx, ry, rz, cfg, segments, &error)) {
+    if (!planner.plan(waypoints, rx, ry, rz, cfg, segments, &error, segmentFeedrates)) {
         spdlog::error("[PathMove] {}", error);
         return false;
     }
@@ -224,9 +225,10 @@ bool queuePathFromWaypoints(RtBridge* bridge,
     }
 
     spdlog::info("[PathMove] {} trajectory segments planned, maxVel={}, cornerTol={}, "
-                 "minSegLen={}, minChordForBlend={}",
+                 "minSegLen={}, minChordForBlend={}, hasSegmentFeed={}",
                  segments.size(), cfg.maxVel, cfg.cornerTol,
-                 cfg.minSegLen, 4.0 * cfg.minSegLen);
+                 cfg.minSegLen, 4.0 * cfg.minSegLen,
+                 segmentFeedrates != nullptr && !segmentFeedrates->empty());
     return true;
 }
 

@@ -1,11 +1,48 @@
 #include "status/StatusStore.h"
 
-void StatusStore::updateAxisFeedback(const zrcs::AxisFeedbackData& feedback, uint8_t axisCount)
+#include <algorithm>
+#include <utility>
+
+namespace {
+
+std::vector<zrcs_nrt::AxisStatusSnapshot> makeAxesSnapshot(
+    const zrcs::AxisFeedbackData& feedback)
 {
+    const size_t count = std::min(static_cast<size_t>(feedback.axisCount), zrcs::kAxisMax);
+    std::vector<zrcs_nrt::AxisStatusSnapshot> axes;
+    axes.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        zrcs_nrt::AxisStatusSnapshot axis;
+        axis.axisId = static_cast<uint8_t>(i);
+        axis.position = feedback.position[i];
+        axis.cmdPosition = feedback.cmdPosition[i];
+        axis.cmdVelocity = feedback.cmdVelocity[i];
+        axis.velocity = feedback.velocity[i];
+        axis.torque = feedback.torque[i];
+        axes.push_back(axis);
+    }
+    return axes;
+}
+
+} // namespace
+
+void StatusStore::updateAxisFeedbackBatch(
+    const std::vector<zrcs::AxisFeedbackData>& feedbackBatch)
+{
+    if (feedbackBatch.empty()) {
+        return;
+    }
+
     std::lock_guard<std::mutex> lock(mutex_);
-    latestFeedback_ = feedback;
+    latestFeedback_ = feedbackBatch.back();
     hasFeedback_ = true;
-    axisCount_ = axisCount;
+
+    for (const auto& feedback : feedbackBatch) {
+        if (pendingAxisFeedback_.size() >= kMaxPendingAxisFeedback) {
+            pendingAxisFeedback_.pop_front();
+        }
+        pendingAxisFeedback_.push_back(feedback);
+    }
 }
 
 void StatusStore::updateSystemMeta(uint64_t heartbeat,
@@ -44,17 +81,18 @@ zrcs_nrt::SystemStatusSnapshot StatusStore::snapshot()
     out.bt = bt_;
 
     if (hasFeedback_) {
-        out.axes.reserve(axisCount_);
-        for (uint8_t i = 0; i < axisCount_; ++i) {
-            zrcs_nrt::AxisStatusSnapshot axis;
-            axis.axisId = i;
-            axis.position = latestFeedback_.position[i];
-            axis.cmdPosition = latestFeedback_.cmdPosition[i];
-            axis.cmdVelocity = latestFeedback_.cmdVelocity[i];
-            axis.velocity = latestFeedback_.velocity[i];
-            axis.torque = latestFeedback_.torque[i];
-            out.axes.push_back(axis);
-        }
+        out.axes = makeAxesSnapshot(latestFeedback_);
+    }
+
+    out.axisFeedbackFrames.reserve(pendingAxisFeedback_.size());
+    while (!pendingAxisFeedback_.empty()) {
+        const auto& feedback = pendingAxisFeedback_.front();
+        zrcs_nrt::AxisFeedbackFrameSnapshot frame;
+        frame.sequence = feedback.sequence;
+        frame.simulationTimeNs = feedback.simulationTimeNs;
+        frame.axes = makeAxesSnapshot(feedback);
+        out.axisFeedbackFrames.push_back(std::move(frame));
+        pendingAxisFeedback_.pop_front();
     }
 
     out.rtLogs.reserve(pendingLogs_.size());

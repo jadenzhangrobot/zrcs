@@ -37,7 +37,7 @@ inline constexpr size_t   kMujocoIdentQueueCap = 1024;
 inline constexpr size_t   kMujocoParamQueueCap = 256;
 inline constexpr size_t   kCmdArgsMax    = 25;
 inline constexpr uint32_t kShmMagic      = 0x5A524353u;  // 'ZRCS'
-inline constexpr uint32_t kShmVersion    = 15;           // ABI 变更时必须 +1 (15: MovePath TargetAcc)
+inline constexpr uint32_t kShmVersion    = 16;           // ABI 变更时必须 +1 (16: timestamped axis feedback)
 inline constexpr size_t   kShmTotalSize  = 16 * 1024 * 1024;
 inline constexpr const char* kShmName       = "rtMotion";
 inline constexpr int         kAttachRetries = 30;
@@ -134,12 +134,17 @@ static_assert(sizeof(RtLogEntry) == 264, "RtLogEntry layout changed");
 
 struct AxisFeedbackData 
 {
+    uint64_t sequence = 0;
+    uint64_t simulationTimeNs = 0;
+    uint32_t axisCount = 0;
+    uint32_t _pad = 0;
     double position[kAxisMax];
     double cmdPosition[kAxisMax];
     double cmdVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
 };
+static_assert(sizeof(AxisFeedbackData) == 2584, "AxisFeedbackData layout changed");
 
 struct MujocoIdentCommandData {
     uint64_t seq = 0;
@@ -425,9 +430,9 @@ struct alignas(64) SharedBlock {
 
     // ── MoveL / MoveLGalvo 标量运动限制配置（NRT→RT）────────────────────
     struct alignas(64) PathMoveConfig {
-        std::atomic<double> maxVel{10.0};    // mm/s（与轴配置 motion/maxVel 一致）
-        std::atomic<double> maxAccel{20.0};  // mm/s²（与轴配置 motion/maxAcc 一致）
-        std::atomic<double> maxJerk{30.0};   // mm/s³（与轴配置 motion/maxJerk 一致）
+        std::atomic<double> maxVel{0.1};     // m/s（与轴配置 motion/maxVel 一致）
+        std::atomic<double> maxAccel{0.3};   // m/s²（与轴配置 motion/maxAcc 一致）
+        std::atomic<double> maxJerk{3.0};    // m/s³（与轴配置 motion/maxJerk 一致）
     };
     PathMoveConfig pathMoveCfg;
 

@@ -97,6 +97,14 @@ message RtLogStatus {
     string message = 5;
 }
 
+// 一个逻辑仿真步的完整轴反馈。simulation_time_ns 是 PlotJuggler 横轴，
+// sequence 用于检测 PUB/SUB 链路中的丢帧或仿真进程重启。
+message AxisFeedbackFrame {
+    uint64 sequence = 1;
+    uint64 simulation_time_ns = 2;
+    repeated AxisStatus axes = 3;
+}
+
 message SystemStatus {
     repeated AxisStatus axes = 1;
     string system_state = 2;
@@ -104,4 +112,8 @@ message SystemStatus {
     uint64 dropped_commands = 4;
     repeated RtLogStatus rt_logs = 5;
     BehaviorTreeStatus bt_status = 6; // 行为树运行状态（树状态/当前节点/消息）
+    // 高频发布时每条 SystemStatus 只携带一个逻辑步；保留 repeated 以兼容旧批量消息。
+    repeated AxisFeedbackFrame axis_feedback_frames = 7;
+    // PlotJuggler ProtobufParser 识别的源时间字段，单位为秒。
+    double timestamp = 8;
 }

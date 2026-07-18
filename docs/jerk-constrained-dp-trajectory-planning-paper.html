@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A Jerk-Constrained Global Time-Optimal Trajectory Planning Framework Using Dynamic Programming - academic paper draft">
+  <title>A Jerk-Constrained Global Time-Optimal Trajectory Planning Framework Using Dynamic Programming</title>
+  <style>
+    :root {
+      --page: #ffffff;
+      --canvas: #eef1f4;
+      --ink: #16191d;
+      --muted: #58616b;
+      --line: #cfd5db;
+      --soft: #f5f7f9;
+      --blue: #174f82;
+      --green: #236847;
+      --amber: #8a5a12;
+      --red: #922f32;
+      --code: #17202a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: "Times New Roman", "Noto Serif CJK SC", "Songti SC", SimSun, serif;
+      font-size: 16px;
+      line-height: 1.78;
+      letter-spacing: 0;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .screen-tools {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 10px max(18px, calc((100vw - 980px) / 2));
+      border-bottom: 1px solid #d9dee3;
+      background: rgba(255, 255, 255, 0.96);
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+    }
+
+    .screen-tools .actions { display: flex; gap: 8px; }
+
+    .screen-tools button,
+    .screen-tools a {
+      min-height: 34px;
+      padding: 6px 12px;
+      border: 1px solid #aeb8c2;
+      border-radius: 4px;
+      background: #fff;
+      color: #273544;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .screen-tools button:hover,
+    .screen-tools a:hover {
+      background: #f0f4f7;
+      text-decoration: none;
+    }
+
+    article.paper {
+      width: min(980px, calc(100% - 28px));
+      margin: 24px auto 56px;
+      padding: 68px 76px 78px;
+      background: var(--page);
+      box-shadow: 0 3px 18px rgba(22, 31, 40, 0.12);
+    }
+
+    .paper-header {
+      padding-bottom: 28px;
+      border-bottom: 2px solid #26323e;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 auto 14px;
+      max-width: 25ch;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 31px;
+      line-height: 1.28;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .title-cn {
+      margin: 0 0 22px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .authors { margin: 4px 0; font-size: 17px; }
+    .affiliation, .email { margin: 2px 0; color: var(--muted); font-size: 14px; }
+
+    .status-note {
+      margin: 24px 0 0;
+      padding: 10px 14px;
+      border-left: 4px solid var(--amber);
+      background: #fff8e8;
+      color: #5f481c;
+      text-align: left;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    section { margin-top: 34px; }
+
+    h2 {
+      margin: 0 0 14px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--line);
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 21px;
+      line-height: 1.35;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 25px 0 9px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.4;
+      letter-spacing: 0;
+    }
+
+    h4 {
+      margin: 20px 0 7px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 12px; text-align: justify; }
+
+    .abstract {
+      margin-top: 28px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .abstract h2 {
+      border: 0;
+      margin-bottom: 8px;
+      padding: 0;
+      font-size: 17px;
+      text-align: center;
+    }
+
+    .keywords { margin: 10px 0 0; text-align: left; }
+
+    .toc {
+      columns: 2;
+      column-gap: 42px;
+      margin: 0;
+      padding-left: 24px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+    }
+
+    .toc li { break-inside: avoid; margin: 3px 0; }
+
+    .equation {
+      margin: 15px auto;
+      padding: 8px 44px 8px 16px;
+      position: relative;
+      overflow-x: auto;
+      text-align: center;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+
+    .equation .number {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .where {
+      color: #333b43;
+      font-size: 15px;
+    }
+
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      line-height: 1.15;
+      margin: 0 3px;
+    }
+
+    .fraction > :first-child { padding: 0 4px 2px; border-bottom: 1px solid currentColor; }
+    .fraction > :last-child { padding: 2px 4px 0; }
+
+    .figure { margin: 24px 0; text-align: center; }
+
+    .figure svg {
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      background: #fcfdfe;
+    }
+
+    figcaption {
+      margin-top: 8px;
+      color: #3f4851;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    ul, ol { margin: 8px 0 14px; padding-left: 26px; }
+    li { margin: 5px 0; }
+
+    .contributions li::marker { color: var(--blue); font-weight: 700; }
+
+    .definition,
+    .proposition,
+    .note,
+    .warning {
+      margin: 16px 0;
+      padding: 12px 15px;
+      border-left: 4px solid var(--blue);
+      background: #f3f7fb;
+    }
+
+    .proposition { border-color: var(--green); background: #f1f8f4; }
+    .warning { border-color: var(--amber); background: #fff8e8; }
+
+    .definition strong,
+    .proposition strong,
+    .note strong,
+    .warning strong {
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    .algorithm {
+      margin: 18px 0;
+      border: 1px solid #8f9ba7;
+      background: #fff;
+    }
+
+    .algorithm-title {
+      padding: 8px 12px;
+      border-bottom: 1px solid #8f9ba7;
+      background: var(--soft);
+      font-weight: 700;
+    }
+
+    .algorithm ol {
+      margin: 0;
+      padding: 12px 18px 12px 48px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    code {
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: #edf1f4;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      margin: 15px 0;
+      padding: 16px 18px;
+      overflow: auto;
+      background: var(--code);
+      color: #ecf1f5;
+      font: 12.5px/1.6 "Cascadia Mono", Consolas, monospace;
+      white-space: pre;
+    }
+
+    table {
+      width: 100%;
+      margin: 16px 0 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      padding: 8px 9px;
+      border: 1px solid #bfc6cd;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #eef2f5; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    td.numeric, th.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+    .pending { color: var(--red); font-weight: 700; }
+
+    .references { padding-left: 28px; font-size: 14px; line-height: 1.55; }
+    .references li { margin-bottom: 9px; }
+
+    .small { color: var(--muted); font-size: 13px; }
+    .no-break { break-inside: avoid; }
+
+    footer {
+      margin-top: 42px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @media (max-width: 760px) {
+      article.paper {
+        width: 100%;
+        margin: 0;
+        padding: 38px 20px 56px;
+        box-shadow: none;
+      }
+
+      .screen-tools { position: static; padding: 10px 12px; }
+      h1 { font-size: 25px; }
+      .title-cn { font-size: 19px; }
+      .toc { columns: 1; }
+      .equation { padding-right: 16px; font-size: 16px; }
+      .equation .number { position: static; display: block; transform: none; margin-top: 4px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+
+    @page { size: A4; margin: 18mm 17mm 20mm; }
+
+    @media print {
+      body { background: #fff; font-size: 10.5pt; }
+      .screen-tools { display: none; }
+      article.paper { width: auto; margin: 0; padding: 0; box-shadow: none; }
+      h1 { font-size: 20pt; }
+      h2 { font-size: 14pt; break-after: avoid; }
+      h3 { font-size: 11.5pt; break-after: avoid; }
+      p, li { orphans: 3; widows: 3; }
+      table, figure, .algorithm, .definition, .proposition, .warning { break-inside: avoid; }
+      a { color: inherit; }
+      .status-note { border: 1px solid #999; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-tools">
+    <span>学术论文初稿 · 单文件 HTML · A4 打印优化</span>
+    <div class="actions">
+      <a href="#contents" aria-label="跳转到目录">目录</a>
+      <button type="button" onclick="window.print()" aria-label="打印或导出 PDF">打印 / PDF</button>
+    </div>
+  </div>
+
+  <article class="paper">
+    <header class="paper-header">
+      <h1>A Jerk-Constrained Global Time-Optimal Trajectory Planning Framework Using Dynamic Programming</h1>
+      <p class="title-cn">基于动态规划的加加速度约束全局时间最优轨迹规划框架</p>
+      <p class="authors">作者姓名<sup>1</sup>，合作者姓名<sup>2</sup></p>
+      <p class="affiliation"><sup>1</sup>单位名称，城市，邮编　　<sup>2</sup>单位名称，城市，邮编</p>
+      <p class="email">通信作者：author@example.com</p>
+      <div class="status-note">
+        <strong>稿件状态说明：</strong>本文为方法论文初稿。理论、算法与工程映射已经完整撰写；第 7 节实验表格保留“待实测”标记，避免在未运行基准实验的情况下虚构数值。投稿前应补充真实数据、统计检验、硬件参数、作者与基金信息，并按目标期刊格式调整参考文献。
+      </div>
+    </header>
+
+    <section class="abstract" id="abstract-cn">
+      <h2>摘　要</h2>
+      <p>针对数控系统与机器人沿给定几何路径运动时，加加速度（jerk）约束导致状态维数提升、局部可行性与全局时间最优性难以兼顾的问题，本文提出一种基于动态规划的 jerk 约束全局时间最优轨迹规划框架。该方法首先在路径参数域内建立速度、加速度与 jerk 到各执行轴运动约束的严格映射，并利用 S 型曲线最短变速距离执行前向—后向可达包络计算，以压缩后续搜索空间；随后将离散路径接点上的状态表示为速度—切向加速度二元组，构造分层有向无环状态图。图中每条边由 jerk 受限局部轨迹生成器进行可行性判定和最短时间求解，动态规划依据 Bellman 最优性原理选择总时间最小的连续状态链。进一步地，本文提出基于可达区间的自适应加速度采样、不可行边提前剪枝以及支配状态消除策略，从而降低状态图规模。所提出方法在离散状态图上具有全局最优性，重建轨迹在局部求解器正确且共享边界状态一致时满足速度、加速度和 jerk 连续性约束；随着路径与状态网格加密，其解在常规正则条件下逼近连续问题最优解。该框架兼容解析 S 曲线求解器与 Ruckig 等在线轨迹生成器，适合在非实时层完成全局规划、在实时层执行分段轨迹。本文同时给出面向 CNC 折线、圆弧和机器人关节路径的可复现实验协议。</p>
+      <p class="keywords"><strong>关键词：</strong>轨迹规划；时间最优；加加速度约束；动态规划；S 型曲线；路径参数化；Ruckig</p>
+    </section>
+
+    <section class="abstract" id="abstract-en" lang="en">
+      <h2>Abstract</h2>
+      <p>This paper presents a dynamic-programming framework for globally time-optimal path parameterization under jerk constraints. A prescribed geometric path is first transformed into the path-coordinate domain, where joint or Cartesian velocity, acceleration, and jerk limits are expressed as state-dependent inequalities. A jerk-limited forward-backward reachable envelope based on minimum S-curve transition distances is then computed to reduce the admissible velocity range. At each discretized path junction, a state lattice over path velocity and tangential acceleration is constructed. Every inter-layer edge is evaluated by a jerk-limited local trajectory generator, which returns both feasibility and minimum transition time. Dynamic programming subsequently recovers the minimum-time continuous state chain according to Bellman's principle of optimality. Adaptive acceleration sampling, reachable-interval pruning, and dominance elimination are introduced to control graph complexity. The resulting solution is globally optimal on the discretized graph and is jerk-feasible when all local transitions satisfy the projected constraints and share identical boundary states. Under standard regularity and consistency assumptions, grid refinement drives the discrete solution toward the optimum of the continuous problem. The framework supports both analytical S-curve solvers and online trajectory generators such as Ruckig, enabling global planning in a non-real-time layer and deterministic segment execution in a real-time controller.</p>
+      <p class="keywords"><strong>Keywords:</strong> trajectory planning; time-optimal path parameterization; jerk constraints; dynamic programming; S-curve; reachable set</p>
+    </section>
+
+    <section id="contents">
+      <h2>目录</h2>
+      <ol class="toc">
+        <li><a href="#introduction">引言</a></li>
+        <li><a href="#related-work">相关工作</a></li>
+        <li><a href="#problem">问题建模</a></li>
+        <li><a href="#framework">全局规划框架</a></li>
+        <li><a href="#analysis">正确性与复杂度分析</a></li>
+        <li><a href="#implementation">工程实现</a></li>
+        <li><a href="#experiments">实验设计与结果报告</a></li>
+        <li><a href="#discussion">讨论与局限</a></li>
+        <li><a href="#conclusion">结论</a></li>
+        <li><a href="#appendix">附录：核心伪代码</a></li>
+        <li><a href="#references">参考文献</a></li>
+      </ol>
+    </section>
+
+    <section id="introduction">
+      <h2>1　引言</h2>
+      <p>沿给定几何路径的时间最优参数化是机器人、数控机床、激光加工和高速搬运系统中的基础问题。传统二阶方法通常在路径坐标中约束速度和加速度，并通过前向—后向积分获得时间最优速度曲线。然而，当控制器同时限制 jerk 时，系统状态由单一速度扩展为速度与加速度的组合；未来可达速度不仅取决于当前位置和速度，也取决于当前加速度。因而，基于 <i>v</i><sup>2</sup> = <i>v</i><sub>0</sub><sup>2</sup> + 2<i>a</i>Δ<i>s</i> 的二阶扫描无法为加速度建立连续边界，短段、急剧限速点和非零接点加速度容易造成局部轨迹生成器不可行。</p>
+      <p>另一类工程方案为每个几何段独立生成七段式 S 曲线，并强制接点加速度为零。该策略容易实现且通常可行，但频繁清零加速度会损失跨段加速能力，不能利用前方较长路径提前建立加速度，也难以获得全局最短执行时间。直接求解连续三阶最优控制问题则存在奇异曲线、切换结构复杂、数值敏感以及实时性不足等困难。</p>
+      <p>本文采用“速度可达包络预处理 + 二维状态图 + 局部精确可行性判定 + 动态规划”的思路，将难以直接处理的连续全局问题转化为结构清晰的分层最短路径问题。其主要贡献如下：</p>
+      <ol class="contributions">
+        <li>建立包含路径曲率项的逐轴三阶约束投影，使标量路径速度、切向加速度和路径 jerk 与各执行轴的速度、加速度和 jerk 限制保持一致。</li>
+        <li>提出基于 S 型最短变速距离的双向速度包络，作为动态规划前的安全上界与剪枝工具；零加速度状态始终作为保底候选，因此搜索失败可与输入本身不可行明确区分。</li>
+        <li>将接点状态离散为 (<i>v</i>, <i>a</i>)，使用 jerk 受限局部求解器定义图边，以动态规划获得离散图上的全局最短时间状态链，并保持段间速度和加速度连续。</li>
+        <li>给出自适应采样、可达区间传播、边缓存与支配剪枝方法，以及与 NRT/RT 分层控制架构相匹配的工程实现方案。</li>
+      </ol>
+    </section>
+
+    <section id="related-work">
+      <h2>2　相关工作</h2>
+      <h3>2.1　二阶时间最优路径参数化</h3>
+      <p>Bobrow 等和 Shin–McKay 奠定了沿指定路径进行最短时间参数化的经典框架，通过将机器人动力学约束转化为路径加速度区间，沿最大/最小加速度场积分得到速度极限曲线。后续研究利用凸优化和可达性分析改善了鲁棒性。TOPP-RA 将离散路径上的二阶约束表示为可达集合传播，在速度—平方速度变量下获得快速而稳定的参数化结果。这类方法对速度与加速度约束非常有效，但 jerk 引入了加速度状态，使一维可达区间不再充分。</p>
+
+      <h3>2.2　三阶约束与 S 型曲线</h3>
+      <p>jerk 受限轨迹通常采用分段常 jerk 的 S 型曲线，能够降低机械冲击、结构振动和伺服跟踪误差。在线轨迹生成器可在给定位置、速度和加速度边界状态下实时求解局部时间最优轨迹。Ruckig 进一步支持任意目标状态和多自由度同步，适合作为局部边求解器。然而，在线轨迹生成解决的是“当前状态到单一目标状态”的问题，本身不决定多个路径接点的全局边界状态。</p>
+
+      <h3>2.3　本文方法定位</h3>
+      <p>本文不替代局部 S 曲线或在线轨迹生成器，而是在其上层增加全局边界状态选择。与逐段零加速度方法相比，动态规划允许非零加速度跨越接点；与直接连续三阶最优控制相比，分层图避免显式追踪复杂的奇异曲线；与只对速度做 jerk 惩罚的前瞻相比，本文将加速度纳入状态并逐边验证，从而形成可执行的连续状态链。</p>
+    </section>
+
+    <section id="problem">
+      <h2>3　问题建模</h2>
+      <h3>3.1　路径参数化</h3>
+      <p>设已知几何路径为 <b>q</b>(<i>s</i>) ∈ ℝ<sup>m</sup>，其中 <i>s</i> ∈ [0, <i>S</i>] 为弧长或单调路径参数，<i>m</i> 为关节或笛卡尔轴维数。定义路径速度、切向加速度和路径 jerk：</p>
+      <div class="equation">
+        <i>v</i> = ṡ ≥ 0，　<i>a</i> = s̈，　<i>j</i> = s⃛
+        <span class="number">(1)</span>
+      </div>
+      <p>由链式法则，各轴的一至三阶时间导数为：</p>
+      <div class="equation">
+        <b>q̇</b> = <b>q</b><sub>s</sub><i>v</i>
+        <span class="number">(2)</span>
+      </div>
+      <div class="equation">
+        <b>q̈</b> = <b>q</b><sub>ss</sub><i>v</i><sup>2</sup> + <b>q</b><sub>s</sub><i>a</i>
+        <span class="number">(3)</span>
+      </div>
+      <div class="equation">
+        <b>q⃛</b> = <b>q</b><sub>sss</sub><i>v</i><sup>3</sup> + 3<b>q</b><sub>ss</sub><i>v</i><i>a</i> + <b>q</b><sub>s</sub><i>j</i>.
+        <span class="number">(4)</span>
+      </div>
+      <p>式 (4) 表明，仅限制标量路径 jerk 并不能自动保证每个执行轴的 jerk 合法；曲率变化项 <b>q</b><sub>sss</sub><i>v</i><sup>3</sup> 和速度—加速度耦合项 3<b>q</b><sub>ss</sub><i>v</i><i>a</i> 必须同时考虑。</p>
+
+      <h3>3.2　运动学与工艺约束</h3>
+      <p>对第 <i>k</i> 个轴给定速度、加速度与 jerk 上下界：</p>
+      <div class="equation">
+        <span>|q̇<sub>k</sub>| ≤ V<sub>k</sub>，　|q̈<sub>k</sub>| ≤ A<sub>k</sub>，　|q⃛<sub>k</sub>| ≤ J<sub>k</sub></span>
+        <span class="number">(5)</span>
+      </div>
+      <p>将式 (2)–(4) 代入式 (5)，可得到依赖于 (<i>s</i>, <i>v</i>, <i>a</i>) 的路径 jerk 可行区间：</p>
+      <div class="equation">
+        <i>j</i> ∈ [<i>j</i><sub>min</sub>(<i>s</i>,<i>v</i>,<i>a</i>), <i>j</i><sub>max</sub>(<i>s</i>,<i>v</i>,<i>a</i>)]
+        <span class="number">(6)</span>
+      </div>
+      <p>若某轴 <i>q</i><sub>s,k</sub> 接近零，则不能直接除以该项，而应保留原始线性不等式并求所有轴约束的交集。除此之外，还可加入工艺进给上限、曲率向心加速度限制、接点容差、速度非负以及起终点状态约束。</p>
+
+      <h3>3.3　优化目标</h3>
+      <p>给定起终状态 <i>x</i><sub>0</sub> = (0, <i>v</i><sub>0</sub>, <i>a</i><sub>0</sub>) 和 <i>x</i><sub>f</sub> = (<i>S</i>, <i>v</i><sub>f</sub>, <i>a</i><sub>f</sub>)，目标是在满足式 (2)–(6) 及路径连续性的条件下最小化总时间：</p>
+      <div class="equation">
+        <i>T</i><sup>*</sup> = min　∫<sub>0</sub><sup><i>S</i></sup>
+        <span class="fraction"><span>1</span><span><i>v</i>(<i>s</i>)</span></span>d<i>s</i>.
+        <span class="number">(7)</span>
+      </div>
+      <div class="definition">
+        <strong>离散全局最优性的含义：</strong>本文算法保证在给定路径网格、状态候选集和局部边求解器所定义的有限有向图上取得全局最短时间。它不在有限网格下声称等于连续最优控制问题的精确全局最优解。
+      </div>
+    </section>
+
+    <section id="framework">
+      <h2>4　基于动态规划的全局规划框架</h2>
+
+      <figure class="figure" aria-labelledby="fig1-caption">
+        <svg viewBox="0 0 900 305" role="img" aria-label="jerk 约束全局轨迹规划框架">
+          <defs>
+            <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="3.5" orient="auto">
+              <polygon points="0 0, 8 3.5, 0 7" fill="#52616f"></polygon>
+            </marker>
+          </defs>
+          <rect x="24" y="38" width="132" height="58" rx="4" fill="#e8f1f8" stroke="#174f82"></rect>
+          <text x="90" y="62" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">几何路径离散</text>
+          <text x="90" y="83" text-anchor="middle" font-size="12" fill="#425466">q(s), qₛ, qₛₛ, qₛₛₛ</text>
+
+          <rect x="198" y="38" width="142" height="58" rx="4" fill="#eef5ed" stroke="#236847"></rect>
+          <text x="269" y="62" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">逐轴约束投影</text>
+          <text x="269" y="83" text-anchor="middle" font-size="12" fill="#425466">v, a, j 可行域</text>
+
+          <rect x="382" y="38" width="142" height="58" rx="4" fill="#fff5df" stroke="#8a5a12"></rect>
+          <text x="453" y="62" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">S 曲线双向包络</text>
+          <text x="453" y="83" text-anchor="middle" font-size="12" fill="#425466">速度上界与剪枝</text>
+
+          <rect x="566" y="38" width="142" height="58" rx="4" fill="#f2edf7" stroke="#684985"></rect>
+          <text x="637" y="62" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">(v,a) 状态格点</text>
+          <text x="637" y="83" text-anchor="middle" font-size="12" fill="#425466">自适应候选集</text>
+
+          <rect x="750" y="38" width="126" height="58" rx="4" fill="#f8ecec" stroke="#922f32"></rect>
+          <text x="813" y="62" text-anchor="middle" font-size="15" font-family="Microsoft YaHei">局部边求解</text>
+          <text x="813" y="83" text-anchor="middle" font-size="12" fill="#425466">可行性 + 最短时间</text>
+
+          <line x1="156" y1="67" x2="194" y2="67" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+          <line x1="340" y1="67" x2="378" y2="67" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+          <line x1="524" y1="67" x2="562" y2="67" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+          <line x1="708" y1="67" x2="746" y2="67" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+          <rect x="212" y="181" width="188" height="66" rx="4" fill="#e8f1f8" stroke="#174f82" stroke-width="1.5"></rect>
+          <text x="306" y="207" text-anchor="middle" font-size="16" font-family="Microsoft YaHei">反向动态规划</text>
+          <text x="306" y="230" text-anchor="middle" font-size="12" fill="#425466">Bellman 递推与状态回溯</text>
+
+          <rect x="500" y="181" width="188" height="66" rx="4" fill="#eef5ed" stroke="#236847" stroke-width="1.5"></rect>
+          <text x="594" y="207" text-anchor="middle" font-size="16" font-family="Microsoft YaHei">连续轨迹重建</text>
+          <text x="594" y="230" text-anchor="middle" font-size="12" fill="#425466">NRT 全局规划 / RT 分段执行</text>
+
+          <path d="M813 96 L813 132 L306 132 L306 176" fill="none" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></path>
+          <line x1="400" y1="214" x2="496" y2="214" stroke="#52616f" stroke-width="1.5" marker-end="url(#arrow)"></line>
+          <path d="M594 181 L594 150 L716 150 L716 106" fill="none" stroke="#88939d" stroke-width="1" stroke-dasharray="5 4" marker-end="url(#arrow)"></path>
+          <text x="666" y="169" text-anchor="middle" font-size="11" fill="#65717d" font-family="Microsoft YaHei">必要时局部加密</text>
+        </svg>
+        <figcaption id="fig1-caption">图 1　所提出框架的数据流。S 曲线包络负责缩小候选速度范围，局部求解器负责定义状态图中的可行边，动态规划负责全局边界状态选择。</figcaption>
+      </figure>
+
+      <h3>4.1　S 型曲线速度可达包络</h3>
+      <p>对零边界加速度的一维速度转换，记 Δ<i>v</i> = |<i>v</i><sub>1</sub> − <i>v</i><sub>0</sub>|，最大切向加速度和 jerk 分别为 <i>A</i> 与 <i>J</i>。若 Δ<i>v</i> ≤ <i>A</i><sup>2</sup>/<i>J</i>，加速度轮廓为三角形；否则为含恒加速度平台的梯形。最短转换时间为：</p>
+      <div class="equation">
+        <i>T</i><sub>tr</sub> =
+        { 2√(Δ<i>v</i>/<i>J</i>),　Δ<i>v</i> ≤ <i>A</i><sup>2</sup>/<i>J</i>；　
+        Δ<i>v</i>/<i>A</i> + <i>A</i>/<i>J</i>,　其他 }
+        <span class="number">(8)</span>
+      </div>
+      <p>由于该 S 曲线关于时间中点对称，最短转换距离为：</p>
+      <div class="equation">
+        <i>d</i><sub>min</sub>(<i>v</i><sub>0</sub>,<i>v</i><sub>1</sub>) =
+        <span class="fraction"><span><i>v</i><sub>0</sub> + <i>v</i><sub>1</sub></span><span>2</span></span>
+        <i>T</i><sub>tr</sub>.
+        <span class="number">(9)</span>
+      </div>
+      <p>对每个长度为 Δ<i>s</i><sub>i</sub> 的路径段，通过二分求解满足 <i>d</i><sub>min</sub> ≤ Δ<i>s</i><sub>i</sub> 的最大入口或出口速度。一次后向扫描保证能够减速到未来限速点，一次前向扫描保证能够从起始状态加速到接点速度。该包络采用零加速度边界，因此是后续二维搜索的保守可行基线，而不是最终加速度解。</p>
+
+      <h3>4.2　速度—加速度状态格点</h3>
+      <p>将路径离散为 <i>N</i> 个区间和 <i>N</i>+1 个接点 <i>s</i><sub>i</sub>。第 <i>i</i> 层候选状态定义为：</p>
+      <div class="equation">
+        X<sub>i</sub> = { <i>x</i><sub>i,r</sub> = (<i>v</i><sub>i,r</sub>, <i>a</i><sub>i,r</sub>) | <i>r</i> = 1,…,<i>M</i><sub>i</sub> }.
+        <span class="number">(10)</span>
+      </div>
+      <p>速度候选限制在双向包络和局部几何速度上界以内；加速度候选首先根据式 (3) 求得逐轴合法区间，再在区间内自适应采样。除均匀样本外，候选集加入以下高价值状态：</p>
+      <ul>
+        <li>零加速度状态，用作可行保底并对应传统逐段 S 曲线策略；</li>
+        <li>由左右段等效恒加速度估计得到的候选；</li>
+        <li>前一层可达区间边界及最大/最小 jerk 积分预测值；</li>
+        <li>上一轮粗网格最优状态邻域内的局部加密样本。</li>
+      </ul>
+
+      <h3>4.3　局部边可行性与代价</h3>
+      <p>仅允许相邻层之间连边。对候选状态 <i>x</i><sub>i,r</sub> 和 <i>x</i><sub>i+1,k</sub>，局部求解器在位移 Δ<i>s</i><sub>i</sub> 上求解：</p>
+      <div class="equation">
+        (<i>s</i><sub>i</sub>,<i>v</i><sub>i,r</sub>,<i>a</i><sub>i,r</sub>) →
+        (<i>s</i><sub>i+1</sub>,<i>v</i><sub>i+1,k</sub>,<i>a</i><sub>i+1,k</sub>).
+        <span class="number">(11)</span>
+      </div>
+      <p>若存在满足式 (5)–(6) 的 jerk 受限轨迹，则建立有向边并将最短转换时间记为 <i>c</i><sub>i</sub>(<i>r</i>,<i>k</i>)；否则边代价为 +∞。局部求解可以采用解析七段式 S 曲线，也可以调用支持任意边界速度和加速度的在线轨迹生成器。为避免仅在端点合法而区间内部违规，需对解析切换时刻、曲率极值点以及必要的区间样本执行逐轴约束检查。</p>
+
+      <h3>4.4　Bellman 递推</h3>
+      <p>定义 <i>V</i><sub>i</sub>(<i>r</i>) 为从第 <i>i</i> 层状态 <i>x</i><sub>i,r</sub> 到终点的最短剩余时间，则：</p>
+      <div class="equation">
+        <i>V</i><sub>i</sub>(<i>r</i>) = min<sub><i>k</i></sub>
+        [ <i>c</i><sub>i</sub>(<i>r</i>,<i>k</i>) + <i>V</i><sub>i+1</sub>(<i>k</i>) ].
+        <span class="number">(12)</span>
+      </div>
+      <p>终点合法状态的代价为 0，其余状态为 +∞。由后向递推记录最优后继索引，再从指定起点状态前向回溯，即得到全局状态链和各段局部轨迹。</p>
+
+      <div class="algorithm">
+        <div class="algorithm-title">算法 1　Jerk-DP 全局时间最优轨迹规划</div>
+        <ol>
+          <li>离散路径并计算 <b>q</b><sub>s</sub>、<b>q</b><sub>ss</sub>、<b>q</b><sub>sss</sub> 及局部工艺约束。</li>
+          <li>根据式 (8)–(9) 执行后向和前向扫描，获得保守速度包络。</li>
+          <li>在每个接点生成 (<i>v</i>,<i>a</i>) 候选，加入零加速度与可达边界状态。</li>
+          <li>用快速必要条件剔除明显不可达的候选状态对。</li>
+          <li>调用局部 jerk 受限求解器计算剩余边的可行性和最短时间。</li>
+          <li>从终点执行式 (12) 的反向动态规划，并保存最优后继。</li>
+          <li>从起点回溯状态链，拼接局部轨迹并进行全路径约束复核。</li>
+          <li>若误差或保守度超过阈值，仅在最优链邻域加密网格并重复步骤 3–7。</li>
+        </ol>
+      </div>
+
+      <h3>4.5　剪枝与自适应细化</h3>
+      <p>朴素状态图的边数随每层候选数平方增长。本文采用三类剪枝：首先利用 S 曲线最短距离排除不满足必要条件的状态对；其次传播每个候选状态在下一层可达的速度和加速度区间，仅对区间相交状态调用局部求解器；最后，若两个同层状态具有近似相同的 (<i>v</i>,<i>a</i>)，且其中一个到达代价更大、未来可达集合不更优，则删除被支配状态。局部边结果按量化边界状态缓存，使粗到细多轮规划能够复用计算。</p>
+    </section>
+
+    <section id="analysis">
+      <h2>5　正确性与复杂度分析</h2>
+
+      <div class="proposition">
+        <strong>命题 1（离散图全局最优性）。</strong>若状态图为按路径接点分层的有向无环图，且每条边代价等于对应局部边界状态之间的最短可行时间，则式 (12) 回溯所得路径是该状态图中从指定起点到指定终点的全局最短时间路径。
+        <p><strong>证明要点：</strong>任意全局最优路径在第 <i>i</i> 层选定某一后继状态后，其剩余子路径必须是该后继到终点的最优路径，否则可用更短子路径替换并改进全局解，与最优性矛盾。分层图无环，故从终点反向应用 Bellman 递推即可覆盖所有候选路径。</p>
+      </div>
+
+      <div class="proposition">
+        <strong>命题 2（拼接可行性）。</strong>若每条选中边均满足位置、速度、加速度和 jerk 约束，且相邻边共享完全相同的接点位置、速度和加速度，则拼接轨迹的位置、速度和加速度连续，并在除有限 jerk 切换时刻外满足三阶约束。
+        <p><strong>证明要点：</strong>每段内部可行性由局部求解器保证；共享边界状态保证零至二阶连续。jerk 允许在约束范围内分段常值并发生有限跳变，因此不要求 jerk 本身连续。若应用还约束 snap，则必须将 jerk 纳入接点状态并提升动态规划维数。</p>
+      </div>
+
+      <div class="proposition">
+        <strong>命题 3（相对零加速度基线的非劣性）。</strong>若每个内部接点候选集都包含 <i>a</i>=0，且速度候选包含基线 S 曲线包络给出的接点速度，则动态规划结果的总时间不大于逐段零加速度基线。
+        <p><strong>证明要点：</strong>基线对应状态图中的一条完整可行路径。动态规划在包含该路径的候选集合上取最小代价，因此其代价不会更大。</p>
+      </div>
+
+      <h3>5.1　连续问题逼近</h3>
+      <p>在可行域紧致、约束函数连续、局部最短时间关于边界状态下半连续、路径离散误差一致收敛，并且候选网格最大间距趋于零的条件下，离散最优代价构成连续最优代价的可行上界序列。采用嵌套网格且保留上一层候选时，该上界单调不增。严格收敛证明还需处理奇异状态和非唯一局部解，本文将其作为后续理论工作；因此实验中必须报告网格收敛曲线，而不能仅给出单一分辨率结果。</p>
+
+      <h3>5.2　计算复杂度</h3>
+      <p>设每层最多有 <i>M</i> 个状态，路径区间数为 <i>N</i>，单次局部边求解代价为 <i>C</i><sub>edge</sub>。完全连接相邻层时，时间复杂度为 O(<i>NM</i><sup>2</sup><i>C</i><sub>edge</sub>)，存储所有边需要 O(<i>NM</i><sup>2</sup>) 空间。若只保留每个状态的最优代价和后继索引，动态规划主体空间可降至 O(<i>NM</i>)；结合可达区间剪枝，实际平均出度记为 <i>K</i> ≪ <i>M</i>，则边求解复杂度降为 O(<i>NMKC</i><sub>edge</sub>)。</p>
+    </section>
+
+    <section id="implementation">
+      <h2>6　工程实现</h2>
+      <h3>6.1　数据结构与数值策略</h3>
+      <p>推荐将路径几何与规划状态分离。几何层保存段长、切线、曲率及其导数；状态层只保存接点速度、加速度、累计代价和最优后继；边缓存保存局部求解结果。所有内部量应使用统一 SI 单位，并为位置、速度、加速度、jerk 分别设置尺度归一化，避免短段条件下的浮点判定失稳。</p>
+      <pre><code>struct JunctionState {
+    double velocity;
+    double acceleration;
+    double cost_to_go;
+    int best_next;
+};
+
+struct TransitionEdge {
+    bool feasible;
+    double duration;
+    LocalTrajectory trajectory;
+};</code></pre>
+
+      <h3>6.2　NRT/RT 分层执行</h3>
+      <p>全局状态图搜索、候选自适应加密和边缓存适合放在非实时层。规划完成后，只向实时层发送每段几何、局部速度上限和目标 (<i>v</i>,<i>a</i>)。实时层使用与离线边验证相同的约束和局部求解器逐周期采样，并将上一周期输出状态传入下一周期。段间不得重新假设加速度为零，也不得在 NRT 和 RT 之间使用不同的单位、最大速度或 jerk 参数。</p>
+
+      <h3>6.3　与 ZRCS 原型的对应关系</h3>
+      <table>
+        <thead>
+          <tr><th>论文模块</th><th>工程原型</th><th>当前成熟度</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>S 曲线时间与距离</td><td><code>LookAheadPlanner::transitionTime</code>、<code>dMinTransition</code></td><td>已实现标量零边界加速度公式</td></tr>
+          <tr><td>前向—后向速度包络</td><td><code>maxReachableVel</code> 与两次扫描</td><td>已实现</td></tr>
+          <tr><td>接点加速度状态</td><td><code>planJunctionAccelerations</code></td><td>已实现固定速度下的离散加速度候选</td></tr>
+          <tr><td>局部边求解</td><td>单自由度 Ruckig <code>calculate</code></td><td>已实现标量路径可行性与时间代价</td></tr>
+          <tr><td>动态规划</td><td><code>costToEnd</code>、<code>nextChoice</code></td><td>已实现反向最短时间递推</td></tr>
+          <tr><td>逐轴三阶投影</td><td>尚未完整映射式 (4)</td><td>需要补充，当前主要是切向约束与曲率启发式限速</td></tr>
+          <tr><td>RT 状态接力</td><td><code>MovePath</code> + <code>pass_to_input</code></td><td>已具备，仍需统一非零起始状态语义</td></tr>
+        </tbody>
+      </table>
+      <p>因此，现有工程可以作为论文算法的原型验证平台，但论文实验应明确区分“标量路径约束版本”和“逐轴完整三阶约束版本”。后者需要按式 (2)–(6) 加入各轴导数投影与区间内部极值检查。</p>
+
+      <h3>6.4　鲁棒性处理</h3>
+      <ul>
+        <li>当路径段过短时，优先进行几何合并或联合多段求解，避免大量近零位移边。</li>
+        <li>起终状态必须显式验证；若请求速度超过局部上限，应返回输入错误而不是静默截断。</li>
+        <li>局部求解失败应记录段号、边界 (<i>v</i>,<i>a</i>) 和约束参数，便于复现实验。</li>
+        <li>NRT 规划完成后应使用 RT 完全相同的参数再次批量回放，检测参数通路或单位失配。</li>
+        <li>对动态倍率变化，需要区分单纯时间缩放与在线重规划；前者只有在控制器实现保持状态一致时才不破坏约束。</li>
+      </ul>
+    </section>
+
+    <section id="experiments">
+      <h2>7　实验设计与结果报告</h2>
+      <div class="warning">
+        <strong>数据完整性说明：</strong>本节给出可直接执行的实验协议和投稿表格，但不填造任何性能数字。只有从固定代码版本、配置文件和原始日志计算得到的数据，才能替换“待实测”。
+      </div>
+
+      <h3>7.1　研究问题</h3>
+      <ul>
+        <li><strong>RQ1：</strong>与二阶前瞻和逐段零加速度 S 曲线相比，Jerk-DP 能否缩短总执行时间？</li>
+        <li><strong>RQ2：</strong>重建轨迹能否在全部采样点满足逐轴速度、加速度和 jerk 限制，并消除 RT 局部不可行错误？</li>
+        <li><strong>RQ3：</strong>可达区间剪枝、自适应采样和支配消除分别带来多少计算量下降？</li>
+        <li><strong>RQ4：</strong>路径与状态网格加密时，总时间是否收敛，规划时间和内存如何增长？</li>
+      </ul>
+
+      <h3>7.2　测试路径</h3>
+      <table>
+        <thead>
+          <tr><th>编号</th><th>路径</th><th>主要挑战</th><th>建议规模</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>P1</td><td>单直线与短距离点到点</td><td>与解析 S 曲线对照，验证局部最优时间</td><td>10 组长度和边界状态</td></tr>
+          <tr><td>P2</td><td>连续共线短段链</td><td>验证非零接点加速度跨段收益</td><td>20–500 段</td></tr>
+          <tr><td>P3</td><td>S 形三次样条</td><td>曲率和曲率导数变化</td><td>100–2000 接点</td></tr>
+          <tr><td>P4</td><td>Butterfly 平面路径</td><td>高低曲率交替与多次前瞻限速</td><td>500–5000 接点</td></tr>
+          <tr><td>P5</td><td>CNC 直线—圆弧混合 NC 程序</td><td>短段、拐角容差和进给变化</td><td>真实加工程序</td></tr>
+          <tr><td>P6</td><td>六轴机器人关节路径</td><td>逐轴导数投影和多约束交集</td><td>3 组典型任务</td></tr>
+        </tbody>
+      </table>
+
+      <h3>7.3　对比方法</h3>
+      <table>
+        <thead><tr><th>缩写</th><th>方法</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>SO-FB</td><td>二阶前向—后向扫描</td><td>仅使用速度和恒加速度距离公式，不考虑 jerk 爬升距离</td></tr>
+          <tr><td>SC-ZA</td><td>逐段 S 曲线、接点加速度为零</td><td>可行保守基线</td></tr>
+          <tr><td>JDP-U</td><td>均匀状态格点动态规划</td><td>不启用自适应采样和剪枝</td></tr>
+          <tr><td>JDP-P</td><td>本文完整方法</td><td>速度包络、可达剪枝、自适应采样和局部求解器</td></tr>
+          <tr><td>NLP</td><td>直接配置法非线性规划</td><td>小规模路径上的高精度参考解，设置充足迭代时间</td></tr>
+        </tbody>
+      </table>
+
+      <h3>7.4　评价指标与复现要求</h3>
+      <p>核心指标包括总轨迹时间、相对参考解时间差、最大速度/加速度/jerk 约束违反量、接点加速度跳变量、局部求解失败次数、规划耗时、峰值内存、状态数和边求解次数。每个随机或参数化用例至少重复 30 次，报告中位数、四分位距和 95% 置信区间。论文附录或代码仓库应固定编译器、CPU、操作系统、控制周期、Ruckig 版本、网格分辨率、容差和随机种子。</p>
+
+      <h3>7.5　主要结果表</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>路径</th><th>方法</th><th class="numeric">轨迹时间 / s</th><th class="numeric">规划时间 / ms</th><th class="numeric">最大 jerk 违反</th><th class="numeric">RT 不可行次数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>P2</td><td>SO-FB</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P2</td><td>SC-ZA</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P2</td><td>JDP-P</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P4</td><td>SC-ZA</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P4</td><td>JDP-P</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P6</td><td>NLP</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>P6</td><td>JDP-P</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+        </tbody>
+      </table>
+
+      <h3>7.6　消融与收敛实验</h3>
+      <table>
+        <thead>
+          <tr><th>配置</th><th class="numeric">保留状态数</th><th class="numeric">边求解次数</th><th class="numeric">规划时间 / ms</th><th class="numeric">轨迹时间 / s</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>完整 JDP-P</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>移除 S 曲线包络</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>移除可达区间剪枝</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>移除自适应细化</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+          <tr><td>移除支配剪枝</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td><td class="numeric pending">待实测</td></tr>
+        </tbody>
+      </table>
+      <p>网格收敛实验应分别改变路径步长 Δ<i>s</i>、速度样本间距 Δ<i>v</i> 和加速度样本间距 Δ<i>a</i>，绘制轨迹时间上界与规划时间的双纵轴曲线。当连续两次加密的时间改进小于预设阈值且无约束违反时，才可认为当前离散精度足够。</p>
+    </section>
+
+    <section id="discussion">
+      <h2>8　讨论与局限</h2>
+      <p>本文框架的主要优势是把全局边界状态决策与成熟的局部 jerk 轨迹生成器解耦，并通过动态规划获得可解释的最优性。由于路径接点按顺序形成有向无环图，算法不存在一般图搜索中的循环问题，且天然适合并行计算同一层的局部边。</p>
+      <p>其局限首先来自状态离散。有限候选集可能遗漏连续最优解附近的窄可行通道，尤其是在路径导数退化、约束活跃集快速切换或边界加速度接近极限时。其次，若局部边只使用标量 <i>A</i> 和 <i>J</i>，而没有验证式 (4) 的逐轴约束，则所得轨迹只能称为路径标量 jerk 可行，不能称为机器人或机床各轴三阶可行。再次，动态障碍、在线模型变化和闭环跟踪误差不在本文离线最优模型内，需要滚动时域重规划或鲁棒约束扩张。</p>
+      <p>标题中的“Global Time-Optimal”应在正文和实验中始终限定为离散状态图上的全局最优。若要进一步证明连续全局最优，需要给出网格一致性、局部边精确性、奇异状态处理和误差上界的严格理论结果。投稿时建议将标题保留，同时在摘要首处明确“globally optimal over the discretized state graph”，以降低审稿人对过度声明的质疑。</p>
+    </section>
+
+    <section id="conclusion">
+      <h2>9　结论</h2>
+      <p>本文提出一种 jerk 约束全局时间最优轨迹规划框架。该方法使用 S 曲线双向包络压缩速度范围，以接点速度和加速度构造分层状态图，通过局部 jerk 受限求解器定义可行边及时间代价，并利用动态规划选择总时间最小的连续状态链。理论分析表明，该方法在离散图上满足全局最优性，局部边可行且共享边界状态一致时，重建轨迹保持位置、速度和加速度连续。与逐段零加速度 S 曲线相比，只要候选集保留基线状态，动态规划结果在总时间上具有非劣性。</p>
+      <p>下一步工作包括完成逐轴三阶约束投影，实现粗到细自适应状态格点和并行边求解，建立与非线性规划参考解的系统对比，并在真实 CNC 与机器人平台上验证轨迹时间、约束裕度和实时执行可靠性。</p>
+    </section>
+
+    <section id="appendix">
+      <h2>附录 A　核心伪代码</h2>
+      <pre><code>Input:
+    sampled path s[0..N], geometry derivatives, axis limits
+    start state (v0, a0), terminal state (vf, af)
+
+velocity_cap = project_geometric_and_axis_velocity_limits()
+velocity_env = jerk_limited_backward_forward_scan(velocity_cap)
+
+for i in 0..N:
+    states[i] = sample_admissible_velocity_acceleration_states(
+        s[i], velocity_env[i], axis_limits)
+    states[i].insert(zero_acceleration_baseline_state)
+
+cost[N][terminal_state] = 0
+for i in N-1 down to 0:
+    reachable_pairs = interval_prune(states[i], states[i+1])
+    parallel for (r, k) in reachable_pairs:
+        edge = solve_local_jerk_limited_transition(
+            s[i+1] - s[i], states[i][r], states[i+1][k])
+        if edge.feasible and verify_axis_constraints(edge):
+            candidate = edge.duration + cost[i+1][k]
+            relax(cost[i][r], next[i][r], candidate, k)
+
+state_chain = backtrack(next, specified_start_state)
+trajectory = concatenate_local_trajectories(state_chain)
+verify_full_trajectory(trajectory)
+return trajectory</code></pre>
+    </section>
+
+    <section id="references">
+      <h2>参考文献</h2>
+      <ol class="references">
+        <li>Bobrow, J. E., Dubowsky, S., and Gibson, J. S. Time-optimal control of robotic manipulators along specified paths. <i>The International Journal of Robotics Research</i>, 4(3): 3–17, 1985.</li>
+        <li>Shin, K. G., and McKay, N. D. Minimum-time control of robotic manipulators with geometric path constraints. <i>IEEE Transactions on Automatic Control</i>, 30(6): 531–541, 1985.</li>
+        <li>Verscheure, D., Demeulenaere, B., Swevers, J., De Schutter, J., and Diehl, M. Time-optimal path tracking for robots: A convex optimization approach. <i>IEEE Transactions on Automatic Control</i>, 54(10): 2318–2327, 2009.</li>
+        <li>Pham, Q.-C. A general, fast, and robust implementation of the time-optimal path parameterization algorithm. <i>IEEE Transactions on Robotics</i>, 30(6): 1533–1540, 2014.</li>
+        <li>Pham, H., and Pham, Q.-C. A new approach to time-optimal path parameterization based on reachability analysis. <i>IEEE Transactions on Robotics</i>, 34(3): 645–659, 2018.</li>
+        <li>Pham, H., and Pham, Q.-C. On the structure of the time-optimal path parameterization problem with third-order constraints. <i>arXiv preprint</i> arXiv:1609.05307, 2016.</li>
+        <li>Berscheid, L., and Kröger, T. Jerk-limited real-time trajectory generation with arbitrary target states. In <i>Robotics: Science and Systems XVII</i>, 2021.</li>
+        <li>Kröger, T. <i>On-Line Trajectory Generation in Robotic Systems</i>. Springer Tracts in Advanced Robotics, Vol. 58, Springer, 2010.</li>
+        <li>Biagiotti, L., and Melchiorri, C. <i>Trajectory Planning for Automatic Machines and Robots</i>. Springer, 2008.</li>
+      </ol>
+      <p class="small">参考文献条目在正式投稿前应使用 Crossref、期刊官网或 DOI 数据再次核验，并转换为目标期刊规定格式。</p>
+    </section>
+
+    <footer>
+      文档版本：方法论文初稿 · 生成日期：2026-07-17 · 实验数据状态：待实测
+    </footer>
+  </article>
+</body>
+</html>

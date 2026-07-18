@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- encoderCountPerUnit: counts per controller unit.
+     5axis already uses m/rad internally; values are NOT scaled from mm.
+     X/Y/Z: counts/m; A/C: counts/rad (calibrate separately on real hardware). -->
 <cereal>
 	<servoConfig>
 		<servos size="dynamic">

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 单位：关节位置 rad，速度 rad/s，加速度 rad/s^2（机器人旋转轴，非 mm） -->
 <axisConfig>
   <axis id="0" name="left_hip_pitch" maxVel="3.14" maxAcc="20" maxJerk="30" maxPos="2.8798" minPos="-2.5307" maxPosDiff="0" lead="1">
     <servos><servo slaveId="0"/></servos>

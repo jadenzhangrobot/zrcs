@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 单位：关节位置 rad，速度 rad/s，加速度 rad/s^2（机器人旋转轴，非 mm） -->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">

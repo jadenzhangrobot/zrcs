@@ -22,8 +22,10 @@ BT::PortsList NcParseNode::providedPorts()
 {
     return {
         BT::InputPort<std::string>("filePath", "Path to .nc / G-code file"),
-        BT::InputPort<double>("arcChordTol", 0.2, "Arc sampling chord height (mm)"),
-        BT::OutputPort<std::vector<Point3D>>("waypoints", "Parsed path points (mm)"),
+        BT::InputPort<double>("arcChordTol", 0.0002, "Arc sampling chord height (m)"),
+        BT::OutputPort<std::vector<Point3D>>("waypoints", "Parsed path points (m)"),
+        BT::OutputPort<std::vector<double>>("feedrates",
+                                            "Per-edge feedrates (m/s); <=0 falls back to PathMove maxVel"),
     };
 }
 
@@ -55,8 +57,11 @@ BT::NodeStatus NcParseNode::tick()
     }
 
     setOutput("waypoints", result.waypoints);
+    setOutput("feedrates", result.segmentFeedrates);
     const std::string msg = "parsed " + std::to_string(result.waypoints.size()) +
-                            " waypoints from " + std::to_string(result.moveCount) +
+                            " waypoints / " +
+                            std::to_string(result.segmentFeedrates.size()) +
+                            " feed edges from " + std::to_string(result.moveCount) +
                             " moves (" + resolved + ")";
     sharedState_->setCurrentNode(name(), msg);
     spdlog::info("[NcParse] {}", msg);

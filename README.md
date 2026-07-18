@@ -142,6 +142,21 @@ zrcsgui / motiongui
 
 GUI 侧通过 ZMQ 客户端发送命令到 NRT；NRT 收到命令后，决定是直接处理系统命令，还是将普通命令转发到 RT。
 
+`SystemStatus.axes` 保持为兼容 GUI/PlotJuggler 的轴状态字段。仿真模式下，RT 每个
+1 ms 逻辑步生成一帧带 `sequence` 和 `simulation_time_ns` 的反馈；NRT
+不会再丢弃排空过程中的中间帧。Publisher 取出积累的反馈后，为每个逻辑步
+分别发送一条 `SystemStatus`；顶层 `axes` 是该逻辑步的数据，
+`axis_feedback_frames` 中同时保留该帧的 `sequence` 和
+`simulation_time_ns`，顶层 `double timestamp` 是同一时刻的秒值，供
+PlotJuggler ProtobufParser 直接作为横轴。没有新反馈时发布的元数据消息不携带 `axes`，因此不会
+把上一帧重复插入 PlotJuggler。`sequence` 可用于检测队列或 PUB/SUB 链路丢帧。
+
+simulation 构建的普通系统线程以 20 ms 墙钟周期唤醒，每次推进 20 个
+1 ms 完整控制/MuJoCo 步。批次内的反馈会按顺序逐帧发送；它们可能在墙钟上
+突发到达，但 `simulation_time_ns` 仍按 1 ms 单调递增。需要准确仿真时间轴时，
+PlotJuggler 的 ProtobufParser 必须启用 `use the field "timestamp", if present`，
+不能使用 ZMQ 消息到达时间。
+
 ### 2. NRT <-> RT
 
 NRT 与 RT 之间使用共享内存，核心结构定义在 `zrcs_common/shared_memory/ShmLayout.h`。

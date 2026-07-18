@@ -5,6 +5,7 @@
 #include "algorithm/path_planning/ShortSegmentMerger.h"
 
 #include <algorithm>
+#include <cmath>
 
 std::vector<TrajectorySegment> MotionPlanner::buildGeometry(
     const std::vector<PathMoveBlock>& blocks,
@@ -80,7 +81,8 @@ bool MotionPlanner::plan(const std::vector<Point3D>& waypoints,
                          double rz,
                          const Config& cfg,
                          std::vector<TrajectorySegment>& segments,
-                         std::string* error)
+                         std::string* error,
+                         const std::vector<double>* segmentFeedrates)
 {
     segments.clear();
 
@@ -91,8 +93,9 @@ bool MotionPlanner::plan(const std::vector<Point3D>& waypoints,
         return false;
     }
 
-    // waypoints → 直线块（进给暂用 maxVel，后续可由 NC/端口细化）
-    auto blocks = makeBlocksFromWaypoints(waypoints, rx, ry, rz, cfg.maxVel);
+    // waypoints → 直线块（段进给来自 NC F；缺失/<=0 时用 maxVel）
+    auto blocks = makeBlocksFromWaypoints(
+        waypoints, rx, ry, rz, cfg.maxVel, segmentFeedrates);
 
     // ①–③ 几何
     segments = buildGeometry(blocks, cfg.cornerTol, cfg.collinearTol, cfg.minSegLen);
@@ -121,7 +124,8 @@ std::vector<PathMoveBlock> MotionPlanner::makeBlocksFromWaypoints(
     double rx,
     double ry,
     double rz,
-    double feedrate)
+    double fallbackFeedrate,
+    const std::vector<double>* segmentFeedrates)
 {
     std::vector<PathMoveBlock> blocks;
     blocks.reserve(waypoints.size() - 1);
@@ -134,7 +138,14 @@ std::vector<PathMoveBlock> MotionPlanner::makeBlocksFromWaypoints(
         block.rx = rx;
         block.ry = ry;
         block.rz = rz;
-        block.feedrate = feedrate;
+        double feed = fallbackFeedrate;
+        if (segmentFeedrates && (i - 1) < segmentFeedrates->size()) {
+            const double f = (*segmentFeedrates)[i - 1];
+            if (std::isfinite(f) && f > 0.0) {
+                feed = f;
+            }
+        }
+        block.feedrate = feed;
         blocks.push_back(block);
     }
     return blocks;

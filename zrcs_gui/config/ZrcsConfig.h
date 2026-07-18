@@ -47,19 +47,20 @@ struct CommConfig {
     QString shmName = "rtMotion";
 };
 
-// 运动控制配置
+// 运动控制配置（与控制器 SI 一致：直线 m / m/s；旋转 rad）
 struct MotionConfig {
-    // 步长选项 (mm)
-    QVector<double> stepSizes = {0, 10, 1, 0.1, 0.01};
-    
+    // 点动步长选项 (m)。0 = 连续点动。
+    // 对应界面标签 连续 / 10mm / 1mm / 0.1mm / 0.01mm。
+    QVector<double> stepSizes = {0.0, 0.01, 0.001, 0.0001, 0.00001};
+
     // 默认倍率 (%)
     int defaultOverride = 100;
     int minOverride = 0;
     int maxOverride = 100;
-    
-    // 速度限制 (mm/s)
-    double maxVelocity = 1000;
-    double maxAcceleration = 500;
+
+    // 速度限制 (m/s)
+    double maxVelocity = 1.0;
+    double maxAcceleration = 0.5;
 };
 
 // 安全配置
@@ -68,14 +69,14 @@ struct SafetyConfig {
     bool confirmHoming = true;
     bool confirmEStop = true;
     bool confirmReset = true;
-    
+
     // 超时时间 (ms)
     int homingTimeoutMs = 30000;
     int commandTimeoutMs = 5000;
-    
-    // 软限位 (mm)
-    double softLimitMin = -1000;
-    double softLimitMax = 1000;
+
+    // 软限位 (m)，示教用宽松范围
+    double softLimitMin = -1.0;
+    double softLimitMax = 1.0;
 };
 
 // 显示配置

@@ -13,12 +13,13 @@ namespace {
 
 MotionPlanner::Config defaultPathConfig()
 {
+    // SI 默认：约 100 mm/s、300 mm/s^2、3000 mm/s^3、容差 0.25 mm
     MotionPlanner::Config cfg;
-    cfg.maxVel = 100.0;
-    cfg.maxAccel = 300.0;
-    cfg.maxJerk = 3000.0;
-    cfg.cornerTol = 0.25;
-    cfg.minSegLen = 0.05;
+    cfg.maxVel = 0.1;
+    cfg.maxAccel = 0.3;
+    cfg.maxJerk = 3.0;
+    cfg.cornerTol = 0.00025;
+    cfg.minSegLen = 0.00005;
     return cfg;
 }
 
@@ -56,18 +57,20 @@ PathMoveNode::PathMoveNode(const std::string& name,
 BT::PortsList PathMoveNode::providedPorts()
 {
     return {
-        BT::InputPort<std::vector<Point3D>>("waypoints", "Path points from NcParse (mm)"),
+        BT::InputPort<std::vector<Point3D>>("waypoints", "Path points from NcParse (m)"),
+        BT::InputPort<std::vector<double>>("feedrates",
+                                           "Optional per-edge feedrates from NcParse (m/s)"),
         BT::InputPort<double>("rx", 0.0, "Start RX / A (rad)"),
         BT::InputPort<double>("ry", 0.0, "Start RY (rad)"),
         BT::InputPort<double>("rz", 0.0, "Start RZ / C (rad)"),
         BT::InputPort<double>("endRx", 0.0, "End RX / A (rad)"),
         BT::InputPort<double>("endRy", 0.0, "End RY (rad)"),
         BT::InputPort<double>("endRz", 0.0, "End RZ / C (rad)"),
-        BT::InputPort<double>("maxVel", 100.0, "Max path velocity (mm/s)"),
-        BT::InputPort<double>("maxAccel", 300.0, "Max path acceleration (mm/s^2)"),
-        BT::InputPort<double>("maxJerk", 3000.0, "Max path jerk (mm/s^3)"),
-        BT::InputPort<double>("cornerTol", 0.25, "Corner blend tolerance (mm)"),
-        BT::InputPort<double>("minSegLen", 0.05, "Minimum retained line length (mm)"),
+        BT::InputPort<double>("maxVel", 0.1, "Max path velocity (m/s)"),
+        BT::InputPort<double>("maxAccel", 0.3, "Max path acceleration (m/s^2)"),
+        BT::InputPort<double>("maxJerk", 3.0, "Max path jerk (m/s^3)"),
+        BT::InputPort<double>("cornerTol", 0.00025, "Corner blend tolerance (m)"),
+        BT::InputPort<double>("minSegLen", 0.00005, "Minimum retained line length (m)"),
     };
 }
 
@@ -91,8 +94,12 @@ BT::NodeStatus PathMoveNode::tick()
     const double endRz = getInput<double>("endRz").value_or(rz);
     const MotionPlanner::Config cfg = configFromPorts(*this, defaultPathConfig());
 
+    const auto feedratesOpt = getInput<std::vector<double>>("feedrates");
+    const std::vector<double>* feedPtr =
+        (feedratesOpt && !feedratesOpt->empty()) ? &(*feedratesOpt) : nullptr;
+
     if (!queuePathFromWaypoints(sharedState_->bridge, *waypointsOpt,
-                                rx, ry, rz, endRx, endRy, endRz, cfg)) {
+                                rx, ry, rz, endRx, endRy, endRz, cfg, feedPtr)) {
         sharedState_->setCurrentNode(name(), "failed to queue path move");
         return BT::NodeStatus::FAILURE;
     }

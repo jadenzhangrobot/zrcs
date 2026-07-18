@@ -31,19 +31,19 @@ public:
                    double maxA,
                    double startV = 0.0,
                    double endV = 0.0,
-                   double cornerTol = 0.5,
-                   double maxJ = 1000.0);
+                   double cornerTol = 0.0005,
+                   double maxJ = 3.0);
 
     /// 就地写入速度、边界加速度、持续时间及优化标志。
     bool planSegments(std::vector<TrajectorySegment>& segments);
 
 private:
-    double maxVelGlobal_ = 100.0;
-    double maxAccel_ = 100.0;
-    double maxJerk_ = 1000.0;
-    double startVel_ = 0.0;
-    double endVel_ = 0.0;
-    double cornerTolerance_ = 0.5;
+    double maxVelGlobal_ = 0.1;       ///< m/s
+    double maxAccel_ = 0.3;           ///< m/s^2
+    double maxJerk_ = 3.0;            ///< m/s^3
+    double startVel_ = 0.0;           ///< m/s
+    double endVel_ = 0.0;             ///< m/s
+    double cornerTolerance_ = 0.0005; ///< m
 
     /// 段内速度上限：min(全局, 进给, sqrt(a/κ))
     double calculateLocalVelocityLimit(const TrajectorySegment& segment) const;

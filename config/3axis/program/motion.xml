@@ -13,66 +13,70 @@
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
+    <!-- Cartesian demos: controller SI m / m/s -->
     <BehaviorTree ID="Cmd_JogJ">
         <Sequence>
-            <Action AxisId="0" ID="JogJ" TargetPosition="5"/>
+            <Action AxisId="0" ID="JogJ" TargetPosition="0.005"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_JogabsJ">
         <Sequence>
-            <Action AxisId="0" ID="JogabsJ" TargetPosition="10"/>
+            <Action AxisId="0" ID="JogabsJ" TargetPosition="0.01"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveAbs">
         <Sequence>
-            <Action Acc="100" AxisId="0" ID="MoveAbs" Jerk="500" Position="100" Vel="50"/>
+            <Action Acc="0.3" AxisId="0" ID="MoveAbs" Jerk="3.0" Position="0.10" Vel="0.05"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveAbsJ">
         <Sequence>
-            <Action Count="6" ID="MoveAbsJ" J1="0" J2="10" J3="20" J4="30" J5="40" J6="50"/>
+            <Action Count="6" ID="MoveAbsJ" J1="0" J2="0.17" J3="0.35" J4="0.52" J5="0.70" J6="0.87"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveC">
         <Sequence>
-            <Action EndX="100" EndY="0" EndZ="0" ID="MoveC" Vel="50" ViaX="50" ViaY="50" ViaZ="0"/>
+            <Action EndX="0.10" EndY="0" EndZ="0" ID="MoveC" Vel="0.05" ViaX="0.05" ViaY="0.05" ViaZ="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveJ">
         <Sequence>
-            <Action ID="MoveJ" RX="0" RY="0" RZ="0" Vel="0.5" X="100" Y="0" Z="100"/>
+            <Action ID="MoveJ" RX="0" RY="0" RZ="0" Vel="0.05" X="0.10" Y="0" Z="0.10"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveLGalvo">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="50.0" Vel="100" X="100" Y="0" Z="0"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL_Batch">
         <Sequence>
-            <Action ID="BatchCmd" command="MoveL" segments="                    0,0,0,1,0,0,0, 20,0,0,1,0,0,0, 10,5|                    20,0,0,1,0,0,0, 40,0,0,1,0,0,0, 10,5|                    40,0,0,1,0,0,0, 60,0,0,1,0,0,0, 10,5|                    60,0,0,1,0,0,0, 80,0,0,1,0,0,0, 10,5|                    80,0,0,1,0,0,0, 100,0,0,1,0,0,0, 10,5|                    100,0,0,1,0,0,0, 120,0,0,1,0,0,0, 10,5|                    120,0,0,1,0,0,0, 140,0,0,1,0,0,0, 10,5|                    140,0,0,1,0,0,0, 160,0,0,1,0,0,0, 10,5|                    160,0,0,1,0,0,0, 180,0,0,1,0,0,0, 10,0"/>
+            <Action ID="BatchCmd" command="MoveL" segments="0,0,0,1,0,0,0, 0.02,0,0,1,0,0,0, 0.05,0|0.02,0,0,1,0,0,0, 0.04,0,0,1,0,0,0, 0.05,0|0.04,0,0,1,0,0,0, 0.06,0,0,1,0,0,0, 0.05,0|0.06,0,0,1,0,0,0, 0.08,0,0,1,0,0,0, 0.05,0|0.08,0,0,1,0,0,0, 0.10,0,0,1,0,0,0, 0.05,0"/>
             <Action AxisId="0.0" ID="JogabsJ" TargetPosition="0.0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_NcPath">
         <Sequence>
-            <Action ID="NcParse" filePath="config/3axis/program/demo_rect.nc" waypoints="{path_pts}"/>
-            <Action ID="PathMove" waypoints="{path_pts}" maxVel="100" maxAccel="300" maxJerk="3000"
-                    cornerTol="0.25" minSegLen="0.05"/>
+            <Action ID="NcParse" filePath="config/3axis/program/demo_rect.nc"
+                    waypoints="{path_pts}" feedrates="{path_feeds}"/>
+            <!-- PathMove units: m / m/s (NcParse: G21 mm→m, F mm/s→m/s) -->
+            <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
+                    maxVel="0.1" maxAccel="0.3" maxJerk="3.0"
+                    cornerTol="0.00025" minSegLen="0.00005"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -107,19 +111,21 @@
         </Action>
         <Action ID="NcParse">
             <input_port name="filePath" type="std::string">Path to .nc / G-code file</input_port>
-            <input_port default="0.2" name="arcChordTol" type="double">Arc sampling chord height (mm)</input_port>
-            <output_port name="waypoints">Parsed path points (mm)</output_port>
+            <input_port default="0.0002" name="arcChordTol" type="double">Arc sampling chord height (m)</input_port>
+            <output_port name="waypoints">Parsed path points (m)</output_port>
+            <output_port name="feedrates">Per-edge feedrates (m/s)</output_port>
         </Action>
         <Action ID="PathMove">
-            <input_port name="waypoints">Path points from NcParse (mm)</input_port>
+            <input_port name="waypoints">Path points from NcParse (m)</input_port>
+            <input_port name="feedrates">Optional per-edge feedrates from NcParse (m/s)</input_port>
             <input_port default="0.0" name="rx" type="double">Constant orientation RX (rad)</input_port>
             <input_port default="0.0" name="ry" type="double">Constant orientation RY (rad)</input_port>
             <input_port default="0.0" name="rz" type="double">Constant orientation RZ (rad)</input_port>
-            <input_port default="100.0" name="maxVel" type="double">Max path velocity (mm/s)</input_port>
-            <input_port default="300.0" name="maxAccel" type="double">Max path acceleration (mm/s^2)</input_port>
-            <input_port default="3000.0" name="maxJerk" type="double">Max path jerk (mm/s^3)</input_port>
-            <input_port default="0.25" name="cornerTol" type="double">Corner blend tolerance (mm)</input_port>
-            <input_port default="0.05" name="minSegLen" type="double">Minimum retained line length (mm)</input_port>
+            <input_port default="0.1" name="maxVel" type="double">Max path velocity (m/s)</input_port>
+            <input_port default="0.3" name="maxAccel" type="double">Max path acceleration (m/s^2)</input_port>
+            <input_port default="3.0" name="maxJerk" type="double">Max path jerk (m/s^3)</input_port>
+            <input_port default="0.00025" name="cornerTol" type="double">Corner blend tolerance (m)</input_port>
+            <input_port default="0.00005" name="minSegLen" type="double">Minimum retained line length (m)</input_port>
         </Action>
         <Action ID="Disable">
             <input_port default="0.0" name="AxisId" type="double">Axis ID (0=all axes)</input_port>
@@ -168,9 +174,9 @@
             <input_port default="0.0" name="RY" type="double">Target RY (deg)</input_port>
             <input_port default="0.0" name="RZ" type="double">Target RZ (deg)</input_port>
             <input_port default="50.0" name="Vel" type="double">Max velocity</input_port>
-            <input_port default="0.0" name="X" type="double">Target X (mm)</input_port>
-            <input_port default="0.0" name="Y" type="double">Target Y (mm)</input_port>
-            <input_port default="0.0" name="Z" type="double">Target Z (mm)</input_port>
+            <input_port default="0.0" name="X" type="double">Target X (m)</input_port>
+            <input_port default="0.0" name="Y" type="double">Target Y (m)</input_port>
+            <input_port default="0.0" name="Z" type="double">Target Z (m)</input_port>
         </Action>
         <Action ID="MoveL">
             <input_port default="1.0" name="CurrentQ1" type="double">Start Qw</input_port>

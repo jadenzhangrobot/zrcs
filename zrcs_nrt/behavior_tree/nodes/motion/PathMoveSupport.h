@@ -18,6 +18,7 @@ namespace zrcs_bt {
 
 /// 规划 waypoints 并下发 MovePath。
 /// 姿态沿路径弧长从 (rx,ry,rz) 插到 (endRx,endRy,endRz)。
+/// @param segmentFeedrates 可选段进给 (m/s)，与 waypoints 相邻边对齐；nullptr 时用 cfg.maxVel。
 bool queuePathFromWaypoints(RtBridge* bridge,
                             const std::vector<Point3D>& waypoints,
                             double rx,
@@ -26,7 +27,8 @@ bool queuePathFromWaypoints(RtBridge* bridge,
                             double endRx,
                             double endRy,
                             double endRz,
-                            const MotionPlanner::Config& cfg);
+                            const MotionPlanner::Config& cfg,
+                            const std::vector<double>* segmentFeedrates = nullptr);
 
 /// 仅下发已规划段为 MovePath。
 bool queuePlannedSegments(RtBridge* bridge,

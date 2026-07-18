@@ -8,10 +8,13 @@
 /// - 输出：TrajectorySegment（几何段 + 速度规划结果字段）
 /// - 工具：点运算、段上位置/切线/曲率求值
 ///
-/// 单位约定（与当前 5axis 配置一致时）：
-/// - 位置：mm
-/// - 进给/速度：mm/s
+/// 单位约定（控制器内部 SI，与 5axis / MuJoCo 一致）：
+/// - 位置 / 长度：m
+/// - 进给 / 速度：m/s
+/// - 加速度 / jerk：m/s^2、m/s^3
 /// - 姿态 rx/ry/rz：rad（当前按整段常数写入 coeff[3..5]）
+///
+/// G 代码程序侧仍按标准：G21=mm、G20=inch；NcParser 输出已换算为 m。
 
 #include <algorithm>
 #include <cmath>
@@ -40,7 +43,7 @@ struct PathMoveBlock {
     double ry = 0.0;
     double rz = 0.0;
 
-    /// 编程进给 (mm/s)。<=0 表示后续用全局 maxVel 兜底。
+    /// 编程进给 (m/s)。<=0 表示后续用全局 maxVel 兜底。
     double feedrate = 0.0;
 };
 
@@ -68,7 +71,7 @@ struct TrajectorySegment {
 
     TrajectorySegmentType type = TrajectorySegmentType::Line;
 
-    double length = 0.0;                      ///< 弧长 (mm)
+    double length = 0.0;                      ///< 弧长 (m)
 
     /// 轴参数多项式：pos = c0 + c1*u + c2*u^2 + c3*u^3，u∈[0,1]
     /// axis: 0=x,1=y,2=z,3=rx,4=ry,5=rz
@@ -86,8 +89,8 @@ struct TrajectorySegment {
 
     double v_enter = 0.0;                     ///< 入口速度
     double v_exit = 0.0;                      ///< 出口速度
-    double a_enter = 0.0;                     ///< 入口切向加速度 (mm/s^2)
-    double a_exit = 0.0;                      ///< 出口切向加速度 (mm/s^2)
+    double a_enter = 0.0;                     ///< 入口切向加速度 (m/s^2)
+    double a_exit = 0.0;                      ///< 出口切向加速度 (m/s^2)
     double duration = 0.0;                    ///< 规划时长 (s)
 
     bool is_lookahead_optimized = false;      ///< 是否已完成速度前瞻

@@ -20,7 +20,7 @@ public:
     /// @param points           已简化路径点（N 个）
     /// @param feedrates        N-1 段进给
     /// @param sourceIds        可选源 block id；尺寸不足时回退为段索引
-    /// @param cornerTol        角点路径偏差容差 (mm)
+    /// @param cornerTol        角点路径偏差容差 (m)
     /// @param minSegLen        圆角后两侧至少保留的直线长度
     /// @param minChordForBlend 入/出弦短于该值则跳过圆角
     /// @param rx,ry,rz         姿态常数

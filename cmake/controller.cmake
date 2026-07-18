@@ -23,7 +23,7 @@ if(BUILD_MODE STREQUAL "realtime")
 elseif(BUILD_MODE STREQUAL "simulation")
     message(STATUS "simulation模式")
     add_compile_definitions(SIMULATION)
-    # 控制周期 (ms)：仿真/非实时 10 ms
+    # 逻辑控制周期 (ms)：Ruckig/cmdsProcessing 步长；Nativelinux 墙钟与此 1:1（Windows 用 timeBeginPeriod(1)）
     set(ZRCS_CYCLE_TIME_MS 1)
 elseif(BUILD_MODE STREQUAL "standard")
     message(STATUS "standard模式")

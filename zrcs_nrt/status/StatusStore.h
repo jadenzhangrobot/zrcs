@@ -16,25 +16,26 @@
 class StatusStore {
 public:
     static constexpr size_t kMaxPendingRtLogs = 256;
+    static constexpr size_t kMaxPendingAxisFeedback = zrcs::kLogQueueCap;
 
-    void updateAxisFeedback(const zrcs::AxisFeedbackData& feedback, uint8_t axisCount);
+    void updateAxisFeedbackBatch(const std::vector<zrcs::AxisFeedbackData>& feedbackBatch);
     void updateSystemMeta(uint64_t heartbeat,
                           uint64_t droppedCommands,
                           const std::string& systemState);
     void setBtStatus(const zrcs_nrt::BtStatusSnapshot& bt);
     void enqueueRtLog(const zrcs::RtLogEntry& entry);
 
-    /// 取出完整快照；rtLogs 为自上次 snapshot 以来累计的日志（取出后清空待发队列）。
+    /// 取出完整快照；反馈批次和日志取出后从待发布队列清空。
     zrcs_nrt::SystemStatusSnapshot snapshot();
 
 private:
     mutable std::mutex mutex_;
     zrcs::AxisFeedbackData latestFeedback_{};
     bool hasFeedback_ = false;
-    uint8_t axisCount_ = 0;
     uint64_t heartbeat_ = 0;
     uint64_t droppedCommands_ = 0;
     std::string systemState_ = "IDLE";
     zrcs_nrt::BtStatusSnapshot bt_{};
+    std::deque<zrcs::AxisFeedbackData> pendingAxisFeedback_;
     std::deque<zrcs::RtLogEntry> pendingLogs_;
 };

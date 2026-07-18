@@ -43,7 +43,14 @@
       "Bash(python /tmp/patch_test_cmake.py)",
       "Bash(cmake --build \"E:/zrcs-dev/build\" --target help)",
       "Bash(# Also check if IDE might be building a different target *)",
-      "Read(//c/Users/64989/AppData/Roaming/Code/logs/**)"
+      "Read(//c/Users/64989/AppData/Roaming/Code/logs/**)",
+      "Bash(rg -n \"\\\\bfloat\\\\b\" zrcs_nrt/algorithm zrcs_rt/command zrcs_rt/Algorithm --glob '*.{h,cpp}')",
+      "Bash(rg -n \"\\\\bmm\\\\b|mm/s|毫米|0\\\\.25 mm|100 mm\" --glob '!**/3rdParty/**' --glob '!**/.git/**' -g '*.{h,hpp,cpp,md,xml,nc}')",
+      "Bash(rg -n \"\\\\bfloat\\\\b|float32\" --glob '!**/3rdParty/**' -g '*.{h,hpp,cpp}' zrcs_nrt zrcs_rt zrcs_gui zrcs_common)",
+      "Bash(rg -n \"maxVel\\\\s*=\\\\s*[0-9]|cornerTol\\\\s*=\\\\s*[0-9]|minSegLen\\\\s*=\\\\s*[0-9]|maxAccel\\\\s*=\\\\s*[0-9]|arcChordTol\\\\s*=\\\\s*[0-9]\" --glob '!**/3rdParty/**' -g '*.{h,cpp,xml}' zrcs_nrt zrcs_rt config)",
+      "Bash(rg -n \"mm|m/s|单位|position|Position|step|jog\" zrcs_gui --glob '!**/3rdParty/**' -g '*.{h,cpp}')",
+      "Bash(rg -n \"0\\\\.1|100\\\\.0|1e-|maxVel|maxAcc|default\" zrcs_rt/command -g '*.{h,cpp}')",
+      "Bash(rg -n \"kMmToM|kInchToM|/ 1000|\\\\* 1000|/1000|\\\\*1000|0\\\\.001\" --glob '!**/3rdParty/**' -g '*.{h,cpp}' zrcs_nrt zrcs_rt zrcs_gui zrcs_common)"
     ],
     "additionalDirectories": [
       "\\tmp"

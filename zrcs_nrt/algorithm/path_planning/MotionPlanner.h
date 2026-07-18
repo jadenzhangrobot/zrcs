@@ -28,14 +28,14 @@ class MotionPlanner {
 public:
     /// 完整规划配置。
     struct Config {
-        double maxVel = 10.0;         ///< 全局最大速度 (mm/s)
-        double maxAccel = 20.0;       ///< 最大加速度
-        double maxJerk = 30.0;        ///< 最大加加速度
-        double cornerTol = 0.25;      ///< 拐角路径容差 (mm)，兼作默认共线容差
-        double startVel = 0.0;        ///< 路径起点速度
-        double endVel = 0.0;          ///< 路径终点速度
-        double collinearTol = -1.0;   ///< 共线折叠弦高；<=0 时默认 = cornerTol
-        double minSegLen = 0.05;      ///< 最短直线段；minChordForBlend = 4*minSegLen
+        double maxVel = 0.1;          ///< 全局最大速度 (m/s)，默认 100 mm/s
+        double maxAccel = 0.3;        ///< 最大加速度 (m/s^2)，默认 300 mm/s^2
+        double maxJerk = 3.0;         ///< 最大加加速度 (m/s^3)，默认 3000 mm/s^3
+        double cornerTol = 0.00025;   ///< 拐角路径容差 (m)，默认 0.25 mm，兼作默认共线容差
+        double startVel = 0.0;        ///< 路径起点速度 (m/s)
+        double endVel = 0.0;          ///< 路径终点速度 (m/s)
+        double collinearTol = -1.0;   ///< 共线折叠弦高 (m)；<=0 时默认 = cornerTol
+        double minSegLen = 0.00005;   ///< 最短直线段 (m)，默认 0.05 mm；minChordForBlend = 4*minSegLen
     };
 
     MotionPlanner() = default;
@@ -46,9 +46,11 @@ public:
         const std::vector<PathMoveBlock>& blocks,
         double cornerTol,
         double collinearTol = -1.0,
-        double minSegLen = 0.05);
+        double minSegLen = 0.00005);
 
     /// 完整规划：几何 + 速度前瞻。
+    /// @param segmentFeedrates 可选，与 waypoints 相邻边一一对应的进给 (m/s)。
+    ///        长度不足或元素 <=0 时该边回退到 cfg.maxVel。
     /// @return true 成功；false 时 error 有说明，segments 清空
     bool plan(const std::vector<Point3D>& waypoints,
               double rx,
@@ -56,15 +58,19 @@ public:
               double rz,
               const Config& cfg,
               std::vector<TrajectorySegment>& segments,
-              std::string* error = nullptr);
+              std::string* error = nullptr,
+              const std::vector<double>* segmentFeedrates = nullptr);
 
 private:
     /// waypoints → 相邻点构成的直线 PathMoveBlock 序列。
-    static std::vector<PathMoveBlock> makeBlocksFromWaypoints(const std::vector<Point3D>& waypoints,
-                                                              double rx,
-                                                              double ry,
-                                                              double rz,
-                                                              double feedrate);
+    /// @param segmentFeedrates 可选段进给；nullptr 或元素 <=0 时用 fallbackFeedrate。
+    static std::vector<PathMoveBlock> makeBlocksFromWaypoints(
+        const std::vector<Point3D>& waypoints,
+        double rx,
+        double ry,
+        double rz,
+        double fallbackFeedrate,
+        const std::vector<double>* segmentFeedrates = nullptr);
 
     LookAheadPlanner lookAhead_;
 };

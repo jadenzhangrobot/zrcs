@@ -34,6 +34,15 @@ target_include_directories(test_axis_direction PRIVATE
 )
 target_link_libraries(test_axis_direction PRIVATE atomic)
 
+add_executable(test_status_store
+    test_status_store.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/status/StatusStore.cpp
+)
+target_include_directories(test_status_store PRIVATE
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt
+)
+target_link_libraries(test_status_store PRIVATE atomic)
+
 add_executable(test_motion_preprocessing
     test_motion_preprocessing.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/TrajectoryGeometry.cpp
@@ -63,3 +72,9 @@ target_link_libraries(test_zmq_comm PRIVATE
     zrcs::proto
     cppzmq
 )
+
+# Windows 线程 sleep_until 周期/抖动测量（仿真选型用，无 zrcs 依赖）
+add_executable(test_windows_thread_period test_windows_thread_period.cpp)
+if(WIN32)
+    target_link_libraries(test_windows_thread_period PRIVATE winmm)
+endif()

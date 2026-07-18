@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  3axis 逻辑轴配置
+
+  单位（控制器 SI）:
+    - 直线轴 X/Y/Z: 位置 m, 速度 m/s, 加速度 m/s^2, jerk m/s^3
+  MuJoCo 关节为 m；与控制器一致时 qposScale=1.0（见 mujoco.xml）。
+-->
 <cereal>
 	<axisConfig>
 		<axes size="dynamic">
@@ -8,11 +15,11 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>100</maxVel>
-				<maxAcc>300</maxAcc>
-				<maxJerk>3000</maxJerk>
-				<posPositiveLimit>100000</posPositiveLimit>
-				<posNegativeLimit>-100000</posNegativeLimit>
+				<maxVel>0.1</maxVel>
+				<maxAcc>0.3</maxAcc>
+				<maxJerk>3.0</maxJerk>
+				<posPositiveLimit>100.0</posPositiveLimit>
+				<posNegativeLimit>-100.0</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value0>
@@ -22,11 +29,11 @@
 				<servoSlaveIds size="dynamic">
 					<value0>1</value0>
 				</servoSlaveIds>
-				<maxVel>100</maxVel>
-				<maxAcc>300</maxAcc>
-				<maxJerk>3000</maxJerk>
-				<posPositiveLimit>100000</posPositiveLimit>
-				<posNegativeLimit>-100000</posNegativeLimit>
+				<maxVel>0.1</maxVel>
+				<maxAcc>0.3</maxAcc>
+				<maxJerk>3.0</maxJerk>
+				<posPositiveLimit>100.0</posPositiveLimit>
+				<posNegativeLimit>-100.0</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value1>
@@ -36,15 +43,14 @@
 				<servoSlaveIds size="dynamic">
 					<value0>2</value0>
 				</servoSlaveIds>
-				<maxVel>100</maxVel>
-				<maxAcc>300</maxAcc>
-				<maxJerk>3000</maxJerk>
-				<posPositiveLimit>100000</posPositiveLimit>
-				<posNegativeLimit>-100000</posNegativeLimit>
+				<maxVel>0.1</maxVel>
+				<maxAcc>0.3</maxAcc>
+				<maxJerk>3.0</maxJerk>
+				<posPositiveLimit>100.0</posPositiveLimit>
+				<posNegativeLimit>-100.0</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value2>
 		</axes>
 	</axisConfig>
 </cereal>
-

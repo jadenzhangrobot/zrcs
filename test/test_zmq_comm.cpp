@@ -9,6 +9,7 @@
  *   2. BehaviorTreeCommand (TypedCommand) 序列化 + 发送 + 服务端解析
  *   3. 多条命令连续发送
  *   4. 服务端超时（客户端无响应处理）
+ *   5. 带仿真时间戳的轴反馈逐帧序列化
  */
 
 #include <cassert>
@@ -314,6 +315,47 @@ static void test_stats_summary(MockServerStats& stats)
 }
 
 // ============================================================================
+// 测试 8：每条轴反馈消息保留对应逻辑仿真步的时间戳和序号
+// ============================================================================
+
+static void test_axis_feedback_frames_are_individual_messages()
+{
+    std::cout << "  [8] Individual timestamped feedback messages..." << std::flush;
+
+    for (uint64_t i = 1; i <= 20; ++i) {
+        zrcs_message::SystemStatus status;
+        status.set_timestamp(static_cast<double>(i) * 0.001);
+        auto* current = status.add_axes();
+        current->set_axis_id(0);
+        current->set_position(static_cast<double>(i) * 0.001);
+
+        auto* frame = status.add_axis_feedback_frames();
+        frame->set_sequence(i);
+        frame->set_simulation_time_ns(i * 1'000'000);
+        auto* axis = frame->add_axes();
+        axis->set_axis_id(0);
+        axis->set_position(static_cast<double>(i) * 0.001);
+
+        std::string serialized;
+        assert(status.SerializeToString(&serialized));
+
+        zrcs_message::SystemStatus parsed;
+        assert(parsed.ParseFromString(serialized));
+        assert(parsed.timestamp() == static_cast<double>(i) * 0.001);
+        assert(parsed.axes_size() == 1);
+        assert(parsed.axes(0).position() == static_cast<double>(i) * 0.001);
+        assert(parsed.axis_feedback_frames_size() == 1);
+        assert(parsed.axis_feedback_frames(0).sequence() == i);
+        assert(parsed.axis_feedback_frames(0).simulation_time_ns() == i * 1'000'000);
+        assert(parsed.axis_feedback_frames(0).axes_size() == 1);
+        assert(parsed.axis_feedback_frames(0).axes(0).position() ==
+               static_cast<double>(i) * 0.001);
+    }
+
+    std::cout << " PASS" << std::endl;
+}
+
+// ============================================================================
 // main
 // ============================================================================
 
@@ -344,6 +386,7 @@ int main()
     test_burst_commands(client, stats);
     test_client_timeout();
     test_stats_summary(stats);
+    test_axis_feedback_frames_are_individual_messages();
 
     // 清理
     client.close();
@@ -351,6 +394,6 @@ int main()
     serverRunning = false;
     serverThread.join();
 
-    std::cout << "\n=== All 7 tests PASSED ===" << std::endl;
+    std::cout << "\n=== All 8 tests PASSED ===" << std::endl;
     return 0;
 }
