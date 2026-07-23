@@ -6,8 +6,9 @@
 
 | 文件 | 类型 | 说明 |
 |------|------|------|
-| [`motion.xml`](motion.xml) | 行为树 | 命令示例子树 + 默认主树 `Cmd_NcMapleCarve` |
-| [`maple.nc`](maple.nc) | NC | R40 球面法向跟随的 XYZAC 蝴蝶轮廓（默认主树，保留文件名以兼容现有配置） |
+| [`motion.xml`](motion.xml) | 行为树 | 命令示例子树 + 默认主树 `Cmd_NcSphereHexGrid` |
+| [`maple.nc`](maple.nc) | NC | R40 球面法向跟随的 XYZAC 蝴蝶轮廓（保留文件名以兼容现有配置） |
+| [`sphere_hex_grid.nc`](sphere_hex_grid.nc) | NC | 覆盖可达上半球的连续 XYZAC 六边形网格（默认主树） |
 | [`demo_butterfly.nc`](demo_butterfly.nc) | NC | 蝴蝶轮廓 G0/G1 |
 | [`demo_rect.nc`](demo_rect.nc) | NC | 圆 + 螺旋进中心示例 |
 | [`demo_sphere_carve.nc`](demo_sphere_carve.nc) | NC | 上半球表面雕刻：螺旋 + 纬线 + 经线 + 极区花瓣 |
@@ -29,7 +30,15 @@ config/5axis/program/demo_rect.nc
 ```
 
 在 GUI 行为树面板中打开 `motion.xml`，再 `LOAD` / `START`。  
-默认主树 `Cmd_NcMapleCarve`：`NcParse` 解析本目录 `maple.nc` → `PathMove` 下发球面蝴蝶轨迹。
+默认主树 `Cmd_NcSphereHexGrid`：`NcParse` 解析本目录 `sphere_hex_grid.nc` → `PathMove` 下发连续球面六边形网格。
+
+### 连续球面六边形网格
+
+- 覆盖 R40 球面 `0°–85°` 极角，保留 5° 赤道防碰边界。
+- 包含 151 个完整六边形、498 条唯一网格边；欧拉化路由重复 158 条边，实现全程连续 `G1` 加工。
+- 共 6643 个切削点，最大步长 `0.5 mm`；A 范围约 `6.2°–84.4°`，C 范围约 `-196.1°–210.0°`。
+- Z 轴下限扩展到 `-0.18 m`，进给为 `5 mm/s`，满足中心区域的 C 轴速度约束。
+- 可运行 `python tools/gen_sphere_hex_grid.py` 重新生成该 NC 文件。
 
 ### 蝴蝶五轴雕刻
 

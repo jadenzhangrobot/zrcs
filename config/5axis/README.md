@@ -66,7 +66,7 @@ machine_base
 |--------:|--------|--------------|------|------|
 | 0 | X | `x_slide` | slide | ±0.40 m |
 | 1 | Y | `y_slide` | slide | ±0.30 m |
-| 2 | Z | `z_slide` | slide | -0.10 ~ 0.40 m |
+| 2 | Z | `z_slide` | slide | -0.18 ~ 0.40 m |
 | 3 | A | `a_hinge` | hinge | ±1.92 rad (±110°) |
 | 4 | C | `c_hinge` | hinge | ±2π rad |
 

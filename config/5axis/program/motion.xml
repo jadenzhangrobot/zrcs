@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<root main_tree_to_execute="Cmd_NcMapleCarve">
+<root main_tree_to_execute="Cmd_NcSphereHexGrid">
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_Disable">
         <Sequence>
@@ -86,6 +86,21 @@
     <BehaviorTree ID="Cmd_NcMapleCarve">
         <Sequence>
             <Action ID="NcParse" filePath="config/5axis/program/maple.nc"
+                    waypoints="{path_pts}" orientations="{path_orientations}"
+                    feedrates="{path_feeds}"/>
+            <Action ID="PathMove" waypoints="{path_pts}"
+                    orientations="{path_orientations}" feedrates="{path_feeds}"
+                    rx="0.0" ry="0.0" rz="0.0"
+                    endRx="0.0" endRy="0.0" endRz="0.0"
+                    maxVel="0.03" maxAccel="0.5" maxJerk="5.0"
+                    cornerTol="0.0" minSegLen="0.0"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
+    <!-- Continuous RTCP hex grid over the reachable R40 upper hemisphere -->
+    <BehaviorTree ID="Cmd_NcSphereHexGrid">
+        <Sequence>
+            <Action ID="NcParse" filePath="config/5axis/program/sphere_hex_grid.nc"
                     waypoints="{path_pts}" orientations="{path_orientations}"
                     feedrates="{path_feeds}"/>
             <Action ID="PathMove" waypoints="{path_pts}"

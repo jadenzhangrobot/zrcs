@@ -90,7 +90,7 @@ void test_butterfly_is_pointwise_xyzac_on_sphere()
                               (point.z + 0.050) * std::cos(orientation.rx) - 0.600;
         assert(jointX >= -0.400 && jointX <= 0.400);
         assert(jointY >= -0.300 && jointY <= 0.300);
-        assert(jointZ >= -0.100 && jointZ <= 0.400);
+        assert(jointZ >= -0.180 && jointZ <= 0.400);
         assert(orientation.rx >= -1.920 && orientation.rx <= 1.920);
         assert(orientation.rz >= -6.2832 && orientation.rz <= 6.2832);
     }
@@ -153,11 +153,130 @@ void test_butterfly_is_pointwise_xyzac_on_sphere()
     assert(segments.size() + 1 == result.waypoints.size());
 }
 
+void test_sphere_hex_grid_is_continuous_xyzac()
+{
+    const std::string path =
+        std::string(ZRCS_SOURCE_DIR) + "/config/5axis/program/sphere_hex_grid.nc";
+    const auto result = NcParser{}.parseFile(path);
+    assert(result.error.empty());
+    assert(result.waypoints.size() == 6647);
+    assert(result.orientations.size() == result.waypoints.size());
+    assert(result.segmentFeedrates.size() + 1 == result.waypoints.size());
+
+    const size_t firstCut = 2;
+    const size_t lastCut = result.waypoints.size() - 3;
+    double maxPolarAngle = 0.0;
+    double maxSurfaceError = 0.0;
+    double maxNormalError = 0.0;
+    double maxRotaryVelocityA = 0.0;
+    double maxRotaryVelocityC = 0.0;
+
+    for (size_t i = firstCut; i <= lastCut; ++i) {
+        const auto& point = result.waypoints[i];
+        const auto& orientation = result.orientations[i];
+        const Point3D radial{point.x, point.y, point.z - 0.070};
+        const double radialLength = pointLength(radial);
+        const Point3D normal = pointScale(radial, 1.0 / radialLength);
+        maxSurfaceError = std::max(maxSurfaceError,
+                                   std::abs(radialLength - 0.040));
+        maxPolarAngle = std::max(
+            maxPolarAngle,
+            std::acos(std::clamp(normal.z, -1.0, 1.0)));
+
+        const double xAfterC = normal.x * std::cos(orientation.rz) -
+                               normal.y * std::sin(orientation.rz);
+        const double yAfterC = normal.x * std::sin(orientation.rz) +
+                               normal.y * std::cos(orientation.rz);
+        const double yAfterA = yAfterC * std::cos(orientation.rx) -
+                               normal.z * std::sin(orientation.rx);
+        const double zAfterA = yAfterC * std::sin(orientation.rx) +
+                               normal.z * std::cos(orientation.rx);
+        maxNormalError = std::max(
+            maxNormalError,
+            std::sqrt(xAfterC * xAfterC + yAfterA * yAfterA +
+                      (zAfterA - 1.0) * (zAfterA - 1.0)));
+
+        const double jointX = point.x * std::cos(orientation.rz) -
+                              point.y * std::sin(orientation.rz);
+        const double rotatedY = point.x * std::sin(orientation.rz) +
+                                point.y * std::cos(orientation.rz);
+        const double jointY = rotatedY * std::cos(orientation.rx) -
+                              (point.z + 0.050) * std::sin(orientation.rx);
+        const double jointZ = 0.380 + rotatedY * std::sin(orientation.rx) +
+                              (point.z + 0.050) * std::cos(orientation.rx) - 0.600;
+        assert(jointX >= -0.400 && jointX <= 0.400);
+        assert(jointY >= -0.300 && jointY <= 0.300);
+        assert(jointZ >= -0.180 && jointZ <= 0.400);
+        assert(orientation.rx >= -1.920 && orientation.rx <= 1.920);
+        assert(orientation.rz >= -6.2832 && orientation.rz <= 6.2832);
+
+        if (i == firstCut) {
+            continue;
+        }
+
+        const double segmentLength = pointDistance(result.waypoints[i - 1], point);
+        assert(segmentLength > 1e-9);
+        assert(segmentLength <= 0.000501);
+        const double feed = result.segmentFeedrates[i - 1];
+        assert(near(feed, 0.005));
+        const double duration = segmentLength / feed;
+        maxRotaryVelocityA = std::max(
+            maxRotaryVelocityA,
+            std::abs(orientation.rx - result.orientations[i - 1].rx) / duration);
+        maxRotaryVelocityC = std::max(
+            maxRotaryVelocityC,
+            std::abs(orientation.rz - result.orientations[i - 1].rz) / duration);
+
+        const auto& start = result.waypoints[i - 1];
+        const auto& startOrientation = result.orientations[i - 1];
+        const Point3D midpoint{
+            0.5 * (start.x + point.x),
+            0.5 * (start.y + point.y),
+            0.5 * (start.z + point.z),
+        };
+        const PathOrientation midpointOrientation{
+            0.5 * (startOrientation.rx + orientation.rx),
+            0.0,
+            0.5 * (startOrientation.rz + orientation.rz),
+        };
+        const Point3D midpointRadial{midpoint.x, midpoint.y, midpoint.z - 0.070};
+        const double midpointRadius = pointLength(midpointRadial);
+        maxSurfaceError = std::max(maxSurfaceError,
+                                   std::abs(midpointRadius - 0.040));
+        const Point3D midpointNormal = pointScale(midpointRadial, 1.0 / midpointRadius);
+        const double midpointXAfterC =
+            midpointNormal.x * std::cos(midpointOrientation.rz) -
+            midpointNormal.y * std::sin(midpointOrientation.rz);
+        const double midpointYAfterC =
+            midpointNormal.x * std::sin(midpointOrientation.rz) +
+            midpointNormal.y * std::cos(midpointOrientation.rz);
+        const double midpointYAfterA =
+            midpointYAfterC * std::cos(midpointOrientation.rx) -
+            midpointNormal.z * std::sin(midpointOrientation.rx);
+        const double midpointZAfterA =
+            midpointYAfterC * std::sin(midpointOrientation.rx) +
+            midpointNormal.z * std::cos(midpointOrientation.rx);
+        maxNormalError = std::max(
+            maxNormalError,
+            std::sqrt(midpointXAfterC * midpointXAfterC +
+                      midpointYAfterA * midpointYAfterA +
+                      (midpointZAfterA - 1.0) * (midpointZAfterA - 1.0)));
+    }
+
+    assert(maxPolarAngle > 84.0 * kPi / 180.0);
+    assert(maxPolarAngle <= 85.0 * kPi / 180.0);
+    assert(maxSurfaceError < 1e-5);            // < 0.010 mm
+    assert(maxNormalError < 7e-4);             // < 0.041 deg
+    assert(maxRotaryVelocityA <= 1.047 + 1e-3);
+    assert(maxRotaryVelocityC <= 1.571 + 1e-3);
+}
+
 } // namespace
 
 int main()
 {
     test_rotary_words_are_parsed_as_degrees();
     test_butterfly_is_pointwise_xyzac_on_sphere();
+    test_sphere_hex_grid_is_continuous_xyzac();
     return 0;
 }

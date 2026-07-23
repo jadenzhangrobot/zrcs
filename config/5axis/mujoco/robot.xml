@@ -72,7 +72,7 @@
           platter top      ~0.445 (pivot + 0.05 offset + half thickness)
           sphere top       0.540
           tool tip @ z=0   0.60   (60 mm above sphere top)
-          tool tip @ z=-0.10 0.50 (surface machining travel)
+          tool tip @ z=-0.18 0.42 (upper-hemisphere machining travel)
           tool tip @ z=0.4 1.00
           beam             ~1.05
         Refs: Haas/Hurco trunnion guidance — measure pivot-to-platter,
@@ -139,11 +139,11 @@
 
           <!--
             Z joint: negative moves down to the part, positive moves up.
-            tip_z = 0.60 + z_slide  →  min 0.50, home 0.60, max 1.00
+            tip_z = 0.60 + z_slide  →  min 0.42, home 0.60, max 1.00
             sphere top = 0.54, so the cutting range is reachable.
           -->
           <body name="z_head" pos="0 0 0">
-            <joint name="z_slide" type="slide" axis="0 0 1" range="-0.10 0.40" damping="5"/>
+            <joint name="z_slide" type="slide" axis="0 0 1" range="-0.18 0.40" damping="5"/>
             <geom name="z_ram" type="box" pos="0 0 0.92" size="0.045 0.04 0.10" material="cast_iron"/>
             <geom name="spindle_housing" type="cylinder" pos="0 0 0.76" size="0.038 0.07" material="spindle_mat"/>
             <geom name="spindle_nose" type="cylinder" pos="0 0 0.67" size="0.026 0.020" material="cast_iron"/>
@@ -163,7 +163,7 @@
   <actuator>
     <position name="act_x" joint="x_slide" kp="2e4" kv="200" ctrlrange="-0.40 0.40"/>
     <position name="act_y" joint="y_slide" kp="2e4" kv="200" ctrlrange="-0.30 0.30"/>
-    <position name="act_z" joint="z_slide" kp="2e4" kv="200" ctrlrange="-0.10 0.40"/>
+    <position name="act_z" joint="z_slide" kp="2e4" kv="200" ctrlrange="-0.18 0.40"/>
     <position name="act_a" joint="a_hinge" kp="5e3" kv="80" ctrlrange="-1.920 1.920"/>
     <position name="act_c" joint="c_hinge" kp="5e3" kv="80" ctrlrange="-6.2832 6.2832"/>
   </actuator>

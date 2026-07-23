@@ -93,7 +93,7 @@ def offset_along_normal(point, radius):
 
 def format_move(code, point, feed=None):
     x, y, z, a, c = point
-    line = f"{code} X{x:.6f} Y{y:.6f} Z{z:.6f} A{a:.6f} C{c:.6f}"
+    line = f"{code} X{x:.9f} Y{y:.9f} Z{z:.9f} A{a:.9f} C{c:.9f}"
     if feed is not None:
         line += f" F{feed:.3f}"
     return line
