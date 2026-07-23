@@ -9,7 +9,7 @@
  * 支持：
  *   - G20/G21 英制/公制（程序数值按标准语义：G21=mm，G20=inch；输出统一为 m）
  *   - G90/G91 绝对/相对
- *   - G0 / G1 直线
+ *   - G0 / G1 直线；A/B/C 旋转轴按度解析并输出逐点姿态
  *   - G2 / G3 圆弧（IJK 圆心偏置或 R 半径），按弦高采样为折线点
  *   - F 进给（模态；G21 为 mm/s，G20 为 inch/s；输出 m/s）
  *   - 括号注释、分号注释、N 行号、斜杠删除块、M/T 等（忽略）
@@ -41,6 +41,8 @@ public:
 
     struct Result {
         std::vector<Point3D> waypoints;
+        /// Per-waypoint rotary orientation (rad). NC A/B/C words use degrees.
+        std::vector<PathOrientation> orientations;
         /// 与 waypoints 相邻点对应的段进给 (m/s)；长度应为 waypoints.size()-1。
         /// <=0 表示该段未指定有效 F，规划时回退到全局 maxVel。
         /// 圆弧离散产生的多个子段共享该运动块的 F。

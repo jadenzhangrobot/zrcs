@@ -19,7 +19,7 @@
 struct ModelParam
 {
     std::string name;
-    std::string type;     // "serial", "delta", "cartesian"
+    std::string type;     // "serial", "delta", "cartesian", "xyzac_table"
     int dof = 0;
     std::vector<ModelJoint> joints;
 

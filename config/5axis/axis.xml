@@ -5,7 +5,7 @@
   软限位与 mujoco/robot.xml 关节 range 对齐：
     X  x_slide  [-0.40,  0.40] m
     Y  y_slide  [-0.30,  0.30] m
-    Z  z_slide  [ 0.00,  0.40] m  （软负限位略放宽至 -0.001，避免零点贴边启动告警）
+    Z  z_slide  [-0.10,  0.40] m  （允许刀尖下探至球面工件）
     A  a_hinge  [-1.920, 1.920] rad  (±110°)
     C  c_hinge  [-6.2832, 6.2832] rad (±360°)
 
@@ -54,8 +54,7 @@
 				<maxAcc>5</maxAcc>
 				<maxJerk>50.0</maxJerk>
 				<posPositiveLimit>0.4</posPositiveLimit>
-				<!-- 略低于行程下界 0，避免启动时 pos=0 触发 soft -limit 贴边告警 -->
-				<posNegativeLimit>-0.001</posNegativeLimit>
+				<posNegativeLimit>-0.10</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
 				<lead>1</lead>
 			</value2>

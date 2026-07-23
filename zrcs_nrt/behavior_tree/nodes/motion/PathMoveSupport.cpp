@@ -131,7 +131,8 @@ bool sendSegmentsAsMovePath(RtBridge* bridge,
                             double endRx,
                             double endRy,
                             double endRz,
-                            const MotionPlanner::Config& cfg)
+                            const MotionPlanner::Config& cfg,
+                            const std::vector<PathOrientation>* waypointOrientations)
 {
     const size_t argCount = static_cast<size_t>(MovePathArg::Sync) + 1;
 
@@ -144,15 +145,29 @@ bool sendSegmentsAsMovePath(RtBridge* bridge,
         return false;
     }
 
+    const bool hasWaypointOrientations =
+        waypointOrientations && waypointOrientations->size() == segments.size() + 1;
+    if (waypointOrientations && !hasWaypointOrientations) {
+        spdlog::error("[PathMove] per-waypoint orientation count must equal segment count + 1");
+        return false;
+    }
+
     double arcBefore = 0.0;
     for (size_t i = 0; i < segments.size(); ++i) {
         const auto& segment = segments[i];
         const double t0 = arcBefore / totalLength;
         const double t1 = (arcBefore + segment.length) / totalLength;
-        const QuaternionArgs qStart =
-            lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t0);
-        const QuaternionArgs qEnd =
-            lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t1);
+        QuaternionArgs qStart;
+        QuaternionArgs qEnd;
+        if (hasWaypointOrientations) {
+            const auto& start = (*waypointOrientations)[i];
+            const auto& end = (*waypointOrientations)[i + 1];
+            qStart = rpyToQuaternion(start.rx, start.ry, start.rz);
+            qEnd = rpyToQuaternion(end.rx, end.ry, end.rz);
+        } else {
+            qStart = lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t0);
+            qEnd = lerpRpyToQuaternion(rx, ry, rz, endRx, endRy, endRz, t1);
+        }
 
         std::array<double, zrcs::kCmdArgsMax> args{};
         const double maxVel = segmentVelocityLimit(segment, cfg.maxVel);
@@ -186,14 +201,16 @@ bool queuePlannedSegments(RtBridge* bridge,
                           double endRx,
                           double endRy,
                           double endRz,
-                          const MotionPlanner::Config& cfg)
+                          const MotionPlanner::Config& cfg,
+                          const std::vector<PathOrientation>* waypointOrientations)
 {
     if (!bridge) {
         spdlog::error("[PathMove] RtBridge is null");
         return false;
     }
     bridge->setPathMoveConfig(cfg.maxVel, cfg.maxAccel, cfg.maxJerk);
-    return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, endRx, endRy, endRz, cfg);
+    return sendSegmentsAsMovePath(bridge, segments, rx, ry, rz, endRx, endRy, endRz,
+                                  cfg, waypointOrientations);
 }
 
 bool queuePathFromWaypoints(RtBridge* bridge,
@@ -205,7 +222,8 @@ bool queuePathFromWaypoints(RtBridge* bridge,
                             double endRy,
                             double endRz,
                             const MotionPlanner::Config& cfg,
-                            const std::vector<double>* segmentFeedrates)
+                            const std::vector<double>* segmentFeedrates,
+                            const std::vector<PathOrientation>* waypointOrientations)
 {
     if (!bridge) {
         spdlog::error("[PathMove] RtBridge is null");
@@ -220,7 +238,23 @@ bool queuePathFromWaypoints(RtBridge* bridge,
         return false;
     }
 
-    if (!queuePlannedSegments(bridge, segments, rx, ry, rz, endRx, endRy, endRz, cfg)) {
+    if (waypointOrientations) {
+        if (waypointOrientations->size() != waypoints.size() ||
+            segments.size() + 1 != waypoints.size()) {
+            spdlog::error("[PathMove] pointwise A/B/C requires one unmodified segment per waypoint edge");
+            return false;
+        }
+        for (size_t i = 0; i < segments.size(); ++i) {
+            if (pointDistance(evaluateSegment(segments[i], 0.0), waypoints[i]) > 1e-8 ||
+                pointDistance(evaluateSegment(segments[i], 1.0), waypoints[i + 1]) > 1e-8) {
+                spdlog::error("[PathMove] geometry fitting changed an XYZAC waypoint edge");
+                return false;
+            }
+        }
+    }
+
+    if (!queuePlannedSegments(bridge, segments, rx, ry, rz, endRx, endRy, endRz,
+                              cfg, waypointOrientations)) {
         return false;
     }
 

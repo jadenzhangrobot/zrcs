@@ -21,6 +21,8 @@ public:
     /// 显示/隐藏并启停刀末端轨迹采样（默认开启）
     void setToolTrailVisible(bool visible);
     bool isToolTrailVisible() const;
+    void setToolTrailWorkpieceRelative(bool enabled);
+    bool isToolTrailWorkpieceRelative() const;
 
     void clearState();
     void resetView();
@@ -54,6 +56,7 @@ public:
     void reloadModel();
     void clearTrajectory();
     void setToolTrailVisible(bool visible);
+    void setToolTrailWorkpieceRelative(bool enabled);
 
 signals:
     void modelLoaded(int jointCount);

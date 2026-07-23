@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<root main_tree_to_execute="Cmd_NcPath">
+<root main_tree_to_execute="Cmd_NcMapleCarve">
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_Disable">
         <Sequence>
@@ -82,6 +82,34 @@
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
+    <!-- Simultaneous XYZAC butterfly engraving with tool axis normal to the R40 sphere -->
+    <BehaviorTree ID="Cmd_NcMapleCarve">
+        <Sequence>
+            <Action ID="NcParse" filePath="config/5axis/program/maple.nc"
+                    waypoints="{path_pts}" orientations="{path_orientations}"
+                    feedrates="{path_feeds}"/>
+            <Action ID="PathMove" waypoints="{path_pts}"
+                    orientations="{path_orientations}" feedrates="{path_feeds}"
+                    rx="0.0" ry="0.0" rz="0.0"
+                    endRx="0.0" endRy="0.0" endRz="0.0"
+                    maxVel="0.03" maxAccel="0.5" maxJerk="5.0"
+                    cornerTol="0.0" minSegLen="0.0"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
+    <!-- Hexagonal spiral carved on R40 sphere -->
+    <BehaviorTree ID="Cmd_NcHexagonCarve">
+        <Sequence>
+            <Action ID="NcParse" filePath="config/5axis/program/hexagon.nc"
+                    waypoints="{path_pts}" feedrates="{path_feeds}"/>
+            <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
+                    rx="0.0" ry="0.0" rz="0.0"
+                    endRx="0.0" endRy="0.0" endRz="0.0"
+                    maxVel="0.08" maxAccel="0.8" maxJerk="8.0"
+                    cornerTol="0.0002" minSegLen="0.00005"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
     <!-- Sphere-surface carve: spiral + latitude rings + meridians + polar rosette -->
     <BehaviorTree ID="Cmd_NcSphereCarve">
         <Sequence>
@@ -129,10 +157,12 @@
             <input_port name="filePath" type="std::string">Path to .nc / G-code file</input_port>
             <input_port default="0.0002" name="arcChordTol" type="double">Arc sampling chord height (m)</input_port>
             <output_port name="waypoints">Parsed path points (m)</output_port>
+            <output_port name="orientations">Per-waypoint A/B/C orientation (rad)</output_port>
             <output_port name="feedrates">Per-edge feedrates (m/s)</output_port>
         </Action>
         <Action ID="PathMove">
             <input_port name="waypoints">Path points from NcParse (m)</input_port>
+            <input_port name="orientations">Optional per-waypoint A/B/C orientation (rad)</input_port>
             <input_port name="feedrates">Optional per-edge feedrates from NcParse (m/s)</input_port>
             <input_port default="0.0" name="rx" type="double">Start RX / A (rad)</input_port>
             <input_port default="0.0" name="ry" type="double">Start RY (rad)</input_port>

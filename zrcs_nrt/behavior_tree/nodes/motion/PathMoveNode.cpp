@@ -58,6 +58,8 @@ BT::PortsList PathMoveNode::providedPorts()
 {
     return {
         BT::InputPort<std::vector<Point3D>>("waypoints", "Path points from NcParse (m)"),
+        BT::InputPort<std::vector<PathOrientation>>(
+            "orientations", "Optional per-waypoint A/B/C orientation (rad)"),
         BT::InputPort<std::vector<double>>("feedrates",
                                            "Optional per-edge feedrates from NcParse (m/s)"),
         BT::InputPort<double>("rx", 0.0, "Start RX / A (rad)"),
@@ -97,9 +99,14 @@ BT::NodeStatus PathMoveNode::tick()
     const auto feedratesOpt = getInput<std::vector<double>>("feedrates");
     const std::vector<double>* feedPtr =
         (feedratesOpt && !feedratesOpt->empty()) ? &(*feedratesOpt) : nullptr;
+    const auto orientationsOpt =
+        getInput<std::vector<PathOrientation>>("orientations");
+    const std::vector<PathOrientation>* orientationPtr =
+        (orientationsOpt && !orientationsOpt->empty()) ? &(*orientationsOpt) : nullptr;
 
     if (!queuePathFromWaypoints(sharedState_->bridge, *waypointsOpt,
-                                rx, ry, rz, endRx, endRy, endRz, cfg, feedPtr)) {
+                                rx, ry, rz, endRx, endRy, endRz, cfg, feedPtr,
+                                orientationPtr)) {
         sharedState_->setCurrentNode(name(), "failed to queue path move");
         return BT::NodeStatus::FAILURE;
     }

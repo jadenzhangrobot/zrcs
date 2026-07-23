@@ -21,6 +21,7 @@
 struct MujocoVisualizer3D::Impl {
     QString message = QStringLiteral("MuJoCo model is not loaded.");
     bool glReady = false;
+    bool toolTrailWorkpieceRelative = true;
     QVector<double> latestAxisPositions;
 
 #ifdef ZRCS_HAS_MUJOCO
@@ -45,6 +46,8 @@ struct MujocoVisualizer3D::Impl {
     // 刀尖绑定：优先 site "tool_tip"，否则 geom "tool_tip" / "tool_tip_vis"
     int toolTipObjType = -1; // mjOBJ_SITE 或 mjOBJ_GEOM
     int toolTipObjId = -1;
+    int workFrameObjType = -1; // mjOBJ_SITE or mjOBJ_BODY
+    int workFrameObjId = -1;
     QVector<std::array<mjtNum, 3>> toolTrail;
     bool toolTrailVisible = true; ///< 采样 + 绘制开关
     static constexpr int kMaxTrailPoints = 20000;
@@ -88,6 +91,8 @@ struct MujocoVisualizer3D::Impl {
         bindings.clear();
         toolTipObjType = -1;
         toolTipObjId = -1;
+        workFrameObjType = -1;
+        workFrameObjId = -1;
         toolTrail.clear();
     }
 
@@ -147,6 +152,90 @@ struct MujocoVisualizer3D::Impl {
         return false;
     }
 
+    bool resolveWorkFrame()
+    {
+        workFrameObjType = -1;
+        workFrameObjId = -1;
+        if (!model) {
+            return false;
+        }
+
+        int id = mj_name2id(model, mjOBJ_SITE, "workpiece_origin");
+        if (id >= 0) {
+            workFrameObjType = mjOBJ_SITE;
+            workFrameObjId = id;
+            return true;
+        }
+
+        id = mj_name2id(model, mjOBJ_BODY, "workpiece");
+        if (id >= 0) {
+            workFrameObjType = mjOBJ_BODY;
+            workFrameObjId = id;
+            return true;
+        }
+        return false;
+    }
+
+    bool readWorkFrameWorldPose(mjtNum pos[3], mjtNum mat[9]) const
+    {
+        if (!model || !data || workFrameObjId < 0) {
+            return false;
+        }
+
+        const mjtNum *sourcePos = nullptr;
+        const mjtNum *sourceMat = nullptr;
+        if (workFrameObjType == mjOBJ_SITE) {
+            sourcePos = data->site_xpos + 3 * workFrameObjId;
+            sourceMat = data->site_xmat + 9 * workFrameObjId;
+        } else if (workFrameObjType == mjOBJ_BODY) {
+            sourcePos = data->xpos + 3 * workFrameObjId;
+            sourceMat = data->xmat + 9 * workFrameObjId;
+        } else {
+            return false;
+        }
+
+        std::copy_n(sourcePos, 3, pos);
+        std::copy_n(sourceMat, 9, mat);
+        return true;
+    }
+
+    bool usesWorkFrame() const
+    {
+        return toolTrailWorkpieceRelative && workFrameObjId >= 0;
+    }
+
+    bool worldToWorkFrame(const mjtNum world[3], mjtNum local[3]) const
+    {
+        mjtNum pos[3];
+        mjtNum mat[9];
+        if (!readWorkFrameWorldPose(pos, mat)) {
+            return false;
+        }
+
+        const mjtNum delta[3] = {
+            world[0] - pos[0], world[1] - pos[1], world[2] - pos[2]};
+        for (int axis = 0; axis < 3; ++axis) {
+            local[axis] = mat[axis] * delta[0] + mat[3 + axis] * delta[1] +
+                          mat[6 + axis] * delta[2];
+        }
+        return true;
+    }
+
+    bool workToWorldFrame(const std::array<mjtNum, 3> &local, mjtNum world[3]) const
+    {
+        mjtNum pos[3];
+        mjtNum mat[9];
+        if (!readWorkFrameWorldPose(pos, mat)) {
+            return false;
+        }
+
+        for (int axis = 0; axis < 3; ++axis) {
+            world[axis] = pos[axis] + mat[3 * axis] * local[0] +
+                          mat[3 * axis + 1] * local[1] + mat[3 * axis + 2] * local[2];
+        }
+        return true;
+    }
+
     void appendToolTipSample()
     {
         if (!toolTrailVisible || !model || !data || toolTipObjId < 0) {
@@ -157,8 +246,11 @@ struct MujocoVisualizer3D::Impl {
         if (!readToolTipWorldPos(p)) {
             return;
         }
-        // 使用刀尖真实世界坐标（含 Z），便于 5 轴 / 立体路径观察
+        // Store samples in the selected frame; rendering always converts them to world space.
         std::array<mjtNum, 3> point{p[0], p[1], p[2]};
+        if (usesWorkFrame() && !worldToWorkFrame(p, point.data())) {
+            return;
+        }
         if (!toolTrail.isEmpty()) {
             const auto &last = toolTrail.back();
             const mjtNum dx = point[0] - last[0];
@@ -195,6 +287,8 @@ struct MujocoVisualizer3D::Impl {
         }
 
         if (toolTrail.size() >= 2) {
+            mjtNum world0[3];
+            mjtNum world1[3];
             const int trailSegments = static_cast<int>(toolTrail.size() - 1);
             const int renderedSegments = std::min(trailSegments, available);
             for (int out = 0; out < renderedSegments && scene.ngeom < scene.maxgeom; ++out) {
@@ -206,13 +300,24 @@ struct MujocoVisualizer3D::Impl {
                     i1 = std::min(i0 + 1, trailSegments);
                 }
 
+                const mjtNum *point0 = toolTrail[i0].data();
+                const mjtNum *point1 = toolTrail[i1].data();
+                if (usesWorkFrame()) {
+                    if (!workToWorldFrame(toolTrail[i0], world0) ||
+                        !workToWorldFrame(toolTrail[i1], world1)) {
+                        return;
+                    }
+                    point0 = world0;
+                    point1 = world1;
+                }
+
                 mjvGeom *geom = scene.geoms + scene.ngeom++;
                 mjv_initGeom(geom, mjGEOM_CAPSULE, size, pos, mat, trailRgba);
                 mjv_connector(geom,
                               mjGEOM_CAPSULE,
                               kTrailRadius,
-                              toolTrail[i0].data(),
-                              toolTrail[i1].data());
+                              point0,
+                              point1);
                 geom->category = mjCAT_DECOR;
                 geom->emission = 0.45f;
             }
@@ -328,6 +433,7 @@ void MujocoVisualizer3D::reloadModel()
         }
 
         const bool hasTip = impl_->resolveToolTip();
+        const bool hasWorkFrame = impl_->resolveWorkFrame();
 
         mj_forward(impl_->model, impl_->data);
         impl_->appendToolTipSample();
@@ -342,9 +448,15 @@ void MujocoVisualizer3D::reloadModel()
         impl_->renderContextReady = true;
 
         resetView();
-        impl_->message = hasTip
-            ? QStringLiteral("MuJoCo model loaded.")
-            : QStringLiteral("MuJoCo loaded, but no tool tip (site/geom 'tool_tip').");
+        if (!hasTip) {
+            impl_->message =
+                QStringLiteral("MuJoCo loaded, but no tool tip (site/geom 'tool_tip').");
+        } else if (impl_->toolTrailWorkpieceRelative && !hasWorkFrame) {
+            impl_->message = QStringLiteral(
+                "MuJoCo loaded, but no work frame (site 'workpiece_origin' or body 'workpiece').");
+        } else {
+            impl_->message = QStringLiteral("MuJoCo model loaded.");
+        }
         setAxisPositions(impl_->latestAxisPositions);
     } catch (const std::exception &e) {
         impl_->message = QString::fromStdString(e.what());
@@ -414,6 +526,27 @@ bool MujocoVisualizer3D::isToolTrailVisible() const
 #endif
 }
 
+void MujocoVisualizer3D::setToolTrailWorkpieceRelative(bool enabled)
+{
+    if (impl_->toolTrailWorkpieceRelative == enabled) {
+        return;
+    }
+
+    impl_->toolTrailWorkpieceRelative = enabled;
+#ifdef ZRCS_HAS_MUJOCO
+    impl_->toolTrail.clear();
+    if (impl_->toolTrailVisible && impl_->model && impl_->data) {
+        impl_->appendToolTipSample();
+    }
+#endif
+    update();
+}
+
+bool MujocoVisualizer3D::isToolTrailWorkpieceRelative() const
+{
+    return impl_->toolTrailWorkpieceRelative;
+}
+
 void MujocoVisualizer3D::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -446,6 +579,13 @@ void MujocoVisualizer3D::paintGL()
             right += " / tip: site";
         } else {
             right += " / tip: geom";
+        }
+        if (impl_->usesWorkFrame()) {
+            right += " / frame: work";
+        } else if (impl_->toolTrailWorkpieceRelative) {
+            right += " / frame: world (work missing)";
+        } else {
+            right += " / frame: world";
         }
         mjr_overlay(mjFONT_NORMAL,
                     mjGRID_TOPLEFT,
@@ -588,8 +728,9 @@ void MujocoPanel::setupUI()
     QPushButton *btnReload = findChild<QPushButton *>("btnReload");
     QPushButton *btnShowTrail = findChild<QPushButton *>("btnShowTrail");
     QPushButton *btnClearTrail = findChild<QPushButton *>("btnClearTrail");
+    QPushButton *btnTrailFrame = findChild<QPushButton *>("btnTrailFrame");
     if (!mujocoView || !btn2D || !btn3D || !btnResetView || !btnReload || !btnShowTrail ||
-        !btnClearTrail) {
+        !btnClearTrail || !btnTrailFrame) {
         return;
     }
 
@@ -602,6 +743,11 @@ void MujocoPanel::setupUI()
     btnShowTrail->setChecked(mujocoView->isToolTrailVisible());
     btnShowTrail->setToolTip(QStringLiteral("显示/隐藏刀尖轨迹（site/geom tool_tip）"));
     btnClearTrail->setText(QStringLiteral("清空轨迹"));
+    btnTrailFrame->setCheckable(true);
+    btnTrailFrame->setChecked(mujocoView->isToolTrailWorkpieceRelative());
+    btnTrailFrame->setText(btnTrailFrame->isChecked() ? QStringLiteral("工件坐标")
+                                                     : QStringLiteral("世界坐标"));
+    btnTrailFrame->setToolTip(QStringLiteral("选择刀尖轨迹的显示坐标系"));
 
     btn2D->setProperty("kind", "accent");
     btn3D->setProperty("kind", "accentBlue");
@@ -609,6 +755,7 @@ void MujocoPanel::setupUI()
     btnReload->setProperty("kind", "neutral");
     btnShowTrail->setProperty("kind", "accent");
     btnClearTrail->setProperty("kind", "neutral");
+    btnTrailFrame->setProperty("kind", "accentBlue");
 
     connect(btn2D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::setTopView);
     connect(btn3D, &QPushButton::clicked, mujocoView, &MujocoVisualizer3D::resetView);
@@ -616,6 +763,11 @@ void MujocoPanel::setupUI()
     connect(btnReload, &QPushButton::clicked, this, &MujocoPanel::reloadModel);
     connect(btnShowTrail, &QPushButton::toggled, this, &MujocoPanel::setToolTrailVisible);
     connect(btnClearTrail, &QPushButton::clicked, this, &MujocoPanel::clearTrajectory);
+    connect(btnTrailFrame, &QPushButton::toggled, this, [this, btnTrailFrame](bool checked) {
+        btnTrailFrame->setText(checked ? QStringLiteral("工件坐标")
+                                       : QStringLiteral("世界坐标"));
+        setToolTrailWorkpieceRelative(checked);
+    });
 }
 
 void MujocoPanel::clearState()
@@ -629,6 +781,13 @@ void MujocoPanel::setToolTrailVisible(bool visible)
 {
     if (mujocoView) {
         mujocoView->setToolTrailVisible(visible);
+    }
+}
+
+void MujocoPanel::setToolTrailWorkpieceRelative(bool enabled)
+{
+    if (mujocoView) {
+        mujocoView->setToolTrailWorkpieceRelative(enabled);
     }
 }
 

@@ -26,6 +26,13 @@ struct Point3D {
     double z = 0.0;
 };
 
+/// Path orientation in radians. For XYZAC machines rx/rz map to A/C.
+struct PathOrientation {
+    double rx = 0.0;
+    double ry = 0.0;
+    double rz = 0.0;
+};
+
 /// 输入运动块类型。当前仅支持直线；圆弧在 NC 解析阶段已离散为折线点。
 enum class PathMoveType {
     Line

@@ -916,8 +916,8 @@ void test_motion_preprocessor_queues_move_path_commands()
     auto block = std::make_unique<zrcs::SharedBlock>();
     RtBridge bridge(block.get());
     MotionPlanner::Config cfg;
-    assert(is_near(cfg.cornerTol, 0.25));
-    assert(is_near(cfg.minSegLen, 0.05));
+    assert(is_near(cfg.cornerTol, 0.00025));
+    assert(is_near(cfg.minSegLen, 0.00005));
     cfg.maxVel = 5.0;
     cfg.maxAccel = 40.0;
     cfg.maxJerk = 200.0;
@@ -940,6 +940,64 @@ void test_motion_preprocessor_queues_move_path_commands()
     assert_move_path_commands(commands, waypoints, cfg);
 }
 
+void test_pointwise_xyzac_orientations_are_queued()
+{
+    auto block = std::make_unique<zrcs::SharedBlock>();
+    RtBridge bridge(block.get());
+    MotionPlanner::Config cfg;
+    cfg.cornerTol = 0.0;
+    cfg.minSegLen = 0.0;
+
+    const std::vector<Point3D> waypoints = {
+        {0.0, 0.0, 0.1},
+        {0.01, 0.0, 0.1},
+        {0.02, 0.01, 0.1},
+    };
+    const std::vector<PathOrientation> orientations = {
+        {0.10, 0.0, -1.50},
+        {0.20, 0.0, -1.00},
+        {0.30, 0.0, 0.20},
+    };
+
+    assert(zrcs_bt::queuePathFromWaypoints(
+        &bridge, waypoints, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        cfg, nullptr, &orientations));
+    const auto commands = collect_commands(*block);
+    assert(commands.size() == 2);
+
+    auto quaternion = [](const PathOrientation& rpy) {
+        const double cr = std::cos(rpy.rx * 0.5);
+        const double sr = std::sin(rpy.rx * 0.5);
+        const double cp = std::cos(rpy.ry * 0.5);
+        const double sp = std::sin(rpy.ry * 0.5);
+        const double cy = std::cos(rpy.rz * 0.5);
+        const double sy = std::sin(rpy.rz * 0.5);
+        return std::array<double, 4>{
+            cr * cp * cy + sr * sp * sy,
+            sr * cp * cy - cr * sp * sy,
+            cr * sp * cy + sr * cp * sy,
+            cr * cp * sy - sr * sp * cy,
+        };
+    };
+
+    for (size_t i = 0; i < commands.size(); ++i) {
+        const auto expectedStart = quaternion(orientations[i]);
+        const auto expectedEnd = quaternion(orientations[i + 1]);
+        const std::array<MovePathArg, 4> startArgs = {
+            MovePathArg::QStartW, MovePathArg::QStartX,
+            MovePathArg::QStartY, MovePathArg::QStartZ,
+        };
+        const std::array<MovePathArg, 4> endArgs = {
+            MovePathArg::QEndW, MovePathArg::QEndX,
+            MovePathArg::QEndY, MovePathArg::QEndZ,
+        };
+        for (size_t q = 0; q < 4; ++q) {
+            assert(is_near(command_arg(commands[i], startArgs[q]), expectedStart[q]));
+            assert(is_near(command_arg(commands[i], endArgs[q]), expectedEnd[q]));
+        }
+    }
+}
+
 } // namespace
 
 int main()
@@ -952,6 +1010,7 @@ int main()
     test_curvature_limits_local_velocity();
     test_acceleration_lookahead_spans_segments();
     test_motion_preprocessor_queues_move_path_commands();
+    test_pointwise_xyzac_orientations_are_queued();
     std::cout << "Motion preprocessing segment test passed." << std::endl;
     return 0;
 }

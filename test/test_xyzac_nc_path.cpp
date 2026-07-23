@@ -1,0 +1,163 @@
+#include "algorithm/path_planning/MotionPlanner.h"
+#include "core/nc_parser/NcParser.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <string>
+#include <vector>
+
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+
+bool near(double actual, double expected, double tolerance = 1e-10)
+{
+    return std::abs(actual - expected) <= tolerance;
+}
+
+void test_rotary_words_are_parsed_as_degrees()
+{
+    const auto result = NcParser{}.parseText(
+        "G21 G90\n"
+        "G1 X1 Y2 Z3 A10 B20 C30 F5\n"
+        "G1 X2 A15 C35\n"
+        "G91\n"
+        "G1 X1 A2 C-3\n");
+
+    assert(result.error.empty());
+    assert(result.waypoints.size() == 3);
+    assert(result.orientations.size() == result.waypoints.size());
+    assert(near(result.orientations[0].rx, 10.0 * kPi / 180.0));
+    assert(near(result.orientations[0].ry, 20.0 * kPi / 180.0));
+    assert(near(result.orientations[0].rz, 30.0 * kPi / 180.0));
+    assert(near(result.orientations[1].rx, 15.0 * kPi / 180.0));
+    assert(near(result.orientations[1].rz, 35.0 * kPi / 180.0));
+    assert(near(result.orientations[2].rx, 17.0 * kPi / 180.0));
+    assert(near(result.orientations[2].rz, 32.0 * kPi / 180.0));
+}
+
+void test_butterfly_is_pointwise_xyzac_on_sphere()
+{
+    const std::string path =
+        std::string(ZRCS_SOURCE_DIR) + "/config/5axis/program/maple.nc";
+    const auto result = NcParser{}.parseFile(path);
+    assert(result.error.empty());
+    assert(result.waypoints.size() == 309);
+    assert(result.orientations.size() == result.waypoints.size());
+    assert(result.segmentFeedrates.size() + 1 == result.waypoints.size());
+
+    double maxNormalError = 0.0;
+    assert(near(result.waypoints.front().z, 0.170));
+    assert(near(result.orientations.front().rx, 0.0));
+    assert(near(result.orientations.back().rz, 2.0 * kPi, 1e-8));
+
+    // Skip home/safe approach and safe/home retract points.
+    for (size_t i = 2; i + 2 < result.waypoints.size(); ++i) {
+        const auto& point = result.waypoints[i];
+        const auto& orientation = result.orientations[i];
+        const double nx = point.x / 0.040;
+        const double ny = point.y / 0.040;
+        const double nz = (point.z - 0.070) / 0.040;
+
+        const double xAfterC = nx * std::cos(orientation.rz) -
+                               ny * std::sin(orientation.rz);
+        const double yAfterC = nx * std::sin(orientation.rz) +
+                               ny * std::cos(orientation.rz);
+        const double yAfterA = yAfterC * std::cos(orientation.rx) -
+                               nz * std::sin(orientation.rx);
+        const double zAfterA = yAfterC * std::sin(orientation.rx) +
+                               nz * std::cos(orientation.rx);
+        const double normalError = std::sqrt(
+            xAfterC * xAfterC + yAfterA * yAfterA +
+            (zAfterA - 1.0) * (zAfterA - 1.0));
+        maxNormalError = std::max(maxNormalError, normalError);
+    }
+    assert(maxNormalError < 2e-8);
+
+    // Verify the complete table-table IK envelope, including approach/retract.
+    for (size_t i = 0; i < result.waypoints.size(); ++i) {
+        const auto& point = result.waypoints[i];
+        const auto& orientation = result.orientations[i];
+        const double xAfterC = point.x * std::cos(orientation.rz) -
+                               point.y * std::sin(orientation.rz);
+        const double yAfterC = point.x * std::sin(orientation.rz) +
+                               point.y * std::cos(orientation.rz);
+        const double jointX = xAfterC;
+        const double jointY = yAfterC * std::cos(orientation.rx) -
+                              (point.z + 0.050) * std::sin(orientation.rx);
+        const double jointZ = 0.380 + yAfterC * std::sin(orientation.rx) +
+                              (point.z + 0.050) * std::cos(orientation.rx) - 0.600;
+        assert(jointX >= -0.400 && jointX <= 0.400);
+        assert(jointY >= -0.300 && jointY <= 0.300);
+        assert(jointZ >= -0.100 && jointZ <= 0.400);
+        assert(orientation.rx >= -1.920 && orientation.rx <= 1.920);
+        assert(orientation.rz >= -6.2832 && orientation.rz <= 6.2832);
+    }
+
+    // Pointwise A/C is linearly interpolated by RT. Check the complete cutting
+    // edges, not only their exact spherical endpoints.
+    double maxSurfaceError = 0.0;
+    double maxInterpolatedNormalError = 0.0;
+    for (size_t i = 3; i + 2 < result.waypoints.size(); ++i) {
+        const auto& start = result.waypoints[i - 1];
+        const auto& end = result.waypoints[i];
+        const auto& startOrientation = result.orientations[i - 1];
+        const auto& endOrientation = result.orientations[i];
+        for (int sample = 0; sample <= 10; ++sample) {
+            const double t = static_cast<double>(sample) / 10.0;
+            const Point3D point{
+                start.x + (end.x - start.x) * t,
+                start.y + (end.y - start.y) * t,
+                start.z + (end.z - start.z) * t,
+            };
+            const PathOrientation orientation{
+                startOrientation.rx + (endOrientation.rx - startOrientation.rx) * t,
+                0.0,
+                startOrientation.rz + (endOrientation.rz - startOrientation.rz) * t,
+            };
+            const Point3D radial{point.x, point.y, point.z - 0.070};
+            const double radialLength = pointLength(radial);
+            maxSurfaceError = std::max(maxSurfaceError,
+                                       std::abs(radialLength - 0.040));
+            const Point3D normal = pointScale(radial, 1.0 / radialLength);
+            const double xAfterC = normal.x * std::cos(orientation.rz) -
+                                   normal.y * std::sin(orientation.rz);
+            const double yAfterC = normal.x * std::sin(orientation.rz) +
+                                   normal.y * std::cos(orientation.rz);
+            const double yAfterA = yAfterC * std::cos(orientation.rx) -
+                                   normal.z * std::sin(orientation.rx);
+            const double zAfterA = yAfterC * std::sin(orientation.rx) +
+                                   normal.z * std::cos(orientation.rx);
+            maxInterpolatedNormalError = std::max(
+                maxInterpolatedNormalError,
+                std::sqrt(xAfterC * xAfterC + yAfterA * yAfterA +
+                          (zAfterA - 1.0) * (zAfterA - 1.0)));
+        }
+    }
+    assert(maxSurfaceError < 1e-5);              // < 0.010 mm
+    assert(maxInterpolatedNormalError < 7e-4);   // < 0.041 deg
+
+    MotionPlanner::Config cfg;
+    cfg.maxVel = 0.05;
+    cfg.maxAccel = 0.5;
+    cfg.maxJerk = 5.0;
+    cfg.cornerTol = 0.0;
+    cfg.minSegLen = 0.0;
+
+    MotionPlanner planner;
+    std::vector<TrajectorySegment> segments;
+    std::string error;
+    assert(planner.plan(result.waypoints, 0.0, 0.0, 0.0, cfg, segments,
+                        &error, &result.segmentFeedrates));
+    assert(segments.size() + 1 == result.waypoints.size());
+}
+
+} // namespace
+
+int main()
+{
+    test_rotary_words_are_parsed_as_degrees();
+    test_butterfly_is_pointwise_xyzac_on_sphere();
+    return 0;
+}

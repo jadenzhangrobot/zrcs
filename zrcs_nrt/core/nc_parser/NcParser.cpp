@@ -44,16 +44,24 @@ void collectWords(const gpr::block& b, std::unordered_map<char, double>& words)
 bool appendIfMoved(std::vector<Point3D>& waypoints,
                    const Point3D& p,
                    std::vector<double>* feedOut = nullptr,
-                   double feedrateMs = 0.0)
+                   double feedrateMs = 0.0,
+                   std::vector<PathOrientation>* orientationOut = nullptr,
+                   const PathOrientation& orientation = {})
 {
     if (waypoints.empty()) {
         waypoints.push_back(p);
+        if (orientationOut) {
+            orientationOut->push_back(orientation);
+        }
         return true;
     }
     if (pointDistance(waypoints.back(), p) > kEps) {
         waypoints.push_back(p);
         if (feedOut) {
             feedOut->push_back(feedrateMs);
+        }
+        if (orientationOut) {
+            orientationOut->push_back(orientation);
         }
         return true;
     }
@@ -214,6 +222,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
     result.lineCount = program.num_blocks();
 
     Point3D pos{};
+    PathOrientation orientation{};
     bool havePos = false;
     bool absolute = true; // G90
     bool metric = true;   // G21
@@ -272,6 +281,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
         }
 
         const bool hasAxis = words.count('X') || words.count('Y') || words.count('Z') ||
+                             words.count('A') || words.count('B') || words.count('C') ||
                              words.count('I') || words.count('J') || words.count('K') ||
                              words.count('R');
         if (!hasAxis) {
@@ -283,7 +293,8 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             const int g = static_cast<int>(std::lround(words['G']));
             if (g == 0 || g == 1 || g == 2 || g == 3) {
                 thisMotion = g;
-            } else if (!words.count('X') && !words.count('Y') && !words.count('Z')) {
+            } else if (!words.count('X') && !words.count('Y') && !words.count('Z') &&
+                       !words.count('A') && !words.count('B') && !words.count('C')) {
                 continue;
             }
         }
@@ -292,6 +303,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
         const double segFeed = (thisMotion == 0) ? 0.0 : modalFeedMs;
 
         Point3D target = pos;
+        PathOrientation targetOrientation = orientation;
         if (absolute) {
             if (words.count('X')) {
                 target.x = scale(words['X']);
@@ -301,6 +313,15 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             }
             if (words.count('Z')) {
                 target.z = scale(words['Z']);
+            }
+            if (words.count('A')) {
+                targetOrientation.rx = words['A'] * kPi / 180.0;
+            }
+            if (words.count('B')) {
+                targetOrientation.ry = words['B'] * kPi / 180.0;
+            }
+            if (words.count('C')) {
+                targetOrientation.rz = words['C'] * kPi / 180.0;
             }
         } else {
             if (words.count('X')) {
@@ -312,12 +333,23 @@ NcParser::Result NcParser::parseText(const std::string& text) const
             if (words.count('Z')) {
                 target.z = pos.z + scale(words['Z']);
             }
+            if (words.count('A')) {
+                targetOrientation.rx += words['A'] * kPi / 180.0;
+            }
+            if (words.count('B')) {
+                targetOrientation.ry += words['B'] * kPi / 180.0;
+            }
+            if (words.count('C')) {
+                targetOrientation.rz += words['C'] * kPi / 180.0;
+            }
         }
 
         if (!havePos) {
             pos = target;
+            orientation = targetOrientation;
             havePos = true;
-            appendIfMoved(result.waypoints, pos);
+            appendIfMoved(result.waypoints, pos, nullptr, 0.0,
+                          &result.orientations, orientation);
             if ((thisMotion == 0 || thisMotion == 1) &&
                 pointDistance(pos, target) <= kEps) {
                 ++result.moveCount;
@@ -326,8 +358,10 @@ NcParser::Result NcParser::parseText(const std::string& text) const
         }
 
         if (thisMotion == 0 || thisMotion == 1) {
-            appendIfMoved(result.waypoints, target, &result.segmentFeedrates, segFeed);
+            appendIfMoved(result.waypoints, target, &result.segmentFeedrates, segFeed,
+                          &result.orientations, targetOrientation);
             pos = target;
+            orientation = targetOrientation;
             ++result.moveCount;
             continue;
         }
@@ -343,6 +377,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
                                  &parseErr)) {
                     result.error = "Block " + std::to_string(bi + 1) + ": " + parseErr;
                     result.waypoints.clear();
+                    result.orientations.clear();
                     result.segmentFeedrates.clear();
                     return result;
                 }
@@ -361,6 +396,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
                     result.error = "Block " + std::to_string(bi + 1) +
                                    ": G2/G3 requires IJK or R";
                     result.waypoints.clear();
+                    result.orientations.clear();
                     result.segmentFeedrates.clear();
                     return result;
                 }
@@ -368,10 +404,19 @@ NcParser::Result NcParser::parseText(const std::string& text) const
 
             auto samples = sampleArc(pos, target, iOff, jOff, kOff, clockwise,
                                      cfg_.arcChordTol, cfg_.arcMinSegments);
-            for (const auto& p : samples) {
-                appendIfMoved(result.waypoints, p, &result.segmentFeedrates, segFeed);
+            for (size_t i = 0; i < samples.size(); ++i) {
+                const double t = static_cast<double>(i + 1) /
+                                 static_cast<double>(samples.size());
+                const PathOrientation sampleOrientation{
+                    orientation.rx + (targetOrientation.rx - orientation.rx) * t,
+                    orientation.ry + (targetOrientation.ry - orientation.ry) * t,
+                    orientation.rz + (targetOrientation.rz - orientation.rz) * t,
+                };
+                appendIfMoved(result.waypoints, samples[i], &result.segmentFeedrates,
+                              segFeed, &result.orientations, sampleOrientation);
             }
             pos = target;
+            orientation = targetOrientation;
             ++result.moveCount;
             continue;
         }
@@ -380,6 +425,7 @@ NcParser::Result NcParser::parseText(const std::string& text) const
     if (result.waypoints.size() < 2) {
         result.error = "NC program produced fewer than 2 waypoints";
         result.waypoints.clear();
+        result.orientations.clear();
         result.segmentFeedrates.clear();
         return result;
     }
@@ -387,6 +433,9 @@ NcParser::Result NcParser::parseText(const std::string& text) const
     // 段进给与折线边一一对应；若因去重点导致长度不齐，用 0 补齐（回退 maxVel）。
     if (result.segmentFeedrates.size() + 1 != result.waypoints.size()) {
         result.segmentFeedrates.resize(result.waypoints.size() - 1, 0.0);
+    }
+    if (result.orientations.size() != result.waypoints.size()) {
+        result.orientations.resize(result.waypoints.size());
     }
     return result;
 }

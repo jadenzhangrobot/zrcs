@@ -7,40 +7,41 @@
     - A     : 绕 X 轴旋转（摇篮倾转，典型范围约 ±110°）
     - C     : 绕 Z 轴旋转（转台回转，可连续 360°）
 
-  运动链简化（控制器侧笛卡尔模型）:
-    toolPose = baseTf * Trans(X) * Trans(Y) * Trans(Z) * RotX(A) * RotZ(C) * toolTf
+  RTCP 运动链:
+    T_work_to_world = baseFrame * RotX(A) * toolFrame * RotZ(C)
+    tip_world = (X + offsetX, Y + offsetY, Z + offsetZ)
+    p_work = inverse(T_work_to_world) * tip_world
 
   单位约定:
     - 直线轴: 米 (m)
     - 旋转轴: 弧度 (rad)
     - 姿态角 rx/ry/rz: 弧度
 
-  注意:
-    1. 真实机床的转台偏心 (pivot offset) 未建模，需要时可写进 baseFrame/toolFrame
-       或关节 offset。
-    2. CartesianRobot 的 IK 对旋转轴用 ZYX 欧拉角提取，适合正交五轴近似；
-       若需要精确机床后处理 IK，应扩展专用机床运动学。
+  几何配置:
+    - baseFrame: A 轴枢轴位姿
+    - toolFrame: A 轴到 C 转台原点的偏置
+    - XYZ offset: XYZ=0 时刀尖在机床世界坐标系中的位置
 -->
 <cereal>
 	<modelConfig>
 		<models size="dynamic">
 			<value0>
 				<name>xyzac-5axis</name>
-				<type>cartesian</type>
+				<type>xyzac_table</type>
 				<dof>5</dof>
 				<baseFrame>
 					<x>0</x>
 					<y>0</y>
-					<z>0</z>
+					<z>0.38</z>
 					<rx>0</rx>
 					<ry>0</ry>
 					<rz>0</rz>
 				</baseFrame>
-				<!-- toolFrame.z 可填刀具长度补偿，默认 0 -->
+				<!-- A 轴枢轴到 C 转台原点的偏置 -->
 				<toolFrame>
 					<x>0</x>
 					<y>0</y>
-					<z>0</z>
+					<z>0.05</z>
 					<rx>0</rx>
 					<ry>0</ry>
 					<rz>0</rz>
@@ -76,7 +77,7 @@
 					<value2>
 						<axisId>2</axisId>
 						<type>prismatic</type>
-						<offset>0</offset>
+						<offset>0.60</offset>
 						<dh_a>0</dh_a>
 						<dh_alpha>0</dh_alpha>
 						<dh_d>0</dh_d>

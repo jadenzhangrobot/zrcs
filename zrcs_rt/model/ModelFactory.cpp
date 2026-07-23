@@ -6,6 +6,7 @@
 #include "model/SerialRobot.h"
 #include "model/ParallelRobot.h"
 #include "model/CartesianRobot.h"
+#include "model/XyzacTableRobot.h"
 
 std::unique_ptr<RobotModel> ModelFactory::create(const ModelParam& param)
 {
@@ -30,6 +31,11 @@ std::unique_ptr<RobotModel> ModelFactory::create(const ModelParam& param)
         return std::make_unique<CartesianRobot>(
             param.name, param.dof, param.joints,
             param.baseTf, param.toolTf);
+    }
+    else if (param.type == "xyzac_table")
+    {
+        return std::make_unique<XyzacTableRobot>(
+            param.name, param.joints, param.baseTf, param.toolTf);
     }
 
     return nullptr;

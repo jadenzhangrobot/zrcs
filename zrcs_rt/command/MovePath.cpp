@@ -1,7 +1,11 @@
 #include "command/MovePath.h"
+#include "model/ModelFactory.h"
+#include "model/RobotModel.h"
 #include "shared_memory/ShmLayout.h"
+#include "system/node/NodeFactory.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 
@@ -29,6 +33,126 @@ Eigen::Vector3d MovePath::evaluateArcDerivative(double u) const
     return arcRadius_ * arcSweep_ * (-std::sin(theta) * arcU_ + std::cos(theta) * arcV_);
 }
 
+namespace {
+
+double unwrapNear(double angle, double reference)
+{
+    constexpr double kTwoPi = 2.0 * M_PI;
+    return angle + kTwoPi * std::round((reference - angle) / kTwoPi);
+}
+
+bool isXyzacModel(const RobotModel& model)
+{
+    const auto& joints = model.getJoints();
+    if (model.getType() != "xyzac_table" || joints.size() != 5)
+    {
+        return false;
+    }
+
+    const auto axisIs = [](const ModelJoint& joint, char axis, JointType type)
+    {
+        return joint.type == type &&
+               std::toupper(static_cast<unsigned char>(joint.axis)) == axis;
+    };
+
+    return axisIs(joints[0], 'X', JointType::PRISMATIC) &&
+           axisIs(joints[1], 'Y', JointType::PRISMATIC) &&
+           axisIs(joints[2], 'Z', JointType::PRISMATIC) &&
+           axisIs(joints[3], 'X', JointType::REVOLUTE) &&
+           axisIs(joints[4], 'Z', JointType::REVOLUTE);
+}
+
+} // namespace
+
+bool MovePath::initializeRtcp()
+{
+    startQuat_ = Eigen::Quaterniond(
+        command_->args[static_cast<size_t>(MovePathArg::QStartW)],
+        command_->args[static_cast<size_t>(MovePathArg::QStartX)],
+        command_->args[static_cast<size_t>(MovePathArg::QStartY)],
+        command_->args[static_cast<size_t>(MovePathArg::QStartZ)]);
+    endQuat_ = Eigen::Quaterniond(
+        command_->args[static_cast<size_t>(MovePathArg::QEndW)],
+        command_->args[static_cast<size_t>(MovePathArg::QEndX)],
+        command_->args[static_cast<size_t>(MovePathArg::QEndY)],
+        command_->args[static_cast<size_t>(MovePathArg::QEndZ)]);
+
+    const double startNorm = startQuat_.norm();
+    const double endNorm = endQuat_.norm();
+    if (!std::isfinite(startNorm) || !std::isfinite(endNorm) ||
+        startNorm < 1e-12 || endNorm < 1e-12)
+    {
+        ERROR_PRINT("MovePath: quaternion is invalid\n");
+        return false;
+    }
+    startQuat_.normalize();
+    endQuat_.normalize();
+
+    if (!rtcp5Axis_)
+    {
+        return true;
+    }
+
+    const Eigen::Matrix3d startRotation = startQuat_.toRotationMatrix();
+    const Eigen::Matrix3d endRotation = endQuat_.toRotationMatrix();
+    const auto& joints = model_->getJoints();
+
+    // NRT sends conventional RPY (Rz * Ry * Rx); XYZAC accepts only ry=0.
+    startA_ = unwrapNear(std::atan2(startRotation(2, 1), startRotation(2, 2)),
+                         ikSeed_(3) + joints[3].offset);
+    startC_ = unwrapNear(std::atan2(startRotation(1, 0), startRotation(0, 0)),
+                         ikSeed_(4) + joints[4].offset);
+    endA_ = unwrapNear(std::atan2(endRotation(2, 1), endRotation(2, 2)), startA_);
+    endC_ = unwrapNear(std::atan2(endRotation(1, 0), endRotation(0, 0)), startC_);
+
+    const Eigen::Matrix3d reconstructedStart =
+        (Eigen::AngleAxisd(startC_, Eigen::Vector3d::UnitZ()) *
+         Eigen::AngleAxisd(startA_, Eigen::Vector3d::UnitX())).toRotationMatrix();
+    const Eigen::Matrix3d reconstructedEnd =
+        (Eigen::AngleAxisd(endC_, Eigen::Vector3d::UnitZ()) *
+         Eigen::AngleAxisd(endA_, Eigen::Vector3d::UnitX())).toRotationMatrix();
+    if ((reconstructedStart - startRotation).norm() > 1e-8 ||
+        (reconstructedEnd - endRotation).norm() > 1e-8)
+    {
+        ERROR_PRINT("MovePath: XYZAC orientation must be representable by A/C axes\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool MovePath::solveRtcp(const Eigen::Vector3d& pos, double u)
+{
+    const double a = startA_ + u * (endA_ - startA_);
+    const double c = startC_ + u * (endC_ - startC_);
+
+    Eigen::Matrix4d targetPose = Eigen::Matrix4d::Identity();
+    // The machine model consumes its physical rotary chain: RotX(A) * RotZ(C).
+    targetPose.block<3, 3>(0, 0) =
+        (Eigen::AngleAxisd(a, Eigen::Vector3d::UnitX()) *
+         Eigen::AngleAxisd(c, Eigen::Vector3d::UnitZ())).toRotationMatrix();
+    targetPose.block<3, 1>(0, 3) = pos;
+
+    ikSeed_ = lastJointTarget_;
+    if (!model_->inverseKinematics(targetPose, ikSeed_, targetJoint_) ||
+        targetJoint_.size() != dof_ || !targetJoint_.allFinite())
+    {
+        ERROR_PRINT("MovePath: XYZAC RTCP inverse kinematics failed\n");
+        return false;
+    }
+
+    const double dt = baseDeltaTime_;
+    for (int i = 0; i < dof_; ++i)
+    {
+        controller_->axes_[axisIds_[i]]->setAxisPositionCmd(targetJoint_(i));
+        controller_->axes_[axisIds_[i]]->setAxisVelocityCmd(
+            dt > 0.0 ? (targetJoint_(i) - lastJointTarget_(i)) / dt : 0.0);
+    }
+    lastJointTarget_ = targetJoint_;
+    jointTargetValid_ = true;
+    return true;
+}
+
 bool MovePath::initTrajectory()
 {
     if (!modelInited_)
@@ -39,27 +163,53 @@ bool MovePath::initTrajectory()
             ERROR_PRINT("MovePath: model registry is not initialized\n");
             return false;
         }
-        RobotModel* model = registry->getModel(0);
-        if (!model)
+        model_ = registry->getModel(0);
+        if (!model_)
         {
             ERROR_PRINT("MovePath: model id=0 not found\n");
             return false;
         }
-        axisIds_ = model->getAxisIds();
+        axisIds_ = model_->getAxisIds();
         if (axisIds_.size() < 3)
         {
             ERROR_PRINT("MovePath: model must expose at least 3 axes\n");
             return false;
         }
+        dof_ = model_->getDof();
+        if (dof_ != static_cast<int>(axisIds_.size()))
+        {
+            ERROR_PRINT("MovePath: model DOF does not match its axis map\n");
+            return false;
+        }
+        rtcp5Axis_ = isXyzacModel(*model_);
+        ikSeed_.resize(dof_);
+        targetJoint_.resize(dof_);
+        lastJointTarget_.resize(dof_);
         modelInited_ = true;
     }
 
-    if (command_->args[static_cast<size_t>(MovePathArg::Sync)] == 1.0)
+    const bool sync = command_->args[static_cast<size_t>(MovePathArg::Sync)] == 1.0;
+    if (sync)
     {
         arcOffset_ = 0.0;
         input_->current_position[0] = 0.0;
         input_->current_velocity[0] = 0.0;
         input_->current_acceleration[0] = 0.0;
+    }
+
+    if (sync || !jointTargetValid_)
+    {
+        for (int i = 0; i < dof_; ++i)
+        {
+            lastJointTarget_(i) = controller_->axes_[axisIds_[i]]->actualPos();
+        }
+        jointTargetValid_ = true;
+    }
+    ikSeed_ = lastJointTarget_;
+
+    if (!initializeRtcp())
+    {
+        return false;
     }
 
     const int shape = static_cast<int>(command_->args[static_cast<size_t>(MovePathArg::Shape)]);
@@ -182,14 +332,29 @@ void MovePath::applyOutput()
         }
     }
 
-    const double pathVelocity = output_->new_velocity[0];
+    if (rtcp5Axis_)
+    {
+        if (!solveRtcp(pos, u))
+        {
+            ikFailed_ = true;
+        }
+        return;
+    }
 
+    const double pathVelocity = output_->new_velocity[0];
     controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
     controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
     controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
     controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
     controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
+}
+
+zrcsSystem::RunResult MovePath::run()
+{
+    ikFailed_ = false;
+    const auto result = zrcsSystem::TrajectoryCmd::run();
+    return ikFailed_ ? zrcsSystem::RunResult::FAILED : result;
 }
 
 CMD_REGISTER(MovePath);

@@ -2,7 +2,7 @@
   zrcs 5-axis CNC visualizer (XYZAC / table-table trunnion)
 
   Topology
-  --------
+  ========
   world
     machine_base
       trunnion_a  [a_hinge about X]
@@ -70,8 +70,9 @@
           bed top          0.16
           A pivot          0.38   (±110° disk clears bed)
           platter top      ~0.445 (pivot + 0.05 offset + half thickness)
-          workpiece top    ~0.485
-          tool tip @ z=0   0.60   (~115 mm clear above part at home-low)
+          sphere top       0.540
+          tool tip @ z=0   0.60   (60 mm above sphere top)
+          tool tip @ z=-0.10 0.50 (surface machining travel)
           tool tip @ z=0.4 1.00
           beam             ~1.05
         Refs: Haas/Hurco trunnion guidance — measure pivot-to-platter,
@@ -137,21 +138,21 @@
           <geom name="x_block" type="box" pos="0 0 1.10" size="0.08 0.06 0.035" material="blue_cover"/>
 
           <!--
-            Z joint: 0 = lowest (still clear of part), +up.
-            tip_z = 0.60 + z_slide  →  home 0.60, max 1.00
-            workpiece top ~0.485 → ~115 mm clear at z=0
+            Z joint: negative moves down to the part, positive moves up.
+            tip_z = 0.60 + z_slide  →  min 0.50, home 0.60, max 1.00
+            sphere top = 0.54, so the cutting range is reachable.
           -->
           <body name="z_head" pos="0 0 0">
-            <joint name="z_slide" type="slide" axis="0 0 1" range="0.0 0.40" damping="5"/>
+            <joint name="z_slide" type="slide" axis="0 0 1" range="-0.10 0.40" damping="5"/>
             <geom name="z_ram" type="box" pos="0 0 0.92" size="0.045 0.04 0.10" material="cast_iron"/>
             <geom name="spindle_housing" type="cylinder" pos="0 0 0.76" size="0.038 0.07" material="spindle_mat"/>
             <geom name="spindle_nose" type="cylinder" pos="0 0 0.67" size="0.026 0.020" material="cast_iron"/>
             <geom name="collet" type="cylinder" pos="0 0 0.64" size="0.016 0.010" material="cast_iron"/>
             <!-- tool: shank (thick upper) + flute (thin lower) -->
             <geom name="tool_shank" type="cylinder" pos="0 0 0.622" size="0.007 0.012" material="tool_mat"/>
-            <geom name="tool_flute" type="cylinder" pos="0 0 0.606" size="0.0035 0.010" material="tool_mat"/>
-            <site name="tool_tip" pos="0 0 0.596" size="0.003" rgba="1 0 0 0.95"/>
-            <geom name="tool_tip_vis" type="sphere" pos="0 0 0.596" size="0.0028"
+            <geom name="tool_flute" type="cylinder" pos="0 0 0.610" size="0.0035 0.010" material="tool_mat"/>
+            <site name="tool_tip" pos="0 0 0.600" size="0.003" rgba="1 0 0 0.95"/>
+            <geom name="tool_tip_vis" type="sphere" pos="0 0 0.600" size="0.0028"
                   rgba="1 0.1 0.1 1"/>
           </body>
         </body>
@@ -162,7 +163,7 @@
   <actuator>
     <position name="act_x" joint="x_slide" kp="2e4" kv="200" ctrlrange="-0.40 0.40"/>
     <position name="act_y" joint="y_slide" kp="2e4" kv="200" ctrlrange="-0.30 0.30"/>
-    <position name="act_z" joint="z_slide" kp="2e4" kv="200" ctrlrange="0.0 0.40"/>
+    <position name="act_z" joint="z_slide" kp="2e4" kv="200" ctrlrange="-0.10 0.40"/>
     <position name="act_a" joint="a_hinge" kp="5e3" kv="80" ctrlrange="-1.920 1.920"/>
     <position name="act_c" joint="c_hinge" kp="5e3" kv="80" ctrlrange="-6.2832 6.2832"/>
   </actuator>

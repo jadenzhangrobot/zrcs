@@ -34,6 +34,24 @@ target_include_directories(test_axis_direction PRIVATE
 )
 target_link_libraries(test_axis_direction PRIVATE atomic)
 
+add_executable(test_cartesian_rtcp
+    test_cartesian_rtcp.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/model/XyzacTableRobot.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/model/RobotModel.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/model/ModelConfig.cpp
+)
+target_include_directories(test_cartesian_rtcp PRIVATE
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt
+)
+target_compile_definitions(test_cartesian_rtcp PRIVATE
+    ZRCS_SOURCE_DIR="${DEVEL_INCLUDE_DIRS}"
+)
+target_link_libraries(test_cartesian_rtcp PRIVATE
+    Eigen3::Eigen
+    zrcscommon
+    tinyxml2
+)
+
 add_executable(test_status_store
     test_status_store.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/status/StatusStore.cpp
@@ -63,6 +81,27 @@ target_link_libraries(test_motion_preprocessing PRIVATE
     matplotlib_cpp::matplotlib_cpp
     spdlog::spdlog
     zrcscommon
+    ruckig
+)
+
+add_executable(test_xyzac_nc_path
+    test_xyzac_nc_path.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/core/nc_parser/NcParser.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/TrajectoryGeometry.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/PathSimplifier.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/CornerBlender.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/ShortSegmentMerger.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/LookAheadPlanner.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/MotionPlanner.cpp
+)
+target_include_directories(test_xyzac_nc_path PRIVATE
+    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt
+)
+target_compile_definitions(test_xyzac_nc_path PRIVATE
+    ZRCS_SOURCE_DIR="${DEVEL_INCLUDE_DIRS}"
+)
+target_link_libraries(test_xyzac_nc_path PRIVATE
+    gpr::gpr
     ruckig
 )
 

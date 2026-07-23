@@ -182,7 +182,7 @@ public:
     /** @return 模型名称的常量引用 */
     const std::string& getName() const { return name_; }
 
-    /** @return 模型类型字符串 ("serial" / "delta" / "cartesian") */
+    /** @return 模型类型字符串 ("serial" / "delta" / "cartesian" / "xyzac_table") */
     const std::string& getType() const { return type_; }
 
     /** @return 模型关节列表的常量引用 */
@@ -194,4 +194,3 @@ public:
     static Eigen::Matrix4d poseFromXYZRPY(double x, double y, double z,
                                            double rx, double ry, double rz);
 };
-

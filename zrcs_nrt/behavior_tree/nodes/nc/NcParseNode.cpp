@@ -24,6 +24,8 @@ BT::PortsList NcParseNode::providedPorts()
         BT::InputPort<std::string>("filePath", "Path to .nc / G-code file"),
         BT::InputPort<double>("arcChordTol", 0.0002, "Arc sampling chord height (m)"),
         BT::OutputPort<std::vector<Point3D>>("waypoints", "Parsed path points (m)"),
+        BT::OutputPort<std::vector<PathOrientation>>(
+            "orientations", "Per-waypoint A/B/C orientation (rad)"),
         BT::OutputPort<std::vector<double>>("feedrates",
                                             "Per-edge feedrates (m/s); <=0 falls back to PathMove maxVel"),
     };
@@ -57,6 +59,7 @@ BT::NodeStatus NcParseNode::tick()
     }
 
     setOutput("waypoints", result.waypoints);
+    setOutput("orientations", result.orientations);
     setOutput("feedrates", result.segmentFeedrates);
     const std::string msg = "parsed " + std::to_string(result.waypoints.size()) +
                             " waypoints / " +
