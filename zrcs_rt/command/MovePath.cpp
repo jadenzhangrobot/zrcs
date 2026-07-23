@@ -190,7 +190,6 @@ void MovePath::applyOutput()
     controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
     controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
     controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
-    controller_->axes_[axisIds_[3]]->setAxisPositionCmd(output_->new_velocity[0]);
 }
 
 CMD_REGISTER(MovePath);

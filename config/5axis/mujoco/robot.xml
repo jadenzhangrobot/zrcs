@@ -104,7 +104,6 @@
           <!--
             RTCP demo workpiece: hemisphere on a short pedestal.
             - Sphere center sits on C-axis (table Z), good for tool-normal-to-surface demos.
-            - Red meridian mark makes C rotation obvious; hemisphere silhouette shows A tilt.
             - workpiece_origin = sphere center (TCP target for RTCP).
           -->
           <body name="workpiece" pos="0 0 0.055">
@@ -112,11 +111,6 @@
             <geom name="workpiece_base" type="cylinder" pos="0 0 -0.025" size="0.035 0.010" material="cast_iron"/>
             <!-- hemisphere-ish: full sphere half-sunk into base visually; radius 40 mm -->
             <geom name="workpiece_sphere" type="sphere" pos="0 0 0.015" size="0.040" material="workpiece_mat"/>
-            <!-- orientation mark on sphere (+X) so C rotation is visible -->
-            <geom name="workpiece_mark" type="box" pos="0.038 0 0.015" size="0.004 0.008 0.008" material="accent_red"/>
-            <!-- meridian stripe for A-tilt cue -->
-            <geom name="workpiece_meridian" type="box" pos="0 0.038 0.020" size="0.006 0.003 0.018"
-                  rgba="0.95 0.75 0.20 1" contype="0" conaffinity="0"/>
             <site name="workpiece_origin" pos="0 0 0.015" size="0.004" rgba="1 0.4 0 0.9"/>
             <!-- surface contact demo point on top of sphere (tool-normal home pose) -->
             <site name="workpiece_top" pos="0 0 0.055" size="0.003" rgba="0.2 0.9 0.3 0.9"/>

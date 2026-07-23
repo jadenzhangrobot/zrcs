@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>zrcs 速度前瞻 · 段间加速度衔接</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a2332;
+    --surface2: #243044;
+    --border: #2d3a4f;
+    --text: #e7ecf3;
+    --muted: #8b9bb4;
+    --accent: #5b9fd4;
+    --accent2: #7ec8a3;
+    --warn: #e0a458;
+    --danger: #e07a7a;
+    --code-bg: #0b1016;
+    --line: #3d4f6a;
+    --mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    --sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 15.5px;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.75rem;
+    margin-bottom: 2rem;
+  }
+  header.hero .eyebrow {
+    color: var(--accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  h1 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    margin: 0 0 0.6rem;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.02rem;
+    margin: 0;
+    max-width: 46em;
+  }
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0 2.25rem;
+  }
+  nav.toc strong {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.55rem;
+  }
+  nav.toc ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    columns: 2;
+    column-gap: 2rem;
+  }
+  nav.toc li { break-inside: avoid; margin: 0.25rem 0; }
+  nav.toc a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  nav.toc a:hover { text-decoration: underline; }
+  @media (max-width: 640px) {
+    nav.toc ol { columns: 1; }
+  }
+  h2 {
+    font-size: 1.35rem;
+    margin: 2.4rem 0 0.9rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border);
+    color: #f0f4fa;
+  }
+  h2:first-of-type { border-top: none; }
+  h3 {
+    font-size: 1.08rem;
+    margin: 1.6rem 0 0.55rem;
+    color: #d5e0ef;
+  }
+  p { margin: 0.7rem 0; }
+  ul, ol { padding-left: 1.35rem; }
+  li { margin: 0.3rem 0; }
+  a { color: var(--accent); }
+  code, .mono {
+    font-family: var(--mono);
+    font-size: 0.88em;
+  }
+  code {
+    background: var(--surface2);
+    padding: 0.12em 0.38em;
+    border-radius: 4px;
+    color: #c8dcf0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.95rem 1.05rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #c5d4e8;
+  }
+  pre .c { color: #6a7d96; }
+  pre .k { color: #7ec8a3; }
+  pre .n { color: #5b9fd4; }
+  pre .s { color: #e0a458; }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1rem;
+    margin: 1.1rem 0;
+  }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.ok { border-left-color: var(--accent2); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout strong { color: #fff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.3rem;
+    font-size: 0.93rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--surface2);
+    color: #cfd9e8;
+    font-weight: 600;
+  }
+  td { background: var(--surface); }
+  .formula {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    margin: 0.9rem 0;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    overflow-x: auto;
+    color: #d8e6f5;
+  }
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem;
+    margin: 1.1rem 0 1.4rem;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+  .diagram .cap {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.7rem;
+  }
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 720px) {
+    .grid2 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+  }
+  .card h4 {
+    margin: 0 0 0.45rem;
+    font-size: 0.95rem;
+    color: var(--accent2);
+  }
+  .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+  }
+  .steps > li {
+    position: relative;
+    padding: 0.85rem 0.9rem 0.85rem 3.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 0.55rem 0;
+  }
+  .steps > li::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: 0.75rem;
+    top: 0.85rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #0b121a;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.7rem;
+    text-align: center;
+  }
+  .steps > li strong { color: #fff; }
+  .file {
+    font-family: var(--mono);
+    font-size: 0.84em;
+    color: var(--accent2);
+  }
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  kbd {
+    font-family: var(--mono);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.05em 0.35em;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">zrcs · path planning</div>
+  <h1>速度前瞻中的段间加速度衔接</h1>
+  <p class="subtitle">
+    本文说明本工程 <span class="file">LookAheadPlanner</span> 如何在固定接点速度后，
+    用离散动态规划 + Ruckig 可行性校验，联合选择各接点的切向加速度
+    <code>a_enter / a_exit</code>，从而保证跨段 S 曲线可连续执行。
+  </p>
+</header>
+
+<nav class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li><a href="#why">为什么需要段间加速度衔接</a></li>
+    <li><a href="#pipeline">整条规划流水线</a></li>
+    <li><a href="#state">状态量与数据契约</a></li>
+    <li><a href="#vel-first">先定速度：1–5 步</a></li>
+    <li><a href="#acc-core">核心：接点加速度联合规划</a></li>
+    <li><a href="#candidates">加速度候选如何生成</a></li>
+    <li><a href="#dp">动态规划目标与递推</a></li>
+    <li><a href="#ruckig">Ruckig 可行性判据</a></li>
+    <li><a href="#rt">下发到 RT 的衔接方式</a></li>
+    <li><a href="#example">数值直觉示例</a></li>
+    <li><a href="#pitfalls">常见坑与 -110</a></li>
+    <li><a href="#files">关键源码索引</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="why">1. 为什么需要段间加速度衔接</h2>
+
+<p>
+路径被拆成一串几何段（直线 + 拐角圆弧）后，若只规划接点速度
+<code>v_enter / v_exit</code>，而每段入口/出口加速度默认全 0，
+Ruckig 在段切换时会强制把加速度拉回 0，再重新爬升——速度曲线会出现
+“锯齿状” 加速度脉冲，S 形变差，时间也更长。
+</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4>只连续速度（a≡0）</h4>
+    <p>每段边界强制 a=0。段间速度连续，但加速度跳变；跨段加速过程被反复打断。</p>
+  </div>
+  <div class="card">
+    <h4>速度 + 加速度联合连续</h4>
+    <p>上一段 <code>a_exit</code> = 下一段 <code>a_enter</code>。
+    Ruckig 可在整条路径上保持平滑加减速，更接近全局 S 曲线。</p>
+  </div>
+</div>
+
+<p>
+本工程的做法是：
+<strong>先固定接点速度，再在离散加速度候选上做最短时间动态规划</strong>，
+选出一套全路径一致的接点加速度。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="pipeline">2. 整条规划流水线</h2>
+
+<p>
+编排入口在 <span class="file">MotionPlanner::plan()</span>：
+</p>
+
+<div class="diagram">
+<svg viewBox="0 0 920 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="规划流水线">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5b9fd4"/>
+    </marker>
+  </defs>
+  <!-- boxes -->
+  <rect x="10" y="40" width="140" height="56" rx="8" fill="#243044" stroke="#3d4f6a"/>
+  <text x="80" y="65" text-anchor="middle" fill="#e7ecf3" font-size="13" font-family="Segoe UI,sans-serif">waypoints</text>
+  <text x="80" y="83" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">+ feedrates</text>
+
+  <rect x="180" y="40" width="120" height="56" rx="8" fill="#243044" stroke="#3d4f6a"/>
+  <text x="240" y="65" text-anchor="middle" fill="#e7ecf3" font-size="13" font-family="Segoe UI,sans-serif">① 共线折叠</text>
+  <text x="240" y="83" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">PathSimplifier</text>
+
+  <rect x="330" y="40" width="120" height="56" rx="8" fill="#243044" stroke="#3d4f6a"/>
+  <text x="390" y="65" text-anchor="middle" fill="#e7ecf3" font-size="13" font-family="Segoe UI,sans-serif">② 拐角圆弧</text>
+  <text x="390" y="83" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">CornerBlender</text>
+
+  <rect x="480" y="40" width="120" height="56" rx="8" fill="#243044" stroke="#3d4f6a"/>
+  <text x="540" y="65" text-anchor="middle" fill="#e7ecf3" font-size="13" font-family="Segoe UI,sans-serif">③ 短段合并</text>
+  <text x="540" y="83" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">ShortSegMerger</text>
+
+  <rect x="630" y="30" width="150" height="76" rx="8" fill="#1e3a4f" stroke="#5b9fd4" stroke-width="1.5"/>
+  <text x="705" y="58" text-anchor="middle" fill="#7ec8a3" font-size="13" font-family="Segoe UI,sans-serif" font-weight="600">④ 速度前瞻</text>
+  <text x="705" y="76" text-anchor="middle" fill="#e7ecf3" font-size="12" font-family="Segoe UI,sans-serif">LookAheadPlanner</text>
+  <text x="705" y="94" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">v + a 联合规划</text>
+
+  <rect x="810" y="40" width="100" height="56" rx="8" fill="#243044" stroke="#7ec8a3"/>
+  <text x="860" y="65" text-anchor="middle" fill="#e7ecf3" font-size="13" font-family="Segoe UI,sans-serif">Segments</text>
+  <text x="860" y="83" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="Segoe UI,sans-serif">→ MovePath</text>
+
+  <line x1="150" y1="68" x2="178" y2="68" stroke="#5b9fd4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="300" y1="68" x2="328" y2="68" stroke="#5b9fd4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="450" y1="68" x2="478" y2="68" stroke="#5b9fd4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="600" y1="68" x2="628" y2="68" stroke="#5b9fd4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="780" y1="68" x2="808" y2="68" stroke="#5b9fd4" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>
+<div class="cap">几何定形 → 速度前瞻写边界 → RT 按段 Ruckig 在线插补</div>
+</div>
+
+<p>
+第 ④ 步 <code>LookAheadPlanner::planSegments()</code> 内部又分 6 小步。
+<strong>段间加速度衔接是第 6 小步</strong>，前提是接点速度已经冻结。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="state">3. 状态量与数据契约</h2>
+
+<p>
+几何段 + 速度结果都落在 <span class="file">TrajectorySegment</span>
+（<span class="file">TrajectoryTypes.h</span>）：
+</p>
+
+<table>
+  <thead>
+    <tr><th>字段</th><th>含义</th><th>谁写入</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>length</code></td><td>段弧长 L (m)</td><td>几何阶段</td></tr>
+    <tr><td><code>v_max_local</code></td><td>段内速度上限</td><td>前瞻第 1 步</td></tr>
+    <tr><td><code>v_enter</code> / <code>v_exit</code></td><td>入口 / 出口速度</td><td>前瞻第 5 步</td></tr>
+    <tr><td><code>a_enter</code> / <code>a_exit</code></td><td>入口 / 出口<strong>切向</strong>加速度</td><td>前瞻第 6 步 ★</td></tr>
+    <tr><td><code>duration</code></td><td>该段 Ruckig 最短时间估计</td><td>前瞻第 6 步</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>衔接约束（工程保证）</strong><br>
+  对相邻段 i−1 与 i：
+  <div class="formula">
+segments[i-1].v_exit == segments[i].v_enter &nbsp;// 同一接点速度<br>
+segments[i-1].a_exit == segments[i].a_enter &nbsp;// 同一接点加速度
+  </div>
+  路径起点强制 <code>a_enter = 0</code>，终点强制 <code>a_exit = 0</code>
+  （静止边界）。
+</div>
+
+<p>
+注意：这里的加速度是<strong>路径弧长参数 s 上的切向加速度</strong>
+<code>a = d²s/dt²</code>，不是笛卡尔各轴加速度，也不是法向加速度。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="vel-first">4. 先定速度：1–5 步（为加速度铺路）</h2>
+
+<ol class="steps">
+  <li>
+    <strong>段内速度上限</strong>
+    <code>v_max_local = min(全局 maxVel, 编程进给 F, √(a_max / κ))</code>。
+    曲率大的圆弧自动降速。
+  </li>
+  <li>
+    <strong>几何接点限速</strong>
+    拐角容差模型
+    <code>v² ≈ a·cornerTol / (1−cosθ)</code>，
+    再叠加曲率跳变的 jerk 约束。
+  </li>
+  <li>
+    <strong>反向扫描</strong>
+    从终点往前：若入口速度过高，在本段长度内刹不到后续接点，则压低入口。
+  </li>
+  <li>
+    <strong>正向扫描</strong>
+    从起点往后：若出口速度过高，本段加速不到，则压低出口。
+  </li>
+  <li>
+    <strong>写回</strong>
+    <code>v_enter / v_exit</code> 冻结。此后速度不再改，只选加速度。
+  </li>
+</ol>
+
+<p>
+步骤 3/4 里“能不能到”用的是简化 S 曲线距离估计
+<code>dMinTransition(v0,v1)</code>：
+</p>
+
+<div class="formula">
+T = 2·√(Δv / j)            &nbsp;&nbsp;若峰值加速度 √(j·Δv) ≤ a_max<br>
+T = 2·(a/j) + (Δv/a − a/j) &nbsp;&nbsp;否则（梯形加速度剖面）<br>
+d = 0.5 · (v0 + v1) · T
+</div>
+
+<div class="callout warn">
+  这只是<strong>速度可达性</strong>的快速估计，还不考虑边界加速度
+  <code>a0, a1</code>。真正带 a 边界的可行性，留给第 6 步用完整 Ruckig 判定。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="acc-core">5. 核心：接点加速度联合规划</h2>
+
+<p>
+实现函数：
+<code>LookAheadPlanner::planJunctionAccelerations()</code>
+（<span class="file">LookAheadPlanner.cpp</span>）。
+</p>
+
+<div class="diagram">
+<svg viewBox="0 0 920 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="接点状态图">
+  <!-- path line -->
+  <line x1="60" y1="200" x2="860" y2="200" stroke="#3d4f6a" stroke-width="2"/>
+  <!-- junctions -->
+  <g font-family="Segoe UI,sans-serif">
+    <!-- J0 -->
+    <circle cx="100" cy="200" r="8" fill="#5b9fd4"/>
+    <text x="100" y="230" text-anchor="middle" fill="#e7ecf3" font-size="13">J0</text>
+    <text x="100" y="248" text-anchor="middle" fill="#8b9bb4" font-size="11">v0, a=0</text>
+    <!-- J1 -->
+    <circle cx="300" cy="200" r="8" fill="#7ec8a3"/>
+    <text x="300" y="230" text-anchor="middle" fill="#e7ecf3" font-size="13">J1</text>
+    <text x="300" y="248" text-anchor="middle" fill="#8b9bb4" font-size="11">v1, a ∈ A1</text>
+    <!-- J2 -->
+    <circle cx="500" cy="200" r="8" fill="#7ec8a3"/>
+    <text x="500" y="230" text-anchor="middle" fill="#e7ecf3" font-size="13">J2</text>
+    <text x="500" y="248" text-anchor="middle" fill="#8b9bb4" font-size="11">v2, a ∈ A2</text>
+    <!-- J3 -->
+    <circle cx="700" cy="200" r="8" fill="#7ec8a3"/>
+    <text x="700" y="230" text-anchor="middle" fill="#e7ecf3" font-size="13">J3</text>
+    <text x="700" y="248" text-anchor="middle" fill="#8b9bb4" font-size="11">v3, a ∈ A3</text>
+    <!-- JN -->
+    <circle cx="840" cy="200" r="8" fill="#5b9fd4"/>
+    <text x="840" y="230" text-anchor="middle" fill="#e7ecf3" font-size="13">JN</text>
+    <text x="840" y="248" text-anchor="middle" fill="#8b9bb4" font-size="11">vN, a=0</text>
+
+    <!-- segments labels -->
+    <text x="200" y="190" text-anchor="middle" fill="#e0a458" font-size="12">Seg0 · L0</text>
+    <text x="400" y="190" text-anchor="middle" fill="#e0a458" font-size="12">Seg1 · L1</text>
+    <text x="600" y="190" text-anchor="middle" fill="#e0a458" font-size="12">Seg2 · L2</text>
+    <text x="770" y="190" text-anchor="middle" fill="#e0a458" font-size="12">…</text>
+
+    <!-- candidate stacks at J1 -->
+    <rect x="270" y="40" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="270" y="62" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="270" y="84" width="60" height="18" rx="3" fill="#1e3a4f" stroke="#7ec8a3"/>
+    <rect x="270" y="106" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="270" y="128" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <text x="300" y="35" text-anchor="middle" fill="#8b9bb4" font-size="11">候选 a</text>
+    <text x="300" y="97" text-anchor="middle" fill="#7ec8a3" font-size="10">选中</text>
+
+    <!-- candidate stacks at J2 -->
+    <rect x="470" y="40" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="470" y="62" width="60" height="18" rx="3" fill="#1e3a4f" stroke="#7ec8a3"/>
+    <rect x="470" y="84" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="470" y="106" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+    <rect x="470" y="128" width="60" height="18" rx="3" fill="#243044" stroke="#3d4f6a"/>
+
+    <!-- DP edge -->
+    <path d="M330 93 C380 70, 420 70, 470 71" fill="none" stroke="#5b9fd4" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="400" y="60" text-anchor="middle" fill="#5b9fd4" font-size="11">Ruckig 时间代价</text>
+
+    <text x="460" y="20" text-anchor="middle" fill="#e7ecf3" font-size="13" font-weight="600">离散 DP：每个接点选一个 a，使全路径 Σ duration 最小</text>
+  </g>
+</svg>
+<div class="cap">接点 J 上速度已固定，加速度从候选集合中选；相邻接点对用 Ruckig 评估段时间</div>
+</div>
+
+<p>算法结构一句话：</p>
+<div class="formula">
+状态 = (接点 i, 候选加速度 a_k)<br>
+边代价 = Ruckig 从 (v_i, a_k) 转移到 (v_{i+1}, a_m) 走完 L_i 的最短时间<br>
+目标 = 从起点 a=0 到终点 a=0 的最短总时间路径
+</div>
+
+<!-- ============================================================ -->
+<h2 id="candidates">6. 加速度候选如何生成</h2>
+
+<p>对每个接点 i，构造候选集合 <code>A_i</code>：</p>
+
+<table>
+  <thead>
+    <tr><th>接点类型</th><th>候选集合</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>起点 / 终点 / 速度≈0 的接点</td>
+      <td>只保留 <code>{0}</code></td>
+    </tr>
+    <tr>
+      <td>中间接点</td>
+      <td>
+        <ol style="margin:0; padding-left:1.1rem;">
+          <li><strong>均匀采样</strong>：
+            <code>a = maxAccel · s / 8</code>，
+            <code>s = −8…+8</code>（共 17 个）</li>
+          <li><strong>物理启发项</strong>（再 clamp 到 ±a_max）：
+            <ul>
+              <li>左等价：<code>(v_i² − v_{i−1}²) / (2 L_{i−1})</code></li>
+              <li>右等价：<code>(v_{i+1}² − v_i²) / (2 L_i)</code></li>
+              <li>中心估计：跨两段的平均加速度</li>
+            </ul>
+          </li>
+          <li>排序 + 去重（|Δa| ≤ 1e-10 视为相同）</li>
+        </ol>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <strong>为什么要加“等价加速度”？</strong><br>
+  匀加速近似 <code>v² = v0² + 2 a L</code> 给出的 a，往往接近真实最优边界。
+  把它塞进候选，可避免纯均匀网格错过好点；再靠 Ruckig 做精确可行性过滤。
+</div>
+
+<pre><span class="c">// LookAheadPlanner.cpp · planJunctionAccelerations()</span>
+<span class="k">for</span> (<span class="k">int</span> sample = -kHalfUniformSamples; sample &lt;= kHalfUniformSamples; ++sample) {
+    candidates.push_back(maxAccel_ * sample / kHalfUniformSamples);
+}
+<span class="k">const double</span> leftEquivalent =
+    (junctionVel[i]*junctionVel[i] - junctionVel[i-1]*junctionVel[i-1])
+    / (2.0 * segments[i-1].length);
+<span class="c">// ... rightEquivalent, centralEstimate，再 clamp / unique</span>
+</pre>
+
+<!-- ============================================================ -->
+<h2 id="dp">7. 动态规划目标与递推</h2>
+
+<h3>7.1 代价定义</h3>
+<div class="formula">
+costToEnd[i][k] = 从接点 i 选加速度候选 k 出发，到路径终点的最短剩余时间
+</div>
+
+<p>边界：终点接点只有 a=0，<code>costToEnd[N][0] = 0</code>；其它为 +∞。</p>
+
+<h3>7.2 反向递推</h3>
+<p>从最后一段往前扫：</p>
+<div class="formula">
+对每个当前候选 k、下一接点候选 m：<br>
+&nbsp;&nbsp;d = transitionDuration(L_i, v_max_local_i, v_i, a_k, v_{i+1}, a_m)<br>
+&nbsp;&nbsp;若 d 有限：candidate = d + costToEnd[i+1][m]<br>
+&nbsp;&nbsp;取最小者写入 costToEnd[i][k]，并记录 nextChoice[i][k] = m
+</div>
+
+<pre><span class="c">// 反向 DP 核心循环（示意）</span>
+<span class="k">for</span> (i = N-1 … 0) {
+  <span class="k">for</span> (k <span class="k">in</span> A_i)
+    <span class="k">for</span> (m <span class="k">in</span> A_{i+1})
+      d = transitionDuration(L_i, v_max_i, v_i, a_k, v_{i+1}, a_m);
+      <span class="k">if</span> (finite(d) &amp;&amp; d + costToEnd[i+1][m] &lt; costToEnd[i][k]) {
+        costToEnd[i][k] = d + costToEnd[i+1][m];
+        nextChoice[i][k] = m;
+        chosenDuration[i][k] = d;
+      }
+}
+</pre>
+
+<h3>7.3 前向回放</h3>
+<p>
+起点只有 a=0（候选下标 0）。若 <code>costToEnd[0][0]</code> 仍为 ∞，
+整条路径无解，前瞻失败。
+否则沿 <code>nextChoice</code> 回放：
+</p>
+<div class="formula">
+segments[i].a_enter = A_i[current]<br>
+segments[i].a_exit  = A_{i+1}[nextChoice[i][current]]<br>
+segments[i].duration = chosenDuration[i][current]<br>
+current ← nextChoice[i][current]
+</div>
+
+<p>
+这样自然满足
+<code>segments[i].a_exit == segments[i+1].a_enter</code>——
+<strong>段间加速度衔接是 DP 状态共享的直接结果</strong>，不是事后修补。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="ruckig">8. Ruckig 可行性判据</h2>
+
+<p>
+边代价由 <code>transitionDuration()</code> 计算：对单段构造一次
+<strong>离线</strong> Ruckig 求解。
+</p>
+
+<table>
+  <thead>
+    <tr><th>Ruckig 输入</th><th>取值</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>current_position</code></td><td>0</td></tr>
+    <tr><td><code>current_velocity / acceleration</code></td><td>v0, a0（本段入口）</td></tr>
+    <tr><td><code>target_position</code></td><td>L（段长）</td></tr>
+    <tr><td><code>target_velocity / acceleration</code></td><td>v1, a1（本段出口）</td></tr>
+    <tr><td><code>max_velocity</code></td><td>该段 <code>v_max_local</code></td></tr>
+    <tr><td><code>min_velocity</code></td><td><code>{0}</code>（离线评估时禁止倒退）</td></tr>
+    <tr><td><code>max_acceleration / max_jerk</code></td><td>全局 maxAccel / maxJerk</td></tr>
+  </tbody>
+</table>
+
+<div class="formula">
+result = otg.calculate(input, trajectory)<br>
+若 result &lt; Working 或 duration 非法 → 返回 +∞（该边不可行）<br>
+否则返回 trajectory.get_duration()
+</div>
+
+<div class="callout">
+  <strong>关键点</strong>：NRT 前瞻用 Ruckig <em>离线</em> 评估边是否可行；
+  RT 的 <code>MovePath</code> 再用 Ruckig <em>在线</em> 按同一边界插补。
+  两边约束一致，才能避免“规划通过、执行 -110”。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="rt">9. 下发到 RT 的衔接方式</h2>
+
+<p>
+NRT 侧 <span class="file">PathMoveSupport::fillMovePathArgs()</span>
+把每段打成一条 <code>MovePath</code> 命令：
+</p>
+
+<pre>args[Vel]       = segment.v_max_local   <span class="c">// 段内上限</span>
+args[TargetVel] = segment.v_exit        <span class="c">// 出口速度</span>
+args[TargetAcc] = segment.a_exit        <span class="c">// 出口加速度 ★ 衔接关键</span>
+args[Sync]      = (i == 0) ? 1 : 0      <span class="c">// 仅首段重置弧长状态</span>
+</pre>
+
+<p>
+同时 <code>setPathMoveConfig(maxVel, maxAccel, maxJerk)</code>
+写入共享内存，供 RT 读加速度 / jerk 上限。
+</p>
+
+<p>RT 侧 <span class="file">MovePath::initTrajectory()</span>：</p>
+<ul>
+  <li>首段 <code>Sync=1</code>：重置 <code>s=0, v=0, a=0</code></li>
+  <li>后续段：<strong>不重置</strong>，靠
+    <code>output.pass_to_input(input)</code>
+    继承上一段结束时的 <code>(s, v, a)</code></li>
+  <li>本段目标设为：
+    <code>target_position = 累计弧长</code>，
+    <code>target_velocity = v_exit</code>，
+    <code>target_acceleration = a_exit</code></li>
+</ul>
+
+<div class="diagram">
+<svg viewBox="0 0 900 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RT 跨段衔接">
+  <g font-family="Segoe UI,sans-serif" font-size="12">
+    <!-- seg0 box -->
+    <rect x="40" y="40" width="240" height="120" rx="10" fill="#1a2332" stroke="#3d4f6a"/>
+    <text x="160" y="65" text-anchor="middle" fill="#5b9fd4" font-weight="600">MovePath 段 0</text>
+    <text x="60" y="95" fill="#8b9bb4">start: v=0, a=0</text>
+    <text x="60" y="115" fill="#e7ecf3">target: v=v1, a=a1</text>
+    <text x="60" y="140" fill="#8b9bb4">Ruckig 在线 update…</text>
+
+    <!-- arrow -->
+    <path d="M290 100 H360" stroke="#7ec8a3" stroke-width="2" marker-end="url(#arrow2)"/>
+    <defs>
+      <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0 0 L10 5 L0 10 z" fill="#7ec8a3"/>
+      </marker>
+    </defs>
+    <text x="325" y="88" text-anchor="middle" fill="#7ec8a3" font-size="11">pass_to_input</text>
+    <text x="325" y="125" text-anchor="middle" fill="#8b9bb4" font-size="11">(v,a) 继承</text>
+
+    <!-- seg1 box -->
+    <rect x="370" y="40" width="240" height="120" rx="10" fill="#1a2332" stroke="#3d4f6a"/>
+    <text x="490" y="65" text-anchor="middle" fill="#5b9fd4" font-weight="600">MovePath 段 1</text>
+    <text x="390" y="95" fill="#e7ecf3">start: v≈v1, a≈a1</text>
+    <text x="390" y="115" fill="#e7ecf3">target: v=v2, a=a2</text>
+    <text x="390" y="140" fill="#8b9bb4">Ruckig 在线 update…</text>
+
+    <path d="M620 100 H690" stroke="#7ec8a3" stroke-width="2" marker-end="url(#arrow2)"/>
+
+    <rect x="700" y="40" width="160" height="120" rx="10" fill="#1a2332" stroke="#3d4f6a"/>
+    <text x="780" y="65" text-anchor="middle" fill="#5b9fd4" font-weight="600">段 2 …</text>
+    <text x="720" y="105" fill="#8b9bb4">同样继承</text>
+    <text x="720" y="125" fill="#8b9bb4">边界状态</text>
+
+    <text x="450" y="195" text-anchor="middle" fill="#8b9bb4" font-size="12">
+      前瞻保证 a1 既是段0 的 a_exit，也是段1 的 a_enter —— 所以在线状态与目标对齐
+    </text>
+  </g>
+</svg>
+<div class="cap">跨段不重置 Ruckig 状态；连续性靠 NRT 写出的 a_exit 与 RT 继承的 a 对齐</div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="example">10. 数值直觉示例</h2>
+
+<p>假设三段直线，接点速度已定为：</p>
+<div class="formula">
+v = [0, 0.03, 0.05, 0] m/s<br>
+L = [0.02, 0.03, 0.02] m<br>
+a_max = 0.5 m/s², &nbsp; j_max = 3.0 m/s³
+</div>
+
+<p>DP 可能选出类似：</p>
+<table>
+  <thead>
+    <tr><th>段</th><th>v_enter</th><th>a_enter</th><th>v_exit</th><th>a_exit</th><th>含义</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td><td>0</td><td>0</td><td>0.03</td><td>+0.25</td>
+      <td>从静止加速，出口仍带正加速度</td>
+    </tr>
+    <tr>
+      <td>1</td><td>0.03</td><td>+0.25</td><td>0.05</td><td>0</td>
+      <td>继承正加速度继续加速，出口拉平</td>
+    </tr>
+    <tr>
+      <td>2</td><td>0.05</td><td>0</td><td>0</td><td>0</td>
+      <td>匀速后减速到停</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+若强制所有 a=0，段 0 必须“加速到 0.03 且出口 a=0”，段 1 再从 a=0 重新加速——
+中间多一次不必要的加减速折返。联合选 a 后，加速过程可以<strong>跨段延续</strong>。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="pitfalls">11. 常见坑与 result=-110</h2>
+
+<div class="callout danger">
+  <strong>ErrorExecutionTimeCalculation (-110)</strong><br>
+  Ruckig 在给定边界 (v0,a0)→(v1,a1)、距离 L、以及 v/a/j 限制下找不到可行轨迹。
+</div>
+
+<table>
+  <thead>
+    <tr><th>现象</th><th>原因</th><th>本工程对应</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>jerk 调小后 RT 报 -110</td>
+      <td>可行域变窄；在线状态与目标边界对不齐时更易无解</td>
+      <td>前瞻用完整 Ruckig 过滤边；但在线还有数值误差</td>
+    </tr>
+    <tr>
+      <td><code>min_velocity=0</code> 加剧失败</td>
+      <td>禁止弧长速度短暂为负，砍掉部分数学解</td>
+      <td>NRT 评估带 min_v=0；RT <code>MovePath</code> 若也强加，低 jerk 时更脆</td>
+    </tr>
+    <tr>
+      <td>短段 + 非零 a_exit</td>
+      <td>距离不够完成 a0→a_peak→a1 的 jerk 爬升</td>
+      <td>DP 会判该边 ∞；若在线状态漂了仍可能炸</td>
+    </tr>
+    <tr>
+      <td>上一段结束 a 与下一段目标不一致</td>
+      <td>衔接断了</td>
+      <td>正常 DP 回放保证一致；Sync 误用会重置状态</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <strong>设计取舍</strong><br>
+  离线前瞻在 <code>transitionDuration</code> 里设置了
+  <code>min_velocity={0}</code>，保证规划出的边界“按理”可在非负速度下走完。
+  在线侧若额外加同样硬约束，会把数值误差的容错吃光。
+  更稳妥的是：规划保证 v≥0，在线只限上限，靠
+  <code>pass_to_input</code> 继承状态。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="files">12. 关键源码索引</h2>
+
+<table>
+  <thead>
+    <tr><th>文件</th><th>职责</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="file">zrcs_nrt/algorithm/path_planning/LookAheadPlanner.h/.cpp</td>
+      <td>速度前瞻；<code>planJunctionAccelerations</code> 是加速度衔接核心</td>
+    </tr>
+    <tr>
+      <td class="file">zrcs_nrt/algorithm/path_planning/TrajectoryTypes.h</td>
+      <td><code>v_enter/v_exit/a_enter/a_exit/duration</code> 数据契约</td>
+    </tr>
+    <tr>
+      <td class="file">zrcs_nrt/algorithm/path_planning/MotionPlanner.*</td>
+      <td>几何 + 前瞻编排入口</td>
+    </tr>
+    <tr>
+      <td class="file">zrcs_nrt/behavior_tree/nodes/motion/PathMoveSupport.cpp</td>
+      <td>把 <code>a_exit → TargetAcc</code> 填进 MovePath 命令</td>
+    </tr>
+    <tr>
+      <td class="file">zrcs_rt/command/MovePath.cpp</td>
+      <td>RT 弧长 Ruckig 在线插补；跨段继承 (v,a)</td>
+    </tr>
+    <tr>
+      <td class="file">zrcs_rt/system/node/TrajectoryCmd.cpp</td>
+      <td><code>update → applyOutput → pass_to_input</code> 生命周期</td>
+    </tr>
+    <tr>
+      <td class="file">test/test_motion_preprocessing.cpp</td>
+      <td>断言相邻段 v/a 连续、起终点 a=0</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>一句话总结</h3>
+<div class="callout ok">
+  本工程的段间加速度衔接 =
+  <strong>固定接点速度后，在离散加速度候选上做最短时间 DP，
+  边权为 Ruckig 带 (v,a) 边界的段转移时间；
+  回放路径使 a_exit 共享为下一段 a_enter，
+  RT 通过 pass_to_input 继承状态并跟踪 TargetAcc。</strong>
+</div>
+
+<footer>
+  生成自 zrcs 代码库 · LookAheadPlanner / MotionPlanner / MovePath · 单位 SI（m, m/s, m/s², m/s³）
+</footer>
+
+</div>
+</body>
+</html>

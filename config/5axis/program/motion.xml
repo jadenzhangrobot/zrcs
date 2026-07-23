@@ -82,6 +82,20 @@
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
+    <!-- Sphere-surface carve: spiral + latitude rings + meridians + polar rosette -->
+    <BehaviorTree ID="Cmd_NcSphereCarve">
+        <Sequence>
+            <Action ID="NcParse" filePath="config/5axis/program/demo_sphere_carve.nc"
+                    waypoints="{path_pts}" feedrates="{path_feeds}"/>
+            <!-- Keep A/C fixed (tool normal ~ -Z); path already lies on R=40 mm sphere -->
+            <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
+                    rx="0.0" ry="0.0" rz="0.0"
+                    endRx="0.0" endRy="0.0" endRz="0.0"
+                    maxVel="0.8" maxAccel="2.0" maxJerk="12.0"
+                    cornerTol="0.0005" minSegLen="0.00005"/>
+        </Sequence>
+    </BehaviorTree>
+    <!-- ////////// -->
     <BehaviorTree ID="Cmd_Movehome">
         <Sequence>
             <Action ID="Movehome"/>
