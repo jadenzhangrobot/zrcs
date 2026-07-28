@@ -10,7 +10,11 @@ MoveAbs::MoveAbs()
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
-void MoveAbs::applyOutput() { controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
+bool MoveAbs::applyOutput()
+{
+    controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]);
+    return true;
+}
 
 
 

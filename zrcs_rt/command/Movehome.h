@@ -18,10 +18,9 @@ private:
 protected:
     bool initTrajectory() override;
    
-    void applyOutput() override;
+    bool applyOutput() override;
   
 
 public:
     Movehome();
 };
-

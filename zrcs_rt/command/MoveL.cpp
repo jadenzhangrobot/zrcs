@@ -97,7 +97,7 @@ bool MoveL::initTrajectory()
 }
 
 
-void MoveL::applyOutput()
+bool MoveL::applyOutput()
 {
     // otg_->update() 已由 TrajectoryCmd::runStandard()->updateTrajectory() 完成，
     // output_ 已包含当前周期的轨迹输出，此处不再重复调用 update/pass_to_input。
@@ -134,6 +134,7 @@ void MoveL::applyOutput()
        // controller_->axes_[axisIds_[4]]->setAxisVelocityCmd(0.0);
        // controller_->axes_[axisIds_[5]]->setAxisVelocityCmd(0.0);
     }
+    return true;
 } 
 
 

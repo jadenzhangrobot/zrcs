@@ -32,7 +32,7 @@ protected:
    Result updateTrajectory() ;
 
     /// 将 Ruckig output 的位置写入轴位置指令
-    virtual void applyOutput() = 0;
+    virtual bool applyOutput() = 0;
 
     /// output.pass_to_input(input)
      void passOutputToInput() ;

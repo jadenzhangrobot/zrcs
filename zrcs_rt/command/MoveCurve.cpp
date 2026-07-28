@@ -186,7 +186,7 @@ bool MoveCurve::initTrajectory()
     return true;
 }
 
-void MoveCurve::applyOutput()
+bool MoveCurve::applyOutput()
 {
     const double localS = output_->new_position[0] - arcStart_;
     const double u = arcLengthToParameter(localS);
@@ -204,6 +204,7 @@ void MoveCurve::applyOutput()
         controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));
         controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));
     }
+    return true;
 }
 
 CMD_REGISTER(MoveCurve);

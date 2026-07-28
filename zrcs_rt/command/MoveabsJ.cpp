@@ -45,12 +45,13 @@ bool MoveAbsJ::initTrajectory()
     return true;
 }
 
-void MoveAbsJ::applyOutput()
+bool MoveAbsJ::applyOutput()
 {
     for (int i = 0; i < dof_; i++)
     {
         controller_->axes_[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
+    return true;
 }
 
 CMD_REGISTER(MoveAbsJ);

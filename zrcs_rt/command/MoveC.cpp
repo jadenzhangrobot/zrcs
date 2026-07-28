@@ -4,7 +4,7 @@
 #include "command/MoveC.h"
 
 MoveC::MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0) { std::strcpy(nodeName_, "MoveC"); }
-void MoveC::applyOutput() {}
+bool MoveC::applyOutput() { return true; }
 
 
 bool MoveC::initTrajectory()

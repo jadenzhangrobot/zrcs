@@ -14,7 +14,11 @@ JogJ::JogJ()
 }
 
 
-void JogJ::applyOutput() { controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]); }
+bool JogJ::applyOutput()
+{
+    controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]);
+    return true;
+}
 
 bool JogJ::initTrajectory()
 {

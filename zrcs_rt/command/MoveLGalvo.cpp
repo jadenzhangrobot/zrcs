@@ -78,7 +78,7 @@ bool MoveLGalvo::initTrajectory()
     return true;
 }
 
-void MoveLGalvo::applyOutput()
+bool MoveLGalvo::applyOutput()
 {
         double s = output_->new_position[0];
 
@@ -113,6 +113,7 @@ void MoveLGalvo::applyOutput()
         controller_->axes_[gXId]->setAxisVelocityCmd(0.0);
         controller_->axes_[gYId]->setAxisVelocityCmd(0.0);
 
+        return true;
  }
 
 CMD_REGISTER(MoveLGalvo);

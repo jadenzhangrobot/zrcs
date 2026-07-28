@@ -11,9 +11,10 @@ JogabsJ::JogabsJ()
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
 }
 
-void JogabsJ::applyOutput() 
+bool JogabsJ::applyOutput()
 { 
-    controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]); 
+    controller_->axes_[axisId_]->setAxisPositionCmd(output_->new_position[0]);
+    return true;
 }
 
 bool JogabsJ::initTrajectory()

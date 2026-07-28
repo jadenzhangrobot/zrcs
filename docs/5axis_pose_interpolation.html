@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>5axis 姿态插补与 RTCP 全链路</title>
+  <style>
+    :root {
+      --ink: #182126;
+      --muted: #5d6a70;
+      --line: #d7dee1;
+      --paper: #f6f7f5;
+      --surface: #ffffff;
+      --surface-2: #edf1ef;
+      --teal: #087f73;
+      --teal-dark: #075e57;
+      --amber: #a26000;
+      --amber-bg: #fff5df;
+      --red: #a3342e;
+      --red-bg: #fff0ed;
+      --blue: #176da2;
+      --blue-bg: #edf6fb;
+      --green-bg: #eaf7f1;
+      --nav-w: 270px;
+      --content-w: 1080px;
+      font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { max-width: 100%; overflow-x: clip; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      max-width: 100%;
+      overflow-x: clip;
+      color: var(--ink);
+      background: var(--paper);
+      font-size: 15px;
+      line-height: 1.72;
+      letter-spacing: 0;
+    }
+
+    a { color: var(--teal-dark); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { color: var(--teal); }
+    code, pre, .mono { font-family: Consolas, "Cascadia Mono", "Microsoft YaHei UI", monospace; }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--nav-w);
+      overflow-y: auto;
+      padding: 28px 22px;
+      color: #eaf3f1;
+      background: #15322f;
+      border-right: 1px solid #214943;
+      z-index: 5;
+    }
+
+    .brand { margin-bottom: 28px; }
+    .brand strong { display: block; font-size: 17px; font-weight: 700; }
+    .brand span { display: block; margin-top: 4px; color: #aac5c0; font-size: 12px; }
+    .toc-label { margin: 0 0 8px; color: #85aaa3; font-size: 11px; text-transform: uppercase; }
+    .toc { display: grid; gap: 2px; }
+    .toc a {
+      display: block;
+      padding: 7px 9px;
+      color: #c6d9d5;
+      border-left: 2px solid transparent;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .toc a:hover, .toc a.active {
+      color: #ffffff;
+      background: #1f4540;
+      border-left-color: #59c4b4;
+    }
+
+    main { margin-left: var(--nav-w); }
+    .hero {
+      color: #f6fbfa;
+      background: #204943;
+      border-bottom: 5px solid #d89a2b;
+    }
+    .hero-inner, .content {
+      width: min(calc(100% - 64px), var(--content-w));
+      margin: 0 auto;
+    }
+    .hero-inner { padding: 58px 0 50px; }
+    .eyebrow { margin: 0 0 9px; color: #a8d7cf; font-size: 13px; font-weight: 650; }
+    h1 { margin: 0; max-width: 860px; font-size: clamp(32px, 4vw, 52px); line-height: 1.16; letter-spacing: 0; }
+    .hero p { max-width: 850px; margin: 18px 0 0; color: #d7e8e5; font-size: 16px; overflow-wrap: anywhere; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px 18px; margin-top: 25px; color: #b9d4cf; font-size: 12px; }
+    .meta span { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+
+    .content { padding: 42px 0 80px; }
+    section { scroll-margin-top: 20px; padding: 16px 0 34px; border-bottom: 1px solid var(--line); }
+    section:last-child { border-bottom: 0; }
+    h2 { margin: 0 0 18px; font-size: 27px; line-height: 1.25; letter-spacing: 0; }
+    h3 { margin: 28px 0 12px; font-size: 19px; line-height: 1.35; letter-spacing: 0; }
+    h4 { margin: 20px 0 8px; font-size: 16px; letter-spacing: 0; }
+    p { margin: 9px 0; }
+    ul, ol { margin: 9px 0 12px; padding-left: 24px; }
+    li + li { margin-top: 5px; }
+
+    p, li, td { overflow-wrap: anywhere; }
+    .lead { font-size: 17px; color: #334247; }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 22px 0 4px;
+    }
+    .status {
+      min-height: 126px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--teal);
+      border-radius: 6px;
+    }
+    .status.warn { border-top-color: #d18818; }
+    .status.risk { border-top-color: #c34d42; }
+    .status b { display: block; margin-bottom: 5px; font-size: 14px; }
+    .status p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.58; }
+
+    .callout {
+      margin: 18px 0;
+      padding: 14px 17px;
+      background: var(--blue-bg);
+      border-left: 4px solid var(--blue);
+    }
+    .callout strong { display: block; margin-bottom: 3px; }
+    .callout.warn { background: var(--amber-bg); border-left-color: var(--amber); }
+    .callout.risk { background: var(--red-bg); border-left-color: var(--red); }
+    .callout.ok { background: var(--green-bg); border-left-color: var(--teal); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(110px, 1fr));
+      gap: 22px;
+      align-items: stretch;
+      margin: 24px 0;
+      overflow-x: auto;
+      padding: 3px 2px 12px;
+    }
+    .flow-node {
+      position: relative;
+      min-width: 126px;
+      padding: 14px 12px;
+      background: var(--surface);
+      border: 1px solid #bac8c6;
+      border-radius: 6px;
+    }
+    .flow-node:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 1px;
+      top: 50%;
+      left: 100%;
+      background: #6d908a;
+    }
+    .flow-node:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 4px);
+      left: calc(100% + 16px);
+      border: 4px solid transparent;
+      border-left-color: #6d908a;
+    }
+    .flow-node b { display: block; margin-bottom: 5px; color: var(--teal-dark); font-size: 13px; }
+    .flow-node span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .timeline { margin: 20px 0 8px; border-left: 2px solid #9cb6b1; }
+    .timeline-row { position: relative; padding: 0 0 20px 24px; }
+    .timeline-row::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 5px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--teal);
+      border: 2px solid var(--paper);
+    }
+    .timeline-row b { display: block; font-size: 14px; }
+    .timeline-row p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+    .table-wrap { overflow-x: auto; margin: 16px 0 20px; border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: #213c38; background: var(--surface-2); font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+
+    pre {
+      margin: 14px 0 20px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      color: #dceae7;
+      background: #172c2a;
+      border: 1px solid #294b46;
+      border-radius: 5px;
+      font-size: 12.5px;
+      line-height: 1.62;
+      tab-size: 4;
+    }
+    code { font-size: .92em; }
+    :not(pre) > code { padding: 1px 5px; color: #184b45; background: #e7efed; border-radius: 3px; }
+
+    .formula {
+      margin: 14px 0;
+      padding: 13px 16px;
+      overflow-x: auto;
+      color: #183b37;
+      background: #edf4f2;
+      border: 1px solid #cbdcd8;
+      font-family: Cambria, "Times New Roman", serif;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+    .formula small { color: var(--muted); font-family: inherit; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .plain-panel { padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+    .plain-panel h3, .plain-panel h4 { margin-top: 0; }
+    .plain-panel p:last-child, .plain-panel ul:last-child { margin-bottom: 0; }
+    .tag { display: inline-block; margin-right: 5px; padding: 1px 6px; color: #16463f; background: #dcece8; border-radius: 3px; font-size: 11px; font-weight: 700; }
+    .tag.gap { color: #764300; background: #fae7bd; }
+    .tag.risk { color: #8c2923; background: #f7d8d3; }
+
+    .checklist { padding-left: 0; list-style: none; }
+    .checklist li { position: relative; padding-left: 26px; }
+    .checklist li::before { content: "✓"; position: absolute; left: 2px; color: var(--teal); font-weight: 800; }
+
+    footer { padding: 25px 0 48px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1120px) {
+      .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow { grid-template-columns: repeat(7, 145px); }
+    }
+    @media (max-width: 820px) {
+      .sidebar { position: static; width: 100%; max-height: none; overflow: hidden; padding: 18px 20px; }
+      .brand { margin-bottom: 12px; }
+      .toc-label { display: none; }
+      .toc { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
+      .toc a { flex: 0 0 auto; padding: 5px 8px; border-left: 0; border-bottom: 2px solid transparent; }
+      .toc a:hover, .toc a.active { border-left-color: transparent; border-bottom-color: #59c4b4; }
+      main { width: 100%; min-width: 0; margin-left: 0; }
+      .hero-inner, .content { width: auto; max-width: none; margin-left: 17px; margin-right: 17px; }
+      .hero-inner { padding: 38px 0 34px; }
+      .two-col { grid-template-columns: 1fr; }
+      section { scroll-margin-top: 12px; }
+    }
+    @media (max-width: 560px) {
+      body { font-size: 14px; }
+      h1 { font-size: 31px; }
+      h2 { font-size: 23px; }
+      .status-grid { grid-template-columns: 1fr; }
+      .status { min-height: 0; }
+      .content { padding-top: 26px; }
+      .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 12px; }
+      .meta span { line-height: 1.45; }
+      .hero p, .content p, .content li { word-break: break-all; }
+      th, td { padding: 8px 9px; }
+      pre { margin-left: -2px; margin-right: -2px; padding: 13px; }
+    }
+    @media print {
+      .sidebar { display: none; }
+      main { margin: 0; }
+      .hero { color: #111; background: #fff; border-bottom: 2px solid #333; }
+      .hero p, .meta, .eyebrow { color: #333; }
+      .content, .hero-inner { width: 100%; }
+      .content { padding: 20px 0; }
+      section { break-inside: avoid-page; }
+      a { color: #111; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar" aria-label="文档目录">
+    <div class="brand">
+      <strong>5axis 技术说明</strong>
+      <span>姿态插补 · RTCP · XYZAC</span>
+    </div>
+    <p class="toc-label">Contents</p>
+    <nav class="toc">
+      <a href="#summary">结论摘要</a>
+      <a href="#pipeline">全链路</a>
+      <a href="#coordinates">坐标与单位</a>
+      <a href="#parser">NC 解析</a>
+      <a href="#planning">拟合与前瞻</a>
+      <a href="#packing">姿态编码与发令</a>
+      <a href="#realtime">RT 同步插补</a>
+      <a href="#rtcp">XYZAC RTCP</a>
+      <a href="#continuity">连续性与奇异区</a>
+      <a href="#example">球面网格示例</a>
+      <a href="#constraints">姿态对速度的影响</a>
+      <a href="#validation">验证方法</a>
+      <a href="#tuning">参数与排障</a>
+      <a href="#industrial">工业化演进</a>
+      <a href="#index">代码索引</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">ZRCS / 5axis / xyzac_table</p>
+        <h1>姿态插补与 RTCP 全链路</h1>
+        <p>从 NC 的 XYZAC 指令、逐点姿态、NRT 路径规划与发令，到 RT 标量轨迹、A/C 连续展开、XYZAC 逆解和五轴命令输出。本文以当前仓库实现为准，同时标明尚未纳入在线规划的姿态约束。</p>
+        <div class="meta">
+          <span>文档日期：2026-07-24</span>
+          <span>内部单位：m / s / rad</span>
+          <span>目标模型：XYZAC 转台式五轴</span>
+          <span>示例：R40 球面连续六边形网格</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section id="summary">
+        <h2>1. 结论摘要</h2>
+        <p class="lead">当前实现已经完成“逐点 XYZAC 输入、位置与 A/C 共用进度参数、每周期 RTCP 逆解”的五轴联动闭环，但速度前瞻仍然是纯 XYZ 路径前瞻。</p>
+
+        <div class="status-grid">
+          <div class="status">
+            <b>已实现：逐点姿态</b>
+            <p>每个路径点对应一个 <code>PathOrientation{rx, ry, rz}</code>。NC 的 A/B/C 以度输入，解析后统一为弧度。</p>
+          </div>
+          <div class="status">
+            <b>已实现：同步五轴插补</b>
+            <p>RT 用一个 Ruckig 标量弧长轨迹生成 <code>u</code>，XYZ、A、C 都由同一个 <code>u</code> 求值，不会各轴独立计时。</p>
+          </div>
+          <div class="status">
+            <b>已实现：RTCP 逆解</b>
+            <p>每个控制周期把工件坐标中的刀位点和 A/C 姿态变换到机床世界坐标，输出 XYZAC 五个轴命令。</p>
+          </div>
+          <div class="status">
+            <b>已实现：段内刀轴 SLERP</b>
+            <p>XYZAC 执行时从段端 A/C 得到工件坐标系刀轴，沿最短大圆进行 SLERP，再选择靠近连续参考分支的等价 A/C 解。</p>
+          </div>
+          <div class="status warn">
+            <b>当前行为：姿态不参与前瞻</b>
+            <p>局部限速、拐角限速、正反向扫描只使用 XYZ 长度、切向、曲率、F、最大线加速度和 jerk。</p>
+          </div>
+          <div class="status risk">
+            <b>风险：轴约束依赖离线保证</b>
+            <p>MovePath 没有在前瞻阶段检查 A/C 及 RTCP 耦合后的 XYZ 轴速度。超限后 Axis 层会限速或钳位，可能破坏刀尖轨迹同步。</p>
+          </div>
+        </div>
+
+        <div class="callout ok">
+          <strong>对当前球面加工程序的判断</strong>
+          <span><code>sphere_hex_grid.nc</code> 通过小于等于 0.5 mm 的离散步长、5 mm/s 进给、连续 C 角和离线轴速检查来规避在线前瞻缺口；测试阈值为球面误差小于 0.010 mm、法向误差小于 0.041°、A/C 速度不超过轴配置。</span>
+        </div>
+      </section>
+
+      <section id="pipeline">
+        <h2>2. 全链路数据流</h2>
+        <div class="flow" aria-label="姿态插补数据流">
+          <div class="flow-node"><b>NC 文件</b><span>G0/G1/G2/G3<br>XYZ + ABC + F</span></div>
+          <div class="flow-node"><b>NcParser</b><span>位置换算为 m<br>角度换算为 rad</span></div>
+          <div class="flow-node"><b>行为树端口</b><span>waypoints[N]<br>orientations[N]<br>feedrates[N-1]</span></div>
+          <div class="flow-node"><b>MotionPlanner</b><span>仅处理 XYZ 几何<br>仅做线速度前瞻</span></div>
+          <div class="flow-node"><b>MovePath 封包</b><span>姿态端点转 q0/q1<br>只传输，不插补/限速</span></div>
+          <div class="flow-node"><b>RT MovePath</b><span>Ruckig s(t)<br>刀轴 SLERP + A/C 分支</span></div>
+          <div class="flow-node"><b>XYZAC 模型</b><span>RTCP IK<br>五轴位置/速度命令</span></div>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-row">
+            <b>非实时阶段：解析</b>
+            <p><code>NcParseNode</code> 解析 NC，输出严格对齐的点、姿态和边进给三个数组。</p>
+          </div>
+          <div class="timeline-row">
+            <b>非实时阶段：规划</b>
+            <p><code>PathMoveNode</code> 调用 <code>MotionPlanner</code> 生成几何段，并给每段写入入口/出口速度与加速度。</p>
+          </div>
+          <div class="timeline-row">
+            <b>跨域发令：逐段打包</b>
+            <p><code>PathMoveSupport</code> 把段端点姿态转换为四元数，按 <code>MovePathArg</code> 顺序下发；第一段 <code>Sync=1</code>，后续段为 0。</p>
+          </div>
+          <div class="timeline-row">
+            <b>实时阶段：标量轨迹</b>
+            <p><code>MovePath</code> 用一自由度 Ruckig 生成累计弧长 <code>s(t)</code>，并由当前段弧长归一化得到 <code>u</code>。</p>
+          </div>
+          <div class="timeline-row">
+            <b>实时阶段：RTCP 输出</b>
+            <p>用同一 <code>u</code> 求位置和 A/C，调用 <code>XyzacTableRobot::inverseKinematics</code>，把结果写入五个轴。</p>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <strong>姿态处理的职责边界</strong>
+          <span><code>MotionPlanner</code> 不读取逐点姿态；<code>PathMoveSupport</code> 只把段端 A/B/C 编码为 q0/q1；真正的段内 A/C 插补在 RT <code>MovePath</code> 中完成。当前三个阶段都没有把姿态导数或 RTCP 后五轴导数纳入速度前瞻。</span>
+        </div>
+      </section>
+
+      <section id="coordinates">
+        <h2>3. 坐标、单位与姿态约定</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>数据</th><th>NC 程序侧</th><th>控制器内部</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>X/Y/Z、I/J/K、R</td><td>G21 为 mm；G20 为 inch</td><td>m</td><td>解析时分别乘 0.001 或 0.0254</td></tr>
+              <tr><td>A/B/C</td><td>degree</td><td>rad</td><td>A→rx，B→ry，C→rz；绝对/增量受 G90/G91 控制</td></tr>
+              <tr><td>F</td><td>长度单位/s</td><td>m/s</td><td>本项目约定，不是常见机床默认的 mm/min</td></tr>
+              <tr><td>路径加速度 / jerk</td><td>不直接来自 NC</td><td>m/s²、m/s³</td><td>来自行为树 PathMove 参数</td></tr>
+              <tr><td>A/C 轴限制</td><td>不直接来自 NC</td><td>rad/s、rad/s²、rad/s³</td><td>来自 <code>config/5axis/axis.xml</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3.1 三种坐标含义</h3>
+        <div class="two-col">
+          <div class="plain-panel">
+            <h4>工件坐标 <code>p<sub>work</sub></code></h4>
+            <p>NC 的 XYZ 是加工点在随转台转动的工件坐标系中的坐标。球面示例的球心为 <code>(0, 0, 0.070)</code> m，半径为 <code>0.040</code> m。</p>
+          </div>
+          <div class="plain-panel">
+            <h4>机床世界坐标 <code>tip<sub>world</sub></code></h4>
+            <p>固定主轴刀尖在机床中的目标位置。A/C 转动工件后，XYZ 直线轴必须补偿，使刀尖仍落在指定工件点上。</p>
+          </div>
+        </div>
+
+        <div class="formula">T<sub>work→world</sub>(A,C) = T<sub>base</sub> · R<sub>x</sub>(A) · T<sub>tool</sub> · R<sub>z</sub>(C)</div>
+        <div class="formula">tip<sub>world</sub> = T<sub>work→world</sub>(A,C) · [p<sub>work</sub>, 1]<sup>T</sup></div>
+        <div class="formula">q<sub>XYZ</sub> = tip<sub>world</sub> − jointOffset<sub>XYZ</sub></div>
+
+        <p>当前模型参数为 <code>Tbase.z = 0.38 m</code>、A 到 C 原点偏置 <code>Ttool.z = 0.05 m</code>、Z 轴关节偏置 <code>0.60 m</code>。主轴自身不随 A/C 旋转；旋转块是路径协议和转台姿态的编码。</p>
+
+        <h3>3.2 RPY 与物理旋转链</h3>
+        <p>NRT 的 <code>rpyToQuaternion</code> 使用常规 RPY 组合：</p>
+        <div class="formula">R<sub>protocol</sub> = R<sub>z</sub>(C) · R<sub>y</sub>(B) · R<sub>x</sub>(A)</div>
+        <p>XYZAC 机型只接受 <code>B=0</code> 的姿态。RT 从协议旋转中恢复 A/C 后，为物理转台模型构造：</p>
+        <div class="formula">R<sub>machine</sub> = R<sub>x</sub>(A) · R<sub>z</sub>(C)</div>
+        <div class="callout">
+          <strong>为什么旋转次序看起来不同</strong>
+          <span>四元数封包沿用通用 RPY 接口；XYZAC 逆解消费的是物理链 <code>Rx(A)·Rz(C)</code>。RT 中间的“提取 A/C，再按物理链重建”正是这两种表示之间的适配层。</span>
+        </div>
+      </section>
+
+      <section id="parser">
+        <h2>4. NC 解析与逐点姿态生成</h2>
+
+        <h3>4.1 模态状态</h3>
+        <p><code>NcParser</code> 在逐 block 扫描时保持位置 <code>pos</code>、姿态 <code>orientation</code>、G90/G91、G20/G21、当前运动方式和模态 F。没有在当前行出现的轴保持上一值。</p>
+        <pre><code>// 概念等价代码
+target = pos;
+targetOrientation = orientation;
+
+if (G90) {
+    X/Y/Z = 程序长度单位 → m;
+    A/B/C = degree → rad;
+} else { // G91
+    target += ΔXYZ;
+    targetOrientation += ΔABC;
+}
+
+waypoints[i]     ↔ orientations[i]
+feedrates[i]     ↔ edge(waypoints[i], waypoints[i+1])</code></pre>
+
+        <h3>4.2 G0/G1</h3>
+        <p>直线块直接追加目标位置和目标姿态。G0 的段进给写为 0，后续规划使用 <code>PathMove.maxVel</code> 回退；G1 使用当前模态 F。</p>
+
+        <h3>4.3 G2/G3</h3>
+        <p>当前圆弧解析在 XY 平面按弦高误差离散，Z 线性变化。每个离散点的 A/B/C 也按采样比例做分量线性插值：</p>
+        <div class="formula">rpy(t) = rpy<sub>0</sub> + t · (rpy<sub>1</sub> − rpy<sub>0</sub>), &nbsp; t∈[0,1]</div>
+        <p>这一步没有做角度归一化或最短弧处理，因此生成 NC 时应先把 C 角展开成连续序列。</p>
+
+        <div class="callout risk">
+          <strong>仅姿态变化的 NC block 当前不会生成轨迹点</strong>
+          <span><code>appendIfMoved</code> 只有在 XYZ 距离大于极小阈值时才追加点。只有 A/B/C 改变而 XYZ 不变的 block 会更新模态姿态，但不会形成可执行的纯旋转段。需要纯旋转时，应新增专用旋转命令或允许零长度姿态段，而不是依赖现有 MovePath。</span>
+        </div>
+
+        <h3>4.4 三个数组的不变量</h3>
+        <div class="formula">orientations.size() = waypoints.size()</div>
+        <div class="formula">feedrates.size() + 1 = waypoints.size()</div>
+        <p>解析末尾会修正数组长度。姿态随点，进给随边，这是后续逐段打包的核心契约。</p>
+      </section>
+
+      <section id="planning">
+        <h2>5. NRT 路径拟合与速度前瞻</h2>
+
+        <h3>5.1 当前几何流水线</h3>
+        <ol>
+          <li><code>makeBlocksFromWaypoints</code>：把相邻点转为直线 block，并挂接每条边的 F。</li>
+          <li><code>PathSimplifier</code>：按共线容差折叠冗余点。</li>
+          <li><code>CornerBlender</code>：按拐角容差生成直线与圆弧过渡。</li>
+          <li><code>ShortSegmentMerger</code>：合并过短段。</li>
+          <li><code>LookAheadPlanner</code>：计算局部上限、接点速度、正反向可达速度和接点加速度。</li>
+        </ol>
+
+        <h3>5.2 前瞻使用的量</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>约束</th><th>当前公式/依据</th><th>是否考虑姿态</th></tr></thead>
+            <tbody>
+              <tr><td>编程进给</td><td><code>min(maxVelGlobal, feedrate_limit)</code></td><td>否</td></tr>
+              <tr><td>曲率限速</td><td><code>v ≤ sqrt(maxAccel / curvature)</code></td><td>只用 XYZ 曲率</td></tr>
+              <tr><td>拐角限速</td><td>由相邻 XYZ 切向夹角和 <code>cornerTol</code> 估算</td><td>否</td></tr>
+              <tr><td>曲率跳变 jerk</td><td>由相邻段 XYZ 曲率差估算</td><td>否</td></tr>
+              <tr><td>前后向扫描</td><td>基于段长、线加速度和线 jerk 的可达速度</td><td>否</td></tr>
+              <tr><td>A/C 轴限制</td><td>不在 LookAheadPlanner 中计算</td><td>未实现</td></tr>
+              <tr><td>RTCP 后 XYZ 轴限制</td><td>不在 LookAheadPlanner 中计算</td><td>未实现</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>5.3 带逐点姿态时的保护机制</h3>
+        <p>规划器本身不接收 <code>orientations</code>。规划结束后，<code>queuePathFromWaypoints</code> 会验证：</p>
+        <ul>
+          <li>姿态数量必须等于原始 waypoint 数量。</li>
+          <li>规划段数量必须等于原始边数量。</li>
+          <li>每一段的起终点必须与对应原始边一致，误差不大于 <code>1e-8 m</code>。</li>
+        </ul>
+        <p>只要简化、圆角或短段合并改变了点边对应关系，整条路径拒绝下发。这保证了姿态不串点，但也意味着当前姿态路径不能直接使用几何拟合。</p>
+
+        <div class="callout warn">
+          <strong>球面加工配置为什么是 0</strong>
+          <span><code>Cmd_NcMapleCarve</code> 和 <code>Cmd_NcSphereHexGrid</code> 使用 <code>cornerTol="0.0"</code>、<code>minSegLen="0.0"</code>，从而保留离线生成的每一条 XYZAC 边。代价是当前拐角限速公式在 <code>cornerTol=0</code> 时对所有内部接点给出 0 速度，约 0.5 mm 的每个短段都会变成一次停走循环，A/C 速度表现为密集脉冲。曲面精度得到保护，但连续加工速度并未得到保护。</span>
+        </div>
+
+        <div class="formula">cornerTol = 0 ⇒ v<sub>corner</sub> = sqrt(a·cornerTol/(1−cosθ)) = 0 ⇒ v<sub>exit,i</sub> = 0</div>
+      </section>
+
+      <section id="packing">
+        <h2>6. 姿态编码与 MovePath 发令</h2>
+
+        <h3>6.1 欧拉角转四元数</h3>
+        <p><code>PathMoveSupport::rpyToQuaternion</code> 按常规 RPY 公式生成并归一化四元数：</p>
+        <pre><code>cr = cos(rx/2), sr = sin(rx/2)
+cp = cos(ry/2), sp = sin(ry/2)
+cy = cos(rz/2), sy = sin(rz/2)
+
+qw = cr·cp·cy + sr·sp·sy
+qx = sr·cp·cy − cr·sp·sy
+qy = cr·sp·cy + sr·cp·sy
+qz = cr·cp·sy − sr·sp·cy</code></pre>
+
+        <p>有逐点姿态时，第 <code>i</code> 段直接使用 <code>orientation[i]</code> 和 <code>orientation[i+1]</code>。没有逐点姿态时，先按累计 XYZ 弧长在全局起终 RPY 之间线性取段端姿态，再转换为四元数。</p>
+
+        <div class="callout ok">
+          <strong>SLERP 在 RT 段内执行</strong>
+          <span>NRT 计算并传递段端四元数；XYZAC RT 恢复 A/C 后构造端点刀轴，用 <code>Identity.slerp(u, delta)</code> 沿球面最短大圆求值。它插补的是两自由度刀轴方向，不是给两旋转轴强行加入第三个不可实现的姿态自由度。</span>
+        </div>
+
+        <h3>6.2 MovePath 参数布局</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>参数组</th><th>内容</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td><code>Shape</code></td><td>0 直线，1 圆弧</td><td>选择段几何求值器</td></tr>
+              <tr><td><code>P0/P1/P2</code></td><td>直线端点，或圆心/径向基/切向基</td><td>实时位置求值</td></tr>
+              <tr><td><code>Radius/Sweep</code></td><td>圆弧半径和扫角</td><td>圆弧闭式求值</td></tr>
+              <tr><td><code>QStart/QEnd</code></td><td>段端四元数 w/x/y/z</td><td>传递姿态</td></tr>
+              <tr><td><code>Length</code></td><td>规划段弧长</td><td>累计路径标量目标</td></tr>
+              <tr><td><code>Vel</code></td><td>本段局部最大线速度</td><td>Ruckig max_velocity</td></tr>
+              <tr><td><code>TargetVel/TargetAcc</code></td><td>前瞻计算的段出口状态</td><td>跨段连续速度/加速度</td></tr>
+              <tr><td><code>Sync</code></td><td>首段 1，后续段 0</td><td>首段清零累计弧长状态，后续保持连续</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="realtime">
+        <h2>7. RT 中的位置与姿态同步插补</h2>
+
+        <h3>7.1 一自由度路径标量</h3>
+        <p><code>MovePath</code> 的 Ruckig 实例只有 1 个自由度。它规划的不是任一物理轴，而是累计路径弧长 <code>s</code>：</p>
+        <div class="formula">s<sub>target</sub> = s<sub>previous</sub> + L<sub>segment</sub></div>
+        <div class="formula">u(t) = [s(t) − (s<sub>target</sub> − L<sub>segment</sub>)] / L<sub>geometry</sub></div>
+        <p>第一段收到 <code>Sync=1</code> 时，当前位置、速度、加速度和累计弧长清零；后续段沿用上一段的 Ruckig 状态，从而实现 <code>v_exit/a_exit</code> 连续。</p>
+
+        <h3>7.2 位置求值</h3>
+        <div class="formula">直线：p(u) = p<sub>0</sub> + u(p<sub>1</sub> − p<sub>0</sub>)</div>
+        <div class="formula">圆弧：p(u) = center + r[cos(θu)·e<sub>r</sub> + sin(θu)·e<sub>t</sub>]</div>
+
+        <h3>7.3 XYZAC 姿态求值</h3>
+        <p>RT 首先归一化端点四元数，恢复协议中的 A/C，并检查旋转矩阵能否由 <code>Rz(C)·Rx(A)</code> 精确表示。若存在 B 分量或其他不可表示旋转，误差超过 <code>1e-8</code> 即失败。</p>
+        <div class="formula">d<sub>tool</sub>(A,C) = R<sub>z</sub>(−C)·R<sub>x</sub>(−A)·e<sub>z</sub></div>
+        <div class="formula">d(u) = Slerp[d<sub>0</sub>, d<sub>1</sub>, u]</div>
+        <p>随后从 <code>d(u)</code> 求两组等价 A/C，选择最靠近连续参考分支的一组；极点处 C 为自由坐标，沿端点展开后的参考 C 连续过渡。</p>
+        <div class="formula">targetPose(u) = { R<sub>x</sub>[A(u)]·R<sub>z</sub>[C(u)], p(u) }</div>
+
+        <div class="two-col">
+          <div class="plain-panel">
+            <h4>同步的含义</h4>
+            <p>XYZ、A、C 共用一个 <code>u(t)</code>。若路径减速，旋转也按相同比例减速；若路径在段末保持非零速度，姿态也连续到下一段。</p>
+          </div>
+          <div class="plain-panel">
+            <h4>同步不等于受约束</h4>
+            <p>共用 <code>u</code> 只保证时间配准，并不自动保证 A/C 或 RTCP 后 XYZ 的速度、加速度、jerk 都在轴限制内。</p>
+          </div>
+        </div>
+
+        <h3>7.4 非 XYZAC 模型</h3>
+        <p>若模型不是严格的五自由度 <code>xyzac_table</code>，当前 <code>MovePath</code> 只输出前三个 XYZ 轴；虽然仍会校验四元数有效性，但不会执行姿态插补。因此本文的五轴结论只适用于模型类型和关节顺序都匹配的 XYZAC 模型。</p>
+      </section>
+
+      <section id="rtcp">
+        <h2>8. XyzacTableRobot 的 RTCP 逆解</h2>
+
+        <h3>8.1 机型识别</h3>
+        <p><code>MovePath</code> 只有在以下条件全部满足时启用 RTCP：</p>
+        <ul>
+          <li>模型类型为 <code>xyzac_table</code>，DOF 为 5。</li>
+          <li>关节顺序为 X、Y、Z 三个移动关节，随后是绕 X 的 A 和绕 Z 的 C。</li>
+          <li>模型轴映射数量与 DOF 一致。</li>
+        </ul>
+
+        <h3>8.2 旋转角提取和分支选择</h3>
+        <p>逆解从物理旋转矩阵 <code>Rx(A)·Rz(C)</code> 提取：</p>
+        <div class="formula">A = atan2(−R<sub>1,2</sub>, R<sub>2,2</sub>)</div>
+        <div class="formula">C = atan2(−R<sub>0,1</sub>, R<sub>0,0</sub>)</div>
+        <p>提取后重新构造旋转矩阵并校验误差。接着使用当前关节位置作为参考，把角度加减整数个 <code>2π</code>，选择最近的等价分支：</p>
+        <div class="formula">unwrapNear(θ, θ<sub>ref</sub>) = θ + 2π · round[(θ<sub>ref</sub> − θ)/(2π)]</div>
+
+        <h3>8.3 直线轴补偿</h3>
+        <p>给定工件坐标点和 A/C，逆解计算世界坐标刀尖，再减去关节偏置：</p>
+        <pre><code>modelA = A + offsetA
+modelC = C + offsetC
+
+tipWorld = baseTf · RotX(modelA) · toolTf · RotZ(modelC) · pWork
+
+Xcmd = tipWorld.x - offsetX
+Ycmd = tipWorld.y - offsetY
+Zcmd = tipWorld.z - offsetZ
+Acmd = unwrap(A - offsetA, currentA)
+Ccmd = unwrap(C - offsetC, currentC)</code></pre>
+
+        <p><code>MovePath::solveRtcp</code> 每个 RT 周期调用一次逆解，以上一周期目标关节作为下一次种子，并只向五个位置控制轴写入位置目标。Axis 命令整形阶段仍会根据相邻位置命令计算内部速度，用于轴级限速和状态反馈。</p>
+
+        <div class="callout risk">
+          <strong>IK 成功不等于轴限位检查通过</strong>
+          <span><code>XyzacTableRobot::inverseKinematics</code> 只检查尺寸、旋转可表示性和数值有限性，不读取 <code>axis.xml</code> 的软限位。软限位在 Axis 命令整形阶段处理；加工前仍应在 NRT 或离线阶段完整扫描轴位置和轴导数。</span>
+        </div>
+      </section>
+
+      <section id="continuity">
+        <h2>9. C 轴展开、跨 ±180° 与奇异区</h2>
+
+        <h3>9.1 连续 C 角</h3>
+        <p>NC 解析器不会把角度压回 <code>[-π, π]</code>。例如球面网格中的 C 可以连续经过 <code>-180°、-182.2°</code>，末尾也可到 <code>210°</code>。RT 再以当前/上一姿态为参考做 <code>unwrapNear</code>，跨 ±180° 时选择最近等价角。</p>
+
+        <div class="callout warn">
+          <strong>单段旋转必须小于 180° 才能可靠保留方向</strong>
+          <span>四元数只表示最终空间旋转，不携带“绕了几圈”的拓扑信息。若一个段的 C 增量大于 180°，RT 的最近分支展开可能选择反方向的等价姿态。连续多圈必须拆成增量小于 180°的多个点，并同时满足 C 轴总软限位。</span>
+        </div>
+
+        <h3>9.2 球面极点</h3>
+        <p>当刀位法向接近 +Z 时，保持刀轴沿法向只要求 A 接近 0，而 C 对刀轴方向几乎没有影响。这里是“法向定向任务”的参数退化区，不是矩阵求解失败。工业做法通常是：</p>
+        <ul>
+          <li>从上一点延续 C，而不是每点独立用 <code>atan2</code> 取主值。</li>
+          <li>把分支选择写成带轴限位、剩余行程和速度代价的连续优化。</li>
+          <li>在极点附近降低 C 的变化权重或冻结 C，离开极点后平滑恢复。</li>
+        </ul>
+
+        <h3>9.3 当前球面法向构造</h3>
+        <p>对球面单位法向 <code>n=(nx,ny,nz)</code>，当前程序选择 A/C，使：</p>
+        <div class="formula">R<sub>x</sub>(A) · R<sub>z</sub>(C) · n = [0,0,1]<sup>T</sup></div>
+        <p>生成器必须对 C 做连续展开，随后检查 <code>A∈[-1.920,1.920]</code>、<code>C∈[-6.2832,6.2832]</code>。当前可达球冠截止到极角 85°，给 A 轴 ±110° 留有余量。</p>
+
+        <h3>9.4 软限位的实际后果</h3>
+        <p>Axis 层根据剩余距离计算制动速度 <code>sqrt(2as)</code>，并按轴最大速度/加速度整形；到边界后只锁止继续越界的方向。这个安全网会改写某一个物理轴的本周期目标，而 MovePath 内部仍按原来的 <code>s(t)</code> 前进，因此一旦触发，严格 RTCP 同步已被破坏。加工路径不能把软限位当作正常规划器使用。</p>
+      </section>
+
+      <section id="example">
+        <h2>10. R40 球面连续六边形网格示例</h2>
+
+        <p><code>config/5axis/program/sphere_hex_grid.nc</code> 是当前完整姿态链的代表数据：</p>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr><th>球面</th><td>球心 Z=70 mm，半径 40 mm</td><th>覆盖</th><td>极角 0° 到 85°</td></tr>
+              <tr><th>图案</th><td>151 个六边形单元，498 条唯一边</td><th>连续性</th><td>单条连续 G1 路由，158 条重复连接边</td></tr>
+              <tr><th>离散</th><td>切削段步长不超过 0.500 mm</td><th>进给</th><td>F5.000，即 5 mm/s</td></tr>
+              <tr><th>数据量</th><td>测试期望 6647 个 waypoint</td><th>姿态</th><td>每点 A/C，B=0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <pre><code>( Continuous XYZAC spherical hex grid on R40 workpiece )
+G21
+G90
+G0 X0.000000 Y0.000000 Z170.000000 A0.000000 C0.000000
+G0 X-3.740242 Y-6.478289 Z129.531860 A7.161972 C-150.000000
+G1 X-2.493495 Y-4.318859 Z109.687907 A7.161972 C-150.000000 F5.000
+G1 X-2.741343 Y-4.748145 Z109.622470 A7.878170 C-150.000000 F5.000
+G1 X-2.988763 Y-5.176689 Z109.550843 A8.594367 C-150.000000 F5.000</code></pre>
+
+        <h3>10.1 第一条切削边如何执行</h3>
+        <ol>
+          <li>NC 位置从 mm 转为 m，A/C 从 degree 转为 rad，F 转为 0.005 m/s。</li>
+          <li>NRT 保留该边的起终点，不做圆角或短段合并。</li>
+          <li>A/C 端点编码为两个四元数，连同直线端点和前瞻速度边界下发。</li>
+          <li>RT 由路径弧长计算 <code>u</code>，得到直线弦上的 <code>p(u)</code>，并用刀轴 SLERP 和连续分支求出 <code>A(u), C(u)</code>。</li>
+          <li>每周期将球面工件点经转台变换为世界刀尖位置，输出 XYZAC。</li>
+        </ol>
+
+        <h3>10.2 为什么用密集短弦</h3>
+        <p>位置沿球面端点之间的直线弦插补，刀轴方向沿端点间最短大圆插补。减小段长用于压低位置弦高误差；测试同时检查弦内位置与 SLERP 刀轴法向误差，而不是只检查 NC 点。</p>
+      </section>
+
+      <section id="constraints">
+        <h2>11. 姿态对轨迹拟合和速度前瞻的影响</h2>
+
+        <h3>11.1 应不应该考虑</h3>
+        <p><strong>应该。</strong>只要姿态在变，路径速度 <code>v=ds/dt</code> 就会映射为旋转轴速度；RTCP 又会把旋转带来的杠杆臂速度叠加到 XYZ 直线轴。纯 XYZ 前瞻不能证明五个物理轴都满足限制。</p>
+
+        <h3>11.2 当前刀轴 SLERP 段的直接约束</h3>
+        <p>刀轴相对参数 <code>u</code> 做匀角速度大圆插补，但反解后的 A/C 通常不是 <code>u</code> 的线性函数，尤其在极点附近不能只用端点 <code>ΔA/L、ΔC/L</code> 证明轴速度安全。应对实际逆解分支 <code>q(s)</code> 求导：</p>
+        <div class="formula">q̇ = q′(s)·ṡ</div>
+        <div class="formula">q̈ = q″(s)·ṡ² + q′(s)·s̈</div>
+        <div class="formula">q⃛ = q‴(s)·ṡ³ + 3q″(s)·ṡ·s̈ + q′(s)·s⃛</div>
+
+        <h3>11.3 RTCP 耦合后的轴约束</h3>
+        <p>物理轴是任务空间路径的函数 <code>Q(s)=IK[p(s),R(s)]</code>。工业前瞻通常直接在所选 IK 分支上计算：</p>
+        <div class="formula">Q̇ = Q′(s)·ṡ</div>
+        <div class="formula">Q̈ = Q″(s)·ṡ² + Q′(s)·s̈</div>
+        <p>对每个轴施加位置、速度、加速度和 jerk 约束，再反求允许的 <code>ṡ、s̈、s⃛</code>。这比只用姿态角速度更完整，因为 A/C 转动也会推高 XYZ 补偿轴速度。</p>
+
+        <div class="callout risk">
+          <strong>当前缺口的准确表述</strong>
+          <span>项目目前靠 NC 生成器离线估算 <code>|ΔA|/(L/F)</code> 和 <code>|ΔC|/(L/F)</code>，并用单元测试兜底。它尚未把 <code>Q′、Q″、Q‴</code> 纳入在线 LookAheadPlanner，也没有对执行中的五轴命令做保持路径同步的统一时间缩放。</span>
+        </div>
+
+        <h3>11.4 姿态对几何拟合的影响</h3>
+        <p>若拟合删除或移动 XYZ 点，姿态也必须在同一参数域中重采样，并同时控制：</p>
+        <ul>
+          <li>位置弦高误差或轮廓误差。</li>
+          <li>刀轴方向误差，例如 <code>acos(z<sub>tool,fit</sub>·z<sub>tool,source</sub>)</code>。</li>
+          <li>A/C 分支连续性和轴位置余量。</li>
+          <li>拟合后 IK 轴速度、加速度与 jerk。</li>
+        </ul>
+        <p>当前实现选择更保守的方式：有逐点姿态时禁止几何改变，而不是自动重采样姿态。</p>
+      </section>
+
+      <section id="validation">
+        <h2>12. 验证与测试方法</h2>
+
+        <h3>12.1 几何与姿态误差</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>指标</th><th>计算方式</th><th>当前测试阈值</th></tr></thead>
+            <tbody>
+              <tr><td>球面误差</td><td><code>abs(norm(p - center) - R)</code>，同时采样段中点</td><td>&lt; 1e-5 m，即 0.010 mm</td></tr>
+              <tr><td>法向误差</td><td>检查 <code>Rx(A)·Rz(C)·normal</code> 与 +Z 的差</td><td>向量误差 &lt; 7e-4，约 0.041°</td></tr>
+              <tr><td>最大覆盖极角</td><td><code>acos(normal.z)</code></td><td>&gt;84° 且 ≤85°</td></tr>
+              <tr><td>离散段长</td><td>相邻切削点欧氏距离</td><td>≤0.000501 m</td></tr>
+              <tr><td>A 轴估算速度</td><td><code>|ΔA| / (L/F)</code></td><td>≤1.047 rad/s + 容差</td></tr>
+              <tr><td>C 轴估算速度</td><td><code>|ΔC| / (L/F)</code></td><td>≤1.571 rad/s + 容差</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>12.2 单元测试覆盖</h3>
+        <ul class="checklist">
+          <li><code>test_xyzac_nc_path</code>：ABC 度转弧度、球面蝴蝶、连续六边形、法向与轴范围。</li>
+          <li><code>test_cartesian_rtcp</code>：XYZAC 正逆解闭环、C 轴跨 π 的最近分支、不可表示 B 姿态拒绝。</li>
+          <li><code>test_motion_preprocessing</code>：路径段、前瞻边界、MovePath 参数布局、逐点姿态四元数下发。</li>
+        </ul>
+        <pre><code>build\test\test_xyzac_nc_path.exe
+build\test\test_cartesian_rtcp.exe
+build\test\test_motion_preprocessing.exe</code></pre>
+
+        <h3>12.3 建议增加的执行级测试</h3>
+        <ul>
+          <li>记录每周期 <code>s/u/p/A/C/XYZAC</code>，验证段连接处位置、速度、加速度连续性。</li>
+          <li>对所有执行周期检查五轴命令是否触发 Axis 层限速或软限位改写。</li>
+          <li>用正解把实际五轴命令还原为工件坐标刀位，测量动态 RTCP 轮廓误差。</li>
+          <li>覆盖 C 轴 ±180°、接近 ±360°软限位、球顶、A 轴最大倾角和进给倍率变化。</li>
+          <li>加入姿态急变但 XYZ 段很短的反例，确保未来姿态感知前瞻能主动降速。</li>
+        </ul>
+      </section>
+
+      <section id="tuning">
+        <h2>13. 参数调节与常见故障</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>参数/现象</th><th>当前作用</th><th>五轴姿态路径建议</th></tr></thead>
+            <tbody>
+              <tr><td><code>maxVel</code></td><td>路径标量最大线速度，也作为 G0 和无效 F 的回退值</td><td>同时按 A/C 及 RTCP 轴导数反算上限</td></tr>
+              <tr><td><code>maxAccel/maxJerk</code></td><td>路径标量 Ruckig 和 NRT 前瞻约束</td><td>当前不是物理轴角加速度/jerk 保证</td></tr>
+              <tr><td><code>cornerTol</code></td><td>共线简化、圆角及拐角速度估算</td><td>逐点姿态路径当前设 0，否则可能因点边变化而拒绝</td></tr>
+              <tr><td><code>minSegLen</code></td><td>短段处理阈值</td><td>逐点姿态路径当前设 0；离线生成器负责最小段质量</td></tr>
+              <tr><td><code>arcChordTol</code></td><td>NC G2/G3 离散弦高</td><td>还应增加姿态角误差阈值</td></tr>
+              <tr><td>运行时到软限位</td><td>Axis 层独立制动/钳位</td><td>视为预检失败，不应继续加工</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout risk">
+          <strong>A/C 速度“毛刺”的当前首要原因</strong>
+          <span>逐点姿态要求原始边不被拟合，因此球面行为树把 <code>cornerTol</code> 设为 0；同一个参数又被前瞻用于接点限速，结果是每段出口速度均为 0。短段反复启停形成速度尖峰。与此同时，<code>A(u)、C(u)</code> 在每段内线性、导数在段间不连续；即使 MovePath 只输出位置，Axis 层用于限速与反馈的位置差分速度仍会呈现尖锐变化。</span>
+        </div>
+
+        <p>按当前 <code>sphere_hex_grid.nc</code> 估算，切削段 A 最大速度约 7.16°/s，C 最大速度约 66.00°/s，但相邻段的理想 C 速度方向变化可达约 104.38°/s。首个 G0 从 C=0° 转到 -150°，按 30 mm/s 回退速度约为 109.35°/s，已高于 C 轴配置的 90°/s。</p>
+
+        <h3>13.1 典型报错</h3>
+        <div class="two-col">
+          <div class="plain-panel">
+            <h4><span class="tag risk">FAIL</span> orientation count</h4>
+            <p>姿态数量不是段数 + 1。检查行为树是否把 <code>NcParse.orientations</code> 正确连接到 <code>PathMove.orientations</code>。</p>
+          </div>
+          <div class="plain-panel">
+            <h4><span class="tag risk">FAIL</span> geometry fitting changed edge</h4>
+            <p>规划器简化、圆角或合并了带姿态的原始边。将容差设 0，或实现姿态随几何重采样。</p>
+          </div>
+          <div class="plain-panel">
+            <h4><span class="tag risk">FAIL</span> orientation not representable</h4>
+            <p>端点四元数含有 XYZAC 两旋转轴无法表示的 B 分量，或旋转次序不符合协议。</p>
+          </div>
+          <div class="plain-panel">
+            <h4><span class="tag gap">WARN</span> soft limit reached</h4>
+            <p>物理轴目标超出范围或制动距离不足。即使系统没有置故障，刀尖同步也可能已失真。</p>
+          </div>
+        </div>
+
+        <h3>13.2 调参顺序</h3>
+        <ol>
+          <li>先验证所有 waypoint 的 IK、轴位置范围和 C 分支连续性。</li>
+          <li>再按位置和法向误差确定最大离散步长。</li>
+          <li>由段内 SLERP 采样和完整 IK 导数限制 F，端点 <code>ΔA/L、ΔC/L</code> 只作为快速粗检。</li>
+          <li>设置路径加速度、jerk，并检查段连接处物理轴导数。</li>
+          <li>最后才增加进给倍率；全过程监控是否触发轴级命令整形。</li>
+        </ol>
+      </section>
+
+      <section id="industrial">
+        <h2>14. 工业级实现建议</h2>
+
+        <h3>14.1 推荐架构</h3>
+        <div class="flow" aria-label="工业级五轴姿态规划流程">
+          <div class="flow-node"><b>刀位与刀轴</b><span>曲线 p(ξ)<br>姿态 R(ξ)</span></div>
+          <div class="flow-node"><b>联合拟合</b><span>位置误差<br>刀轴角误差</span></div>
+          <div class="flow-node"><b>IK 分支规划</b><span>连续 A/C<br>限位余量</span></div>
+          <div class="flow-node"><b>轴导数映射</b><span>Q′、Q″、Q‴</span></div>
+          <div class="flow-node"><b>多约束前瞻</b><span>五轴 v/a/j<br>轮廓误差</span></div>
+          <div class="flow-node"><b>统一时间律</b><span>s(t)<br>跨段连续</span></div>
+          <div class="flow-node"><b>RT 求值监控</b><span>插补 + FK<br>跟随误差</span></div>
+        </div>
+
+        <h3>14.2 分阶段落地</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>阶段</th><th>改动</th><th>收益</th></tr></thead>
+            <tbody>
+              <tr><td>第一阶段</td><td>在 NRT 对段内 SLERP + IK 采样，按最大 <code>|dA/ds|、|dC/ds|</code> 限制 <code>v_max_local</code>，增加轴位置预检</td><td>以较小改动覆盖最直接的旋转轴速度风险</td></tr>
+              <tr><td>第二阶段</td><td>对段内 IK 采样，数值计算五轴 <code>dQ/ds</code>，统一限制路径速度</td><td>覆盖 RTCP 耦合后的 XYZ 补偿轴速度</td></tr>
+              <tr><td>第三阶段</td><td>引入 <code>d²Q/ds²</code>、<code>d³Q/ds³</code>，在前瞻中联立轴加速度和 jerk</td><td>实现真正的五轴动态约束时间参数化</td></tr>
+              <tr><td>第四阶段</td><td>联合位置/姿态样条拟合、IK 分支全局优化、奇异区策略和在线监控</td><td>达到复杂自由曲面加工所需的稳定性和效率</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>14.3 四元数插补该放在哪里</h3>
+        <p>对于通用 6D 刀位，建议在 SO(3) 上使用最短弧 SLERP、SQUAD 或旋转向量样条，并用角速度/角加速度限制时间律。对于当前只有 A/C 两个旋转自由度的机床，最终仍应在选定且连续的 A/C 逆解分支上做轴约束。通用四元数插补可以保证空间姿态平滑，但不能替代机床轴分支与限位规划。</p>
+
+        <div class="callout ok">
+          <strong>适合当前项目的下一步</strong>
+          <span>优先把每段 A/C 速度约束加入 <code>LookAheadPlanner::calculateLocalVelocityLimit</code> 的输入数据，再增加 NRT 全路径 IK 预检。这样不会改变现有 RT 同步插补和 MovePath 协议，却能先消除最主要的在线超速风险。</span>
+        </div>
+      </section>
+
+      <section id="index">
+        <h2>15. 代码索引</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>模块</th><th>文件</th><th>职责</th></tr></thead>
+            <tbody>
+              <tr><td>NC 数据结构</td><td><a href="../zrcs_nrt/core/nc_parser/NcParser.h">NcParser.h</a></td><td>解析结果中的 waypoint、orientation、feedrate 契约</td></tr>
+              <tr><td>NC 解析</td><td><a href="../zrcs_nrt/core/nc_parser/NcParser.cpp">NcParser.cpp</a></td><td>单位转换、G90/G91、ABC、圆弧离散与逐点姿态</td></tr>
+              <tr><td>路径公共类型</td><td><a href="../zrcs_nrt/algorithm/path_planning/TrajectoryTypes.h">TrajectoryTypes.h</a></td><td><code>PathOrientation</code> 与 <code>TrajectorySegment</code></td></tr>
+              <tr><td>路径规划</td><td><a href="../zrcs_nrt/algorithm/path_planning/MotionPlanner.cpp">MotionPlanner.cpp</a></td><td>简化、拐角、短段和前瞻编排</td></tr>
+              <tr><td>速度前瞻</td><td><a href="../zrcs_nrt/algorithm/path_planning/LookAheadPlanner.cpp">LookAheadPlanner.cpp</a></td><td>XYZ 局部限速、接点速度与加速度规划</td></tr>
+              <tr><td>行为树入口</td><td><a href="../zrcs_nrt/behavior_tree/nodes/motion/PathMoveNode.cpp">PathMoveNode.cpp</a></td><td>读取点、姿态、进给和规划参数</td></tr>
+              <tr><td>NRT 发令</td><td><a href="../zrcs_nrt/behavior_tree/nodes/motion/PathMoveSupport.cpp">PathMoveSupport.cpp</a></td><td>RPY 转四元数、姿态对齐检查和 MovePath 打包</td></tr>
+              <tr><td>命令协议</td><td><a href="../zrcs_common/config/CmdDefine.h">CmdDefine.h</a></td><td><code>MovePathArg</code> 参数顺序</td></tr>
+              <tr><td>RT 插补</td><td><a href="../zrcs_rt/command/MovePath.cpp">MovePath.cpp</a></td><td>Ruckig 标量轨迹、A/C 展开、同步求值和 RTCP 调用</td></tr>
+              <tr><td>XYZAC 模型</td><td><a href="../zrcs_rt/model/XyzacTableRobot.cpp">XyzacTableRobot.cpp</a></td><td>转台式五轴正逆解与最近角分支</td></tr>
+              <tr><td>机床几何</td><td><a href="../config/5axis/model.xml">model.xml</a></td><td>base/tool 变换、关节顺序与偏置</td></tr>
+              <tr><td>轴限制</td><td><a href="../config/5axis/axis.xml">axis.xml</a></td><td>XYZAC 位置、速度、加速度和 jerk 限制</td></tr>
+              <tr><td>行为树配置</td><td><a href="../config/5axis/program/motion.xml">motion.xml</a></td><td>球面加工路径、姿态端口与规划参数</td></tr>
+              <tr><td>球面程序</td><td><a href="../config/5axis/program/sphere_hex_grid.nc">sphere_hex_grid.nc</a></td><td>连续六边形网格 XYZAC 数据</td></tr>
+              <tr><td>路径测试</td><td><a href="../test/test_xyzac_nc_path.cpp">test_xyzac_nc_path.cpp</a></td><td>球面误差、法向误差、覆盖范围和轴速检查</td></tr>
+              <tr><td>RTCP 测试</td><td><a href="../test/test_cartesian_rtcp.cpp">test_cartesian_rtcp.cpp</a></td><td>XYZAC 正逆解、分支和不可达姿态</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        本文档描述的是 2026-07-24 工作区中的实际实现。后续若将姿态或物理轴约束加入前瞻，应同步更新第 5、11、14 节及相应测试阈值。
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const links = [...document.querySelectorAll('.toc a')];
+      const sections = links
+        .map(link => document.querySelector(link.getAttribute('href')))
+        .filter(Boolean);
+
+      const activate = id => {
+        links.forEach(link => {
+          const current = link.getAttribute('href') === `#${id}`;
+          link.classList.toggle('active', current);
+          if (current) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        });
+      };
+
+      const observer = new IntersectionObserver(entries => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) activate(visible[0].target.id);
+      }, { rootMargin: '-12% 0px -72% 0px', threshold: [0, 0.05] });
+
+      sections.forEach(section => observer.observe(section));
+      if (sections.length) activate(sections[0].id);
+    })();
+  </script>
+</body>
+</html>

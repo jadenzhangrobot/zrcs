@@ -27,12 +27,6 @@ Eigen::Vector3d MovePath::evaluateArc(double u) const
     return arcCenter_ + arcRadius_ * (std::cos(theta) * arcU_ + std::sin(theta) * arcV_);
 }
 
-Eigen::Vector3d MovePath::evaluateArcDerivative(double u) const
-{
-    const double theta = arcSweep_ * u;
-    return arcRadius_ * arcSweep_ * (-std::sin(theta) * arcU_ + std::cos(theta) * arcV_);
-}
-
 namespace {
 
 double unwrapNear(double angle, double reference)
@@ -141,12 +135,9 @@ bool MovePath::solveRtcp(const Eigen::Vector3d& pos, double u)
         return false;
     }
 
-    const double dt = baseDeltaTime_;
     for (int i = 0; i < dof_; ++i)
     {
         controller_->axes_[axisIds_[i]]->setAxisPositionCmd(targetJoint_(i));
-        controller_->axes_[axisIds_[i]]->setAxisVelocityCmd(
-            dt > 0.0 ? (targetJoint_(i) - lastJointTarget_(i)) / dt : 0.0);
     }
     lastJointTarget_ = targetJoint_;
     jointTargetValid_ = true;
@@ -302,7 +293,7 @@ bool MovePath::initTrajectory()
     return true;
 }
 
-void MovePath::applyOutput()
+bool MovePath::applyOutput()
 {
     // otg_->update() 已由 TrajectoryCmd::run() -> updateTrajectory() 完成
     const double s = output_->new_position[0];
@@ -312,49 +303,24 @@ void MovePath::applyOutput()
                          : 0.0;
 
     Eigen::Vector3d pos;
-    Eigen::Vector3d pathDir = Eigen::Vector3d::Zero();
     if (isArc_)
     {
         pos = evaluateArc(u);
-        const Eigen::Vector3d du = evaluateArcDerivative(u);
-        const double duNorm = du.norm();
-        if (duNorm > 1e-12)
-        {
-            pathDir = du / duNorm;
-        }
     }
     else
     {
         pos = startPos_ + u * (targetPos_ - startPos_);
-        if (geometryLength_ > 1e-12)
-        {
-            pathDir = (targetPos_ - startPos_) / geometryLength_;
-        }
     }
 
     if (rtcp5Axis_)
     {
-        if (!solveRtcp(pos, u))
-        {
-            ikFailed_ = true;
-        }
-        return;
+        return solveRtcp(pos, u);
     }
 
-    const double pathVelocity = output_->new_velocity[0];
     controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
     controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
     controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
-    controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
-    controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
-    controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
-}
-
-zrcsSystem::RunResult MovePath::run()
-{
-    ikFailed_ = false;
-    const auto result = zrcsSystem::TrajectoryCmd::run();
-    return ikFailed_ ? zrcsSystem::RunResult::FAILED : result;
+    return true;
 }
 
 CMD_REGISTER(MovePath);

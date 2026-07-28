@@ -22,7 +22,6 @@ private:
     int dof_ = 0;
     bool modelInited_ = false;
     bool rtcp5Axis_ = false;
-    bool ikFailed_ = false;
     bool jointTargetValid_ = false;
 
     Eigen::Vector3d startPos_;
@@ -47,16 +46,14 @@ private:
     double endC_ = 0.0;
 
     Eigen::Vector3d evaluateArc(double u) const;
-    Eigen::Vector3d evaluateArcDerivative(double u) const;
     bool initializeRtcp();
     bool solveRtcp(const Eigen::Vector3d& pos, double u);
 
 
 protected:
     bool initTrajectory() override;
-    void applyOutput() override;
+    bool applyOutput() override;
 
 public:
     MovePath();
-    zrcsSystem::RunResult run() override;
 };

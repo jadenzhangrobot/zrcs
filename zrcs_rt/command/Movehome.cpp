@@ -34,12 +34,13 @@ bool Movehome::initTrajectory()
     return true;
 }
 
-void Movehome::applyOutput()
+bool Movehome::applyOutput()
 {
     for (int i = 0; i < dof_; i++)
     {
         controller_->axes_[i]->setAxisPositionCmd(output_->new_position[i]);
     }
+    return true;
 }
 
 CMD_REGISTER(Movehome);

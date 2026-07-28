@@ -93,7 +93,7 @@
                     rx="0.0" ry="0.0" rz="0.0"
                     endRx="0.0" endRy="0.0" endRz="0.0"
                     maxVel="0.03" maxAccel="0.5" maxJerk="5.0"
-                    cornerTol="0.0" minSegLen="0.0"/>
+                    cornerTol="0.00002" minSegLen="0.0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->

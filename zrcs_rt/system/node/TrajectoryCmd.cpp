@@ -44,11 +44,20 @@ RunResult TrajectoryCmd::run()
 {
     updateOverride();
     auto result = updateTrajectory();  
-    applyOutput();
+    if(!applyOutput())
+    {
+        ERROR_PRINT("%s: failed to apply trajectory output\n", nodeName_);
+        return runResult_= RunResult::FAILED;
+    }
     passOutputToInput();
     if (result == Result::Finished)
     {
         applyOutput();
+        if(!applyOutput())
+        {
+            ERROR_PRINT("%s: failed to apply trajectory output\n", nodeName_);
+            return runResult_= RunResult::FAILED;
+        }
         passOutputToInput();
         return runResult_= RunResult::SUCCESS;    
     }
