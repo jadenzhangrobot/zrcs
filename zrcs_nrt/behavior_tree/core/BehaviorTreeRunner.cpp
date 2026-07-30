@@ -95,7 +95,7 @@ void BehaviorTreeRunner::stop(const std::string& reason)
     }
 }
 
-BehaviorTreeRunner::StatusSnapshot BehaviorTreeRunner::status() const
+zrcs_nrt::BtStatus BehaviorTreeRunner::status() const
 {
     std::lock_guard<std::mutex> lock(statusMutex_);
     return status_;

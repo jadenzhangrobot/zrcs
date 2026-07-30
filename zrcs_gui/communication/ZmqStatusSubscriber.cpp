@@ -58,11 +58,12 @@ void ZMQStatusWorker::pollLoop()
                 continue;
             }
 
-            if (status.axes_size() > 0) {
+            for (int f = 0; f < status.axis_feedback_frames_size(); ++f) {
+                const auto& frame = status.axis_feedback_frames(f);
                 QVector<double> positions;
-                positions.reserve(status.axes_size());
-                for (int i = 0; i < status.axes_size(); ++i) {
-                    positions.append(status.axes(i).position());
+                positions.reserve(frame.axes_size());
+                for (int i = 0; i < frame.axes_size(); ++i) {
+                    positions.append(frame.axes(i).position());
                 }
                 emit axisPositionsUpdated(positions);
             }

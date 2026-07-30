@@ -325,9 +325,6 @@ static void test_axis_feedback_frames_are_individual_messages()
     for (uint64_t i = 1; i <= 20; ++i) {
         zrcs_message::SystemStatus status;
         status.set_timestamp(static_cast<double>(i) * 0.001);
-        auto* current = status.add_axes();
-        current->set_axis_id(0);
-        current->set_position(static_cast<double>(i) * 0.001);
 
         auto* frame = status.add_axis_feedback_frames();
         frame->set_sequence(i);
@@ -342,8 +339,6 @@ static void test_axis_feedback_frames_are_individual_messages()
         zrcs_message::SystemStatus parsed;
         assert(parsed.ParseFromString(serialized));
         assert(parsed.timestamp() == static_cast<double>(i) * 0.001);
-        assert(parsed.axes_size() == 1);
-        assert(parsed.axes(0).position() == static_cast<double>(i) * 0.001);
         assert(parsed.axis_feedback_frames_size() == 1);
         assert(parsed.axis_feedback_frames(0).sequence() == i);
         assert(parsed.axis_feedback_frames(0).simulation_time_ns() == i * 1'000'000);

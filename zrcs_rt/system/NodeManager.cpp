@@ -91,11 +91,6 @@ void NodeManager::run()
                 std::memory_order_release);
         };
 
-        auto stopContinuousJog = [this]()
-        {
-            shm()->jogCtrl.active.store(false, std::memory_order_release);
-        };
-
         // 任一轴进入 ErrorStop 或存在错误码时，任务调度切到 ERROR_STATE。
         // 覆盖：限位/方向禁用(cmdsProcessing)、多驱同步误差(statusSync)、以及后续扩展的伺服故障。
         // 仅在 RUN 下自动切入，避免 RESET/IDLE 恢复过程中被立即打回 ERROR_STATE。
@@ -129,7 +124,6 @@ void NodeManager::run()
                                 static_cast<int>(axis->getAxisState()));
                 }
             }
-            stopContinuousJog();
             abortActiveCommand(reason);
             taskScheduling_ = zrcs::TaskScheduling::ERROR_STATE;
         };
@@ -239,13 +233,11 @@ void NodeManager::run()
                 } 
                 break;
             case zrcs::TaskScheduling::ERROR_STATE:
-                stopContinuousJog();
                 abortActiveCommand("ERROR_STATE abort active command");
                 // 错误状态下不自动恢复，等待上位机切换至 RESET 后再继续。
                 break;
 
             case zrcs::TaskScheduling::STOP:
-                stopContinuousJog();
                 if (!stopHandled_)
                 {
                     abortActiveCommand("STOP abort active command");
@@ -258,7 +250,6 @@ void NodeManager::run()
                 break;
 
             case zrcs::TaskScheduling::RESET:
-                stopContinuousJog();
                 abortActiveCommand("RESET abort active command");
                 stopHandled_ = false;
                 // 调度复位时同步清轴软件故障，否则 RUN 后会立刻再次进入 ERROR_STATE。
@@ -272,7 +263,6 @@ void NodeManager::run()
                 taskScheduling_ = zrcs::TaskScheduling::IDLE;
                 break;
             case zrcs::TaskScheduling::SHUTDOWN:
-                stopContinuousJog();
                 abortActiveCommand("SHUTDOWN abort active command");
                 break;
             case zrcs::TaskScheduling::IDLE:

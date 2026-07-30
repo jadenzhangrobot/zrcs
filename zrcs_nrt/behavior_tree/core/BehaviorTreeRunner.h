@@ -16,17 +16,12 @@
 
 #include "behavior_tree/core/BtSharedState.h"
 #include "behavior_tree/core/BtContext.h"
+#include "status/StatusTypes.h"
 
 class RtBridge;
 
 class BehaviorTreeRunner {
 public:
-    struct StatusSnapshot {
-        std::string treeState;   ///< IDLE / LOADED / RUNNING / SUCCESS / FAILURE / HALTED
-        std::string currentNode;
-        std::string message;
-    };
-
     /// 使用完整 BtContext（推荐）。
     explicit BehaviorTreeRunner(const BtContext& context);
 
@@ -38,7 +33,7 @@ public:
     bool loadFromXml(const std::string& xmlText, std::string& error);
     bool start(std::string& error);
     void stop(const std::string& reason = "Stopped");
-    StatusSnapshot status() const;
+    zrcs_nrt::BtStatus status() const;
 
 private:
     void registerAllNodes();
@@ -54,5 +49,5 @@ private:
     std::thread tickThread_;
     mutable std::mutex mutex_;
     mutable std::mutex statusMutex_;
-    StatusSnapshot status_;
+    zrcs_nrt::BtStatus status_;
 };

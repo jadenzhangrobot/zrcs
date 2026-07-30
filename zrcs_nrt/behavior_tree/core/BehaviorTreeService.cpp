@@ -4,7 +4,6 @@
 
 #include "behavior_tree/core/BehaviorTreeRunner.h"
 #include "status/StatusStore.h"
-#include "status/StatusTypes.h"
 
 BehaviorTreeService::BehaviorTreeService(RtBridge* bridge,
                                          StatusStore* statusStore,
@@ -29,12 +28,7 @@ void BehaviorTreeService::publishStatusToStore()
     if (!statusStore_) {
         return;
     }
-    const auto s = status();
-    zrcs_nrt::BtStatusSnapshot snap;
-    snap.treeState = s.treeState;
-    snap.currentNode = s.currentNode;
-    snap.message = s.message;
-    statusStore_->setBtStatus(snap);
+    statusStore_->setBtStatus(runner_->status());
 }
 
 bool BehaviorTreeService::loadFromXml(const std::string& xmlText, std::string& error)
@@ -57,10 +51,9 @@ void BehaviorTreeService::stop(const std::string& reason)
     publishStatusToStore();
 }
 
-BehaviorTreeService::StatusSnapshot BehaviorTreeService::status() const
+zrcs_nrt::BtStatus BehaviorTreeService::status() const
 {
-    const auto s = runner_->status();
-    return StatusSnapshot{s.treeState, s.currentNode, s.message};
+    return runner_->status();
 }
 
 void BehaviorTreeService::syncStatusToStore()

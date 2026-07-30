@@ -8,6 +8,7 @@
 #include <string>
 
 #include "behavior_tree/core/BtContext.h"
+#include "status/StatusTypes.h"
 
 class BehaviorTreeRunner;
 class RtBridge;
@@ -17,12 +18,6 @@ class TaskService;
 
 class BehaviorTreeService {
 public:
-    struct StatusSnapshot {
-        std::string treeState;
-        std::string currentNode;
-        std::string message;
-    };
-
     BehaviorTreeService(RtBridge* bridge,
                         StatusStore* statusStore = nullptr,
                         CommandService* commands = nullptr,
@@ -35,7 +30,7 @@ public:
     bool loadFromXml(const std::string& xmlText, std::string& error);
     bool start(std::string& error);
     void stop(const std::string& reason = "Stopped");
-    StatusSnapshot status() const;
+    zrcs_nrt::BtStatus status() const;
 
     /// 将当前 BT 状态写入 StatusStore（供 StatusCollector 周期调用）。
     void syncStatusToStore();

@@ -31,6 +31,7 @@ else
     PROJECT_ROOT="$(cd "$SCRIPT_DIR" && cd ../.. && pwd)"
 fi
 BUILD_BIN="$PROJECT_ROOT/build/bin"
+BUILD_LIB="$PROJECT_ROOT/build/lib"
 
 # 自动检测 MSYS2 UCRT64 路径
 detect_msys2() {
@@ -128,31 +129,52 @@ collect_dlls() {
     info "Collecting DLL dependencies via ldd..."
 
     declare -A seen
+    local depth=0
+    local max_depth=20   # 安全上限，防止异常情况下的无限递归
 
     collect_for_binary() {
         local binary="$1"
-        local dlls
-        dlls=$("$LDD" "$binary" 2>/dev/null \
-            | grep -iE '/ucrt64/|/mingw64/' \
-            | awk '{print $3}' \
-            | sort -u)
+        local base_bin
+        base_bin=$(basename "$binary")
 
-        for dll_path in $dlls; do
+        depth=$((depth + 1))
+        if (( depth > max_depth )); then
+            warn "Max recursion depth ($max_depth) reached at $base_bin — stopping"
+            depth=$((depth - 1))
+            return
+        fi
+
+        # 进度提示：每处理一个二进制就输出，避免用户以为卡死
+        info "  ldd: $base_bin (depth=$depth)"
+
+        # 内部辅助：复制单个 DLL 并递归扫描其依赖
+        _copy_one_dll() {
+            local dll_path="$1"
             local base
             base=$(basename "$dll_path")
 
+            # 跳过空名称 (ldd 输出异常)
+            if [[ -z "$base" ]]; then
+                return
+            fi
+
+            # 跳过 Windows 系统 DLL（不应打包）
+            if [[ "$base" =~ ^(ntdll|kernel32|kernelbase|user32|gdi32|shell32|ole32|comctl32|msvcrt|ucrtbase|advapi32|ws2_32|secur32|crypt32|bcrypt|ncrypt|rpcrt4|shlwapi|version|winmm|imm32|setupapi|cfgmgr32|powrprof|propsys|iphlpapi|dnsapi|netapi32|mpr|winhttp|urlmon|wininet|iertutil|srvcli|wkscli|netutils|samcli|dwmapi|uxtheme|d3d9|d3d11|dxgi|opengl32|gdiplus|msimg32|winspool|comdlg32|oleaut32)\.dll$ ]]; then
+                return
+            fi
+
             # 跳过已处理的
             if [[ -n "${seen[$base]}" ]]; then
-                continue
+                return
             fi
             seen[$base]=1
 
             # 跳过 staging 中已有的 (windeployqt 已复制)
             if [[ -f "$staging/$base" ]]; then
-                continue
+                return
             fi
 
-            # 优先从 ucrt64 复制
+            # 优先从 ucrt64 复制，其次用 ldd 解析的路径
             local src="$MSYS2_BIN/$base"
             if [[ ! -f "$src" ]]; then
                 src="$dll_path"
@@ -165,7 +187,52 @@ collect_dlls() {
             else
                 warn "DLL not found: $base"
             fi
+        }
+
+        # 第一遍：收集 MSYS2/UCRT64 系统 DLL
+        local dlls
+        dlls=$("$LDD" "$binary" 2>/dev/null \
+            | grep -iE '/ucrt64/|/mingw64/' \
+            | awk '{print $3}' \
+            | sort -u)
+
+        for dll_path in $dlls; do
+            _copy_one_dll "$dll_path"
         done
+
+        # 第二遍：收集 ldd 报告 "not found" 的项目自建 DLL（从 build/bin、build/lib 查找）
+        local missing
+        missing=$("$LDD" "$binary" 2>/dev/null \
+            | grep -i '=> not found' \
+            | awk '{print $1}' \
+            | sort -u)
+
+        for base in $missing; do
+            # 跳过 Windows API sets（api-ms-win-crt-* 等虚拟 DLL）
+            if [[ "$base" =~ ^(api-ms-win-|ext-ms-win-|advapi32|kernel32|kernelbase|ntdll|user32|gdi32|ole32|shell32|comctl32|comdlg32|msvcrt|ucrtbase|ws2_32|secur32|crypt32|bcrypt|ncrypt|rpcrt4|shlwapi|version|winmm|imm32|setupapi|cfgmgr32|powrprof|propsys|iphlpapi|dnsapi|netapi32|mpr|winhttp|urlmon|wininet|iertutil|srvcli|wkscli|netutils|samcli|dwmapi|uxtheme|d3d9|d3d11|dxgi|opengl32|gdiplus|msimg32|winspool|oleaut32) ]]; then
+                continue
+            fi
+
+            # 跳过已处理的
+            if [[ -n "${seen[$base]}" ]]; then
+                continue
+            fi
+
+            # 在项目 build 目录中查找
+            local found=""
+            for search_dir in "$BUILD_BIN" "$BUILD_LIB"; do
+                if [[ -f "$search_dir/$base" ]]; then
+                    found="$search_dir/$base"
+                    break
+                fi
+            done
+
+            if [[ -n "$found" ]]; then
+                _copy_one_dll "$found"
+            fi
+        done
+
+        depth=$((depth - 1))
     }
 
     # 扫描 staging 中所有 exe，确保附属程序的运行时依赖也被收集
@@ -200,17 +267,16 @@ stage_files() {
     windeployqt6 --release --no-translations --dir "$STAGING_DIR" "$STAGING_DIR/$EXE_NAME" 2>&1 \
         | grep -v "Cannot open" || true
 
-    # ldd 递归收集剩余 DLL
-    collect_dlls "$STAGING_DIR"
-
     # 复制附属可执行文件 (随主 GUI 一起部署的工具/后端)
     for extra_exe in "${EXTRA_EXES[@]}"; do
         if [[ -f "$BUILD_BIN/$extra_exe" ]]; then
             info "Copying $extra_exe..."
             cp "$BUILD_BIN/$extra_exe" "$STAGING_DIR/"
-            collect_dlls "$STAGING_DIR"
         fi
     done
+
+    # 最后统一收集一次 DLL 依赖（避免重复扫描）
+    collect_dlls "$STAGING_DIR"
 
     # 复制配置文件目录
     if [[ -d "$PROJECT_ROOT/config" ]]; then

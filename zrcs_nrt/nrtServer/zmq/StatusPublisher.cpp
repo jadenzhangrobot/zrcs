@@ -11,7 +11,7 @@
 
 namespace {
 
-void appendAxis(const zrcs_nrt::AxisStatusSnapshot& source,
+void appendAxis(const zrcs_nrt::AxisStatus& source,
                 zrcs_message::AxisStatus* target)
 {
     target->set_axis_id(source.axisId);
@@ -22,7 +22,7 @@ void appendAxis(const zrcs_nrt::AxisStatusSnapshot& source,
     target->set_torque(source.torque);
 }
 
-void appendFrame(const zrcs_nrt::AxisFeedbackFrameSnapshot& frame,
+void appendFrame(const zrcs_nrt::AxisFeedbackFrame& frame,
                  zrcs_message::SystemStatus& status)
 {
     constexpr double kNanosecondsToSeconds = 1.0e-9;
@@ -34,12 +34,11 @@ void appendFrame(const zrcs_nrt::AxisFeedbackFrameSnapshot& frame,
     feedback->set_simulation_time_ns(frame.simulationTimeNs);
 
     for (const auto& axis : frame.axes) {
-        appendAxis(axis, status.add_axes());
         appendAxis(axis, feedback->add_axes());
     }
 }
 
-void appendMetadata(const zrcs_nrt::SystemStatusSnapshot& snap,
+void appendMetadata(const zrcs_nrt::SystemStatus& snap,
                     zrcs_message::SystemStatus& status)
 {
     status.set_heartbeat(snap.heartbeat);

@@ -13,13 +13,13 @@
 				<servoSlaveIds size="dynamic">
 					<value0>0</value0>
 				</servoSlaveIds>
-				<maxVel>0.01</maxVel>
-				<maxAcc>0.004</maxAcc>
-				<maxJerk>0.001</maxJerk>
-				<posPositiveLimit>1000000</posPositiveLimit>
-				<posNegativeLimit>-1000000</posNegativeLimit>
+				<maxVel>0.1</maxVel>
+				<maxAcc>4</maxAcc>
+				<maxJerk>1</maxJerk>
+				<posPositiveLimit>0.4</posPositiveLimit>
+				<posNegativeLimit>-0.4</posNegativeLimit>
 				<maxPosDiff>0</maxPosDiff>
-				<lead>1</lead>
+				<lead>42</lead>
 			</value0>
 			<value1>
 				<axisId>1</axisId>
