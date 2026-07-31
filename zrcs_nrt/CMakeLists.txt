@@ -23,11 +23,7 @@ set(SOURCES
 
     # nrtServer (NRT control/status ZMQ server)
     nrtServer/zmq/ZmqServer.cpp
-    nrtServer/zmq/StatusPublisher.cpp
-
-    # status
-    status/StatusStore.cpp
-    status/StatusCollector.cpp
+    status/StatusPublisher.cpp
 
     # logging
     log/NrtLogger.cpp

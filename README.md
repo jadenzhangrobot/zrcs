@@ -460,19 +460,26 @@ Linux / MSYS2 / PowerShell 下都可以按产物路径直接运行，例如：
 该脚本会自动：
 
 - 复制 `build/bin/zrcsgui.exe`
-- 附带复制 `motiongui.exe`、`zrcsnrt.exe`、`zrcsrt.exe`
+- 复制必需的 `zrcsnrt.exe`、`zrcsrt.exe`，并在存在时附带 `motiongui.exe`
 - 使用 `windeployqt6` 收集 Qt 依赖
-- 使用 `ldd` 递归补齐 MSYS2 运行时 DLL
+- 使用 `ldd` 递归补齐并校验主程序、后端和 Qt 插件的 MSYS2 运行时 DLL
+- 校验 Release 构建及 `Qt6Core.dll`、`platforms/qwindows.dll` 等关键文件
 - 生成 NSIS 安装包 `.exe`
 
 ### 打包前先编译
 
+当前 Windows 构建使用 `MinGW Makefiles`，它是单配置生成器。必须在 CMake 配置阶段
+指定 `CMAKE_BUILD_TYPE=Release`；仅给 `cmake --build` 添加 `--config Release` 不会
+把已经配置为 Debug 的 `build` 目录切换成 Release。
+
 ```powershell
-cmake --build build --target zrcsgui --config Release
-cmake --build build --target motiongui --config Release
-cmake --build build --target zrcsnrt --config Release
-cmake --build build --target zrcsrt --config Release
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_MODE=simulation
+cmake --build build --target zrcsgui zrcsnrt zrcsrt -j 4
 ```
+
+打包脚本会读取 `build/CMakeCache.txt` 并拒绝打包非 Release 构建，以免误发布带调试
+行为和大量调试符号的程序。仅在本机验证打包流程时，可以在 MSYS2/Git Bash 中设置
+`ALLOW_NON_RELEASE_PACKAGE=1` 临时跳过该检查；该选项不应用于正式发布。
 
 ### 运行打包脚本
 
@@ -597,14 +604,17 @@ pacman -S mingw-w64-ucrt-x86_64-nsis
 
 ### 6. 安装包里默认包含哪些程序？
 
-当前默认包含：
+当前必定包含：
 
 - `zrcsgui.exe`
-- `motiongui.exe`
 - `zrcsnrt.exe`
 - `zrcsrt.exe`
 
-如果需要增加额外可执行文件，可以修改：
+`motiongui.exe` 当前不是仓库中的构建目标。若 `build/bin/motiongui.exe` 存在，脚本会
+将它作为可选工具加入安装包；不存在时会打印警告但不会中止。
+
+如果需要增加必需或可选的可执行文件，可以修改脚本中的 `REQUIRED_EXES` 或
+`OPTIONAL_EXES`：
 
 - `tool/package/package_installer.sh`
 

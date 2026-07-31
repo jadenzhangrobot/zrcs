@@ -20,7 +20,7 @@ BehaviorTreeRunner::BehaviorTreeRunner(const BtContext& context)
 }
 
 BehaviorTreeRunner::BehaviorTreeRunner(RtBridge* bridge)
-    : BehaviorTreeRunner(BtContext{nullptr, nullptr, nullptr, bridge, nullptr})
+    : BehaviorTreeRunner(BtContext{nullptr, nullptr, bridge, nullptr})
 {
 }
 

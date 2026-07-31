@@ -12,6 +12,7 @@
 #include <functional>
 #include <QFile>
 #include "ui_main_window.h"
+#include "resources/style/StyleLoader.h"
 
 MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     : QMainWindow(parent),
@@ -183,11 +184,12 @@ void MainWindowRefactored::setupConnections()
 
 void MainWindowRefactored::setupStyles()
 {
-    QFile qssFile(QStringLiteral(ZRCSGUI_SOURCE_DIR "/resources/style/dark_theme.qss"));
+    QFile qssFile(QStringLiteral(":/style/dark_theme.qss"));
     if (qssFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         setStyleSheet(QString::fromUtf8(qssFile.readAll()));
     } else {
-        setStyleSheet("");
+        qWarning() << "Failed to load embedded dark theme:" << qssFile.errorString();
+        setStyleSheet(StyleLoader::getDarkThemeStyleSheet());
     }
 }
 
@@ -202,7 +204,7 @@ void MainWindowRefactored::createMujocoPanel()
     if (advancedTabs && mujocoPanel) {
         const int index = advancedTabs->indexOf(mujocoPanel->parentWidget());
         if (index >= 0) {
-            advancedTabs->setTabText(index, QStringLiteral("MuJoCo"));
+            advancedTabs->setTabText(index, QStringLiteral("仿真界面"));
         }
     }
 }

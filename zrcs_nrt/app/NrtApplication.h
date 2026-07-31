@@ -28,8 +28,6 @@ class BehaviorTreeService;
 class BehaviorTreeCommandService;
 class ZMQServer;
 class StatusPublisher;
-class StatusStore;
-class StatusCollector;
 class RtLogConsumer;
 
 namespace zrcs_nrt {
@@ -72,7 +70,6 @@ private:
 
     std::unique_ptr<zrcs::NrtProcess> nrtProcess_;
     std::unique_ptr<RtBridge> bridge_;
-    std::unique_ptr<StatusStore> statusStore_;
     std::unique_ptr<CommandService> commandService_;
     std::unique_ptr<TaskService> taskService_;
     std::unique_ptr<BehaviorTreeService> behaviorTreeService_;
@@ -80,7 +77,6 @@ private:
     std::unique_ptr<CommandRouter> commandRouter_;
     std::unique_ptr<zrcs_nrt::MujocoIdentifyWorker> mujocoIdentifyWorker_;
     std::unique_ptr<ZMQServer> zmqServer_;
-    std::unique_ptr<StatusCollector> statusCollector_;
     std::unique_ptr<StatusPublisher> statusPublisher_;
     std::unique_ptr<RtLogConsumer> rtLogConsumer_;
 

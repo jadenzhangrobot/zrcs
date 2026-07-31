@@ -5,6 +5,9 @@
 #include "command/MoveL.h"
 #include "shared_memory/ShmLayout.h"
 
+#include <algorithm>
+#include <cmath>
+
 MoveL::MoveL() : cartDist_(0)
 {
     std::strcpy(nodeName_, "MoveL");
@@ -29,13 +32,15 @@ bool MoveL::initTrajectory()
             ERROR_PRINT("MoveL: 模型注册表未初始化\n");
             return false;
         }
-        RobotModel* model = registry->getModel(0);
-        if (!model)
+        model_ = registry->getModel(0);
+        if (!model_)
         {
             ERROR_PRINT("MoveL: 未找到模型(id=0)\n");
             return false;
         }
-        axisIds_ = model->getAxisIds();  // const ref → copy into pre-reserved buffer, zero realloc
+        dof_     = model_->getDof();
+        axisIds_ = model_->getAxisIds();  // const ref → copy into pre-reserved buffer, zero realloc
+        currentJoint_.resize(dof_);
         modelInited_ = true;
     }
 
@@ -48,17 +53,7 @@ bool MoveL::initTrajectory()
         input_->current_acceleration[0] = 0.0;
     }
 
-    // 从命令参数构建起点和终点位姿
-    startPos_ = Eigen::Vector3d(
-        command_->args[static_cast<size_t>(MoveLArg::CurrentX)],
-        command_->args[static_cast<size_t>(MoveLArg::CurrentY)],
-        command_->args[static_cast<size_t>(MoveLArg::CurrentZ)]);
-    startQuat_ = Eigen::Quaterniond(
-        command_->args[static_cast<size_t>(MoveLArg::CurrentQ1)],  // w
-        command_->args[static_cast<size_t>(MoveLArg::CurrentQ2)],  // x
-        command_->args[static_cast<size_t>(MoveLArg::CurrentQ3)],  // y
-        command_->args[static_cast<size_t>(MoveLArg::CurrentQ4)]); // z
-
+    // 构建目标位姿
     targetPos_ = Eigen::Vector3d(
         command_->args[static_cast<size_t>(MoveLArg::X)],
         command_->args[static_cast<size_t>(MoveLArg::Y)],
@@ -68,6 +63,46 @@ bool MoveL::initTrajectory()
         command_->args[static_cast<size_t>(MoveLArg::Q2)],  // x
         command_->args[static_cast<size_t>(MoveLArg::Q3)],  // y
         command_->args[static_cast<size_t>(MoveLArg::Q4)]); // z
+    if (!targetPos_.allFinite() || !targetQuat_.coeffs().allFinite() ||
+        targetQuat_.norm() < 1e-9)
+    {
+        ERROR_PRINT("MoveL: 目标位姿包含非法数值或零四元数\n");
+        return false;
+    }
+    targetQuat_.normalize();
+
+    // 起点位姿: 优先从模型 FK 计算当前关节角 → 避免 Current* 手填不一致
+    if (model_)
+    {
+        Eigen::VectorXd q(dof_);
+        for (int i = 0; i < dof_; i++)
+            q(i) = controller_->axes_[axisIds_[i]]->actualPos();
+        Eigen::Matrix4d T_start;
+        if (model_->forwardKinematics(q, T_start))
+        {
+            startPos_  = T_start.block<3,1>(0,3);
+            startQuat_ = Eigen::Quaterniond(T_start.block<3,3>(0,0));
+            startQuat_.normalize();
+        }
+        else
+        {
+            ERROR_PRINT("MoveL: FK 计算起点失败\n");
+            return false;
+        }
+    }
+    else
+    {
+        // Fallback: 无模型时从 Current* 参数读取（笛卡尔轴直驱场景）
+        startPos_ = Eigen::Vector3d(
+            command_->args[static_cast<size_t>(MoveLArg::CurrentX)],
+            command_->args[static_cast<size_t>(MoveLArg::CurrentY)],
+            command_->args[static_cast<size_t>(MoveLArg::CurrentZ)]);
+        startQuat_ = Eigen::Quaterniond(
+            command_->args[static_cast<size_t>(MoveLArg::CurrentQ1)],
+            command_->args[static_cast<size_t>(MoveLArg::CurrentQ2)],
+            command_->args[static_cast<size_t>(MoveLArg::CurrentQ3)],
+            command_->args[static_cast<size_t>(MoveLArg::CurrentQ4)]);
+    }
 
     // 计算线段长度
     cartDist_ = (targetPos_ - startPos_).norm();
@@ -105,35 +140,57 @@ bool MoveL::applyOutput()
     double s = output_->new_position[0];
 
     // 线性插值得到当前笛卡尔位姿
-    double u = (s-(arcOffset_-cartDist_)) / cartDist_;
-    //u = std::clamp(u, 0.0, 1.0);
+    const double rawU = (s - (arcOffset_ - cartDist_)) / cartDist_;
+    const double u = std::clamp(rawU, 0.0, 1.0);
 
     Eigen::Vector3d pos = startPos_ + u * (targetPos_ - startPos_);
 
-    controller_->axes_[axisIds_[0]]->setAxisPositionCmd(pos.x());
-    controller_->axes_[axisIds_[1]]->setAxisPositionCmd(pos.y());
-    controller_->axes_[axisIds_[2]]->setAxisPositionCmd(pos.z());
-
-    // 速度前馈：将弧长速度按路径方向分解到各平动轴，减少伺服跟踪滞后
-    // 恢复时需一并放开下方 pathVelocity / pathDir 计算：
-    // const double pathVelocity = output_->new_velocity[0];
-    // const Eigen::Vector3d pathDir = (targetPos_ - startPos_) / cartDist_;
-   // controller_->axes_[axisIds_[0]]->setAxisVelocityCmd(pathVelocity * pathDir.x());
-    //controller_->axes_[axisIds_[1]]->setAxisVelocityCmd(pathVelocity * pathDir.y());
-    //controller_->axes_[axisIds_[2]]->setAxisVelocityCmd(pathVelocity * pathDir.z());
-
     // 四元数球面线性插补 (SLERP) — 含最短路径 + 小角度保护
     Eigen::Quaterniond qInterp = startQuat_.slerp(u, targetQuat_);
-    if (axisIds_.size() >= 6)
+
+    // 构建 4x4 目标位姿
+    Eigen::Matrix4d T_target = Eigen::Matrix4d::Identity();
+    T_target.block<3,3>(0,0) = qInterp.toRotationMatrix();
+    T_target.block<3,1>(0,3) = pos;
+
+    // 获取当前关节位置作为 IK 初值
+    for (int i = 0; i < dof_; i++)
     {
-        Eigen::Vector3d euler = qInterp.toRotationMatrix().canonicalEulerAngles(2, 1, 0);
-        controller_->axes_[axisIds_[3]]->setAxisPositionCmd(euler(2));  // rx
-        controller_->axes_[axisIds_[4]]->setAxisPositionCmd(euler(1));  // ry
-        controller_->axes_[axisIds_[5]]->setAxisPositionCmd(euler(0));  // rz
-        //controller_->axes_[axisIds_[3]]->setAxisVelocityCmd(0.0);
-       // controller_->axes_[axisIds_[4]]->setAxisVelocityCmd(0.0);
-       // controller_->axes_[axisIds_[5]]->setAxisVelocityCmd(0.0);
+        currentJoint_(i) = controller_->axes_[axisIds_[i]]->actualPos();
     }
+
+    // 轨迹首拍 u≈0 时目标就是当前 FK 起点。此时直接保持当前关节角，
+    // 避免在贴边/奇异/传感器微偏情况下因“重解当前位姿”失败，
+    // 把整段 MoveL 在第一步就打断。
+    constexpr double kHoldJointProgress = 1e-9;
+    if (u <= kHoldJointProgress)
+    {
+        for (int i = 0; i < dof_; i++)
+            controller_->axes_[axisIds_[i]]->setAxisPositionCmd(currentJoint_(i));
+        return true;
+    }
+
+    // 多态 IK：根据 model.xml 配置的模型类型自动选择对应的 inverseKinematics 实现
+    //   "serial"      → SerialRobot::inverseKinematics      (DLS 数值迭代)
+    //   "openarm_srs" → OpenArmRobot::inverseKinematics     (Singh-Kreutz 解析解)
+    //   "cartesian"   → CartesianRobot::inverseKinematics   (1:1 映射)
+    Eigen::VectorXd targetJoint(dof_);
+    if (!model_->inverseKinematics(T_target, currentJoint_, targetJoint))
+    {
+        ERROR_PRINT("MoveL: IK 求解失败 pos=(%.4f,%.4f,%.4f) "
+                    "start=(%.4f,%.4f,%.4f) target=(%.4f,%.4f,%.4f) u=%.4f\n",
+                    pos.x(), pos.y(), pos.z(),
+                    startPos_.x(), startPos_.y(), startPos_.z(),
+                    targetPos_.x(), targetPos_.y(), targetPos_.z(), u);
+        return false;
+    }
+
+    // 将解算出的关节角写入各轴
+    for (int i = 0; i < dof_; i++)
+    {
+        controller_->axes_[axisIds_[i]]->setAxisPositionCmd(targetJoint(i));
+    }
+
     return true;
 } 
 

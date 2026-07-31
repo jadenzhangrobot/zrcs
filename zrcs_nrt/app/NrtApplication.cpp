@@ -16,13 +16,11 @@
 #include "config/ProjectConfig.h"
 #include "log/NrtLogger.h"
 #include "log/RtLogConsumer.h"
-#include "nrtServer/zmq/StatusPublisher.h"
+#include "status/StatusPublisher.h"
 #include "nrtServer/zmq/ZmqServer.h"
 #include "rtBridge/RtBridge.h"
 #include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
-#include "status/StatusCollector.h"
-#include "status/StatusStore.h"
 
 #ifndef _WIN32
 #include <limits.h>
@@ -121,9 +119,6 @@ void NrtApplication::shutdown()
     }
     if (statusPublisher_) {
         statusPublisher_->stop();
-    }
-    if (statusCollector_) {
-        statusCollector_->stop();
     }
     if (rtLogConsumer_) {
         rtLogConsumer_->stop();
@@ -279,11 +274,10 @@ int NrtApplication::run()
     spdlog::info("SharedBlock initialized");
 
     bridge_ = std::make_unique<RtBridge>(nrtProcess_->sharedBlock());
-    statusStore_ = std::make_unique<StatusStore>();
     commandService_ = std::make_unique<CommandService>(bridge_.get());
     taskService_ = std::make_unique<TaskService>(bridge_.get(), commandService_.get());
     behaviorTreeService_ = std::make_unique<BehaviorTreeService>(
-        bridge_.get(), statusStore_.get(), commandService_.get(), taskService_.get());
+        bridge_.get(), commandService_.get(), taskService_.get());
     behaviorTreeCommandService_ =
         std::make_unique<BehaviorTreeCommandService>(behaviorTreeService_.get());
     commandRouter_ = std::make_unique<CommandRouter>(
@@ -304,12 +298,8 @@ int NrtApplication::run()
     zmqServer_->start();
     spdlog::info("ZMQ server started, waiting for commands...");
 
-    statusCollector_ = std::make_unique<StatusCollector>(
-        bridge_.get(), statusStore_.get(), behaviorTreeService_.get());
-    statusCollector_->start();
-    spdlog::info("Status collector started");
-
-    statusPublisher_ = std::make_unique<StatusPublisher>(statusStore_.get());
+    statusPublisher_ = std::make_unique<StatusPublisher>(
+        bridge_.get(), behaviorTreeService_.get());
     if (statusPublisher_->initialize()) {
         statusPublisher_->start();
         spdlog::info("Status publisher started (PUB on port 5556)");
@@ -320,8 +310,8 @@ int NrtApplication::run()
     rtLogConsumer_ = std::make_unique<RtLogConsumer>(
         nrtProcess_->sharedBlock(),
         [this](const zrcs::RtLogEntry& entry) {
-            if (statusStore_) {
-                statusStore_->enqueueRtLog(entry);
+            if (statusPublisher_) {
+                statusPublisher_->enqueueRtLog(entry);
             }
         });
     rtLogConsumer_->start();

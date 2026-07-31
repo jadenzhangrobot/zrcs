@@ -238,7 +238,7 @@
       </property>
       <widget class="QWidget" name="mujocoTab">
        <attribute name="title">
-            <string>MuJoCo</string>
+            <string>仿真界面</string>
        </attribute>
        <layout class="QVBoxLayout" name="mujocoLayout">
         <item>

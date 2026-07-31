@@ -1,19 +1,70 @@
 ; ============================================================================
-; ZRCS GUI Installer - NSIS Script
-; Auto-generated from template by package_installer.sh
+; ZRCS GUI 安装程序 — NSIS 脚本模板
+; ============================================================================
+;
+; 本文件是 NSIS (Nullsoft Scriptable Install System) 安装脚本的模板。
+; 它由 package_installer.sh 中的 generate_nsis() 函数读取，通过 PowerShell
+; 将 @...@ 占位符替换为实际值后，生成最终的 .nsi 脚本，再调用 makensis
+; 编译为 Windows 安装包 (.exe)。
+;
+; 占位符说明：
+;   @ZRCS_NAME@         产品名称，如 "ZRCS"
+;   @ZRCS_VERSION@      产品版本号，如 "2.0.0"
+;   @ZRCS_VERSION_QUAD@ 四段式版本号（Windows VIProductVersion 要求），如 "2.0.0.0"
+;   @ZRCS_PUBLISHER@    发布者名称，如 "ZRCS Project"
+;   @EXE_NAME@          主程序可执行文件名，如 "zrcsgui.exe"
+;   @STAGING_DIR@       打包暂存目录（Windows 路径），包含所有待安装文件
+;   @OUTPUT_DIR@        安装包输出目录（Windows 路径）
+;   @ICON_DEFINES@      图标定义（MUI_ICON / MUI_UNICON），无图标时为空注释
+;   @ICON_REG@          注册表图标路径，无图标时为空注释
+;   @LICENSE_PAGE@      许可协议页面，无 LICENSE 文件时为空注释
+;
+; 安装组件：
+;   SecMain    — 核心文件（必装）：exe、dll 和 Qt 插件
+;   SecConfig  — 配置文件（可选）：config 目录下的机器配置
+;   SecDesktop — 桌面快捷方式（可选）
+;
+; 用法（通过 package_installer.sh 间接调用）：
+;   bash tool/package/package_installer.sh
+;
 ; ============================================================================
 
+; ---------------------------------------------------------------------------
+; 编译器指令 — 控制安装包压缩、编码和校验
+; ---------------------------------------------------------------------------
+
+; 使用 LZMA 压缩算法，压缩率高，适合包含大量 DLL 的安装包
 SetCompressor lzma
+
+; 启用 Unicode 支持，正确处理中文等多字节字符
 Unicode true
+
+; 启用 CRC 校验，防止安装包损坏后静默安装失败
 CRCCheck on
 
+; ---------------------------------------------------------------------------
+; 头文件引用 — 引入 NSIS 标准库
+; ---------------------------------------------------------------------------
+
+; MUI2.nsh：Modern UI 2 图形界面，提供向导式安装页面
 !include "MUI2.nsh"
+
+; FileFunc.nsh：文件操作函数，如 ${GetSize} 用于计算安装大小
 !include "FileFunc.nsh"
+
+; LogicLib.nsh：条件判断宏，提供 ${If}/${Else}/${EndIf} 语法
 !include "LogicLib.nsh"
+
+; StrFunc.nsh：提供 StrStr/UnStrStr，用于从 tasklist 输出中判断主程序是否运行
+!include "StrFunc.nsh"
+${Using:StrFunc} StrStr
+${Using:StrFunc} UnStrStr
+
+; WinMessages.nsh：Windows 消息常量定义
 !include "WinMessages.nsh"
 
 ; ---------------------------------------------------------------------------
-; Product info
+; 产品信息 — 由 package_installer.sh 在生成时替换为实际值
 ; ---------------------------------------------------------------------------
 !define PRODUCT_NAME      "@ZRCS_NAME@"
 !define PRODUCT_VERSION   "@ZRCS_VERSION@"
@@ -22,23 +73,41 @@ CRCCheck on
 !define STAGING_DIR       "@STAGING_DIR@"
 !define OUTPUT_DIR        "@OUTPUT_DIR@"
 
+; 安装包显示名称（标题栏、向导页眉）
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+
+; 最终生成的安装包文件名和路径
 OutFile "${OUTPUT_DIR}\${PRODUCT_NAME}-${PRODUCT_VERSION}-Setup.exe"
-InstallDir "D:\${PRODUCT_NAME}"
+
+; 默认使用系统标准的 64 位程序目录，避免目标电脑没有 D: 盘时默认路径无效。
+; 用户仍可在目录选择页修改位置，升级安装则优先使用下方注册表保存的旧路径。
+InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
+
+; 从注册表读取上次安装路径（升级安装时自动填充）
 InstallDirRegKey HKLM "Software\${PRODUCT_NAME}" "InstallDir"
+
+; 请求管理员权限（安装到 Program Files 和写 HKLM 注册表需要）
 RequestExecutionLevel admin
+
+; 安装向导底部品牌文字
 BrandingText "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 
 ; ---------------------------------------------------------------------------
-; Version resource info (shown in file Properties dialog)
+; 版本资源信息 — 写入安装包 .exe 的文件属性（右键 → 详细信息）
 ; ---------------------------------------------------------------------------
+
+; VIProductVersion 必须是四段式版本号（major.minor.patch.build）
 VIProductVersion "@ZRCS_VERSION_QUAD@"
+
+; 简体中文 (LANG=2052) 版本信息
 VIAddVersionKey /LANG=2052 "ProductName"     "${PRODUCT_NAME}"
 VIAddVersionKey /LANG=2052 "CompanyName"     "${PRODUCT_PUBLISHER}"
 VIAddVersionKey /LANG=2052 "FileDescription" "${PRODUCT_NAME} 安装程序"
 VIAddVersionKey /LANG=2052 "FileVersion"     "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=2052 "LegalCopyright"  "Copyright (C) ${PRODUCT_PUBLISHER}"
 VIAddVersionKey /LANG=2052 "ProductVersion"  "${PRODUCT_VERSION}"
+
+; 英文 (LANG=1033) 版本信息 — 在非中文 Windows 上显示
 VIAddVersionKey /LANG=1033 "ProductName"     "${PRODUCT_NAME}"
 VIAddVersionKey /LANG=1033 "CompanyName"     "${PRODUCT_PUBLISHER}"
 VIAddVersionKey /LANG=1033 "FileDescription" "${PRODUCT_NAME} Installer"
@@ -47,38 +116,73 @@ VIAddVersionKey /LANG=1033 "LegalCopyright"  "Copyright (C) ${PRODUCT_PUBLISHER}
 VIAddVersionKey /LANG=1033 "ProductVersion"  "${PRODUCT_VERSION}"
 
 ; ---------------------------------------------------------------------------
-; MUI Settings
+; MUI 界面设置
 ; ---------------------------------------------------------------------------
+
+; 用户在安装过程中点击取消时弹出确认对话框
 !define MUI_ABORTWARNING
 
-; Installer / Uninstaller icon (use custom icon if provided, else NSIS default)
+; 安装/卸载程序的图标（由 package_installer.sh 根据是否存在 .ico 文件动态生成）
+; 有图标时替换为 !define MUI_ICON / !define MUI_UNICON，无图标时替换为注释
 @ICON_DEFINES@
 
-; Finish page: offer to launch the application
+; 安装完成页面：提供"启动程序"复选框
+; $INSTDIR 是用户选择的安装目录，${EXE_NAME} 是主程序文件名
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE_NAME}"
 !define MUI_FINISHPAGE_RUN_TEXT "启动 ${PRODUCT_NAME} / Launch ${PRODUCT_NAME}"
 
 ; ---------------------------------------------------------------------------
-; Pages
+; 向导页面定义 — 按顺序显示的安装步骤
 ; ---------------------------------------------------------------------------
+
+; 欢迎页面
 !insertmacro MUI_PAGE_WELCOME
+
+; 许可协议页面（由 package_installer.sh 根据是否存在 LICENSE 文件动态生成）
+; 有 LICENSE 时替换为 !insertmacro MUI_PAGE_LICENSE "path/to/LICENSE"
+; 无 LICENSE 时替换为注释，跳过此页面
 @LICENSE_PAGE@
+
+; 组件选择页面 — 用户可以选择安装哪些组件（核心/配置/桌面快捷方式）
 !insertmacro MUI_PAGE_COMPONENTS
+
+; 安装目录选择页面 — 用户可以选择安装到哪个目录
 !insertmacro MUI_PAGE_DIRECTORY
+
+; 安装进度页面 — 显示文件复制进度条
 !insertmacro MUI_PAGE_INSTFILES
+
+; 安装完成页面 — 含"启动程序"选项
 !insertmacro MUI_PAGE_FINISH
 
+; --- 卸载程序页面 ---
+
+; 卸载确认页面 — 防止误删
 !insertmacro MUI_UNPAGE_CONFIRM
+
+; 卸载进度页面
 !insertmacro MUI_UNPAGE_INSTFILES
 
+; ---------------------------------------------------------------------------
+; 多语言支持
+; ---------------------------------------------------------------------------
+
+; 简体中文（默认，第一条优先）
 !insertmacro MUI_LANGUAGE "SimpChinese"
+
+; 英文（后备，在非中文系统上使用）
 !insertmacro MUI_LANGUAGE "English"
 
 ; ---------------------------------------------------------------------------
-; Installer callbacks
+; 安装器回调函数
 ; ---------------------------------------------------------------------------
+
+; ===== .onInit — 安装程序启动时执行 =====
 Function .onInit
-    ; Prevent multiple installer instances
+    ; 防止同时运行多个安装程序实例
+    ; 使用 Windows 互斥体 (Mutex) 机制：
+    ;   CreateMutex 尝试创建命名互斥体，如果已存在则返回非零
+    ;   弹出警告并中止当前安装
     System::Call 'kernel32::CreateMutex(p 0, i 0, t "${PRODUCT_NAME}_Installer_Mutex") p .r1 ?e'
     Pop $R0
     ${If} $R0 != 0
@@ -86,69 +190,117 @@ Function .onInit
         Abort
     ${EndIf}
 
-    ; Kill running instance if detected
-    nsExec::ExecToLog 'taskkill /F /IM ${EXE_NAME}'
 FunctionEnd
 
+; ===== EnsureMainApplicationStopped — 安装前安全关闭主程序 =====
+; 覆盖正在运行的 exe 会失败。旧逻辑在用户尚未确认安装时直接 taskkill /F，可能导致
+; 未保存数据丢失。现在先读取 tasklist，仅在确认主程序正在运行时询问用户。
+Function EnsureMainApplicationStopped
+    nsExec::ExecToStack '"$SYSDIR\tasklist.exe" /FI "IMAGENAME eq ${EXE_NAME}" /NH'
+    Pop $R0 ; tasklist 退出码
+    Pop $R1 ; tasklist 标准输出
+
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONSTOP "无法检查 ${EXE_NAME} 是否正在运行，安装已取消。$\nUnable to check whether ${EXE_NAME} is running. Installation was cancelled."
+        Abort
+    ${EndIf}
+
+    ${StrStr} $R2 $R1 "${EXE_NAME}"
+    ${If} $R2 == ""
+        Return
+    ${EndIf}
+
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION \
+        "检测到 ${EXE_NAME} 正在运行。继续操作将关闭它，请先保存当前工作。是否继续？$\n${EXE_NAME} is running. Save your work before continuing. Close it now?" \
+        IDYES installer_close_confirmed
+    Abort
+
+installer_close_confirmed:
+    nsExec::ExecToStack '"$SYSDIR\taskkill.exe" /F /T /IM "${EXE_NAME}"'
+    Pop $R0
+    Pop $R1
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONSTOP "无法关闭 ${EXE_NAME}：$R1"
+        Abort
+    ${EndIf}
+FunctionEnd
+
+; ===== un.EnsureMainApplicationStopped — 卸载前安全关闭主程序 =====
+; 安装器和卸载器是不同的 NSIS 执行上下文，因此卸载侧需要单独定义 un. 函数，
+; 并使用卸载器版本的字符串搜索宏 UnStrStr。
+Function un.EnsureMainApplicationStopped
+    nsExec::ExecToStack '"$SYSDIR\tasklist.exe" /FI "IMAGENAME eq ${EXE_NAME}" /NH'
+    Pop $R0
+    Pop $R1
+
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONSTOP "无法检查 ${EXE_NAME} 是否正在运行，卸载已取消。$\nUnable to check whether ${EXE_NAME} is running. Uninstallation was cancelled."
+        Abort
+    ${EndIf}
+
+    ${UnStrStr} $R2 $R1 "${EXE_NAME}"
+    ${If} $R2 == ""
+        Return
+    ${EndIf}
+
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION \
+        "检测到 ${EXE_NAME} 正在运行。继续卸载将关闭它，请先保存当前工作。是否继续？$\n${EXE_NAME} is running. Save your work before continuing. Close it now?" \
+        IDYES uninstaller_close_confirmed
+    Abort
+
+uninstaller_close_confirmed:
+    nsExec::ExecToStack '"$SYSDIR\taskkill.exe" /F /T /IM "${EXE_NAME}"'
+    Pop $R0
+    Pop $R1
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONSTOP "无法关闭 ${EXE_NAME}：$R1"
+        Abort
+    ${EndIf}
+FunctionEnd
+
+; ===== un.onInit — 卸载程序启动时执行 =====
 Function un.onInit
-    ; Kill running instance before uninstall
-    nsExec::ExecToLog 'taskkill /F /IM ${EXE_NAME}'
+    Call un.EnsureMainApplicationStopped
 FunctionEnd
 
 ; ---------------------------------------------------------------------------
-; Section: Core files (required)
+; Section: 核心文件（必装，不可取消勾选）
 ; ---------------------------------------------------------------------------
 Section "核心文件 / Core Files" SecMain
-    SectionIn RO  ; required, cannot be unchecked
+    ; SectionIn RO = Read Only，用户不能取消此组件的勾选
+    SectionIn RO
 
+    ; 真正开始写文件前再检查进程。此时用户已经经过欢迎、组件和目录页面并确认安装，
+    ; 不会出现“只是打开安装器就被强制关闭应用”的情况。
+    Call EnsureMainApplicationStopped
+
+    ; 设置当前输出目录为用户选择的安装目录。
     SetOutPath "$INSTDIR"
 
-    ; --- executables ---
-    File "${STAGING_DIR}\*.exe"
+    ; 递归复制 staging 中的全部运行文件，让 windeployqt6 将来新增的插件目录也能
+    ; 自动进入安装包。config 仍由下方独立组件控制；生成 NSIS 时使用的中间文件
+    ; 不属于运行时，因此明确排除。这里不再使用 /nonfatal，文件收集异常必须中止编译。
+    File /r \
+        /x "config" \
+        /x "*.nsi" \
+        /x "*.ps1" \
+        "${STAGING_DIR}\*.*"
 
-    ; --- DLLs ---
-    File /nonfatal "${STAGING_DIR}\*.dll"
-
-    ; --- Qt plugins ---
-    SetOutPath "$INSTDIR\platforms"
-    File /nonfatal "${STAGING_DIR}\platforms\*.dll"
-
-    SetOutPath "$INSTDIR\styles"
-    File /nonfatal "${STAGING_DIR}\styles\*.dll"
-
-    SetOutPath "$INSTDIR\iconengines"
-    File /nonfatal "${STAGING_DIR}\iconengines\*.dll"
-
-    SetOutPath "$INSTDIR\imageformats"
-    File /nonfatal "${STAGING_DIR}\imageformats\*.dll"
-
-    SetOutPath "$INSTDIR\generic"
-    File /nonfatal "${STAGING_DIR}\generic\*.dll"
-
-    SetOutPath "$INSTDIR\networkinformation"
-    File /nonfatal "${STAGING_DIR}\networkinformation\*.dll"
-
-    SetOutPath "$INSTDIR\tls"
-    File /nonfatal "${STAGING_DIR}\tls\*.dll"
-
-    SetOutPath "$INSTDIR\multimedia"
-    File /nonfatal "${STAGING_DIR}\multimedia\*.dll"
-
-    ; --- Style / Theme resources ---
-    SetOutPath "$INSTDIR\style"
-    File /nonfatal "${STAGING_DIR}\style\*.*"
-
+    ; 恢复输出目录为安装根目录
     SetOutPath "$INSTDIR"
 
-    ; --- Uninstaller ---
+    ; --- 写入卸载程序 ---
+    ; 将卸载器写入安装目录，用户可通过"添加/删除程序"或开始菜单调用
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    ; --- Start Menu shortcuts ---
+    ; --- 开始菜单快捷方式 ---
+    ; 创建产品文件夹和快捷方式（$SMPROGRAMS 是当前用户的开始菜单程序目录）
     CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
     CreateShortcut  "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXE_NAME}"
     CreateShortcut  "$SMPROGRAMS\${PRODUCT_NAME}\卸载 ${PRODUCT_NAME}.lnk" "$INSTDIR\Uninstall.exe"
 
-    ; --- Registry: Add/Remove Programs ---
+    ; --- 注册表：添加/删除程序信息 ---
+    ; 写入 HKLM 使程序出现在"控制面板 → 程序和功能"列表中
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
         "DisplayName"    "${PRODUCT_NAME} ${PRODUCT_VERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
@@ -159,9 +311,15 @@ Section "核心文件 / Core Files" SecMain
         "Publisher"      "${PRODUCT_PUBLISHER}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
         "InstallLocation" "$INSTDIR"
+
+    ; 图标注册表项（由 package_installer.sh 根据是否存在 .ico 文件动态生成）
+    ; 有图标时写入 DisplayIcon，无图标时替换为注释
     @ICON_REG@
+
+    ; 记录安装目录到注册表，供升级安装时读取
     WriteRegStr HKLM "Software\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
 
+    ; 计算安装大小并写入注册表（"添加/删除程序"列表中的"大小"列）
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
@@ -169,23 +327,29 @@ Section "核心文件 / Core Files" SecMain
 SectionEnd
 
 ; ---------------------------------------------------------------------------
-; Section: Configuration files (optional)
+; Section: 配置文件（可选组件）
 ; ---------------------------------------------------------------------------
 Section "配置文件 / Configuration Files" SecConfig
+    ; 将项目 config 目录下的所有配置文件复制到安装目录的 config 子目录
+    ; 包括 axis（轴配置）、ethercat（EtherCAT 总线配置）、model（模型配置）等
+    ; /r：递归复制子目录
     SetOutPath "$INSTDIR\config"
-    File /nonfatal /r "${STAGING_DIR}\config\*.*"
+    ; staging 构建阶段已确认 config 存在，因此这里也采用 fatal 语义；若生成 NSIS
+    ; 后有人移动或删改 staging，makensis 必须报错而不是产出缺少配置的安装包。
+    File /r "${STAGING_DIR}\config\*.*"
     SetOutPath "$INSTDIR"
 SectionEnd
 
 ; ---------------------------------------------------------------------------
-; Section: Desktop shortcut (optional)
+; Section: 桌面快捷方式（可选组件）
 ; ---------------------------------------------------------------------------
 Section "桌面快捷方式 / Desktop Shortcut" SecDesktop
+    ; $DESKTOP 是当前用户的桌面目录
     CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXE_NAME}"
 SectionEnd
 
 ; ---------------------------------------------------------------------------
-; Component descriptions
+; 组件描述文本 — 鼠标悬停时在向导底部显示的说明文字
 ; ---------------------------------------------------------------------------
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SecMain}    "安装 ${PRODUCT_NAME} 核心程序和运行库 / Install core program and runtime libraries"
@@ -194,10 +358,12 @@ SectionEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; ---------------------------------------------------------------------------
-; Uninstall
+; 卸载程序
 ; ---------------------------------------------------------------------------
 Section "Uninstall"
-    ; Qt plugin directories
+    ; 以下清理顺序与安装顺序对应，确保所有文件/目录/注册表项都被移除
+
+    ; --- Qt 插件目录（含所有子文件和子目录） ---
     RMDir /r "$INSTDIR\platforms"
     RMDir /r "$INSTDIR\styles"
     RMDir /r "$INSTDIR\iconengines"
@@ -206,24 +372,45 @@ Section "Uninstall"
     RMDir /r "$INSTDIR\networkinformation"
     RMDir /r "$INSTDIR\tls"
     RMDir /r "$INSTDIR\multimedia"
+    ; File /r 会自动纳入 windeployqt6 新增的插件目录；这里列出 Qt 常见目录，
+    ; 确保未来启用音频、SQL、QML 等模块后仍能完整卸载安装器拥有的运行文件。
+    RMDir /r "$INSTDIR\audio"
+    RMDir /r "$INSTDIR\bearer"
+    RMDir /r "$INSTDIR\egldeviceintegrations"
+    RMDir /r "$INSTDIR\mediaservice"
+    RMDir /r "$INSTDIR\platforminputcontexts"
+    RMDir /r "$INSTDIR\platformthemes"
+    RMDir /r "$INSTDIR\printsupport"
+    RMDir /r "$INSTDIR\renderers"
+    RMDir /r "$INSTDIR\scenegraph"
+    RMDir /r "$INSTDIR\sqldrivers"
+    RMDir /r "$INSTDIR\qml"
 
-    ; Config and style directories
+    ; --- 配置目录 ---
+    ; 注意：config 目录可能包含用户修改过的配置文件，
+    ; 卸载时一并删除是预期行为；如需保留请手动备份
     RMDir /r "$INSTDIR\config"
-    RMDir /r "$INSTDIR\style"
 
-    ; Executables, DLLs, uninstaller
+    ; --- 根目录下由安装器部署的文件 ---
     Delete "$INSTDIR\*.dll"
     Delete "$INSTDIR\*.exe"
+    Delete "$INSTDIR\*.ico"
+    Delete "$INSTDIR\qt.conf"
+    Delete "$INSTDIR\LICENSE*"
     Delete "$INSTDIR\Uninstall.exe"
+
+    ; 删除安装目录本身（仅当为空时成功）
     RMDir  "$INSTDIR"
 
-    ; Start Menu
+    ; --- 开始菜单 ---
     RMDir /r "$SMPROGRAMS\${PRODUCT_NAME}"
 
-    ; Desktop shortcut
+    ; --- 桌面快捷方式 ---
     Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
 
-    ; Registry
+    ; --- 注册表 ---
+    ; 删除"添加/删除程序"条目
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+    ; 删除安装目录记录
     DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
 SectionEnd

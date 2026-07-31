@@ -12,14 +12,12 @@
 
 class BehaviorTreeRunner;
 class RtBridge;
-class StatusStore;
 class CommandService;
 class TaskService;
 
 class BehaviorTreeService {
 public:
     BehaviorTreeService(RtBridge* bridge,
-                        StatusStore* statusStore = nullptr,
                         CommandService* commands = nullptr,
                         TaskService* tasks = nullptr);
     ~BehaviorTreeService();
@@ -32,16 +30,10 @@ public:
     void stop(const std::string& reason = "Stopped");
     zrcs_nrt::BtStatus status() const;
 
-    /// 将当前 BT 状态写入 StatusStore（供 StatusCollector 周期调用）。
-    void syncStatusToStore();
-
     BehaviorTreeRunner* runner() const { return runner_.get(); }
     const BtContext& context() const { return context_; }
 
 private:
-    void publishStatusToStore();
-
     BtContext context_;
     std::unique_ptr<BehaviorTreeRunner> runner_;
-    StatusStore* statusStore_ = nullptr;
 };

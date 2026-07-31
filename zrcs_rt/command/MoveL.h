@@ -18,7 +18,10 @@ class MoveL : public zrcsSystem::TrajectoryCmd
 
 private:
     std::vector<int> axisIds_;      // 构造函数中预分配，RT 只读
+    int dof_ = 0;
+    RobotModel* model_ = nullptr;   // 多态模型指针（RT 只读，initTrajectory 赋值）
     bool modelInited_ = false;
+    Eigen::VectorXd currentJoint_;  // 当前周期 IK 初值 (dof_×1)
 
     // 线段几何缓存
     Eigen::Vector3d startPos_;

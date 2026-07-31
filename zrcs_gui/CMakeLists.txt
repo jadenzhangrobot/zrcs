@@ -107,6 +107,11 @@ set(UI_FILES
     resources/ui/behavior_tree_panel.ui
 )
 
+# Application resources embedded into the executable.
+set(ZRCS_GUI_RESOURCE_FILES
+    resources/style/style.qrc
+)
+
 # Groot 资源文件
 set(GROOT_RESOURCE_FILES
     ${CMAKE_SOURCE_DIR}/3rdParty/Groot/bt_editor/resources/icons.qrc
@@ -114,9 +119,14 @@ set(GROOT_RESOURCE_FILES
 )
 
 # 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${UI_FILES} ${GROOT_RESOURCE_FILES})
+add_executable(${PROJECT_NAME}
+    ${SOURCES}
+    ${HEADERS}
+    ${UI_FILES}
+    ${ZRCS_GUI_RESOURCE_FILES}
+    ${GROOT_RESOURCE_FILES}
+)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_compile_definitions(${PROJECT_NAME} PRIVATE ZRCSGUI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE NODE_EDITOR_STATIC)
 
 

@@ -7,6 +7,7 @@
 #include "model/ParallelRobot.h"
 #include "model/CartesianRobot.h"
 #include "model/XyzacTableRobot.h"
+#include "model/OpenArmRobot.h"
 
 std::unique_ptr<RobotModel> ModelFactory::create(const ModelParam& param)
 {
@@ -36,6 +37,15 @@ std::unique_ptr<RobotModel> ModelFactory::create(const ModelParam& param)
     {
         return std::make_unique<XyzacTableRobot>(
             param.name, param.joints, param.baseTf, param.toolTf);
+    }
+    else if (param.type == "openarm_srs")
+    {
+        // openArm 双臂: 名称约定为 "openarm_left" 或 "openarm_right"
+        OpenArmSRSIk::Side side = OpenArmSRSIk::Side::LEFT;
+        if (param.name.find("right") != std::string::npos)
+            side = OpenArmSRSIk::Side::RIGHT;
+
+        return std::make_unique<OpenArmRobot>(param.name, side);
     }
 
     return nullptr;
