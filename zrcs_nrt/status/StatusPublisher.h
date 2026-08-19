@@ -17,14 +17,15 @@
 
 #include <zmq.hpp>
 #include "shared_memory/ShmLayout.h"
+#include "status/StatusCollector.h"
 
 class RtBridge;
 class BehaviorTreeService;
 
 class StatusPublisher {
 public:
-    /// @param bridge         RT 共享内存桥，所有反馈/心跳/状态的来源（非拥有）
-    /// @param behaviorTree   行为树服务，读取 BT 当前节点状态（非拥有，可为空）
+    /// @param bridge         RT 共享内存桥（非拥有）
+    /// @param behaviorTree   行为树服务（非拥有，可为空）
     StatusPublisher(RtBridge* bridge, BehaviorTreeService* behaviorTree = nullptr);
     ~StatusPublisher();
 
@@ -38,7 +39,6 @@ public:
 
 private:
     void run();
-    static std::string taskStateToString(zrcs::TaskScheduling ts);
 
     static constexpr const char* PUB_ENDPOINT = "tcp://*:5556";
     static constexpr int PUB_INTERVAL_MS = 10;
@@ -46,8 +46,7 @@ private:
 
     zmq::context_t context_;
     std::unique_ptr<zmq::socket_t> pub_socket_;
-    RtBridge* bridge_;                   ///< 非拥有
-    BehaviorTreeService* behaviorTree_;  ///< 非拥有，可为 nullptr
+    StatusCollector collector_;          ///< 数据采集（与序列化/发送分离）
 
     /// RT 日志待发布队列（RtLogConsumer 回调写入，run() 搬空）。
     mutable std::mutex logMutex_;

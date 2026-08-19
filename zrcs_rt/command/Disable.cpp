@@ -24,29 +24,26 @@ zrcsSystem::RunResult Disable::run()
             ERROR_PRINT("Disable: 轴%d 操作失败\n", axisId_);
             return zrcsSystem::RunResult::FAILED;
         }
-        else 
-        {
-            INFO_PRINT("Disable: 轴%d 操作成功\n", axisId_);
-            return zrcsSystem::RunResult::SUCCESS;
-        }
-        return zrcsSystem::RunResult::EXECUTING;
+        INFO_PRINT("Disable: 轴%d 操作成功\n", axisId_);
+        return zrcsSystem::RunResult::SUCCESS;
     }
     else if (static_cast<int>(controller_->axes_.size()) == axisId_)
     {
+        bool anyFailed = false;
         for (int i = 0; i < axisId_; i++)
         {
             if (!controller_->axes_[i]->powerOff())
             {
                 ERROR_PRINT("Disable: 轴%d 操作失败\n", i);
-                return zrcsSystem::RunResult::FAILED;
+                anyFailed = true;
             }
             else
             {
                 INFO_PRINT("Disable: 轴%d 操作成功\n", i);
-                return zrcsSystem::RunResult::SUCCESS;
             }
         }
-        return zrcsSystem::RunResult::EXECUTING;
+        return anyFailed ? zrcsSystem::RunResult::FAILED
+                         : zrcsSystem::RunResult::SUCCESS;
     }
     else
     {

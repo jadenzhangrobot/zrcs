@@ -1,7 +1,14 @@
 #pragma once
 /**
  * @file NrtApplication.h
- * @brief NRT 进程生命周期：装配依赖、启动/停止工作线程与 RT 子进程。
+ * @brief NRT 进程生命周期：RT 子进程管理 + 主循环。
+ *
+ * 服务装配委托给 NrtServiceContainer，本类只负责：
+ *  - RT 子进程启动/终止
+ *  - 共享内存初始化
+ *  - 服务容器构造与启动
+ *  - 主事件循环
+ *  - 信号/控制台紧急处理
  */
 
 #include <atomic>
@@ -20,18 +27,10 @@
 #include <sys/types.h>
 #endif
 
-class RtBridge;
-class CommandService;
-class TaskService;
-class CommandRouter;
-class BehaviorTreeService;
-class BehaviorTreeCommandService;
-class ZMQServer;
-class StatusPublisher;
-class RtLogConsumer;
+class NrtServiceContainer;
 
 namespace zrcs_nrt {
-class MujocoIdentifyWorker;
+struct MujocoIdentifyOptions;
 }
 
 class NrtApplication {
@@ -47,12 +46,13 @@ public:
     /// 请求退出主循环（信号安全：仅置标志）。
     void requestStop();
 
-    /// 有序关闭所有子系统；线程安全、可重入（第二次调用直接返回）。
+    /// 有序关闭所有子系统；线程安全、可重入。
     void shutdown();
 
-    /// Windows 关闭窗口等紧急路径：尽快停传输并强杀 RT（与 shutdown 互斥串行化）。
+    /// 紧急路径：尽快停传输并强杀 RT（与 shutdown 互斥串行化）。
     void emergencyCleanup();
 
+    /// 全局单例，供信号处理器访问。
     static NrtApplication* instance();
 
 private:
@@ -68,23 +68,16 @@ private:
     std::mutex lifecycleMutex_;
     std::mutex rtProcessMutex_;
 
+    // RT 进程管理
     std::unique_ptr<zrcs::NrtProcess> nrtProcess_;
-    std::unique_ptr<RtBridge> bridge_;
-    std::unique_ptr<CommandService> commandService_;
-    std::unique_ptr<TaskService> taskService_;
-    std::unique_ptr<BehaviorTreeService> behaviorTreeService_;
-    std::unique_ptr<BehaviorTreeCommandService> behaviorTreeCommandService_;
-    std::unique_ptr<CommandRouter> commandRouter_;
-    std::unique_ptr<zrcs_nrt::MujocoIdentifyWorker> mujocoIdentifyWorker_;
-    std::unique_ptr<ZMQServer> zmqServer_;
-    std::unique_ptr<StatusPublisher> statusPublisher_;
-    std::unique_ptr<RtLogConsumer> rtLogConsumer_;
-
 #ifdef _WIN32
     HANDLE rtProcess_{nullptr};
 #else
     pid_t rtPid_{-1};
 #endif
+
+    // 服务容器（拥有全部 NRT 服务）
+    std::unique_ptr<NrtServiceContainer> services_;
 
     static std::atomic<NrtApplication*> instance_;
 };

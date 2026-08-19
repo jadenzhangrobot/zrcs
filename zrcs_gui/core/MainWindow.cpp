@@ -41,6 +41,8 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     statusSubscriber = new ZMQStatusSubscriber(commCfg2.zmqHost, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::axisServoStatesUpdated,
+            this, &MainWindowRefactored::onAxisServoStatesUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,
@@ -391,6 +393,21 @@ void MainWindowRefactored::onAxisPositionsUpdated(QVector<double> positions)
     }
 }
 
+void MainWindowRefactored::onAxisServoStatesUpdated(QVector<quint8> enabled)
+{
+    if (jogPanel) {
+        jogPanel->setAxisServoStates(enabled);
+    }
+
+    if (!servoLabel) return;
+
+    int powered = 0;
+    for (auto s : enabled) {
+        if (s) ++powered;
+    }
+    servoLabel->setText(QString("伺服: %1/%2").arg(powered).arg(enabled.size()));
+}
+
 void MainWindowRefactored::onCommandPanelCommandRequested(const QString &cmd, const QVector<double> &args)
 {
     QStringList argTexts;
@@ -456,6 +473,7 @@ void MainWindowRefactored::onConnectClicked()
     // 保存到配置
     auto& commCfg = ZrcsConfig::Config::instance().comm;
     commCfg.zmqHost = host;
+    ZrcsConfig::Config::instance().save();
 
     // 重建 ZMQClient (固定端口 5555)
     if (zmqClient) {
@@ -488,6 +506,8 @@ void MainWindowRefactored::onConnectClicked()
     statusSubscriber = new ZMQStatusSubscriber(host, 5556, this);
     connect(statusSubscriber, &ZMQStatusSubscriber::axisPositionsUpdated,
             this, &MainWindowRefactored::onAxisPositionsUpdated);
+    connect(statusSubscriber, &ZMQStatusSubscriber::axisServoStatesUpdated,
+            this, &MainWindowRefactored::onAxisServoStatesUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::taskSchedulingUpdated,
             this, &MainWindowRefactored::onTaskSchedulingUpdated);
     connect(statusSubscriber, &ZMQStatusSubscriber::rtLogReceived,

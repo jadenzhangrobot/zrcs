@@ -15,6 +15,6 @@ class RtBridge;
 struct BtContext {
     CommandService* commands = nullptr;
     TaskService* tasks = nullptr;
-    RtBridge* bridge = nullptr; ///< legacy 节点仍通过 SharedState/bridge 发令
+    RtBridge* bridge = nullptr; ///< 仅用于查询（isCommandCompleted 等），发令请走 commands
     std::shared_ptr<zrcs_bt::SharedState> sharedState;
 };

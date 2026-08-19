@@ -25,6 +25,7 @@ public slots:
 
 signals:
     void axisPositionsUpdated(QVector<double> positions);
+    void axisServoStatesUpdated(QVector<quint8> enabled);
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
     void rtLogReceived(quint32 level, QString message, QString timestamp);
@@ -59,6 +60,7 @@ public:
 
 signals:
     void axisPositionsUpdated(QVector<double> positions);
+    void axisServoStatesUpdated(QVector<quint8> enabled);
     void heartbeatReceived(quint64 heartbeat);
     void taskSchedulingUpdated(QString state);
     void rtLogReceived(quint32 level, QString message, QString timestamp);

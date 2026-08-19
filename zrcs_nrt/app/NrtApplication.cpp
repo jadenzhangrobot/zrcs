@@ -8,18 +8,10 @@
 #include <spdlog/spdlog.h>
 
 #include "algorithm/dynamics_identification/MujocoIdentifyWorker.h"
-#include "behavior_tree/core/BehaviorTreeService.h"
-#include "command/BehaviorTreeCommandService.h"
-#include "command/CommandRouter.h"
-#include "command/CommandService.h"
-#include "command/TaskService.h"
 #include "config/ProjectConfig.h"
+#include "core/ServiceContainer.h"
 #include "log/NrtLogger.h"
-#include "log/RtLogConsumer.h"
-#include "status/StatusPublisher.h"
-#include "nrtServer/zmq/ZmqServer.h"
 #include "rtBridge/RtBridge.h"
-#include "shared_memory/NrtProcess.h"
 #include "shared_memory/ShmLayout.h"
 
 #ifndef _WIN32
@@ -40,7 +32,6 @@ NrtApplication::NrtApplication(int argc, char** argv)
 
 NrtApplication::~NrtApplication()
 {
-    // 与控制台紧急路径串行化：只清理一次
     shutdown();
 
     if (instance_.load(std::memory_order_acquire) == this) {
@@ -57,6 +48,10 @@ void NrtApplication::requestStop()
 {
     running_.store(false, std::memory_order_release);
 }
+
+// =============================================================================
+// RT 进程管理（与 NrtServiceContainer 无关）
+// =============================================================================
 
 void NrtApplication::killRtProcessHandle()
 {
@@ -83,7 +78,6 @@ void NrtApplication::killRtProcessHandle()
 
 void NrtApplication::emergencyCleanup()
 {
-    // 控制台回调线程：尽快停传输 + 强杀 RT；与主线程 shutdown 互斥
     requestStop();
 
     std::lock_guard<std::mutex> lock(lifecycleMutex_);
@@ -91,17 +85,12 @@ void NrtApplication::emergencyCleanup()
         return;
     }
 
-    if (zmqServer_) {
-        zmqServer_->stop();
-    }
-    if (statusPublisher_) {
-        statusPublisher_->stop();
+    // 尽可能快：停 ZMQ 发布链路，强杀 RT
+    if (services_) {
+        services_->shutdown();
     }
 
     killRtProcessHandle();
-
-    // 标记部分紧急清理已做；主线程 shutdown 仍会尝试有序 stop 其余组件
-    // 但 zmq/publisher/rt 已是 no-op
 }
 
 void NrtApplication::shutdown()
@@ -113,21 +102,9 @@ void NrtApplication::shutdown()
         return;
     }
 
-    // 以下 stop 自身线程安全可重入
-    if (mujocoIdentifyWorker_) {
-        mujocoIdentifyWorker_->stop();
-    }
-    if (statusPublisher_) {
-        statusPublisher_->stop();
-    }
-    if (rtLogConsumer_) {
-        rtLogConsumer_->stop();
-    }
-    if (behaviorTreeService_) {
-        behaviorTreeService_->stop("Process shutdown");
-    }
-    if (zmqServer_) {
-        zmqServer_->stop();
+    // 有序关闭所有服务
+    if (services_) {
+        services_->shutdown();
     }
 
     terminateRtProcess(/*notifyViaBridge=*/true);
@@ -148,15 +125,8 @@ bool NrtApplication::launchRtProcess()
     PROCESS_INFORMATION pi = {};
 
     if (!CreateProcessA(rtPath.c_str(),
-                        nullptr,
-                        nullptr,
-                        nullptr,
-                        FALSE,
-                        0,
-                        nullptr,
-                        dir.c_str(),
-                        &si,
-                        &pi)) {
+                        nullptr, nullptr, nullptr, FALSE, 0,
+                        nullptr, dir.c_str(), &si, &pi)) {
         spdlog::error("Failed to launch RT process: {} (error {})", rtPath, GetLastError());
         return false;
     }
@@ -196,10 +166,9 @@ bool NrtApplication::launchRtProcess()
 
 void NrtApplication::terminateRtProcess(bool notifyViaBridge)
 {
-    // 若紧急路径已杀句柄，此处只尝试优雅通知（bridge 可能仍有效）
-    if (notifyViaBridge && bridge_) {
+    if (notifyViaBridge && services_ && services_->bridge()) {
         spdlog::info("Sending SHUTDOWN to RT via RtBridge...");
-        bridge_->requestShutdown();
+        services_->bridge()->requestShutdown();
     }
 
     std::lock_guard<std::mutex> lock(rtProcessMutex_);
@@ -244,6 +213,10 @@ void NrtApplication::terminateRtProcess(bool notifyViaBridge)
 #endif
 }
 
+// =============================================================================
+// 主入口
+// =============================================================================
+
 int NrtApplication::run()
 {
     NrtLogger::init();
@@ -254,12 +227,14 @@ int NrtApplication::run()
         spdlog::info("Active project: {}", projectName);
     }
 
+    // 1. 共享内存初始化
     nrtProcess_ = std::make_unique<zrcs::NrtProcess>();
     if (!nrtProcess_->initialize()) {
         spdlog::critical("Failed to initialize shared memory");
         return 1;
     }
 
+    // 2. 启动 RT 子进程
     if (!launchRtProcess()) {
         spdlog::critical("Failed to launch RT process, exiting.");
         return 1;
@@ -273,50 +248,22 @@ int NrtApplication::run()
 
     spdlog::info("SharedBlock initialized");
 
-    bridge_ = std::make_unique<RtBridge>(nrtProcess_->sharedBlock());
-    commandService_ = std::make_unique<CommandService>(bridge_.get());
-    taskService_ = std::make_unique<TaskService>(bridge_.get(), commandService_.get());
-    behaviorTreeService_ = std::make_unique<BehaviorTreeService>(
-        bridge_.get(), commandService_.get(), taskService_.get());
-    behaviorTreeCommandService_ =
-        std::make_unique<BehaviorTreeCommandService>(behaviorTreeService_.get());
-    commandRouter_ = std::make_unique<CommandRouter>(
-        commandService_.get(), taskService_.get(), behaviorTreeCommandService_.get());
+    // 3. 创建服务容器（依赖注入在构造阶段一次性完成）
+    const auto mujocoOptions = zrcs_nrt::parseMujocoIdentifyOptions(argc_, argv_);
+    services_ = std::make_unique<NrtServiceContainer>(
+        nrtProcess_->sharedBlock(), mujocoOptions);
 
-    const auto mujocoIdentifyOptions = zrcs_nrt::parseMujocoIdentifyOptions(argc_, argv_);
-    mujocoIdentifyWorker_ = std::make_unique<zrcs_nrt::MujocoIdentifyWorker>(
-        nrtProcess_->sharedBlock(), mujocoIdentifyOptions);
-    mujocoIdentifyWorker_->start();
-
-    zmqServer_ = std::make_unique<ZMQServer>(commandRouter_.get());
-    if (!zmqServer_->initialize()) {
-        spdlog::critical("Failed to initialize ZMQ server");
+    // 4. 初始化（ZMQ bind 等 I/O 操作）
+    if (!services_->initialize()) {
+        spdlog::critical("Failed to initialize services");
         terminateRtProcess(/*notifyViaBridge=*/false);
         return 1;
     }
 
-    zmqServer_->start();
-    spdlog::info("ZMQ server started, waiting for commands...");
+    // 5. 启动所有后台线程
+    services_->startAll();
 
-    statusPublisher_ = std::make_unique<StatusPublisher>(
-        bridge_.get(), behaviorTreeService_.get());
-    if (statusPublisher_->initialize()) {
-        statusPublisher_->start();
-        spdlog::info("Status publisher started (PUB on port 5556)");
-    } else {
-        spdlog::warn("Status publisher failed to initialize, continuing without it");
-    }
-
-    rtLogConsumer_ = std::make_unique<RtLogConsumer>(
-        nrtProcess_->sharedBlock(),
-        [this](const zrcs::RtLogEntry& entry) {
-            if (statusPublisher_) {
-                statusPublisher_->enqueueRtLog(entry);
-            }
-        });
-    rtLogConsumer_->start();
-    spdlog::info("RT log consumer started");
-
+    // 6. 主循环
     while (running_.load(std::memory_order_acquire)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

@@ -12,7 +12,9 @@ set(SOURCES
     main.cpp
     app/NrtApplication.cpp
 
-    # command routing
+    # core — service container + nc parser
+    core/ServiceContainer.cpp
+    core/nc_parser/NcParser.cpp
     command/CommandService.cpp
     command/TaskService.cpp
     command/CommandRouter.cpp
@@ -23,6 +25,7 @@ set(SOURCES
 
     # nrtServer (NRT control/status ZMQ server)
     nrtServer/zmq/ZmqServer.cpp
+    status/StatusCollector.cpp
     status/StatusPublisher.cpp
 
     # logging
@@ -39,9 +42,6 @@ set(SOURCES
     behavior_tree/nodes/motion/PathMoveSupport.cpp
     behavior_tree/nodes/motion/PathMoveNode.cpp
     behavior_tree/nodes/nc/NcParseNode.cpp
-
-    # core — G-code / NC 解析
-    core/nc_parser/NcParser.cpp
 
     # pure algorithms — path pipeline:
     # simplify → corner blend → short-segment merge → look-ahead

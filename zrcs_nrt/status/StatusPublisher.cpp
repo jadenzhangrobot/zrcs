@@ -19,19 +19,7 @@ namespace {
 
 // ── protobuf 序列化 helper ───────────────────────────────────────────────
 
-void appendAxis(const zrcs::AxisFeedbackData& source,
-                size_t axisIndex,
-                zrcs_message::AxisStatus* target)
-{
-    target->set_axis_id(static_cast<uint8_t>(axisIndex));
-    target->set_position(source.position[axisIndex]);
-    target->set_cmd_position(source.cmdPosition[axisIndex]);
-    target->set_cmd_velocity(source.cmdVelocity[axisIndex]);
-    target->set_velocity(source.velocity[axisIndex]);
-    target->set_torque(source.torque[axisIndex]);
-}
-
-void appendFeedbackFrame(const zrcs::AxisFeedbackData& frame,
+void appendFeedbackFrame(const SystemStatusSnapshot::AxisFrame& frame,
                          zrcs_message::SystemStatus& status)
 {
     constexpr double kNanosecondsToSeconds = 1.0e-9;
@@ -42,10 +30,16 @@ void appendFeedbackFrame(const zrcs::AxisFeedbackData& frame,
     fb->set_sequence(frame.sequence);
     fb->set_simulation_time_ns(frame.simulationTimeNs);
 
-    const size_t axisCount = std::min(
-        static_cast<size_t>(frame.axisCount), zrcs::kAxisMax);
+    const size_t axisCount = frame.position.size();
     for (size_t i = 0; i < axisCount; ++i) {
-        appendAxis(frame, i, fb->add_axes());
+        auto* axis = fb->add_axes();
+        axis->set_axis_id(static_cast<uint8_t>(i));
+        axis->set_position(frame.position[i]);
+        axis->set_cmd_position(frame.cmdPosition[i]);
+        axis->set_cmd_velocity(frame.cmdVelocity[i]);
+        axis->set_velocity(frame.velocity[i]);
+        axis->set_torque(frame.torque[i]);
+        axis->set_servo_enabled(frame.servoEnabled[i] != 0);
     }
 }
 
@@ -94,8 +88,7 @@ bool sendStatus(zmq::socket_t& socket, const zrcs_message::SystemStatus& status)
 StatusPublisher::StatusPublisher(RtBridge* bridge,
                                  BehaviorTreeService* behaviorTree)
     : context_(1)
-    , bridge_(bridge)
-    , behaviorTree_(behaviorTree)
+    , collector_(bridge, behaviorTree)
 {
 }
 
@@ -169,51 +162,22 @@ void StatusPublisher::enqueueRtLog(const zrcs::RtLogEntry& entry)
     pendingLogs_.push_back(entry);
 }
 
-std::string StatusPublisher::taskStateToString(zrcs::TaskScheduling ts)
-{
-    using TS = zrcs::TaskScheduling;
-    switch (ts) {
-    case TS::IDLE:        return "IDLE";
-    case TS::RUN:          return "RUN";
-    case TS::STOP:         return "STOP";
-    case TS::ERROR_STATE:  return "ERROR";
-    case TS::RESET:        return "RESET";
-    case TS::SHUTDOWN:     return "SHUTDOWN";
-    default:               return "IDLE";
-    }
-}
-
 void StatusPublisher::run()
 {
     double lastTimestampSec = 0.0;
 
     while (running_.load(std::memory_order_acquire)) {
-        if (!bridge_ || !pub_socket_) {
+        if (!pub_socket_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(PUB_INTERVAL_MS));
             continue;
         }
 
         try {
-            // 1. 从 SPSC 队列 drain 所有轴反馈帧
-            zrcs::AxisFeedbackData rawFrame{};
-            std::vector<zrcs::AxisFeedbackData> frames;
-            frames.reserve(64);
-            while (bridge_->readLatestAxisFeedback(rawFrame)) {
-                frames.push_back(rawFrame);
-            }
+            // 数据采集委托给 StatusCollector（采集与发送分离）
+            auto snapshot = collector_.collect(/*drainAxisFeedback=*/true,
+                                               /*drainRtLogs=*/false);
 
-            // 2. 周期读取系统元数据（原子操作，直接读 shared memory）
-            const auto heartbeat = bridge_->heartbeat();
-            const auto dropped = bridge_->droppedCount();
-            const auto sysState = taskStateToString(bridge_->getTaskScheduling());
-
-            // 3. 读取 BT 状态（BehaviorTreeService::status() 内部有锁）
-            zrcs_nrt::BtStatus bt;
-            if (behaviorTree_) {
-                bt = behaviorTree_->status();
-            }
-
-            // 4. 搬空 RT 日志队列
+            // RT 日志仍由 enqueueRtLog() 推入内部队列，此处搬空
             std::vector<zrcs::RtLogEntry> logs;
             {
                 std::lock_guard<std::mutex> lock(logMutex_);
@@ -224,32 +188,32 @@ void StatusPublisher::run()
                 }
             }
 
-            // 5. 反馈帧逐条发送，元数据附在最后一帧上
             const bool hasMeta = !logs.empty() ||
-                                 !bt.treeState.empty() ||
-                                 !bt.currentNode.empty() ||
-                                 !bt.message.empty();
+                                 !snapshot.btStatus.treeState.empty() ||
+                                 !snapshot.btStatus.currentNode.empty() ||
+                                 !snapshot.btStatus.message.empty();
 
-            for (size_t i = 0; i < frames.size(); ++i) {
+            for (size_t i = 0; i < snapshot.axisFrames.size(); ++i) {
                 zrcs_message::SystemStatus msg;
-                appendFeedbackFrame(frames[i], msg);
+                appendFeedbackFrame(snapshot.axisFrames[i], msg);
                 lastTimestampSec = msg.timestamp();
 
-                if (i + 1 == frames.size()) {
-                    appendMetadata(heartbeat, dropped, sysState, bt, logs, msg);
+                if (i + 1 == snapshot.axisFrames.size()) {
+                    appendMetadata(snapshot.heartbeat, snapshot.droppedCommands,
+                                  snapshot.systemState, snapshot.btStatus, logs, msg);
                 }
 
                 if (!sendStatus(*pub_socket_, msg)) {
                     spdlog::warn("[StatusPublisher] Frame send dropped: sequence={}",
-                                 frames[i].sequence);
+                                 snapshot.axisFrames[i].sequence);
                 }
             }
 
-            // 6. 无反馈帧时，若有元数据变更仍需单独发送
-            if (frames.empty() && hasMeta) {
+            if (snapshot.axisFrames.empty() && hasMeta) {
                 zrcs_message::SystemStatus msg;
                 msg.set_timestamp(lastTimestampSec);
-                appendMetadata(heartbeat, dropped, sysState, bt, logs, msg);
+                appendMetadata(snapshot.heartbeat, snapshot.droppedCommands,
+                              snapshot.systemState, snapshot.btStatus, logs, msg);
                 if (!sendStatus(*pub_socket_, msg)) {
                     spdlog::warn("[StatusPublisher] Metadata send dropped");
                 }

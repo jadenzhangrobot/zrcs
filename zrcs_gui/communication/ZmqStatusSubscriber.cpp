@@ -61,11 +61,15 @@ void ZMQStatusWorker::pollLoop()
             for (int f = 0; f < status.axis_feedback_frames_size(); ++f) {
                 const auto& frame = status.axis_feedback_frames(f);
                 QVector<double> positions;
+                QVector<quint8> servoStates;
                 positions.reserve(frame.axes_size());
+                servoStates.reserve(frame.axes_size());
                 for (int i = 0; i < frame.axes_size(); ++i) {
                     positions.append(frame.axes(i).position());
+                    servoStates.append(frame.axes(i).servo_enabled() ? 1 : 0);
                 }
                 emit axisPositionsUpdated(positions);
+                emit axisServoStatesUpdated(servoStates);
             }
 
             if (status.heartbeat() > 0) {
@@ -120,6 +124,8 @@ ZMQStatusSubscriber::ZMQStatusSubscriber(const QString& host, int port, QObject*
     // forward signals
     connect(worker_, &ZMQStatusWorker::axisPositionsUpdated,
             this, &ZMQStatusSubscriber::axisPositionsUpdated);
+    connect(worker_, &ZMQStatusWorker::axisServoStatesUpdated,
+            this, &ZMQStatusSubscriber::axisServoStatesUpdated);
     connect(worker_, &ZMQStatusWorker::heartbeatReceived,
             this, &ZMQStatusSubscriber::heartbeatReceived);
     connect(worker_, &ZMQStatusWorker::taskSchedulingUpdated,

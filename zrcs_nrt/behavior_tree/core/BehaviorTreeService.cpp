@@ -13,6 +13,7 @@ BehaviorTreeService::BehaviorTreeService(RtBridge* bridge,
     context_.tasks = tasks;
     context_.sharedState = std::make_shared<zrcs_bt::SharedState>();
     context_.sharedState->bridge = bridge;
+    context_.sharedState->commands = commands;
 
     runner_ = std::make_unique<BehaviorTreeRunner>(context_);
 }

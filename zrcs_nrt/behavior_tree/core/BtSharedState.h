@@ -9,12 +9,14 @@
 #include <utility>
 
 class RtBridge;
+class CommandService;
 
 namespace zrcs_bt {
 
 struct SharedState
 {
-    RtBridge* bridge = nullptr;
+    RtBridge* bridge = nullptr;         ///< 仅用于查询（isCommandCompleted 等）
+    CommandService* commands = nullptr; ///< 发令统一入口
     mutable std::mutex mutex;
     std::string currentNode;
     std::string message;

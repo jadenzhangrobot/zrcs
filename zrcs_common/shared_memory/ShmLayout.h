@@ -143,8 +143,11 @@ struct AxisFeedbackData
     double cmdVelocity[kAxisMax];
     double velocity[kAxisMax];
     double torque[kAxisMax];
+    uint8_t servoEnabled[kAxisMax];  // 0=失能, 1=使能（每轴一个标志位）
+    uint8_t _pad2[4];               // 对齐
 };
-static_assert(sizeof(AxisFeedbackData) == 2584, "AxisFeedbackData layout changed");
+// 注意：添加 servoEnabled 后 sizeof 会变化，编译时若静态断言失败请根据实际值更新
+static_assert(sizeof(AxisFeedbackData) == 2656, "AxisFeedbackData layout changed — update this value to match sizeof");
 
 struct MujocoIdentCommandData {
     uint64_t seq = 0;

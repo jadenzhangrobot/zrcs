@@ -110,6 +110,8 @@ void JogControlPanel::setupUI()
         originButtons.append(originBtn);
     }
 
+    servoStates_.resize(axisPageSize);
+
     QPushButton *homeAllBtn = findChild<QPushButton*>("homeAllBtn");
     if (homeAllBtn) {
         homeAllBtn->setProperty("kind", "danger");
@@ -149,11 +151,20 @@ void JogControlPanel::refreshAxisButtons()
             minusButtons[i]->setText(QString("J%1 -").arg(axis + 1));
             homeButtons[i]->setText(QString("J%1 回零").arg(axis + 1));
             originButtons[i]->setText(QString("J%1 设原点").arg(axis + 1));
-            // 控制器 SI：直线 m / 旋转 rad；多显示几位避免 m 下只剩 mm 级分辨率。
+            // 伺服使能指示: 绿点●=使能, 灰点○=失能
+            const bool powered = axis < servoStates_.size() && servoStates_[axis] != 0;
+            const QString dot = powered ? QStringLiteral("<font color='#4caf50'>●</font> ")
+                                        : QStringLiteral("<font color='#666666'>○</font> ");
             axisPositionLabels[i]->setText(
-                QString::number(axisPositions.value(axis), 'f', 5));
+                dot + QString::number(axisPositions.value(axis), 'f', 5));
         }
     }
+}
+
+void JogControlPanel::setAxisServoStates(const QVector<quint8> &states)
+{
+    servoStates_ = states;
+    refreshAxisButtons();
 }
 
 void JogControlPanel::setAxisPosition(int axis, double position)

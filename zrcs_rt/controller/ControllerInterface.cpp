@@ -237,6 +237,10 @@ bool Axis::cmdsProcessing(double frequency)
     // 机械坐标 = 用户命令坐标 + 零点偏移；软限位按机械行程判断。
     const double lastRaw = lastAxisPosCmd_ + zeroOffset_;
 
+    // 软限位：仅 posPositiveLimit > posNegativeLimit 时有效。
+    // 两者均为默认 0 或反向配置时，跳过全部软限位逻辑，避免误锁轴。
+    if (config_->posPositiveLimit > config_->posNegativeLimit)
+    {
     // —— 正软限位 ——
     // remPos = 到正限位的剩余距离 s。
     // remPos<=0 时只禁止继续正向，不得清零反向速度（否则无法退出限位）。
@@ -337,8 +341,7 @@ bool Axis::cmdsProcessing(double frequency)
             // [贴边/已越界] 锁负向；若上层仍给负向速度，钉在限位并清零。
             if (enableNegative_)
             {
-                WARN_PRINT("axis%d: soft -limit reached pos=%.4f limit=%.4f\n",
-                           axisId_, lastRaw, config_->posNegativeLimit);
+                WARN_PRINT("axis%d: soft -limit reached pos=%.4f limit=%.4f\n",axisId_, lastRaw, config_->posNegativeLimit);
             }
             enableNegative_ = false;
             if (vel_cmd < 0.0)
@@ -413,6 +416,8 @@ bool Axis::cmdsProcessing(double frequency)
         }
         // vel_cmd>=0 且 remNeg>0：不朝负限位走，负侧无需干预。
     }
+
+    } // if (posPositiveLimit > posNegativeLimit) — 软限位配置有效
 
     // 方向锁：仅拦截被锁方向；反向请求在此之前已保留。
     if (vel_cmd > 0.0 && !enablePositive_)
@@ -625,17 +630,26 @@ bool Axis::resetError(void)
 bool Axis::powerOn()
 {
     bool anyEnabled = false;
+    bool anyFailed = false;
     for (auto& servo : servo_)
     {
         if (!servo->enable())
         {
-            if (anyEnabled)
-            {
-                powerStatus_ = true;
-            }
-            return false;
+            ERROR_PRINT("axis%d: servo enable failed\n", axisId_);
+            anyFailed = true;
+            // 继续尝试使能其余伺服，不提前返回
         }
-        anyEnabled = true;
+        else
+        {
+            anyEnabled = true;
+        }
+    }
+
+    if (!anyEnabled)
+    {
+        // 所有伺服均使能失败
+        powerStatus_ = false;
+        return false;
     }
 
     powerStatus_ = true;
@@ -643,21 +657,27 @@ bool Axis::powerOn()
     {
         setAxisState(mcStandstill);
     }
-    return true;
+    return !anyFailed;
 }
 
 bool Axis::powerOff()
 {
+    bool anyFailed = false;
     for (size_t i = 0; i < servo_.size(); i++)
     {
         if (!servo_[i]->disable())
         {
-            // Conservatively report the axis as powered while any drive may
-            // still be enabled.
-            powerStatus_ = true;
             ERROR_PRINT("axis%d: servo%zu disable failed\n", axisId_, i);
-            return false;
+            anyFailed = true;
+            // 继续尝试失能其余伺服，不提前返回
         }
+    }
+
+    if (anyFailed)
+    {
+        // 至少有一个伺服失能失败，保守上报轴仍处于使能状态
+        powerStatus_ = true;
+        return false;
     }
 
     powerStatus_ = false;

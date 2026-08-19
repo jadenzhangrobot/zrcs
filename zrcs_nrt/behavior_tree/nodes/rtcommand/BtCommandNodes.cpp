@@ -6,7 +6,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "algorithm/path_planning/TrajectoryTypes.h"
+#include "command/CommandService.h"
 
 namespace zrcs_bt {
 
@@ -52,12 +52,34 @@ BT::NodeStatus SendCommandNode::onStart()
         commandName = *command;
     }
 
+    // 解析 CSV 参数 → vector<double>
+    std::vector<double> argValues;
     const auto args = getInput<std::string>("args");
-    const std::string csvArgs = args ? *args : std::string();
+    if (args && !args->empty())
+    {
+        size_t pos = 0;
+        const std::string& csv = *args;
+        while (pos < csv.size())
+        {
+            size_t comma = csv.find(',', pos);
+            const std::string token = csv.substr(pos, comma - pos);
+            try { argValues.push_back(std::stod(token)); }
+            catch (...) { argValues.push_back(0.0); }
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
+        }
+    }
 
     sharedState_->setCurrentNode(name(), "send command=" + commandName);
 
-    const auto [result, seq] = sharedState_->bridge->sendCommand(commandName, csvArgs);
+    // 发令统一走 CommandService（而非直连 RtBridge）
+    RtBridge::SendResult result = RtBridge::SendResult::NOT_CONNECTED;
+    uint32_t seq = 0;
+    if (sharedState_->commands)
+    {
+        std::tie(result, seq) = sharedState_->commands->submitWithSeq(commandName, argValues);
+    }
+
     if (result != RtBridge::SendResult::OK)
     {
         std::ostringstream oss;

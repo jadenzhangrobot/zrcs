@@ -130,6 +130,7 @@ public:
 
     bool powerOn();
     bool powerOff();
+    bool isPowerOn() const { return powerStatus_; }
     void setModeOfOperation();
     void setModeOfOperation(Cia402Mode mode);
 

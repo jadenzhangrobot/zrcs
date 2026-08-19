@@ -106,6 +106,18 @@ bool MoveCurve::initTrajectory()
             ERROR_PRINT("MoveCurve: model must expose at least 3 axes\n");
             return false;
         }
+        // 验证所有轴 ID 均在 controller_->axes_ 范围内，
+        // 避免 applyOutput() 中直接索引越界。
+        for (size_t i = 0; i < axisIds_.size(); ++i)
+        {
+            if (axisIds_[i] < 0 ||
+                static_cast<size_t>(axisIds_[i]) >= controller_->axes_.size())
+            {
+                ERROR_PRINT("MoveCurve: axisIds_[%zu]=%d exceeds axes_ size %zu\n",
+                            i, axisIds_[i], controller_->axes_.size());
+                return false;
+            }
+        }
         modelInited_ = true;
     }
 

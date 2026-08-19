@@ -3,7 +3,14 @@
  */
 #include "command/MoveC.h"
 
-MoveC::MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0) { std::strcpy(nodeName_, "MoveC"); }
+MoveC::MoveC() : dof_(0), radius_(0), totalAngle_(0), zStart_(0), zEnd_(0)
+{
+    std::strcpy(nodeName_, "MoveC");
+    // Ruckig 在构造时创建一次，initTrajectory() 只配置参数，不在 RT 循环中分配内存
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+}
 bool MoveC::applyOutput() { return true; }
 
 
@@ -95,13 +102,12 @@ bool MoveC::initTrajectory()
     zStart_ = P0.z();
     zEnd_ = P2.z();
 
-    // Use Ruckig for 1-DOF angle parameter [0, totalAngle_]
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
-    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
-    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
-
+    // Ruckig 实例在构造函数中已创建，此处只配置参数，不在 RT 循环中分配内存
     double velScale = command_->args[static_cast<size_t>(MoveCArg::Vel)];
     if (velScale <= 0) velScale = 1.0;
+
+    const double maxAccel = shm()->pathMoveCfg.maxAccel.load(std::memory_order_acquire);
+    const double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
     input_->current_position[0] = 0;
     input_->current_velocity[0] = 0;
@@ -110,8 +116,8 @@ bool MoveC::initTrajectory()
     input_->target_velocity[0] = 0;
     input_->target_acceleration[0] = 0;
     input_->max_velocity[0] = 2.0 * velScale;
-    input_->max_acceleration[0] = 4.0;
-    input_->max_jerk[0] = 20.0;
+    input_->max_acceleration[0] = maxAccel > 0.0 ? maxAccel : 4.0;
+    input_->max_jerk[0] = maxJerk > 0.0 ? maxJerk : 20.0;
     return true;
 }
 

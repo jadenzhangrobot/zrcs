@@ -243,6 +243,10 @@ void NodeManager::run()
                     abortActiveCommand("STOP abort active command");
                     for (auto& axis : controller_->axes_)
                     {
+                        // 先冻结命令到当前位置，避免 sendData() 继续积分出新的
+                        // 位置指令驱动电机。即使 powerOff 失败，电机也不会再动。
+                        axis->setAxisPositionCmd(axis->actualPos());
+                        axis->syncCmdHistory();
                         axis->powerOff();
                     }
                     stopHandled_ = true;

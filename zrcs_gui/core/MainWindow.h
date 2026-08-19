@@ -49,6 +49,7 @@ public:
     JogControlPanel(QWidget *parent = nullptr);
     void setAxisCount(int count);
     void setAxisPosition(int axis, double position);
+    void setAxisServoStates(const QVector<quint8> &states);
     
 signals:
     void jogPressed(int axis, int direction);
@@ -66,6 +67,7 @@ private:
     QVector<QPushButton*> originButtons;
     QVector<QLabel*> axisPositionLabels;
     QVector<double> axisPositions;
+    QVector<quint8> servoStates_;
     QComboBox *stepSizeCombo;
     QComboBox *axisGroupCombo;
     QScrollBar *axisScrollBar;
@@ -120,6 +122,7 @@ private slots:
 
     // Status
     void onAxisPositionsUpdated(QVector<double> positions);
+    void onAxisServoStatesUpdated(QVector<quint8> enabled);
     void onTaskSchedulingUpdated(const QString &state);
     void onRtLogReceived(quint32 level, const QString &message, const QString &timestamp);
     void onBtStatusUpdated(const QString &treeState,

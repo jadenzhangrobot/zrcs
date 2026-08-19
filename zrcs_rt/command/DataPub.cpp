@@ -44,6 +44,7 @@ void DataPub::publishFeedback()
         fb.cmdPosition[i] = controller_->axes_[i]->actualPosCmd();
         fb.cmdVelocity[i] = controller_->axes_[i]->actualVelCmd();
         fb.velocity[i] = controller_->axes_[i]->actualVel();
+        fb.servoEnabled[i] = controller_->axes_[i]->isPowerOn() ? 1 : 0;
         // fb.torque[i] — Axis 暂无 torque 接口，默认 0
     }
     if (producer_) {
