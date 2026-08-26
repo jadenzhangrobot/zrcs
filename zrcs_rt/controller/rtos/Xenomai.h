@@ -1,98 +1,170 @@
-/*
- * @Author: zhangyongjing
- * @email: 649894200@qq.com
- * @Date: 2023-03-24 18:48:02
- * @LastEditTime: 2023-08-03 21:59:25
- * @Description: xenomai实时线程的封装
- * 
- */
 #pragma once
 
 #include "controller/ControllerInterface.h"
 #include "controller/ethercat/EthercatMaster.h"
 #include "system/log/RtLog.h"
-#include <alchemy/timer.h> 
-#include <alchemy/task.h> 
+
+#include <alchemy/task.h>
+#include <alchemy/timer.h>
+
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <stdio.h>
-#include <unistd.h>
-namespace ZrcsHardware 
+#include <cstring>
+#include <exception>
+#include <utility>
+
+namespace ZrcsHardware {
+
+class xenomai : public Rtos
 {
- class xenomai:public Rtos
-{
-    public:
-    RT_TASK task_desc;
-    std::function<void()> strategy_{ nullptr };
-    xenomai()
+public:
+    xenomai() = default;
+
+    ~xenomai() override
     {
+        rtos_task_stop();
     }
-    ~xenomai(){
 
-     rtos_task_join();
-
+    void real_task(std::function<void()> strategy) override
+    {
+        strategy_ = std::move(strategy);
     }
-    static void real_fun(void* arg)
-    {       
-     
-      xenomai* p=(xenomai*)arg;
-      int err = rt_task_set_periodic(NULL,TM_NOW, 1000000);   
-        while (true) 
+
+    void rtos_task_create() override
+    {
+        if (taskCreated_)
         {
-            rt_task_wait_period(NULL);
-            if (p->strategy_!=nullptr)
+            return;
+        }
+
+        int err = rt_task_create(&taskDesc_, "zrcs_rt", 0, 99, T_JOINABLE);
+        if (err < 0)
+        {
+            ERROR_PRINT("rt_task_create: %s\n", std::strerror(-err));
+            return;
+        }
+        taskCreated_ = true;
+
+        constexpr int kRtCpuId = 7;
+        cpu_set_t mask;
+        CPU_ZERO(&mask);
+        CPU_SET(kRtCpuId, &mask);
+        const int affinityError = rt_task_set_affinity(&taskDesc_, &mask);
+        if (affinityError < 0)
+        {
+            WARN_PRINT("rt_task_set_affinity(cpu=%d): %s\n",
+                       kRtCpuId, std::strerror(-affinityError));
+        }
+
+        running_.store(true, std::memory_order_release);
+        err = rt_task_start(&taskDesc_, &xenomai::taskEntry, this);
+        if (err < 0)
+        {
+            running_.store(false, std::memory_order_release);
+            ERROR_PRINT("rt_task_start: %s\n", std::strerror(-err));
+            rt_task_delete(&taskDesc_);
+            taskCreated_ = false;
+            return;
+        }
+        taskStarted_ = true;
+    }
+
+    void rtos_task_stop() override
+    {
+        running_.store(false, std::memory_order_release);
+        if (!taskCreated_)
+        {
+            return;
+        }
+
+        if (taskStarted_)
+        {
+            // Wake the task if it is blocked in rt_task_wait_period().
+            rt_task_unblock(&taskDesc_);
+        }
+        rtos_task_join();
+    }
+
+    void rtos_task_join() override
+    {
+        if (!taskCreated_)
+        {
+            return;
+        }
+
+        if (!taskStarted_)
+        {
+            rt_task_delete(&taskDesc_);
+            taskCreated_ = false;
+            return;
+        }
+
+        const int err = rt_task_join(&taskDesc_);
+        if (err < 0)
+        {
+            ERROR_PRINT("rt_task_join: %s\n", std::strerror(-err));
+            rt_task_delete(&taskDesc_);
+        }
+        taskStarted_ = false;
+        taskCreated_ = false;
+    }
+
+    void rtos_set_periodic(int period) override
+    {
+        rt_task_set_periodic(&taskDesc_, TM_NOW, period);
+    }
+
+    std::uint64_t rtos_timer_read() override
+    {
+        return rt_timer_read();
+    }
+
+private:
+    static void taskEntry(void* arg)
+    {
+        auto* self = static_cast<xenomai*>(arg);
+        const int err = rt_task_set_periodic(nullptr, TM_NOW, 1000000);
+        if (err < 0)
+        {
+            ERROR_PRINT("rt_task_set_periodic: %s\n", std::strerror(-err));
+            self->running_.store(false, std::memory_order_release);
+            return;
+        }
+
+        while (self->running_.load(std::memory_order_acquire))
+        {
+            rt_task_wait_period(nullptr);
+            if (!self->running_.load(std::memory_order_acquire))
             {
-               p->strategy_();
+                break;
             }
-        
-        }       
-    }
-    void rtos_task_create(void)override
-    {
 
-       int err =rt_task_create(&task_desc,"task_desc",0,99,0); 
-        if(err<0) 
-        { 
-          ERROR_PRINT("rt_task_create: %s\n", strerror(errno));
-
+            if (self->strategy_ != nullptr)
+            {
+                try
+                {
+                    self->strategy_();
+                }
+                catch (const std::exception& e)
+                {
+                    ERROR_PRINT("RT control loop exception: %s\n", e.what());
+                    self->running_.store(false, std::memory_order_release);
+                }
+                catch (...)
+                {
+                    ERROR_PRINT("RT control loop unknown exception\n");
+                    self->running_.store(false, std::memory_order_release);
+                }
+            }
         }
-            int cpu_id =7;                // 需要绑定的cpu
-            cpu_set_t mask;                // cpu核的位掩码
-            CPU_ZERO(&mask);               // 置空
-            CPU_SET(cpu_id, &mask);        // 将需要绑定的cpu号设置在mask中 
-        int a= rt_task_set_affinity(&task_desc,&mask); 
-        err=rt_task_start(&task_desc,real_fun,(this)); 
-
-        if(err<0) 
-        { 
-
-            ERROR_PRINT("rt_task_start: %s\n", strerror(errno));
-        }
-     }
-  
-      
-    void rtos_task_join(void) override
-    {
-        rt_task_join(&task_desc); 	
-    }
-    void rtos_set_perioic(int period) override
-    {
-        rt_task_set_periodic(&task_desc,TM_NOW,period);
-    } 	
-
-    
-     std::uint64_t rtos_timer_read(void) override
-    {
-        RTIME time=rt_timer_read();
-        return time;
-    }
-     void real_task(std::function<void()> strategy) override
-    {
-        strategy_=strategy;
     }
 
- };
+    RT_TASK taskDesc_{};
+    std::function<void()> strategy_{nullptr};
+    std::atomic<bool> running_{false};
+    bool taskCreated_{false};
+    bool taskStarted_{false};
+};
 
-
-}
-
+} // namespace ZrcsHardware

@@ -142,9 +142,9 @@ static void wait_rest_of_period(struct period_info *pinfo)
                
     // }
 
-    void rtos_set_perioic(int perioic) override
+    void rtos_set_periodic(int period) override
     {
-      
+
     } 	
 
     void rtos_task_join(void) override

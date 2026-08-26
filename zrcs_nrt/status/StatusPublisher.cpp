@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <spdlog/spdlog.h>
@@ -100,11 +101,16 @@ StatusPublisher::~StatusPublisher()
 bool StatusPublisher::initialize()
 {
     std::lock_guard<std::mutex> lock(stopMutex_);
+    if (pub_socket_) {
+        return true;
+    }
+
     try {
-        pub_socket_ = std::make_unique<zmq::socket_t>(context_, zmq::socket_type::pub);
-        pub_socket_->set(zmq::sockopt::linger, 0);
-        pub_socket_->set(zmq::sockopt::sndhwm, 4096);
-        pub_socket_->bind(PUB_ENDPOINT);
+        auto socket = std::make_unique<zmq::socket_t>(context_, zmq::socket_type::pub);
+        socket->set(zmq::sockopt::linger, 0);
+        socket->set(zmq::sockopt::sndhwm, 4096);
+        socket->bind(PUB_ENDPOINT);
+        pub_socket_ = std::move(socket);
         stopped_ = false;
         spdlog::info("[StatusPublisher] Initialized on {}", PUB_ENDPOINT);
         return true;

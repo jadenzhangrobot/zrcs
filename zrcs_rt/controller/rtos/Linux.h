@@ -38,7 +38,7 @@ public:
 
     void rtos_task_stop() override;
 
-    void rtos_set_perioic(int /*perioic*/) override
+    void rtos_set_periodic(int /*period*/) override
     {
     }
 };
