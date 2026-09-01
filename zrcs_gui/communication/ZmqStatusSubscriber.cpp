@@ -61,14 +61,21 @@ void ZMQStatusWorker::pollLoop()
             for (int f = 0; f < status.axis_feedback_frames_size(); ++f) {
                 const auto& frame = status.axis_feedback_frames(f);
                 QVector<double> positions;
+                QVector<double> velocities;
+                QVector<double> cmdPositions;
                 QVector<quint8> servoStates;
                 positions.reserve(frame.axes_size());
+                velocities.reserve(frame.axes_size());
+                cmdPositions.reserve(frame.axes_size());
                 servoStates.reserve(frame.axes_size());
                 for (int i = 0; i < frame.axes_size(); ++i) {
                     positions.append(frame.axes(i).position());
+                    velocities.append(frame.axes(i).velocity());
+                    cmdPositions.append(frame.axes(i).cmd_position());
                     servoStates.append(frame.axes(i).servo_enabled() ? 1 : 0);
                 }
                 emit axisPositionsUpdated(positions);
+                emit axisMotionUpdated(positions, velocities, cmdPositions);
                 emit axisServoStatesUpdated(servoStates);
             }
 
@@ -124,6 +131,8 @@ ZMQStatusSubscriber::ZMQStatusSubscriber(const QString& host, int port, QObject*
     // forward signals
     connect(worker_, &ZMQStatusWorker::axisPositionsUpdated,
             this, &ZMQStatusSubscriber::axisPositionsUpdated);
+    connect(worker_, &ZMQStatusWorker::axisMotionUpdated,
+            this, &ZMQStatusSubscriber::axisMotionUpdated);
     connect(worker_, &ZMQStatusWorker::axisServoStatesUpdated,
             this, &ZMQStatusSubscriber::axisServoStatesUpdated);
     connect(worker_, &ZMQStatusWorker::heartbeatReceived,

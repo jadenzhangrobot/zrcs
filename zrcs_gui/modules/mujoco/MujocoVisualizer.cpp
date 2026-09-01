@@ -1,8 +1,13 @@
 #include "mujoco/MujocoVisualizer.h"
 
+#include "mujoco/MujocoFrameServer.h"
+
 #include "ui_mujoco_panel.h"
 
+#include "config/ZrcsConfig.h"
+
 #include <QMouseEvent>
+#include <QOpenGLContext>
 #include <QPainter>
 #include <QWheelEvent>
 
@@ -547,6 +552,38 @@ bool MujocoVisualizer3D::isToolTrailWorkpieceRelative() const
     return impl_->toolTrailWorkpieceRelative;
 }
 
+QImage MujocoVisualizer3D::captureFrame()
+{
+    if (!isValid() || size().isEmpty()) {
+        return {};
+    }
+
+    // Keep the screenshot synchronized with the latest axis update before
+    // reading the OpenGL backbuffer. This method is intentionally GUI-thread
+    // only because QOpenGLWidget owns its context there.
+    if (isVisible()) {
+        repaint();
+    }
+    const bool wasCurrent = QOpenGLContext::currentContext() == context();
+    if (!wasCurrent) {
+        makeCurrent();
+    }
+    const QImage frame = grabFramebuffer();
+    if (!wasCurrent) {
+        doneCurrent();
+    }
+    return frame;
+}
+
+bool MujocoVisualizer3D::isModelLoaded() const
+{
+#ifdef ZRCS_HAS_MUJOCO
+    return impl_->ready();
+#else
+    return false;
+#endif
+}
+
 void MujocoVisualizer3D::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -721,6 +758,19 @@ void MujocoPanel::setupUI()
     Ui::MujocoPanelUi ui;
     ui.setupUi(this);
     mujocoView = findChild<MujocoVisualizer3D *>("mujocoView");
+    if (mujocoView) {
+        frameServer_ = new MujocoFrameServer(this);
+        bool portOk = false;
+        const int configuredPort = qEnvironmentVariableIntValue("ZRCS_MUJOCO_PORT", &portOk);
+        const quint16 framePort = portOk && configuredPort > 0 && configuredPort <= 65535
+                                      ? static_cast<quint16>(configuredPort)
+                                      : static_cast<quint16>(8765);
+        const auto &comm = ZrcsConfig::Config::instance().comm;
+        frameServer_->start(mujocoView,
+                            framePort,
+                            comm.zmqHost,
+                            static_cast<quint16>(std::clamp(comm.zmqPort, 1, 65535)));
+    }
 
     QPushButton *btn2D = findChild<QPushButton *>("btn2D");
     QPushButton *btn3D = findChild<QPushButton *>("btn3D");
@@ -809,5 +859,19 @@ void MujocoPanel::clearTrajectory()
 {
     if (mujocoView) {
         mujocoView->clearTrajectory();
+    }
+}
+
+void MujocoPanel::setMotionEndpoint(const QString &host, quint16 port)
+{
+    if (frameServer_) {
+        frameServer_->setMotionEndpoint(host, port);
+    }
+}
+
+void MujocoPanel::setStatusSubscriber(ZMQStatusSubscriber *subscriber)
+{
+    if (frameServer_) {
+        frameServer_->setStatusSubscriber(subscriber);
     }
 }

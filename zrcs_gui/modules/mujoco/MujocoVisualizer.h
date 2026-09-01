@@ -2,7 +2,9 @@
 
 #include <QOpenGLFunctions>
 #include <QOpenGLWidget>
+#include <QImage>
 #include <QPoint>
+#include <QString>
 #include <QVector>
 #include <QWidget>
 
@@ -28,6 +30,10 @@ public:
     void resetView();
     void setTopView();
 
+    /// Capture the currently rendered framebuffer. Must be called on the GUI thread.
+    QImage captureFrame();
+    bool isModelLoaded() const;
+
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
@@ -44,6 +50,9 @@ private:
     Qt::MouseButton activeButton_ = Qt::NoButton;
 };
 
+class MujocoFrameServer;
+class ZMQStatusSubscriber;
+
 class MujocoPanel : public QWidget {
     Q_OBJECT
 
@@ -55,6 +64,8 @@ public:
     void updateAxisPositions(const QVector<double> &positions);
     void reloadModel();
     void clearTrajectory();
+    void setMotionEndpoint(const QString &host, quint16 port);
+    void setStatusSubscriber(ZMQStatusSubscriber *subscriber);
     void setToolTrailVisible(bool visible);
     void setToolTrailWorkpieceRelative(bool enabled);
 
@@ -65,4 +76,5 @@ private:
     void setupUI();
 
     MujocoVisualizer3D *mujocoView = nullptr;
+    MujocoFrameServer *frameServer_ = nullptr;
 };

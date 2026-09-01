@@ -69,7 +69,11 @@ int main(int argc, char **argv)
     }
     catch (const std::exception& e)
     {
+        // 在日志系统初始化前捕获的异常需要输出到标准错误流，
+        // 因为 ERROR_PRINT 依赖的日志队列可能还未创建。
+        fprintf(stderr, "[RT] 致命异常: %s\n", e.what());
         ERROR_PRINT("[RT] 致命异常: %s\n", e.what());
+        return 1;
     }
     return 0;
 }

@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 # 查找库
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL OpenGLWidgets Multimedia Xml Svg Gui)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL OpenGLWidgets Multimedia Xml Svg Gui Network)
 find_package(OpenGL REQUIRED)
 
 if(NOT TARGET absl::base)
@@ -79,6 +79,7 @@ set(SOURCES
     communication/ZmqClient.cpp
     communication/ZmqStatusSubscriber.cpp
     modules/mujoco/MujocoVisualizer.cpp
+    modules/mujoco/MujocoFrameServer.cpp
     modules/behavior_tree/BehaviorTreePanel.cpp
     modules/command/CommandPanel.cpp
     ${ZRCS_GUI_EXTRA_SOURCES}
@@ -93,6 +94,7 @@ set(HEADERS
     config/ZrcsConfig.h
     resources/style/StyleLoader.h
     modules/mujoco/MujocoVisualizer.h
+    modules/mujoco/MujocoFrameServer.h
     modules/behavior_tree/BehaviorTreePanel.h
     modules/command/CommandPanel.h
 )
@@ -140,6 +142,7 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Multimedia
     Qt6::Xml
     Qt6::Svg
+    Qt6::Network
     atomic
     Threads::Threads
     zrcs::proto

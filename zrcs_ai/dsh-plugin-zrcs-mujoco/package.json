@@ -1,0 +1,17 @@
+{
+  "name": "dsh-plugin-zrcs-mujoco",
+  "description": "DeepSeek Harness plugin for closed-loop ZRCS MuJoCo robot tasks",
+  "version": "0.3.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib/index.js",
+    "skills",
+    ".codex-plugin"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-attachment": "^0.1.1-rc.2"
+  }
+}

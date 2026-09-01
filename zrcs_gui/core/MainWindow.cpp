@@ -49,6 +49,9 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
             this, &MainWindowRefactored::onRtLogReceived);
     connect(statusSubscriber, &ZMQStatusSubscriber::btStatusUpdated,
             this, &MainWindowRefactored::onBtStatusUpdated);
+    if (mujocoPanel) {
+        mujocoPanel->setStatusSubscriber(statusSubscriber);
+    }
     statusSubscriber->start();
 
     // 连接命令面板信号
@@ -482,6 +485,9 @@ void MainWindowRefactored::onConnectClicked()
     }
 
     zmqClient = new ZMQClient(host, 5555);
+    if (mujocoPanel) {
+        mujocoPanel->setMotionEndpoint(host, 5555);
+    }
     connect(zmqClient, &ZMQClient::connected, this, &MainWindowRefactored::onZMQConnected);
     connect(zmqClient, &ZMQClient::disconnected, this, &MainWindowRefactored::onZMQDisconnected);
     connect(zmqClient, &ZMQClient::errorOccurred, this, &MainWindowRefactored::onZMQError);
@@ -514,5 +520,8 @@ void MainWindowRefactored::onConnectClicked()
             this, &MainWindowRefactored::onRtLogReceived);
     connect(statusSubscriber, &ZMQStatusSubscriber::btStatusUpdated,
             this, &MainWindowRefactored::onBtStatusUpdated);
+    if (mujocoPanel) {
+        mujocoPanel->setStatusSubscriber(statusSubscriber);
+    }
     statusSubscriber->start();
 }

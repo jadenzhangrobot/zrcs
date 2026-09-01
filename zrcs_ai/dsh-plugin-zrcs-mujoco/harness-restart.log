@@ -1,0 +1,2 @@
+dsh web: http://127.0.0.1:3083
+dsh web: opening the default browser; pass --no-open to disable
