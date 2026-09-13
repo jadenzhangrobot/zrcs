@@ -5,19 +5,19 @@
     ],
 
     // ---- CMake Tools ----
+    // 本文件被 Windows(MSYS2 UCRT64) 与 Linux(aarch64) 两个平台共用，
+    // VS Code 的 settings.json 不支持按平台分支，因此这里只放与平台无关的配置。
+    //
+    // 以下机器相关项**不要**写回本文件，否则会把另一个平台弄坏：
+    //   - 编译器路径 / 生成器 / 额外 PATH -> 放到各机器的 CMake kits
+    //     (Windows: %USERPROFILE%\.local\share\CMakeTools\cmake-tools-kits.json)
+    //   - 生成器若要显式指定，需选两平台都有的（Ninja）；留空则各平台用各自默认值
+    //
+    // 平台差异备忘：
+    //   Windows  moc.exe 在 D:/msys2/ucrt64/share/qt6/bin，需靠 kit 注入 PATH
+    //   Linux    实时程序 BUILT_MODE=realtime，不编译 zrcs_gui，无需 Qt6
     "cmake.sourceDirectory": "${workspaceFolder}",
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.generator": "MinGW Makefiles",
     // variants 文件位置默认就是 .vscode/cmake-variants.json，此处显式声明
-    "cmake.variantsFileName": ".vscode/cmake-variants.json",
-
-    // 关键：注入 UCRT64 + Qt6 到 PATH，否则 moc.exe 找不到 DLL 而配置/构建失败
-    "cmake.environment": {
-        "PATH": "D:/msys2/ucrt64/bin;D:/msys2/ucrt64/share/qt6/bin;${env:PATH}"
-    },
-    // 指定编译器，避免 CMake Tools 扫到 MSVC
-    "cmake.configureSettings": {
-        "CMAKE_C_COMPILER": "D:/msys2/ucrt64/bin/gcc.exe",
-        "CMAKE_CXX_COMPILER": "D:/msys2/ucrt64/bin/g++.exe"
-    }
+    "cmake.variantsFileName": ".vscode/cmake-variants.json"
 }

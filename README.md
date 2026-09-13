@@ -298,7 +298,6 @@ MuJoCo 支持默认开启，源码目录为 `3rdParty/mujoco-main`。工程会�
 ```bash
 sudo apt install libzmq3-dev
 sudo apt install nlohmann-json3-dev
-sudo apt install libeigen3-dev
 sudo apt install libabsl-dev
 sudo apt install libprotobuf-dev protobuf-compiler
 sudo apt install libboost-dev
@@ -314,7 +313,10 @@ sudo apt install libncurses-dev libncursesw5-dev
 - Protobuf
 - Boost
 - Threads
-- Eigen3
+
+注：**Eigen3 不再依赖系统包**。工程内置于 `3rdParty/eigen`（5.0.0），因为 `zrcs_rt` 的
+`MoveCurve` / `CartesianRobot` 使用了 Eigen 5 才提供的 `canonicalEulerAngles`，而 Ubuntu 22.04
+的 apt 仅提供 Eigen 3.4，其 `eulerAngles` 不保证角度规范形，不能直接替代。
 
 实时模式还需要：
 
@@ -331,8 +333,10 @@ pacman -S mingw-w64-ucrt-x86_64-zeromq
 pacman -S mingw-w64-ucrt-x86_64-cppzmq
 pacman -S mingw-w64-ucrt-x86_64-protobuf
 pacman -S mingw-w64-ucrt-x86_64-opencascade
-pacman -S mingw-w64-ucrt-x86_64-eigen3
 ```
+
+注：Eigen3 与 Linux 相同，统一使用工程内置的 `3rdParty/eigen`（5.0.0），
+无需再安装 `mingw-w64-ucrt-x86_64-eigen3`。
 
 如果需要构建 GUI 和打包，建议再安装：
 

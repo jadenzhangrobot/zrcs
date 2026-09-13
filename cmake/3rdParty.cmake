@@ -23,7 +23,16 @@ set(CPPZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/cppzmq)
 
 # Add bundled MuJoCo physics library.
-option(ZRCS_ENABLE_MUJOCO "Build bundled MuJoCo support" ON)
+# MuJoCo 实际只在仿真模式下被使用：HardwareFactory 中创建 MujocoSimulation/MujocoBus 的逻辑
+# 位于 #if defined(SIMULATION) 内，而 realtime 模式不定义 SIMULATION；zrcs_rt/controller/mujoco/*
+# 在未启用时会走 MujocoSimulation.cpp 末尾的 #else 桩实现。因此实时模式默认不编译 MuJoCo，
+# 可省下下位机上相当可观的一段时间。确需在实时模式下打开时显式传 -DZRCS_ENABLE_MUJOCO=ON。
+set(_zrcs_mujoco_default ON)
+if(BUILD_MODE STREQUAL "realtime")
+    set(_zrcs_mujoco_default OFF)
+endif()
+option(ZRCS_ENABLE_MUJOCO "Build bundled MuJoCo support" ${_zrcs_mujoco_default})
+unset(_zrcs_mujoco_default)
 if(ZRCS_ENABLE_MUJOCO)
     set(ZRCS_MUJOCO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/mujoco-main")
     if(NOT EXISTS "${ZRCS_MUJOCO_SOURCE_DIR}/CMakeLists.txt")
@@ -117,11 +126,24 @@ if(TARGET absl::base)
     message(STATUS "Using bundled Abseil from 3rdParty/abseil-cpp")
 endif()
 
-# 添加Eigen3线性代数库
-find_package(Eigen3 REQUIRED)
-if(Eigen3_FOUND)
-    message(STATUS "Found Eigen3: ${Eigen3_VERSION}")
+# 添加 Eigen3 线性代数库（随工程分发，避免两平台版本差异）
+# 必要性：zrcs_rt 的 MoveCurve / CartesianRobot 用到 Eigen 5 才有的 canonicalEulerAngles，
+# 而 Ubuntu 22.04 的 apt 只提供 Eigen 3.4（其 eulerAngles 不保证规范形，不能直接替换）。
+# 故统一使用 3rdParty/eigen。纯头文件库，无需 add_subdirectory。
+# 导出 Eigen3::Eigen 目标名，既有引用（zrcs_rt / test）无需改动。
+set(ZRCS_EIGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/eigen")
+if(NOT EXISTS "${ZRCS_EIGEN_DIR}/Eigen/Core")
+    message(FATAL_ERROR
+        "Bundled Eigen not found at ${ZRCS_EIGEN_DIR}.\n"
+        "Please run: cd 3rdParty && git clone --depth 1 --branch 5.0.0 https://gitlab.com/libeigen/eigen.git eigen")
 endif()
+add_library(zrcs_eigen INTERFACE)
+add_library(Eigen3::Eigen ALIAS zrcs_eigen)
+target_include_directories(zrcs_eigen INTERFACE ${ZRCS_EIGEN_DIR})
+# Eigen 作为三方库，其头文件告警不应污染工程自身的告警输出
+set_property(TARGET zrcs_eigen APPEND PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${ZRCS_EIGEN_DIR})
+target_compile_features(zrcs_eigen INTERFACE cxx_std_17)
+message(STATUS "Using bundled Eigen3 from ${ZRCS_EIGEN_DIR}")
 
 # 添加 BehaviorTree.CPP（zrcsnrt 核心依赖，所有模式都需要）
 # 注意：这些 BUILD_* 为通用缓存变量，故置于本文件末尾，避免影响上方其他库
