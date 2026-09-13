@@ -52,15 +52,6 @@ target_link_libraries(test_cartesian_rtcp PRIVATE
     tinyxml2
 )
 
-add_executable(test_status_store
-    test_status_store.cpp
-    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/status/StatusStore.cpp
-)
-target_include_directories(test_status_store PRIVATE
-    ${DEVEL_INCLUDE_DIRS}/zrcs_nrt
-)
-target_link_libraries(test_status_store PRIVATE atomic)
-
 add_executable(test_motion_preprocessing
     test_motion_preprocessing.cpp
     ${DEVEL_INCLUDE_DIRS}/zrcs_nrt/algorithm/path_planning/TrajectoryGeometry.cpp
