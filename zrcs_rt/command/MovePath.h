@@ -20,7 +20,7 @@ private:
     std::vector<int> axisIds_;
     RobotModel* model_ = nullptr;
     int dof_ = 0;
-    bool modelInited_ = false;
+    bool prepared_ = false;
     bool rtcp5Axis_ = false;
     bool jointTargetValid_ = false;
 
@@ -56,4 +56,5 @@ protected:
 
 public:
     MovePath();
+    bool prepare() override;
 };

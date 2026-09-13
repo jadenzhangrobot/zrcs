@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ZRCS MuJoCo binding for the GARMI dual Panda model. -->
+<mujocoConfig model="mujoco/garmi/assets/xml/garmi.xml"
+              timestepMs="2.0"
+              substeps="1"
+              kinematicOnly="true">
+  <!-- Two seven-axis Panda arms and both fingers of each gripper. -->
+  <servo slaveId="0" joint="left_joint1" kp="230" kd="2.7"/>
+  <servo slaveId="1" joint="left_joint2" kp="230" kd="2.7"/>
+  <servo slaveId="2" joint="left_joint3" kp="190" kd="2.2"/>
+  <servo slaveId="3" joint="left_joint4" kp="190" kd="2.2"/>
+  <servo slaveId="4" joint="left_joint5" kp="30" kd="1.5"/>
+  <servo slaveId="5" joint="left_joint6" kp="30" kd="1.5"/>
+  <servo slaveId="6" joint="left_joint7" kp="30" kd="1.5"/>
+  <servo slaveId="7" joint="left_finger_joint1" kp="120" kd="2"/>
+  <servo slaveId="16" joint="left_finger_joint2" kp="120" kd="2"/>
+  <servo slaveId="8" joint="right_joint1" kp="230" kd="2.7"/>
+  <servo slaveId="9" joint="right_joint2" kp="230" kd="2.7"/>
+  <servo slaveId="10" joint="right_joint3" kp="190" kd="2.2"/>
+  <servo slaveId="11" joint="right_joint4" kp="190" kd="2.2"/>
+  <servo slaveId="12" joint="right_joint5" kp="30" kd="1.5"/>
+  <servo slaveId="13" joint="right_joint6" kp="30" kd="1.5"/>
+  <servo slaveId="14" joint="right_joint7" kp="30" kd="1.5"/>
+  <servo slaveId="15" joint="right_finger_joint1" kp="120" kd="2"/>
+  <servo slaveId="17" joint="right_finger_joint2" kp="120" kd="2"/>
+  <!-- Mobile base wheels and two-axis head. -->
+  <servo slaveId="18" joint="garmi_base_joint_left" kp="20" kd="1"/>
+  <servo slaveId="19" joint="garmi_base_joint_right" kp="20" kd="1"/>
+  <servo slaveId="20" joint="garmi_head_joint1" kp="20" kd="1"/>
+  <servo slaveId="21" joint="garmi_head_joint2" kp="20" kd="1"/>
+</mujocoConfig>

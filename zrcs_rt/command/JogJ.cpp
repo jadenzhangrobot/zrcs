@@ -44,4 +44,4 @@ bool JogJ::initTrajectory()
     return true;
 }
 
-CMD_REGISTER(JogJ);
+REGISTERCMD(JogJ);

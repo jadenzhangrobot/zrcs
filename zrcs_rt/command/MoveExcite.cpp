@@ -63,8 +63,41 @@ MoveExcite::MoveExcite()
     phases_ = {0.0, 1.3, 2.1, 0.7, 2.8};
 }
 
+bool MoveExcite::prepare()
+{
+    if (prepared_)
+    {
+        return true;
+    }
+    if (!controller_)
+    {
+        ERROR_PRINT("MoveExcite: controller is unavailable during prepare\n");
+        return false;
+    }
+    for (size_t i = 0; i < controller_->axes_.size(); ++i)
+    {
+        if (!controller_->axes_[i])
+        {
+            ERROR_PRINT("MoveExcite: axis %zu is unavailable during prepare\n", i);
+            return false;
+        }
+    }
+
+    const size_t axisCapacity = controller_->axes_.size();
+    selectedAxisIds_.reserve(axisCapacity);
+    axes_.reserve(axisCapacity);
+    prepared_ = true;
+    return true;
+}
+
 bool MoveExcite::init()
 {
+    if (!prepared_ || !command_)
+    {
+        ERROR_PRINT("MoveExcite: command or prepared resources are unavailable\n");
+        return false;
+    }
+
     requestedAxisId_ =
         static_cast<int>(command_->args[static_cast<size_t>(MoveExciteArg::AxisId)]);
     durationSec_ = argOrDefault(command_, MoveExciteArg::Duration, 20.0);
@@ -111,25 +144,24 @@ bool MoveExcite::init()
     const double accScale = argOrDefault(command_, MoveExciteArg::AccScale, 0.5);
 
     const int axisCount = static_cast<int>(controller_->axes_.size());
-    std::vector<int> axisIds;
+    selectedAxisIds_.clear();
     if (requestedAxisId_ >= 0) {
         if (requestedAxisId_ >= axisCount) {
             ERROR_PRINT("MoveExcite: axis %d out of range\n", requestedAxisId_);
             return false;
         }
-        axisIds.push_back(requestedAxisId_);
+        selectedAxisIds_.push_back(requestedAxisId_);
     } else {
         int exciteCount = -requestedAxisId_;
         if (exciteCount <= 0 || exciteCount > axisCount) {
             exciteCount = axisCount;
         }
-        axisIds.reserve(static_cast<size_t>(exciteCount));
         for (int axisId = 0; axisId < exciteCount; ++axisId) {
-            axisIds.push_back(axisId);
+            selectedAxisIds_.push_back(axisId);
         }
     }
 
-    if (axisIds.empty()) {
+    if (selectedAxisIds_.empty()) {
         ERROR_PRINT("MoveExcite: no axis selected\n");
         return false;
     }
@@ -150,10 +182,9 @@ bool MoveExcite::init()
 
         bool retry = false;
         axes_.clear();
-        axes_.reserve(axisIds.size());
 
-        for (size_t i = 0; i < axisIds.size(); ++i) {
-            const int axisId = axisIds[i];
+        for (size_t i = 0; i < selectedAxisIds_.size(); ++i) {
+            const int axisId = selectedAxisIds_[i];
             auto* axis = controller_->axes_[axisId].get();
             AxisState state{};
             const double lower = axis->getNegativeLimit();
@@ -227,7 +258,7 @@ bool MoveExcite::init()
         }
     }
 
-    if (axes_.size() != axisIds.size()) {
+    if (axes_.size() != selectedAxisIds_.size()) {
         ERROR_PRINT("MoveExcite: failed to create safe excitation for all axes\n");
         return false;
     }
@@ -354,4 +385,4 @@ void MoveExcite::publishCommand(bool valid)
     zrcs::lfl_write(rtProcess_->sharedBlock()->mujocoIdentCommand, data);
 }
 
-CMD_REGISTER(MoveExcite);
+REGISTERCMD(MoveExcite);

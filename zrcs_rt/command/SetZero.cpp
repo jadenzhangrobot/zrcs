@@ -46,4 +46,4 @@ bool SetZero::exit()
     return true;
 }
 
-CMD_REGISTER(SetZero);
+REGISTERCMD(SetZero);

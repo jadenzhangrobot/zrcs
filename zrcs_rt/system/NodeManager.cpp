@@ -39,9 +39,6 @@ void NodeManager::run()
 
     initData();
 
-    // 初始化完成后切换到 RUN，允许命令调度开始工作。
-    shm()->taskSched.store(zrcs::TaskScheduling::RUN, std::memory_order_release);
-
     try {
             // 使用和 HardwareFactory 相同的项目解析规则加载 model.xml。
             // axis/servo 配置已经在控制器创建时被消费，这里只负责把运动学模型
@@ -63,6 +60,25 @@ void NodeManager::run()
     {
            WARN_PRINT("模型配置加载失败: %s, 继续运行(无运动学)\n", e.what());
     }
+
+    // Bind and prepare commands before entering the real-time task.
+    // prepare() owns command resource allocation before the RT task starts.
+    for (size_t i = 1; i < static_cast<size_t>(CmdId::SENTINEL); ++i)
+    {
+        auto node = factory_.getNodePtr(static_cast<CmdId>(i));
+        if (!node)
+            continue;
+
+        node->registered(controller_.get(), rtProcess_.get(), nullptr);
+        node->modelRegistry_ = &modelRegistry_;
+        if (!node->prepare())
+        {
+            WARN_PRINT("Command prepare failed: %s(id=%zu)\n", node->nodeName_, i);
+        }
+    }
+
+    // Expose RUN only after non-real-time command preparation has completed.
+    shm()->taskSched.store(zrcs::TaskScheduling::RUN, std::memory_order_release);
 
     // 启动线程前先注册 RT 回调，保证第一次周期执行时策略函数已经有效。
     controller_->rtos_->real_task([this]()

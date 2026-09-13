@@ -91,7 +91,7 @@ private:
 
 ### 2.2 源文件写法
 
-`.cpp` 中实现命令逻辑，并在文件底部使用 `CMD_REGISTER(MyCommand)` 注册到 `NodeFactory`
+`.cpp` 中实现命令逻辑，并在文件底部使用 `REGISTERCMD(MyCommand)` 注册到 `NodeFactory`
 
 示例：
 
@@ -114,7 +114,7 @@ void MyCommand::exit()
 {
 }
 
-CMD_REGISTER(MyCommand);
+REGISTERCMD(MyCommand);
 ```
 
 说明：
@@ -186,7 +186,7 @@ SENTINEL = 61
 为什么这一步必须做：
 
 - `NodeManager.cpp` 会包含 `command/CmdHead.h`
-- 该头文件的作用之一是触发各命令 `CMD_REGISTER(...)` 的静态注册
+- 该头文件的作用之一是触发各命令 `REGISTERCMD(...)` 的静态注册
 - 如果没加到这里，RT 运行时就可能报：
 
 ```text
@@ -453,7 +453,7 @@ Unknown command 'MyCommand', not registered in cmdNameToId
 
 或者漏写了：
 
-- `CMD_REGISTER(MyCommand);`
+- `REGISTERCMD(MyCommand);`
 
 ### 8.5 查看命令执行结果
 
@@ -471,7 +471,7 @@ RT 执行后会更新共享内存中的：
 - 已新增 `zrcs_rt/command/MyCommand.h`
 - 已新增 `zrcs_rt/command/MyCommand.cpp`
 - 头文件中已写 `CMD_DEFINE(...)`
-- 源文件底部已写 `CMD_REGISTER(MyCommand);`
+- 源文件底部已写 `REGISTERCMD(MyCommand);`
 - `nodeName_` 与命令名一致
 - `zrcs_rt/system/CmdIds.h` 已加入枚举项
 - `zrcs_rt/system/CmdIds.h` 已加入 `cmdIdToName()` 表项
@@ -491,7 +491,7 @@ RT 执行后会更新共享内存中的：
 
 1. 是否在 `CmdIds.h` 中加入了该命令名和 ID
 2. 是否在 `CmdHead.h` 中加入了该命令头文件
-3. `.cpp` 底部是否写了 `CMD_REGISTER(YourCommand);`
+3. `.cpp` 底部是否写了 `REGISTERCMD(YourCommand);`
 4. 命令名字符串是否完全一致，包括大小写
 
 ### 问题：NRT 提示 `Unknown command`

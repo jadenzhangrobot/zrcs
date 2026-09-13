@@ -55,4 +55,4 @@ bool Enable::exit()
     return true;
 }
 
-CMD_REGISTER(Enable);
+REGISTERCMD(Enable);

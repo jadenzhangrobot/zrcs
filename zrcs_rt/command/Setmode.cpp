@@ -43,4 +43,4 @@ bool Setmode::exit()
     return true;
 }
 
-CMD_REGISTER(Setmode);
+REGISTERCMD(Setmode);

@@ -76,5 +76,4 @@ public:
   bool exit()override{ return true; }
 };
 
-CMD_REGISTER(MoveSine);
-
+REGISTERCMD(MoveSine);

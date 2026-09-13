@@ -17,8 +17,12 @@ class MoveC : public zrcsSystem::TrajectoryCmd
 {
 
 private:
-    int dof_;
+    int dof_{0};
+    bool prepared_{false};
+    RobotModel* model_{nullptr};
     std::vector<int> axisIds_;
+    Eigen::VectorXd currentJoint_;
+    Eigen::VectorXd targetJoint_;
 
     Eigen::Vector3d center_;
     Eigen::Vector3d axis_;
@@ -38,5 +42,6 @@ protected:
 
 public:
     MoveC();
+    bool prepare() override;
     zrcsSystem::RunResult run() override;
 };

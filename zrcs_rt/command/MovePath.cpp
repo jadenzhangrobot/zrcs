@@ -12,13 +12,6 @@
 MovePath::MovePath()
 {
     std::strcpy(nodeName_, "MovePath");
-    axisIds_.reserve(zrcs::kAxisMax);
-    if (!otg_)
-    {
-        otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
-        input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
-        output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
-    }
 }
 
 Eigen::Vector3d MovePath::evaluateArc(double u) const
@@ -57,6 +50,55 @@ bool isXyzacModel(const RobotModel& model)
 }
 
 } // namespace
+
+bool MovePath::prepare()
+{
+    if (prepared_)
+    {
+        return true;
+    }
+    if (!controller_ || !modelRegistry_)
+    {
+        ERROR_PRINT("MovePath: controller/model registry is unavailable during prepare\n");
+        return false;
+    }
+
+    model_ = modelRegistry_->getModel(0);
+    if (!model_)
+    {
+        ERROR_PRINT("MovePath: model id=0 not found during prepare\n");
+        return false;
+    }
+
+    axisIds_ = model_->getAxisIds();
+    dof_ = model_->getDof();
+    if (axisIds_.size() < 3 || dof_ != static_cast<int>(axisIds_.size()))
+    {
+        ERROR_PRINT("MovePath: invalid model DOF or axis mapping\n");
+        return false;
+    }
+    for (int i = 0; i < dof_; ++i)
+    {
+        const int axisId = axisIds_[static_cast<size_t>(i)];
+        if (axisId < 0 || axisId >= static_cast<int>(controller_->axes_.size()) ||
+            !controller_->axes_[axisId])
+        {
+            ERROR_PRINT("MovePath: axis id=%d is out of range during prepare\n", axisId);
+            return false;
+        }
+    }
+
+    rtcp5Axis_ = isXyzacModel(*model_);
+    ikSeed_.resize(dof_);
+    targetJoint_.resize(dof_);
+    lastJointTarget_.resize(dof_);
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(1, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(1);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(1);
+    input_->min_velocity = std::vector<double>{0.0};
+    prepared_ = true;
+    return true;
+}
 
 bool MovePath::initializeRtcp()
 {
@@ -146,37 +188,10 @@ bool MovePath::solveRtcp(const Eigen::Vector3d& pos, double u)
 
 bool MovePath::initTrajectory()
 {
-    if (!modelInited_)
+    if (!prepared_ || !command_ || !model_ || !otg_ || !input_ || !output_)
     {
-        auto* registry = modelRegistry_;
-        if (!registry)
-        {
-            ERROR_PRINT("MovePath: model registry is not initialized\n");
-            return false;
-        }
-        model_ = registry->getModel(0);
-        if (!model_)
-        {
-            ERROR_PRINT("MovePath: model id=0 not found\n");
-            return false;
-        }
-        axisIds_ = model_->getAxisIds();
-        if (axisIds_.size() < 3)
-        {
-            ERROR_PRINT("MovePath: model must expose at least 3 axes\n");
-            return false;
-        }
-        dof_ = model_->getDof();
-        if (dof_ != static_cast<int>(axisIds_.size()))
-        {
-            ERROR_PRINT("MovePath: model DOF does not match its axis map\n");
-            return false;
-        }
-        rtcp5Axis_ = isXyzacModel(*model_);
-        ikSeed_.resize(dof_);
-        targetJoint_.resize(dof_);
-        lastJointTarget_.resize(dof_);
-        modelInited_ = true;
+        ERROR_PRINT("MovePath: command or prepared resources are unavailable\n");
+        return false;
     }
 
     const bool sync = command_->args[static_cast<size_t>(MovePathArg::Sync)] == 1.0;
@@ -286,7 +301,6 @@ bool MovePath::initTrajectory()
     input_->target_velocity[0] = targetVel;
     input_->target_acceleration[0] = targetAcc;
     input_->max_velocity[0] = maxVel;
-    input_->min_velocity = std::vector<double>{0.0};
     input_->max_acceleration[0] = maxAccel;
     input_->max_jerk[0] = maxJerk;
 
@@ -323,4 +337,4 @@ bool MovePath::applyOutput()
     return true;
 }
 
-CMD_REGISTER(MovePath);
+REGISTERCMD(MovePath);

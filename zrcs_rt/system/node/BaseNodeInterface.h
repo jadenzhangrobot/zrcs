@@ -132,6 +132,11 @@ public:
     CmdNode() : cmdStatus_(CmdStatus::INIT) {}
     virtual ~CmdNode() = default;
 
+    /// Called once before the real-time task starts. Override this hook to
+    /// allocate command-owned resources or cache configuration needed by
+    /// init() and run().
+    virtual bool prepare() { return true; }
+
     /// Called once when the node first becomes active.  Set up trajectory.
     virtual bool init() = 0;
 

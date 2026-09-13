@@ -2,7 +2,7 @@
  * @file NodeFactory.h
  * @brief Node factory and static-registration helpers.
  *
- * Command, output, and input nodes are registered via macros (CMD_REGISTER,
+ * Command, output, and input nodes are registered via macros (REGISTERCMD,
  * REGISTEROUTPUT, REGISTERINPUT) that write shared_ptr instances into
  * function-local static pending lists.  At construction, the NodeFactory
  * drains those lists into its internal registries.
@@ -14,7 +14,6 @@
 
 #include <array>
 #include <memory>
-#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -153,42 +152,19 @@ public:
 } // namespace zrcsSystem
 
 // ===========================================================================
-// Free helpers and registration macros
+// Registration macros
 // ===========================================================================
 
 /**
- * @brief Resolve a command name to its CmdId; throws on failure.
+ * @def REGISTERCMD(className)
+ * @brief Register a CmdNode subclass using the same-named CmdId enumerator.
  *
- * Used by CMD_REGISTER to map the class name (via magic_enum) to a CmdId.
- *
- * @param name Command name (== class name by convention).
- * @return Corresponding CmdId.
- * @throws std::logic_error if the name is unknown.
+ * The class and CmdId naming convention is checked by the compiler: for
+ * example, REGISTERCMD(MoveV) binds MoveV to CmdId::MoveV.
  */
-inline CmdId resolveCmdIdOrThrow(std::string_view name)
-{
-    const auto cmdId = ::cmdNameToId(name);
-    if (!cmdId.has_value()) {
-        throw std::logic_error("Unknown command name in CMD_REGISTER");
-    }
-    return *cmdId;
-}
-
-/**
- * @def CMD_REGISTER(className)
- * @brief Register a CmdNode subclass.  The class name is used as the
- *        command name and resolved to a CmdId via magic_enum.
- */
-#define CMD_REGISTER(className) \
+#define REGISTERCMD(className) \
     static zrcsSystem::RegisterNodeById<class className> register##className( \
-        ::resolveCmdIdOrThrow(#className));
-
-/**
- * @def REGISTERCMD(className, id)
- * @brief Legacy alias for CMD_REGISTER.  The second parameter is ignored;
- *        CmdId is always resolved from the class name.
- */
-#define REGISTERCMD(className, id) CMD_REGISTER(className)
+        CmdId::className);
 
 /**
  * @def REGISTEROUTPUT(className)

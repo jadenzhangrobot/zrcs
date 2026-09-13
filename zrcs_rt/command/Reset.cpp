@@ -62,4 +62,4 @@ bool Reset::exit()
     return true;
 }
 
-CMD_REGISTER(Reset);
+REGISTERCMD(Reset);

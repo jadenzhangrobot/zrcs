@@ -116,4 +116,4 @@ bool MoveLGalvo::applyOutput()
         return true;
  }
 
-CMD_REGISTER(MoveLGalvo);
+REGISTERCMD(MoveLGalvo);

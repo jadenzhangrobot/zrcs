@@ -7,6 +7,7 @@
 #include "model/ModelFactory.h"
 #include "model/RobotModel.h"
 #include <memory>
+#include <vector>
 #include <Eigen/Dense>
 #include <ruckig/ruckig.hpp>
 
@@ -16,8 +17,12 @@ class MoveJ : public zrcsSystem::TrajectoryCmd
 {
 
 private:
-    int dof_;
+    int dof_{0};
+    bool prepared_{false};
+    RobotModel* model_{nullptr};
     std::vector<int> axisIds_;
+    Eigen::VectorXd currentJoint_;
+    Eigen::VectorXd targetJoint_;
 
 protected:
     bool initTrajectory() override;
@@ -27,4 +32,5 @@ protected:
 
 public:
     MoveJ();
+    bool prepare() override;
 };

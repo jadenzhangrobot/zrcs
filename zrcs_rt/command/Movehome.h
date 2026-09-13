@@ -14,6 +14,7 @@ class Movehome : public zrcsSystem::TrajectoryCmd
 
 private:
     int dof_;
+    bool prepared_{false};
 
 protected:
     bool initTrajectory() override;
@@ -23,4 +24,5 @@ protected:
 
 public:
     Movehome();
+    bool prepare() override;
 };

@@ -213,6 +213,7 @@ receiveData
 - `MoveC`
 - `Movehome`
 - `MoveLGalvo`
+- `MoveV`（关节速度控制，参数为 `[count,v1,...,vN]`）
 - `JogJ`
 - `JogabsJ`
 - `ContinuousJog`
@@ -232,6 +233,7 @@ receiveData
 - 圆弧插补 `MoveC`
 - 回零 `Movehome`
 - 连续点动 `ContinuousJog`
+- 多轴速度控制 `MoveV`（Ruckig 速度接口，非零目标持续运行）
 - 平台 + 振镜联动 `MoveLGalvo`
 - Ruckig jerk-limited 轨迹生成
 - 基本轴状态机、软限位、方向限制、多驱同步误差检查

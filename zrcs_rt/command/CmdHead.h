@@ -20,6 +20,7 @@
 #include "command/MoveL.h"
 #include "command/MoveLGalvo.h"
 #include "command/MovePath.h"
+#include "command/MoveV.h"
 #include "command/Movehome.h"
 #include "command/Reset.h"
 

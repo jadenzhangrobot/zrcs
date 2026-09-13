@@ -1,35 +1,71 @@
 /*
- * @Description: 笛卡尔目�?关节路径PTP运动（ABB MoveJ）�?经IK解算
+ * @Description: Cartesian target joint-space PTP motion (ABB MoveJ style).
  */
 #include "command/MoveJ.h"
 
 #include <cmath>
 
-MoveJ::MoveJ() : dof_(0) {
+MoveJ::MoveJ()
+{
     std::strcpy(nodeName_, "MoveJ");
-    axisIds_.reserve(zrcs::kAxisMax);
-    // Ruckig 在 initTrajectory 中按实际 DOF 延迟创建（构造函数中 dof_ 未知）
 }
 
+bool MoveJ::prepare()
+{
+    if (prepared_)
+    {
+        return true;
+    }
+    if (!controller_ || !modelRegistry_)
+    {
+        ERROR_PRINT("MoveJ: controller/model registry is unavailable during prepare\n");
+        return false;
+    }
+
+    model_ = modelRegistry_->getModel(0);
+    if (!model_)
+    {
+        ERROR_PRINT("MoveJ: model id=0 not found during prepare\n");
+        return false;
+    }
+
+    dof_ = model_->getDof();
+    axisIds_ = model_->getAxisIds();
+    if (dof_ <= 0 || axisIds_.size() != static_cast<size_t>(dof_))
+    {
+        ERROR_PRINT("MoveJ: invalid model DOF or axis mapping\n");
+        return false;
+    }
+    for (int i = 0; i < dof_; ++i)
+    {
+        const int axisId = axisIds_[static_cast<size_t>(i)];
+        if (axisId < 0 || axisId >= static_cast<int>(controller_->axes_.size()) ||
+            !controller_->axes_[axisId])
+        {
+            ERROR_PRINT("MoveJ: axis id=%d is out of range during prepare\n", axisId);
+            return false;
+        }
+    }
+
+    currentJoint_.resize(dof_);
+    targetJoint_.resize(dof_);
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+    prepared_ = true;
+    return true;
+}
 
 bool MoveJ::initTrajectory()
 {
-    auto* registry = modelRegistry_;
-    if (!registry) { ERROR_PRINT("MoveJ: 模型注册表未初始化\n"); return false;}
-    RobotModel* model = registry->getModel(0);
-    if (!model) { ERROR_PRINT("MoveJ: 未找到模型(id=0)\n"); return false;}
-
-    if (axisIds_.empty())
+    if (!prepared_ || !command_ || !model_ || !otg_ || !input_ || !output_)
     {
-        dof_ = model->getDof();
-        axisIds_ = model->getAxisIds();     // const ref → copy into pre-reserved buffer, zero realloc
-        otg_   = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
-        input_  = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
-        output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+        ERROR_PRINT("MoveJ: command or prepared resources are unavailable\n");
+        return false;
     }
+    otg_->reset();
 
-    // 构建目标位姿
-    Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
+    const Eigen::Matrix4d targetPose = RobotModel::poseFromXYZRPY(
         command_->args[static_cast<size_t>(MoveJArg::X)],
         command_->args[static_cast<size_t>(MoveJArg::Y)],
         command_->args[static_cast<size_t>(MoveJArg::Z)],
@@ -37,54 +73,50 @@ bool MoveJ::initTrajectory()
         command_->args[static_cast<size_t>(MoveJArg::RY)],
         command_->args[static_cast<size_t>(MoveJArg::RZ)]);
 
-    // 当前关节位置
-    Eigen::VectorXd currentJoint(dof_);
-    for (int i = 0; i < dof_; i++)
+    for (int i = 0; i < dof_; ++i)
     {
-        currentJoint(i) = controller_->axes_[axisIds_[i]]->actualPos();
+        currentJoint_(i) = controller_->axes_[axisIds_[i]]->actualPos();
     }
 
-    // 逆运动学求解
-    Eigen::VectorXd targetJoint(dof_);
-    if (!model->inverseKinematics(targetPose, currentJoint, targetJoint))
+    if (!model_->inverseKinematics(targetPose, currentJoint_, targetJoint_))
     {
-        ERROR_PRINT("MoveJ: IK 求解失败 target=(%.4f,%.4f,%.4f; %.4f,%.4f,%.4f)\n",
-                    targetPose(0,3), targetPose(1,3), targetPose(2,3),
+        ERROR_PRINT("MoveJ: IK failed for target=(%.4f,%.4f,%.4f; %.4f,%.4f,%.4f)\n",
+                    targetPose(0, 3), targetPose(1, 3), targetPose(2, 3),
                     command_->args[static_cast<size_t>(MoveJArg::RX)],
                     command_->args[static_cast<size_t>(MoveJArg::RY)],
                     command_->args[static_cast<size_t>(MoveJArg::RZ)]);
         return false;
     }
 
-    // IK 模型有自己的几何限位，控制器仍必须按运行时 axis.xml 做最后一道
-    // 防线。这样即使模型参数或行为树端口配置错误，也不会把越界目标交给
-    // 软限位钳制后继续执行下一条 MoveL。
     for (int i = 0; i < dof_; ++i)
     {
         const int axisId = axisIds_[i];
         const double lower = controller_->axes_[axisId]->getNegativeLimit();
         const double upper = controller_->axes_[axisId]->getPositiveLimit();
-        if (!std::isfinite(targetJoint(i)) || targetJoint(i) < lower - 1e-8 ||
-            targetJoint(i) > upper + 1e-8)
+        if (!std::isfinite(targetJoint_(i)) || targetJoint_(i) < lower - 1e-8 ||
+            targetJoint_(i) > upper + 1e-8)
         {
-            ERROR_PRINT("MoveJ: axis%d IK 目标 %.6f 超出限位 [%.6f, %.6f]\n",
-                        axisId, targetJoint(i), lower, upper);
+            ERROR_PRINT("MoveJ: axis%d IK target %.6f exceeds [%.6f, %.6f]\n",
+                        axisId, targetJoint_(i), lower, upper);
             return false;
         }
     }
 
     double velScale = command_->args[static_cast<size_t>(MoveJArg::Vel)];
-    if (velScale <= 0) velScale = 1.0;
-
-    for (int i = 0; i < dof_; i++)
+    if (velScale <= 0.0)
     {
-        int axisId = axisIds_[i];
-        input_->current_position[i] = currentJoint(i);
-        input_->current_velocity[i] = 0;
-        input_->current_acceleration[i] = 0;
-        input_->target_position[i] = targetJoint(i);
-        input_->target_velocity[i] = 0;
-        input_->target_acceleration[i] = 0;
+        velScale = 1.0;
+    }
+
+    for (int i = 0; i < dof_; ++i)
+    {
+        const int axisId = axisIds_[i];
+        input_->current_position[i] = currentJoint_(i);
+        input_->current_velocity[i] = 0.0;
+        input_->current_acceleration[i] = 0.0;
+        input_->target_position[i] = targetJoint_(i);
+        input_->target_velocity[i] = 0.0;
+        input_->target_acceleration[i] = 0.0;
         input_->max_velocity[i] = controller_->axes_[axisId]->getMaxVelocity() * velScale;
         input_->max_acceleration[i] = controller_->axes_[axisId]->getMaxAcceleration();
         input_->max_jerk[i] = controller_->axes_[axisId]->getMaxJerk();
@@ -94,11 +126,11 @@ bool MoveJ::initTrajectory()
 
 bool MoveJ::applyOutput()
 {
-    for (int i = 0; i < dof_; i++)
+    for (int i = 0; i < dof_; ++i)
     {
         controller_->axes_[axisIds_[i]]->setAxisPositionCmd(output_->new_position[i]);
     }
     return true;
 }
 
-CMD_REGISTER(MoveJ);
+REGISTERCMD(MoveJ);

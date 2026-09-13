@@ -97,6 +97,13 @@ struct MujocoSimulation::Impl {
             throw std::runtime_error("Failed to allocate MuJoCo inverse data");
         }
 
+        // Projects may provide a named initial keyframe.  Loading the first
+        // keyframe here makes the simulator start from the model's declared
+        // home posture instead of silently falling back to qpos == 0.
+        if (model->nkey > 0) {
+            mj_resetDataKeyframe(model, data.get(), 0);
+        }
+
         model->opt.timestep = (config.timestepMs * 0.001) /
                               static_cast<double>(config.substeps);
 

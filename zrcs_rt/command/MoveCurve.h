@@ -19,7 +19,7 @@ private:
     static constexpr size_t kArcLutSize = 64;
 
     std::vector<int> axisIds_;
-    bool modelInited_ = false;
+    bool prepared_ = false;
 
     double coeff_[3][4] = {};
     Eigen::Quaterniond startQuat_;
@@ -38,4 +38,5 @@ protected:
 
 public:
     MoveCurve();
+    bool prepare() override;
 };

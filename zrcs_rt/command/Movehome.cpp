@@ -5,9 +5,18 @@
 
 Movehome::Movehome() : dof_(0) { std::strcpy(nodeName_, "Movehome"); }
 
-
-bool Movehome::initTrajectory()
+bool Movehome::prepare()
 {
+    if (prepared_)
+    {
+        return true;
+    }
+    if (!controller_)
+    {
+        ERROR_PRINT("Movehome: controller is unavailable during prepare\n");
+        return false;
+    }
+
     dof_ = static_cast<int>(controller_->axes_.size());
     if (dof_ <= 0)
     {
@@ -15,9 +24,30 @@ bool Movehome::initTrajectory()
         return false;
     }
 
+    for (int i = 0; i < dof_; ++i)
+    {
+        if (!controller_->axes_[static_cast<size_t>(i)])
+        {
+            ERROR_PRINT("Movehome: axis %d is unavailable during prepare\n", i);
+            return false;
+        }
+    }
+
     otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
     input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
     output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+    prepared_ = true;
+    return true;
+}
+
+bool Movehome::initTrajectory()
+{
+    if (!prepared_ || !otg_ || !input_ || !output_)
+    {
+        ERROR_PRINT("Movehome: prepared resources are unavailable\n");
+        return false;
+    }
+    otg_->reset();
 
     for (int i = 0; i < dof_; i++)
     {
@@ -43,4 +73,4 @@ bool Movehome::applyOutput()
     return true;
 }
 
-CMD_REGISTER(Movehome);
+REGISTERCMD(Movehome);

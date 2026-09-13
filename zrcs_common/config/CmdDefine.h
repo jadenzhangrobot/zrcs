@@ -25,7 +25,8 @@ enum CmdId      {
     MoveCurve    = 15,
     MovePath     = 16,
     MoveExcite   = 17,
-    SENTINEL     = 18
+    MoveV        = 18,
+    SENTINEL     = 19
 };
 
 enum class EnableArg : std::size_t { AxisId = 0 };
@@ -37,6 +38,8 @@ enum class JogabsJArg : std::size_t { AxisId = 0, TargetPosition };
 enum class JogJArg : std::size_t { AxisId = 0, TargetPosition };
 enum class MoveAbsArg : std::size_t { AxisId = 0, Position, Vel, Acc, Jerk };
 enum class MoveAbsJArg : std::size_t { Count = 0, J1, J2, J3, J4, J5, J6 };
+// MoveV uses [Count, V1, ..., VN], where N is the model DOF.
+enum class MoveVArg : std::size_t { Count = 0, V1, V2, V3, V4, V5, V6 };
 enum class MoveJArg : std::size_t { X = 0, Y, Z, RX, RY, RZ, Vel };
 enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, TargetVel, Sync};
 enum class MoveCArg : std::size_t { ViaX = 0, ViaY, ViaZ, EndX, EndY, EndZ, Vel };
@@ -121,7 +124,8 @@ enum class MoveExciteArg : std::size_t {
     X(MoveLGalvo, MoveLGalvoArg)     \
     X(MoveCurve,  MoveCurveArg)      \
     X(MovePath,   MovePathArg)       \
-    X(MoveExcite, MoveExciteArg)
+    X(MoveExcite, MoveExciteArg)     \
+    X(MoveV,      MoveVArg)
 
 // 表条目数必须与 CmdId 可用值数量（INVALID 与 SENTINEL 之间）一致，
 // 漏加/多加表行会在编译期报错，防止表与枚举失步。

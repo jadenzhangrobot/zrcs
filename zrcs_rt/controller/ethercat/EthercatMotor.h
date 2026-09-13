@@ -21,6 +21,25 @@ class EthercatMotor:public Servo
         int32_t velocity_;      // 当前速度
         int32_t lastVelocity_;      // 上个周期速度
         int32_t acceleration_;  // 当前加速度
+
+        // CiA402 目标状态: 只有 enable()/disable() 能改; runCycle() 据此推进状态机,
+        // 无请求(Hold)时保持现状, 禁止后台自行使能。
+        enum class EnableCmd : uint8_t { Hold = 0, Enable, Disable };
+        EnableCmd enableCmd_{EnableCmd::Hold};
+        // 故障复位边沿锁存: 每个故障事件只发一次 Fault Reset(0x80), 不每周期重发。
+        bool faultResetSent_{false};
+
+        // CiA402 状态字(按掩码解析)。用枚举表达, 主逻辑 switch 更清爽。
+        enum class DriveState : uint16_t {
+            Fault             = 0x08,   // 驱动器故障
+            SwitchOnDisabled  = 0x40,   // 只上了控制电
+            ReadyToSwitchOn   = 0x21,   // 允许加主电
+            SwitchedOn        = 0x27,   // 已通电, 未使能
+            OperationEnabled  = 0x23,   // 可运行(真正的"已使能")
+            Unknown           = 0xFFFF, // 过渡态/未识别
+        };
+
+       
      public:
 	    EthercatMaster* ethercatMaster;
         int slaveId;
@@ -129,60 +148,53 @@ class EthercatMotor:public Servo
          }
 		bool enable(void) override
 		{
-			    auto status_word = statusWord();
-                if ((status_word & 0x6F) == 0x23) 
-				{								
-					setControlWord(std::uint16_t(0x0F));							
-					return true;
-				}
-
-				return false;
+			enableCmd_ = EnableCmd::Enable;
+			return (statusWord() & 0x6F) == 0x23;   // 是否已处于 Operation Enabled
 		}
 		bool disable(void) override
 		{
-			auto status_word = statusWord();
-			if ((status_word & 0x6F) == 0x27) 
-			{								
-				setControlWord(std::uint16_t(0x07));						
-				return true;
-			}
-
-			return false;
+			enableCmd_ = EnableCmd::Disable;
+			return (statusWord() & 0x6F) != 0x23;   // 是否已退出 Operation Enabled
 		}
+        
 
-		bool getState()
+        DriveState getState(std::uint16_t status_word)
+        {
+            if ((status_word & 0x4F) == 0x08) return DriveState::Fault;
+            if ((status_word & 0x4F) == 0x40) return DriveState::SwitchOnDisabled;
+            if ((status_word & 0x6F) == 0x21) return DriveState::ReadyToSwitchOn;
+            if ((status_word & 0x6F) == 0x27) return DriveState::SwitchedOn;
+            if ((status_word & 0x6F) == 0x23) return DriveState::OperationEnabled;
+            return DriveState::Unknown;
+        }
+		/// 驱动器是否已真正可运行(Operation Enabled)。
+		bool isEnabled()
 		{
-			  auto status_word = statusWord();
-			  if ((status_word & 0x6F) == 0x27)
-			  {
-				  return true;
-			  }
-			  return false;
+			return getState(statusWord()) == DriveState::OperationEnabled;
+		}
+		bool isDisabled()
+		{
+			return getState(statusWord()) == DriveState::SwitchedOn;
 		}
         void  runCycle() override
-		{           
-			auto status_word = statusWord();
+		{
+			// 每拍只读一次状态字: 两次 EC 读之间状态可能已变化,
+			// 而且省掉一次无谓的 PDO 读。
+			const DriveState state = getState(statusWord());
 
-
-			 if ((status_word & 0x4F) == 0x40) 
+			if (state == DriveState::SwitchOnDisabled)
 			{
-						
+				// 0x06 Shutdown: 0x40 -> 0x21
 				setControlWord(std::uint16_t(0x06));
-			
 			}
-			
-			else if ((status_word & 0x6F) == 0x21) 
+			else if (state == DriveState::ReadyToSwitchOn)
 			{
-				
-				
 				setControlWord(std::uint16_t(0x07));
-				
 			}
-			// else if ((status_word & 0x4F) == 0x08) 
-			// {
-			//   setControlWord(std::uint16_t(0x80));
-		    // }        
-		}          
+			// 注意: SwitchedOn(0x27) 还需下发 EnableOperation(0x0F) 才能进入
+			// OperationEnabled(0x23); 缺这一步 enable() 永远不会返回 true。
+		}
+
 };
 }
 

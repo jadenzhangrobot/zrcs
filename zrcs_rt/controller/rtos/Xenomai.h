@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <exception>
 #include <utility>
 
 namespace ZrcsHardware {
@@ -142,20 +141,9 @@ private:
 
             if (self->strategy_ != nullptr)
             {
-                try
-                {
-                    self->strategy_();
-                }
-                catch (const std::exception& e)
-                {
-                    ERROR_PRINT("RT control loop exception: %s\n", e.what());
-                    self->running_.store(false, std::memory_order_release);
-                }
-                catch (...)
-                {
-                    ERROR_PRINT("RT control loop unknown exception\n");
-                    self->running_.store(false, std::memory_order_release);
-                }
+                // RT 循环内不允许异常处理（realtime 规范 1.1）。
+                // 控制链代码必须保证不抛异常；若违背将快速失败（std::terminate）。
+                self->strategy_();
             }
         }
     }

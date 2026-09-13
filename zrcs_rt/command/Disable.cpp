@@ -58,4 +58,4 @@ bool Disable::exit()
     return true;
 }
 
-CMD_REGISTER(Disable);
+REGISTERCMD(Disable);

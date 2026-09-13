@@ -112,6 +112,13 @@ target_link_libraries(test_zmq_comm PRIVATE
     cppzmq
 )
 
+# Live integration client. It sends motion only when invoked with --execute.
+add_executable(test_move_v_command_client test_move_v_command_client.cpp)
+target_link_libraries(test_move_v_command_client PRIVATE
+    zrcs::proto
+    cppzmq
+)
+
 # Windows 线程 sleep_until 周期/抖动测量（仿真选型用，无 zrcs 依赖）
 add_executable(test_windows_thread_period test_windows_thread_period.cpp)
 if(WIN32)

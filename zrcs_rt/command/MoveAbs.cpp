@@ -44,4 +44,4 @@ input_->current_position[0] = controller_->axes_[axisId_]->actualPos();
     return true;
 }
 
-CMD_REGISTER(MoveAbs);
+REGISTERCMD(MoveAbs);

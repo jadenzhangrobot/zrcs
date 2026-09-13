@@ -3,11 +3,21 @@
  */
 #include "command/MoveabsJ.h"
 
+#include <cmath>
+
 MoveAbsJ::MoveAbsJ() : dof_(0) { std::strcpy(nodeName_, "MoveAbsJ"); }
 
-
-bool MoveAbsJ::initTrajectory()
+bool MoveAbsJ::prepare()
 {
+    if (prepared_)
+    {
+        return true;
+    }
+    if (!controller_)
+    {
+        ERROR_PRINT("MoveAbsJ: controller is unavailable during prepare\n");
+        return false;
+    }
     auto* registry = modelRegistry_;
     if (!registry)
     {
@@ -21,21 +31,60 @@ bool MoveAbsJ::initTrajectory()
         return false;
     }
 
-    dof_ = static_cast<int>(command_->args[static_cast<size_t>(MoveAbsJArg::Count)]);
-    if (dof_ <= 0) dof_ = model->getDof();
+    preparedDof_ = model->getDof();
     axisIds_ = model->getAxisIds();
+    if (preparedDof_ <= 0 || axisIds_.size() != static_cast<size_t>(preparedDof_))
+    {
+        ERROR_PRINT("MoveAbsJ: invalid model DOF or axis mapping\n");
+        return false;
+    }
+    for (int i = 0; i < preparedDof_; ++i)
+    {
+        const int axisId = axisIds_[static_cast<size_t>(i)];
+        if (axisId < 0 || axisId >= static_cast<int>(controller_->axes_.size()) ||
+            !controller_->axes_[axisId])
+        {
+            ERROR_PRINT("MoveAbsJ: axis id=%d is out of range during prepare\n", axisId);
+            return false;
+        }
+    }
 
-    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(dof_, cycletime * 0.001);
-    input_ = std::make_unique<InputParameter<DynamicDOFs>>(dof_);
-    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(dof_);
+    otg_ = std::make_unique<Ruckig<DynamicDOFs>>(preparedDof_, cycletime * 0.001);
+    input_ = std::make_unique<InputParameter<DynamicDOFs>>(preparedDof_);
+    output_ = std::make_unique<OutputParameter<DynamicDOFs>>(preparedDof_);
+    prepared_ = true;
+    return true;
+}
 
-    for (int i = 0; i < dof_; i++)
+bool MoveAbsJ::initTrajectory()
+{
+    if (!prepared_ || !command_ || !otg_ || !input_ || !output_)
+    {
+        ERROR_PRINT("MoveAbsJ: prepared resources are unavailable\n");
+        return false;
+    }
+
+    const double countValue = command_->args[static_cast<size_t>(MoveAbsJArg::Count)];
+    if (!std::isfinite(countValue) || countValue < 0.0 ||
+        std::floor(countValue) != countValue || countValue > preparedDof_)
+    {
+        ERROR_PRINT("MoveAbsJ: invalid Count %.6f for model DOF=%d\n",
+                    countValue, preparedDof_);
+        return false;
+    }
+    dof_ = countValue == 0.0 ? preparedDof_ : static_cast<int>(countValue);
+    otg_->reset();
+
+    for (int i = 0; i < preparedDof_; i++)
     {
         int axisId = axisIds_[i];
+        input_->enabled[static_cast<size_t>(i)] = i < dof_;
         input_->current_position[i] = controller_->axes_[axisId]->actualPos();
         input_->current_velocity[i] = 0;
         input_->current_acceleration[i] = 0;
-        input_->target_position[i] = command_->args[static_cast<size_t>(MoveAbsJArg::J1) + i];
+        input_->target_position[i] = i < dof_
+            ? command_->args[static_cast<size_t>(MoveAbsJArg::J1) + i]
+            : input_->current_position[i];
         input_->target_velocity[i] = 0;
         input_->target_acceleration[i] = 0;
         input_->max_velocity[i] = controller_->axes_[axisId]->getMaxVelocity();
@@ -54,4 +103,4 @@ bool MoveAbsJ::applyOutput()
     return true;
 }
 
-CMD_REGISTER(MoveAbsJ);
+REGISTERCMD(MoveAbsJ);

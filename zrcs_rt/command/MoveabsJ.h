@@ -16,6 +16,8 @@ class MoveAbsJ : public zrcsSystem::TrajectoryCmd
 
 private:
     int dof_;
+    int preparedDof_{0};
+    bool prepared_{false};
     std::vector<int> axisIds_;
 
 protected:
@@ -26,4 +28,5 @@ protected:
 
 public:
     MoveAbsJ();
+    bool prepare() override;
 };

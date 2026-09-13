@@ -11,6 +11,7 @@ class MoveExcite : public zrcsSystem::CmdNode {
 public:
     MoveExcite();
 
+    bool prepare() override;
     bool init() override;
     zrcsSystem::RunResult run() override;
     bool exit() override;
@@ -50,5 +51,7 @@ private:
     uint64_t commandSeq_ = 0;
     std::array<double, kTermCount> frequencies_{};
     std::array<double, kTermCount> phases_{};
+    bool prepared_ = false;
+    std::vector<int> selectedAxisIds_;
     std::vector<AxisState> axes_;
 };
