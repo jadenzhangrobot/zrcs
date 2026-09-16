@@ -126,11 +126,11 @@ bool Axis::cmdsProcessing(double frequency)
 
 ### 3.2 错误状态传播
 
-当检测到错误时，将轴状态设为 `mcErrorStop`，停止后续指令下发：
+当检测到错误时，将轴状态设为 `Axis::AxisState::ErrorStop`，停止后续指令下发：
 
 ```cpp
 if (!it->cmdsProcessing(1000.0 / cycletime)) {
-    it->setAxisState(mcErrorStop);
+    it->setAxisState(Axis::AxisState::ErrorStop);
     continue;  // 跳过本轴指令下发
 }
 it->updateMotionCmdsToServo();
@@ -251,7 +251,7 @@ sendData()             ← 向伺服发送指令
 | 局部变量 | camelCase | `rawPosCmd`, `velCmd` |
 | 函数/方法 | camelCase | `cmdsProcessing()`, `statusSync()` |
 | 常量/宏 | UPPER_SNAKE_CASE | `AXISMAXCOUNT`, `cycletime`, `MC_ERRORCODE_GOOD` |
-| 枚举值 | camelCase 前缀 | `mcStandstill`, `mcErrorStop` |
+| 枚举值 | 类内嵌套 + PascalCase | `Axis::AxisState::ErrorStop`, `Servo::ServoState::Fault` |
 | 命名空间 | PascalCase 或 camelCase | `ZrcsHardware`, `zrcsSystem` |
 
 ### 7.2 头文件

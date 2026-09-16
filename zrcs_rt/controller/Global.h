@@ -85,56 +85,6 @@ typedef enum {
   mcServoControlModeVelocity = 1,
   mcServoControlModeTorque = 2,
 } MC_SERVO_CONTROL_MODE;
-/**
- * Axis states
- */
-typedef enum {
-  /**
-   * The state ‘Disabled’ describes the initial state of the axis.
-   * In this state the movement of the axis is not influenced by the FBs. Power
-   * is off and there is no error
-   * in the axis.
-   * If the MC_Power FB is called with ‘Enable’=TRUE while being in ‘Disabled’,
-   * the state changes to
-   * ‘Standstill’. The axis feedback is operational before entering the state
-   * ‘Standstill’.
-   * Calling MC_Power with ‘Enable’=FALSE in any state except ‘ErrorStop’
-   * transfers the axis to the
-   * state ‘Disabled’, either directly or via any other state. Any on-going
-   * motion commands on the axis are
-   * aborted (‘CommandAborted’).
-   */
-  mcDisabled = 0,
-
-  /**
-   * Power is on, there is no error in the axis, and there are no motion
-   * commands active on the axis.
-   */
-  mcStandstill = 1,
-  mcHoming = 2,              /// Homing
-  mcDiscreteMotion = 3,      /// DiscreteMotion
-  mcContinuousMotion = 4,    /// ContinuousMotion
-  mcSynchronizedMotion = 5,  /// SynchronizedMotion
-  mcStopping = 6,            /// Stopping
-
-  /**
-   * ‘ErrorStop’ is valid as highest priority and applicable in case of an
-   * error. The axis can have either
-   * power enabled or disabled and can be changed via MC_Power. However, as long
-   * as the error is pend-
-   * ing the state remains ‘ErrorStop’.
-   * The intention of the ‘ErrorStop’ state is that the axis goes to a stop, if
-   * possible. There is no further
-   * motion command accepted until a reset has been done from the ‘ErrorStop’
-   * state.
-   * The transition to ‘ErrorStop’ refers to errors from the axis and axis
-   * control, and not from the Function
-   * Block instances. These axis errors may also be reflected in the output of
-   * the Function Blocks ‘FB
-   * instances errors’.
-   */
-  mcErrorStop = 7,
-} MC_AXIS_STATES;
 /* Motion direction */
 typedef enum {
   mcPositiveDirection = 1,

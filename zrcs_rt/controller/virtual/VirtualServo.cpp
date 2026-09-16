@@ -81,11 +81,13 @@ bool virtualServo::writeVal(int index, double value)
 
 bool virtualServo::enable(void)
 {
+    enabled_ = true;
     return true;
 }
 
 bool virtualServo::disable(void)
 {
+    enabled_ = false;
     return true;
 }
 
@@ -94,9 +96,10 @@ bool virtualServo::resetError(void)
     return true;
 }
 
-void virtualServo::runCycle(void)
+Servo::ServoState virtualServo::runCycle(void)
 {
-    // 虚拟实现：运行周期
+    // 虚拟实现：运行周期，状态由使能标志推导
+    return enabled_ ? Servo::ServoState::Enabled : Servo::ServoState::Disabled;
 }
 
 void virtualServo::emergStop(void)

@@ -20,10 +20,20 @@
 namespace ZrcsHardware {
 
 class Servo
-{
+{  
 public:
+    enum class ServoState
+    {
+        Unknown,   // 尚未获取有效状态
+        NotReady,  // 初始化中或未满足运行条件
+        Disabled,  // 未使能
+        Enabled,   // 已使能
+        Stopping,  // 停止处理中
+        Fault      // 故障
+    };
     Servo() = default;
     virtual ~Servo() = default;
+
 
     virtual bool enable();
     virtual bool disable();
@@ -51,10 +61,11 @@ public:
 
     virtual bool readVal(int index, double& value);
     virtual bool writeVal(int index, double value);
-
-    virtual bool resetError();
+      virtual bool resetError();
     virtual void emergStop() = 0;
-    virtual void runCycle() = 0;
+    virtual ServoState runCycle() = 0;
+    virtual bool isEnabled() = 0;
+    virtual bool isDisabled() = 0;
 
 protected:
     int32_t turnsToEncoderCount(double turns) const;
@@ -66,6 +77,20 @@ protected:
 
 class Axis
 {
+public:
+    /// 轴级逻辑状态机（PLCOpen 风格），由周期循环聚合各 servo 状态推导。
+    enum class AxisState
+    {
+        Disabled = 0,  /// 初始状态：未上电、无错误，不响应运动指令
+        Standstill = 1,  /// 已上电、无错误、无运动指令执行中
+        Homing = 2,  /// 回零中
+        DiscreteMotion = 3,  /// 离散运动（到位停止）
+        ContinuousMotion = 4,  /// 连续运动（速度模式）
+        SynchronizedMotion = 5,  /// 同步运动
+        Stopping = 6,  /// 停止处理中
+        ErrorStop = 7  /// 错误停机，最高优先级；需复位后才能恢复
+    };
+
 private:
     AxisPara* config_;
     std::vector<std::unique_ptr<Servo>> servo_;
@@ -81,7 +106,7 @@ private:
     double axisVelCmd_ = 0;
     double lastAxisVelCmd_ = 0;
     double axisTorCmd_ = 0;
-    MC_AXIS_STATES axisState_ = MC_AXIS_STATES::mcDisabled;
+    AxisState axisState_ = AxisState::Disabled;
     MC_ERROR_CODE axisError_ = MC_ERRORCODE_GOOD;
 
     bool powerStatus_ = false;
@@ -122,10 +147,10 @@ public:
     double actualPosCmd();
     double actualVelCmd();
 
-    MC_AXIS_STATES getAxisState(void);
-    MC_ERROR_CODE setAxisState(MC_AXIS_STATES setState);
+    AxisState getAxisState(void);
+    MC_ERROR_CODE setAxisState(AxisState setState);
 
-    MC_ERROR_CODE cyclerun();
+    void cyclerun();
     bool resetError(void);
 
     bool powerOn();

@@ -108,31 +108,24 @@ int32_t Servo::turnsToEncoderCount(double turns) const
     }
 
     // direction: +1 / -1
-    const double signedProduct =
-        product * static_cast<double>(servoConfig_.direction);
+    const double signedProduct =product * static_cast<double>(servoConfig_.direction);
 
     // 在 double 域先饱和到 int32 范围，再 round，避免超大浮点转整数 UB
-    constexpr double kMax =
-        static_cast<double>(std::numeric_limits<int32_t>::max());
-    constexpr double kMin =
-        static_cast<double>(std::numeric_limits<int32_t>::min());
+    constexpr double kMax = static_cast<double>(std::numeric_limits<int32_t>::max());
+    constexpr double kMin =static_cast<double>(std::numeric_limits<int32_t>::min());
     const double limited = std::clamp(signedProduct, kMin, kMax);
-
     return static_cast<int32_t>(std::round(limited));
 }
 
 double Servo::encoderCountToTurns(int32_t encoderCount) const
 {
     // 反馈：counts → 电机侧单位；direction 与指令路径一致
-    const double countsPerUnit =
-        static_cast<double>(servoConfig_.encoderCountPerUnit);
+    const double countsPerUnit = static_cast<double>(servoConfig_.encoderCountPerUnit);
     if (countsPerUnit == 0.0)
     {
         return 0.0;
     }
-    return (static_cast<double>(encoderCount)
-            * static_cast<double>(servoConfig_.direction))
-           / countsPerUnit;
+    return (static_cast<double>(encoderCount) * static_cast<double>(servoConfig_.direction))/ countsPerUnit;
 }
 
 // ── Axis ───────────────────────────────────────────────────────────────────
@@ -153,11 +146,6 @@ Axis::~Axis()
 {
     servo_.clear();
     delete config_;
-}
-
-void Axis::pushServo(std::unique_ptr<Servo> servo)
-{
-    servo_.push_back(std::move(servo));
 }
 
 void Axis::pushServo(std::unique_ptr<Servo> servo, const ServoPara& config)
@@ -490,7 +478,7 @@ void Axis::statusSync()
                 ERROR_PRINT("axis%d: multi-drive sync error posDiff=%.4f, limit=%.4f\n",
                             axisId_, posDiff, config_->maxPosDiff);
                 axisError_ = MC_ERRORCODE_MULTI_DRIVE_SYNC_ERROR;
-                setAxisState(mcErrorStop);
+                setAxisState(AxisState::ErrorStop);
             }
         }
         lastAxisPos = axisPos_;
@@ -522,61 +510,61 @@ double Axis::actualVelCmd()
     return axisVelCmd_;
 }
 
-MC_AXIS_STATES Axis::getAxisState(void)
+Axis::AxisState Axis::getAxisState(void)
 {
     return axisState_;
 }
 
-MC_ERROR_CODE Axis::setAxisState(MC_AXIS_STATES setState)
+MC_ERROR_CODE Axis::setAxisState(Axis::AxisState setState)
 {
     switch (axisState_)
     {
-    case mcStandstill:
-    case mcHoming:
-    case mcDiscreteMotion:
-    case mcContinuousMotion:
-    case mcSynchronizedMotion:
+    case AxisState::Standstill:
+    case AxisState::Homing:
+    case AxisState::DiscreteMotion:
+    case AxisState::ContinuousMotion:
+    case AxisState::SynchronizedMotion:
         switch (setState)
         {
-        case mcDisabled:
-        case mcErrorStop:
+        case AxisState::Disabled:
+        case AxisState::ErrorStop:
             axisState_ = setState;
             return MC_ERRORCODE_GOOD;
         default:
             break;
         }
         break;
-    case mcStopping:
+    case AxisState::Stopping:
         switch (setState)
         {
-        case mcStopping:
-        case mcDisabled:
-        case mcErrorStop:
-        case mcStandstill:
+        case AxisState::Stopping:
+        case AxisState::Disabled:
+        case AxisState::ErrorStop:
+        case AxisState::Standstill:
             axisState_ = setState;
             return MC_ERRORCODE_GOOD;
         default:
             ERROR_PRINT("axis%d: invalid transition Stopping->%d\n", axisId_, setState);
             return MC_ERRORCODE_INVALIDSTATESTIPPING;
         }
-    case mcErrorStop:
+    case AxisState::ErrorStop:
         switch (setState)
         {
-        case mcErrorStop:
-        case mcDisabled:
-        case mcStandstill:
+        case AxisState::ErrorStop:
+        case AxisState::Disabled:
+        case AxisState::Standstill:
             axisState_ = setState;
             return MC_ERRORCODE_GOOD;
         default:
             ERROR_PRINT("axis%d: invalid transition ErrorStop->%d\n", axisId_, setState);
             return MC_ERRORCODE_INVALIDSATATESTOP;
         }
-    case mcDisabled:
+    case AxisState::Disabled:
         switch (setState)
         {
-        case mcDisabled:
-        case mcErrorStop:
-        case mcStandstill:
+        case AxisState::Disabled:
+        case AxisState::ErrorStop:
+        case AxisState::Standstill:
             axisState_ = setState;
             return MC_ERRORCODE_GOOD;
         default:
@@ -589,99 +577,63 @@ MC_ERROR_CODE Axis::setAxisState(MC_AXIS_STATES setState)
     return MC_ERRORCODE_GOOD;
 }
 
-MC_ERROR_CODE Axis::cyclerun()
+void Axis::cyclerun()
 {
+    bool allEnabled = true;
     for (auto& servo : servo_)
     {
-        servo->runCycle();
+        // 周期驱动各伺服，聚合其真实状态推导轴级使能与故障。
+        Servo::ServoState state = servo->runCycle();
+        allEnabled = allEnabled && (state == Servo::ServoState::Enabled);
+        if (state == Servo::ServoState::Fault)
+        {
+            setAxisState(Axis::AxisState::ErrorStop);
+        }
     }
-    return MC_ERRORCODE_GOOD;
+    // 用设备上报的真实使能状态同步轴级上电标志，避免驱动器中途
+    // 掉使能后 powerStatus_ 仍停留在 true 与设备脱节。
+    powerStatus_ = allEnabled;
 }
 
 bool Axis::resetError(void)
 {
-    for (auto& servo : servo_)
+    for (size_t i = 0; i < servo_.size(); i++)
     {
-        if (!servo->resetError())
+        if (!servo_[i]->resetError())
         {
-            ERROR_PRINT("axis%d: servo reset failed\n", axisId_);
+            ERROR_PRINT("axis%d: servo%zu reset failed\n", axisId_, i);
             return false;
         }
     }
-
-    // 软件错误码与 ErrorStop 状态一并清除，否则调度层会立刻再次进入 ERROR_STATE。
-    axisError_ = MC_ERRORCODE_GOOD;
-    if (axisState_ == mcErrorStop)
-    {
-        setAxisState(powerStatus_ ? mcStandstill : mcDisabled);
-    }
-
-    // 恢复软限位方向锁，并把命令对齐到实际位置，清零速度历史，
-    // 避免复位后残留超限命令或虚假 vel_cmd 再次触发保护。
-    enablePositive_ = true;
-    enableNegative_ = true;
-    axisPosCmd_ = actualPos();
-    lastAxisPosCmd_ = axisPosCmd_;
-    lastAxisVelCmd_ = 0.0;
-    axisVelCmd_ = 0.0;
     return true;
 }
 
 bool Axis::powerOn()
 {
-    bool anyEnabled = false;
-    bool anyFailed = false;
-    for (auto& servo : servo_)
+    for (size_t i = 0; i < servo_.size(); i++)
     {
-        if (!servo->enable())
+        if (!servo_[i]->isEnabled())
         {
-            ERROR_PRINT("axis%d: servo enable failed\n", axisId_);
-            anyFailed = true;
-            // 继续尝试使能其余伺服，不提前返回
-        }
-        else
-        {
-            anyEnabled = true;
+            if (!servo_[i]->enable())
+            {
+                ERROR_PRINT("axis%d: servo%zu enable failed\n", axisId_, i);
+                return false;
+            }
         }
     }
-
-    if (!anyEnabled)
-    {
-        // 所有伺服均使能失败
-        powerStatus_ = false;
-        return false;
-    }
-
-    powerStatus_ = true;
-    if (axisState_ == mcDisabled)
-    {
-        setAxisState(mcStandstill);
-    }
-    return !anyFailed;
+    return true;
 }
 
 bool Axis::powerOff()
 {
-    bool anyFailed = false;
     for (size_t i = 0; i < servo_.size(); i++)
     {
         if (!servo_[i]->disable())
         {
             ERROR_PRINT("axis%d: servo%zu disable failed\n", axisId_, i);
-            anyFailed = true;
-            // 继续尝试失能其余伺服，不提前返回
+            return false;
         }
     }
-
-    if (anyFailed)
-    {
-        // 至少有一个伺服失能失败，保守上报轴仍处于使能状态
-        powerStatus_ = true;
-        return false;
-    }
-
-    powerStatus_ = false;
-    setAxisState(mcDisabled);
     return true;
 }
 
@@ -695,6 +647,7 @@ void Axis::setModeOfOperation()
 
 void Axis::setModeOfOperation(Cia402Mode mode)
 {
+
     for (auto& servo : servo_)
     {
         servo->setMode(mode);

@@ -8,24 +8,29 @@ namespace ZrcsHardware {
 
 void Controller::sendData()
 {
-    for (auto& axis : axes_) {
-        if (!axis->cmdsProcessing(1000.0 / cycletime)) {
-            axis->setAxisState(mcErrorStop);
+    for (auto& axis : axes_) 
+    {
+        if (!axis->cmdsProcessing(1000.0 / cycletime))
+        {
+            axis->setAxisState(Axis::AxisState::ErrorStop);
             continue;
         }
         axis->updateMotionCmdsToServo();
     }
-    if (hardwareBus_) {
+    if (hardwareBus_) 
+    {
         hardwareBus_->send();
     }
 }
 
 void Controller::receiveData()
 {
-    if (hardwareBus_) {
+    if (hardwareBus_) 
+    {
         hardwareBus_->receive();
     }
-    for (auto& axis : axes_) {
+    for (auto& axis : axes_) 
+    {
         axis->statusSync();
         axis->cyclerun();
     }

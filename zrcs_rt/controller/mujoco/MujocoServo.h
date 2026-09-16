@@ -37,8 +37,10 @@ public:
     bool writeVal(int index, double value) override;
     bool enable() override;
     bool disable() override;
+    bool isEnabled() override { return enabled_; }
+    bool isDisabled() override { return !enabled_; }
     bool resetError() override;
-    void runCycle() override;
+    Servo::ServoState runCycle() override;
     void emergStop() override;
 
 private:
@@ -46,6 +48,7 @@ private:
     uint32_t slaveId_;
     Cia402Mode mode_ = Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION;
     int32_t torque_ = 0;
+    bool enabled_ = false;
 };
 
 } // namespace ZrcsHardware

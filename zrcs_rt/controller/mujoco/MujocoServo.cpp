@@ -129,6 +129,7 @@ bool MujocoServo::writeVal(int index, double value)
 bool MujocoServo::enable()
 {
     simulation_->setEnabled(slaveId_, true);
+    enabled_ = true;
     return true;
 }
 
@@ -136,6 +137,7 @@ bool MujocoServo::disable()
 {
     simulation_->setEnabled(slaveId_, false);
     simulation_->holdCurrentPosition(slaveId_);
+    enabled_ = false;
     return true;
 }
 
@@ -144,8 +146,9 @@ bool MujocoServo::resetError()
     return true;
 }
 
-void MujocoServo::runCycle()
+Servo::ServoState MujocoServo::runCycle()
 {
+    return enabled_ ? Servo::ServoState::Enabled : Servo::ServoState::Disabled;
 }
 
 void MujocoServo::emergStop()

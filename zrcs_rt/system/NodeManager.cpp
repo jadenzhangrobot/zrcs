@@ -115,7 +115,7 @@ void NodeManager::run()
             for (const auto& axis : controller_->axes_)
             {
                 if (axis->getAxisError() != MC_ERRORCODE_GOOD ||
-                    axis->getAxisState() == mcErrorStop)
+                    axis->getAxisState() == ZrcsHardware::Axis::AxisState::ErrorStop)
                 {
                     return true;
                 }
@@ -132,7 +132,7 @@ void NodeManager::run()
             for (const auto& axis : controller_->axes_)
             {
                 if (axis->getAxisError() != MC_ERRORCODE_GOOD ||
-                    axis->getAxisState() == mcErrorStop)
+                    axis->getAxisState() == ZrcsHardware::Axis::AxisState::ErrorStop)
                 {
                     ERROR_PRINT("%s: axis error code=0x%X state=%d\n",
                                 reason,
