@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   5axis MuJoCo binding
 
@@ -12,10 +13,54 @@
     false/缺省 = 动力学 mj_step（辨识、力控）
     true       = 纯运动学写 qpos（只要可视化跟随）
 -->
-<mujocoConfig model="mujoco/robot.xml" timestepMs="1.0" substeps="1" kinematicOnly="true">
-  <servo slaveId="0" joint="x_slide" kp="800.0" kd="40.0" qposScale="1.0" qposOffset="0.0"/>
-  <servo slaveId="1" joint="y_slide" kp="800.0" kd="40.0" qposScale="1.0" qposOffset="0.0"/>
-  <servo slaveId="2" joint="z_slide" kp="800.0" kd="40.0" qposScale="1.0" qposOffset="0.0"/>
-  <servo slaveId="3" joint="a_hinge" kp="500.0" kd="30.0" qposScale="1.0" qposOffset="0.0"/>
-  <servo slaveId="4" joint="c_hinge" kp="500.0" kd="30.0" qposScale="1.0" qposOffset="0.0"/>
-</mujocoConfig>
+<cereal>
+	<mujocoConfig>
+		<model>mujoco/robot.xml</model>
+		<timestepMs>1</timestepMs>
+		<substeps>1</substeps>
+		<kinematicOnly>true</kinematicOnly>
+		<servos size="dynamic">
+			<value0>
+				<slaveId>0</slaveId>
+				<joint>x_slide</joint>
+				<kp>800</kp>
+				<kd>40</kd>
+				<qposScale>1</qposScale>
+				<qposOffset>0</qposOffset>
+			</value0>
+			<value1>
+				<slaveId>1</slaveId>
+				<joint>y_slide</joint>
+				<kp>800</kp>
+				<kd>40</kd>
+				<qposScale>1</qposScale>
+				<qposOffset>0</qposOffset>
+			</value1>
+			<value2>
+				<slaveId>2</slaveId>
+				<joint>z_slide</joint>
+				<kp>800</kp>
+				<kd>40</kd>
+				<qposScale>1</qposScale>
+				<qposOffset>0</qposOffset>
+			</value2>
+			<value3>
+				<slaveId>3</slaveId>
+				<joint>a_hinge</joint>
+				<kp>500</kp>
+				<kd>30</kd>
+				<qposScale>1</qposScale>
+				<qposOffset>0</qposOffset>
+			</value3>
+			<value4>
+				<slaveId>4</slaveId>
+				<joint>c_hinge</joint>
+				<kp>500</kp>
+				<kd>30</kd>
+				<qposScale>1</qposScale>
+				<qposOffset>0</qposOffset>
+			</value4>
+		</servos>
+	</mujocoConfig>
+</cereal>
+

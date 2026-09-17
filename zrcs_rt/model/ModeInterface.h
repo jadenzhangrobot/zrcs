@@ -12,7 +12,6 @@
 #pragma once
 
 #include "controller/Controller.h"
-#include <controller/ControllerInterface.h>
 #include "model/RobotModel.h"
 #include "shared_memory/ShmLayout.h"
 

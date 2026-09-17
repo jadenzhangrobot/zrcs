@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/Servo.h"
 #include <cstdint>
 #include <iomanip>
 #include <vector>

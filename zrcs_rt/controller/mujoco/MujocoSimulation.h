@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/Global.h"
+#include "controller/Servo.h"
 #include "controller/mujoco/MujocoConfig.h"
 #include "shared_memory/ShmLayout.h"
 

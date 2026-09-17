@@ -6,8 +6,8 @@ endif()
 # 强制所有第三方库生成静态库
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
-#添加tinyxml2库编译
-# 检查 tinyxml2 目录是否存在
+# tinyxml2 只作为 MuJoCo 核心的私有依赖编译（mujoco-main 无条件链接它，
+# 并借 FindOrFetch 命中现有 target 避免联网 fetch）。第一方业务代码不再使用。
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/tinyxml2)
 
 #添加ruckig库编译

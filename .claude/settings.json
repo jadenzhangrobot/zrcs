@@ -46,7 +46,18 @@
       "Bash(rg -n \"maxVel\\\\s*=\\\\s*[0-9]|cornerTol\\\\s*=\\\\s*[0-9]|minSegLen\\\\s*=\\\\s*[0-9]|maxAccel\\\\s*=\\\\s*[0-9]|arcChordTol\\\\s*=\\\\s*[0-9]\" --glob '!**/3rdParty/**' -g '*.{h,cpp,xml}' zrcs_nrt zrcs_rt config)",
       "Bash(rg -n \"mm|m/s|单位|position|Position|step|jog\" zrcs_gui --glob '!**/3rdParty/**' -g '*.{h,cpp}')",
       "Bash(rg -n \"0\\\\.1|100\\\\.0|1e-|maxVel|maxAcc|default\" zrcs_rt/command -g '*.{h,cpp}')",
-      "Bash(rg -n \"kMmToM|kInchToM|/ 1000|\\\\* 1000|/1000|\\\\*1000|0\\\\.001\" --glob '!**/3rdParty/**' -g '*.{h,cpp}' zrcs_nrt zrcs_rt zrcs_gui zrcs_common)"
+      "Bash(rg -n \"kMmToM|kInchToM|/ 1000|\\\\* 1000|/1000|\\\\*1000|0\\\\.001\" --glob '!**/3rdParty/**' -g '*.{h,cpp}' zrcs_nrt zrcs_rt zrcs_gui zrcs_common)",
+      "Bash(g++ -std=c++17 -I zrcs_common -I zrcs_common/config -I 3rdParty/cereal/cereal-master/include -I 3rdParty/tinyxml2 tools/migrate_configs.cpp 3rdParty/tinyxml2/tinyxml2.cpp -o /tmp/migrate_configs.exe)",
+      "Bash(g++ -std=c++17 -D_POSIX_C_SOURCE=200809L -I zrcs_common -I zrcs_common/config -I 3rdParty/cereal/cereal-master/include -I 3rdParty/tinyxml2 tools/migrate_configs.cpp 3rdParty/tinyxml2/tinyxml2.cpp -o /tmp/migrate_configs.exe)",
+      "Bash(cp config/demo/ethercat.xml /tmp/orig_demo_ethercat.xml)",
+      "Bash(cp config/XLeRobot/axis.xml /tmp/orig_xl_axis.xml)",
+      "Bash(/tmp/migrate_configs.exe /e/zrcs-dev)",
+      "Bash(g++ -std=c++17 -I zrcs_common -I zrcs_common/config -I 3rdParty/cereal/cereal-master/include test/test_config_manager.cpp zrcs_common/config/ConfigManager.cpp -o /tmp/test_cfg.exe)",
+      "Bash(/tmp/test_cfg.exe)",
+      "Bash(grep -E \"BUILD_MODE|ZRCS_ENABLE_MUJOCO|CMAKE_GENERATOR:|CMAKE_CXX_COMPILER:\" build/CMakeCache.txt 2>/dev/null; echo \"=== ecrt.h ===\"; find . -name \"ecrt.h\" -not -path \"./build/*\" 2>/dev/null | head; find /d/msys2 /usr -name \"ecrt.h\" 2>/dev/null | head -3)",
+      "Read(//d/msys2/**)",
+      "Bash(g++ -std=c++17 -D_POSIX_C_SOURCE=200809L -I zrcs_rt -I zrcs_common -I zrcs_common/config -I 3rdParty/cereal/cereal-master/include -I /tmp/ecrtstub /tmp/ecrtstub/main.cpp -o /tmp/slavecfgtest.exe)",
+      "Bash(/tmp/slavecfgtest.exe config/demo/ethercat.xml)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -61,7 +61,6 @@ target_link_libraries(zrcs_proto PUBLIC
 set(MOTION_CONTROL_LIBS
     Threads::Threads
     ruckig
-    tinyxml2
     atomic
     zrcs::proto
 )

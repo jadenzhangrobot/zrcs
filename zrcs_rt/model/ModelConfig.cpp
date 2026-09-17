@@ -1,6 +1,6 @@
 #include "model/ModelConfig.h"
 
-#include "config/ConfigSerializer.h"
+#include "config/ModelConfig.h"
 
 #include <stdexcept>
 

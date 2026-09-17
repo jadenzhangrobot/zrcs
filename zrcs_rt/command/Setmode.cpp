@@ -5,6 +5,8 @@
 
 #include "command/Setmode.h"
 
+#include "controller/Servo.h"
+
 bool Setmode::init()
 {
     axisId_ = static_cast<int>(command_->args[static_cast<size_t>(SetmodeArg::AxisId)]);

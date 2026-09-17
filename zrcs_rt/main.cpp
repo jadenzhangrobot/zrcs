@@ -10,7 +10,6 @@
  */
 
 #include "shared_memory/ShmLayout.h"
-#include "controller/ControllerInterface.h"
 #include "system/NodeManager.h"
 #include "system/log/RtLog.h"
 #include "config/ProjectConfig.h"

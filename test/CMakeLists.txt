@@ -11,7 +11,6 @@ include_directories(
     ${DEVEL_INCLUDE_DIRS}/zrcs_common
     ${DEVEL_INCLUDE_DIRS}/zrcs_common/shared_memory
     ${DEVEL_INCLUDE_DIRS}/3rdParty/cereal/cereal-master/include
-    ${DEVEL_INCLUDE_DIRS}/3rdParty/tinyxml2
 )
 
 # SPSC 环形缓冲区单元测试
@@ -23,11 +22,12 @@ add_executable(test_command test_command.cpp)
 target_link_libraries(test_command PRIVATE atomic)
 
 add_executable(test_config_manager test_config_manager.cpp)
-target_link_libraries(test_config_manager PRIVATE zrcscommon tinyxml2)
+target_link_libraries(test_config_manager PRIVATE zrcscommon)
 
 add_executable(test_axis_direction
     test_axis_direction.cpp
-    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/controller/ControllerInterface.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/controller/Axis.cpp
+    ${DEVEL_INCLUDE_DIRS}/zrcs_rt/controller/Servo.cpp
 )
 target_include_directories(test_axis_direction PRIVATE
     ${DEVEL_INCLUDE_DIRS}/zrcs_rt
@@ -49,7 +49,6 @@ target_compile_definitions(test_cartesian_rtcp PRIVATE
 target_link_libraries(test_cartesian_rtcp PRIVATE
     Eigen3::Eigen
     zrcscommon
-    tinyxml2
 )
 
 add_executable(test_motion_preprocessing

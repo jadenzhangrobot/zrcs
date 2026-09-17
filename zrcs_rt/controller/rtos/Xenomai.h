@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/Osal.h"
 #include "controller/ethercat/EthercatMaster.h"
 #include "system/log/RtLog.h"
 

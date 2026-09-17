@@ -17,8 +17,11 @@
 #include <memory>
 #include <vector>
 
-#include "AxisConfig.h"
-#include "ControllerInterface.h"
+#include "Axis.h"
+#include "Config.h"
+#include "Io.h"
+#include "Osal.h"
+#include "HardwareBus.h"
 #include "shared_memory/ShmLayout.h"
 
 namespace ZrcsHardware {

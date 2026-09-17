@@ -267,11 +267,10 @@ ZRCS 采用项目化配置方式。当前激活项目由 `config/project.txt` �
 
 - `3axis`
 - `5axis`
-- `demo`
 - `single-axis`
 - `ur5`
 - `hg-5axis`
-- `galvo-platform`
+- `garmi`
 
 切换项目时，通常只需修改：
 
@@ -546,7 +545,7 @@ bash ./package_installer.sh
 - 共享内存 ABI：`zrcs_common/shared_memory/ShmLayout.h`
 - 命令定义：`zrcs_common/config/CmdDefine.h`
 - RT 调度器：`zrcs_rt/system/NodeManager.cpp`
-- 控制器抽象：`zrcs_rt/controller/ControllerInterface.h`
+- 控制器抽象：`zrcs_rt/controller/`（Axis.h、Servo.h、Osal.h、Io.h、Sensor.h、HardwareBus.h、Controller.h）
 - RT 命令汇总：`zrcs_rt/command/CmdHead.h`
 - NRT 主程序：`zrcs_nrt/main.cpp`
 - ZMQ 服务端：`zrcs_nrt/zmq_server/ZmqServer.h`

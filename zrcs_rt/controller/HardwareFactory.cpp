@@ -152,8 +152,8 @@ std::unique_ptr<Controller> HardwareFactory::createController(const std::string&
     rtos = std::make_shared<xenomai>();
     {
         // REALTIME 模式下，servo.xml 中的 slaveId 必须对应 ethercat.xml 中的
-        // MOTOR 从站。EtherCAT 拓扑仍然只由 tinyxml2 解析，因为它描述的是
-        // 协议/PDO 布局，而不是业务配置。
+        // MOTOR 从站。ethercat.xml 与业务配置一样统一由 cereal 解析，
+        // SlaveConfig 只把它转成 IgH 需要的运行时结构。
         SlaveConfig slaveConfig(configManager.ethercatPath().string());
         std::map<uint32_t, SlaveConfig::SlaveType> slaveTypes;
         for (const auto& slave : slaveConfig.Slaves) {

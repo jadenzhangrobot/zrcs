@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<laserConfig>
-    <laser-1 name="fiber_laser" slaveId="4">
-        <gate moduleIndex="0" bitPos="0"/>
-        <power moduleIndex="0" channel="1" min="0" max="100" unit="percent"/>
-        <frequency moduleIndex="0" channel="2" min="1000" max="200000" unit="Hz"/>
-        <pulseWidth moduleIndex="0" channel="3" min="5" max="500" unit="ns"/>
-    </laser-1>
-</laserConfig>

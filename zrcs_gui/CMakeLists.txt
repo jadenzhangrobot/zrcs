@@ -65,7 +65,6 @@ if(TARGET zrcs_mujoco)
     )
     list(APPEND ZRCS_GUI_EXTRA_LIBS
         zrcs_mujoco
-        tinyxml2
     )
 endif()
 

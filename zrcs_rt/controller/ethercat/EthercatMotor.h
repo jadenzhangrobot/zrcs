@@ -2,7 +2,7 @@
 #pragma once
 
 #include "EthercatMaster.h"
-#include "controller/ControllerInterface.h"
+#include "controller/Servo.h"
 #include <cstdint>
 #include <string>
 #include <sys/types.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/Io.h"
 #include "EthercatMaster.h"
 #include <ecrt.h>
 #include <cstdint>

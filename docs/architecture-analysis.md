@@ -56,9 +56,9 @@ flowchart TD
 
 | Target | Source boundary | Main role | Key dependencies |
 | --- | --- | --- | --- |
-| `zrcscommon` | `zrcs_common` | 配置、共享内存、公共消息 | Boost headers, tinyxml2, cereal, magic_enum |
+| `zrcscommon` | `zrcs_common` | 配置、共享内存、公共消息 | Boost headers, cereal, magic_enum |
 | `zrcsnrt` | `zrcs_nrt` | 上位机命令入口、RT 桥接、状态发布 | zrcscommon, Protobuf, cppzmq, BehaviorTree.CPP, Ruckig |
-| `zrcsrt` | `zrcs_rt` | 实时控制循环、命令节点、硬件/仿真控制 | zrcscommon, Eigen, Ruckig, tinyxml2 |
+| `zrcsrt` | `zrcs_rt` | 实时控制循环、命令节点、硬件/仿真控制 | zrcscommon, Eigen, Ruckig |
 | `zrcsgui` | `zrcs_gui` | 主 GUI、行为树编辑/下发、状态面板 | Qt6, Protobuf, cppzmq, Groot |
 | `motiongui` | `motionGui` | 轻量运动 GUI | Qt6, Protobuf, cppzmq |
 | `test_*` | `test` | SPSC、命令、配置、轴方向、ZMQ 通信测试 | zrcscommon, Protobuf, cppzmq |

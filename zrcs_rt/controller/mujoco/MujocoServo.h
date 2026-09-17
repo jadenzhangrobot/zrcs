@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/Servo.h"
 #include "controller/mujoco/MujocoSimulation.h"
 
 #include <cstdint>

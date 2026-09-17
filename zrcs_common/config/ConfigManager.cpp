@@ -1,7 +1,10 @@
 #include "ConfigManager.h"
+#include "ConfigSerializer.h"
 
 #include <cmath>
 #include <fstream>
+#include <map>
+#include <set>
 #include <stdexcept>
 
 namespace zrcs::config {
@@ -20,12 +23,6 @@ std::string trim(std::string value)
 }
 
 } // namespace
-
-ConfigManager::ConfigManager(const std::string& projectName)
-{
-    // 构造函数复用静态工厂函数，保证两种入口的加载和校验行为完全一致。
-    *this = load(projectName);
-}
 
 ConfigManager ConfigManager::load(const std::string& projectName)
 {
@@ -46,20 +43,6 @@ ConfigManager ConfigManager::load(const std::string& projectName)
 
     manager.validate();
     return manager;
-}
-
-const ServoConfigData* ConfigManager::findServo(uint32_t slaveId) const
-{
-    // 索引在 validate() 中构建，启动阶段查找时不需要线性扫描。
-    const auto it = servoBySlaveId_.find(slaveId);
-    return it == servoBySlaveId_.end() ? nullptr : it->second;
-}
-
-const AxisConfigData* ConfigManager::findAxis(uint32_t axisId) const
-{
-    // 索引在 validate() 中构建。返回 nullptr 让调用方按自己的上下文决定是否致命。
-    const auto it = axisByAxisId_.find(axisId);
-    return it == axisByAxisId_.end() ? nullptr : it->second;
 }
 
 std::filesystem::path ConfigManager::configRoot()
@@ -102,13 +85,15 @@ std::filesystem::path ConfigManager::resolveProjectDir(const std::string& projec
 
 void ConfigManager::validate()
 {
-    servoBySlaveId_.clear();
-    axisByAxisId_.clear();
+    // 这两个局部索引只在本函数内用于唯一性检查与跨文件引用校验；加载完成后
+    // 调用方通过强类型访问接口（axisConfig() 等）读取数据，无需保留成员级索引。
+    std::map<uint32_t, const ServoConfigData*> servoBySlaveId;
+    std::map<uint32_t, const AxisConfigData*> axisByAxisId;
 
     // 伺服 slaveId 必须全局唯一：REALTIME 模式下它一一对应 EtherCAT 从站，
     // 其他模式下它对应虚拟驱动器 ID。
     for (const auto& servo : servoConfig_.servos) {
-        if (!servoBySlaveId_.emplace(servo.slaveId, &servo).second) {
+        if (!servoBySlaveId.emplace(servo.slaveId, &servo).second) {
             throw std::runtime_error("Duplicate servo slaveId: " + std::to_string(servo.slaveId));
         }
         if (servo.encoderCountPerUnit == 0) {
@@ -123,9 +108,14 @@ void ConfigManager::validate()
 
     // axisId 是面向用户和命令层的逻辑轴 ID。一个伺服只能属于一个轴；
     // 如果同一个 slaveId 被多个轴引用，就会出现两个逻辑轴同时命令同一驱动器。
+    // 空轴列表没有运行意义，多半是配置被误改/误删导致——直接拦截比让 RT 带零轴
+    // 启动更安全。
+    if (axisConfig_.axes.empty()) {
+        throw std::runtime_error("axis.xml contains no axes");
+    }
     std::set<uint32_t> usedServoIds;
     for (const auto& axis : axisConfig_.axes) {
-        if (!axisByAxisId_.emplace(axis.axisId, &axis).second) {
+        if (!axisByAxisId.emplace(axis.axisId, &axis).second) {
             throw std::runtime_error("Duplicate axisId: " + std::to_string(axis.axisId));
         }
         if (!std::isfinite(axis.lead) || axis.lead <= 0.0) {
@@ -137,7 +127,7 @@ void ConfigManager::validate()
                                      " does not reference any servo");
         }
         for (const auto slaveId : axis.servoSlaveIds) {
-            if (servoBySlaveId_.find(slaveId) == servoBySlaveId_.end()) {
+            if (servoBySlaveId.find(slaveId) == servoBySlaveId.end()) {
                 throw std::runtime_error("Axis " + std::to_string(axis.axisId) +
                                          " references missing servo slaveId " +
                                          std::to_string(slaveId));
@@ -156,7 +146,7 @@ void ConfigManager::validate()
             throw std::runtime_error("Model " + model.name + " dof does not match joints.size()");
         }
         for (const auto& joint : model.joints) {
-            if (axisByAxisId_.find(static_cast<uint32_t>(joint.axisId)) == axisByAxisId_.end()) {
+            if (axisByAxisId.find(static_cast<uint32_t>(joint.axisId)) == axisByAxisId.end()) {
                 throw std::runtime_error("Model " + model.name +
                                          " references missing axisId " +
                                          std::to_string(joint.axisId));

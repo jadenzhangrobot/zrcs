@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/HardwareBus.h"
 #include "controller/mujoco/MujocoSimulation.h"
 #include "shared_memory/ShmLayout.h"
 

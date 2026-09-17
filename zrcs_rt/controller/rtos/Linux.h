@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "controller/ControllerInterface.h"
+#include "controller/Osal.h"
 
 #include <atomic>
 #include <functional>

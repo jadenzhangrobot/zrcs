@@ -29,7 +29,7 @@
 
 #include <time.h>
 
-#include "controller/ControllerInterface.h"
+#include "controller/HardwareBus.h"
 #include "EthercatParameter.h"
 
 namespace ZrcsHardware {

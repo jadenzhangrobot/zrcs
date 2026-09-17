@@ -1,21 +1,91 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ethercat>
-    <slave-1 ID="0" PID="0x00000005" VID="0x00000083" assignActivate="300" configPdos="true" sync0Cycle="1000000" sync0Shift="300000" type="motor">
-        <syncManager-1 dir="1" idx="0" watchDog="0"/>
-        <syncManager-2 dir="2" idx="1" watchDog="0"/>
-        <syncManager-3 dir="1" idx="2" watchDog="1">
-            <pdo idx="1600">
-                <pdoEntry-1 bitLen="32" idx="607A" name="TargetPosition" subIdx="00"/>
-                <pdoEntry-2 bitLen="8" idx="6060" name="controlMode" subIdx="00"/>
-                <pdoEntry-3 bitLen="16" idx="6040" name="ControlWord" subIdx="00"/>
-            </pdo>
-        </syncManager-3>
-        <syncManager-4 dir="2" idx="3" watchDog="0">
-            <pdo idx="1a00">
-                <pdoEntry-1 bitLen="16" idx="6041" name="StatusWord" subIdx="00"/>
-                <pdoEntry-2 bitLen="32" idx="6064" name="ActualPosition" subIdx="00"/>
-                <pdoEntry-3 bitLen="8" idx="6061" name="dispMode" subIdx="00"/>
-            </pdo>
-        </syncManager-4>
-    </slave-1>
-</ethercat>
+<?xml version="1.0" encoding="utf-8"?>
+<cereal>
+	<ethercatConfig>
+		<slaves size="dynamic">
+			<value0>
+				<slaveId>0</slaveId>
+				<type>motor</type>
+				<vId>131</vId>
+				<pId>5</pId>
+				<assignActivate>768</assignActivate>
+				<sync0Cycle>1000000</sync0Cycle>
+				<sync0Shift>300000</sync0Shift>
+				<syncManagers size="dynamic">
+					<value0>
+						<index>0</index>
+						<direction>1</direction>
+						<watchdog>0</watchdog>
+						<pdos size="dynamic"/>
+					</value0>
+					<value1>
+						<index>1</index>
+						<direction>2</direction>
+						<watchdog>0</watchdog>
+						<pdos size="dynamic"/>
+					</value1>
+					<value2>
+						<index>2</index>
+						<direction>1</direction>
+						<watchdog>1</watchdog>
+						<pdos size="dynamic">
+							<value0>
+								<index>5632</index>
+								<entries size="dynamic">
+									<value0>
+										<index>24698</index>
+										<subIndex>0</subIndex>
+										<bitLength>32</bitLength>
+										<name>TargetPosition</name>
+									</value0>
+									<value1>
+										<index>24672</index>
+										<subIndex>0</subIndex>
+										<bitLength>8</bitLength>
+										<name>controlMode</name>
+									</value1>
+									<value2>
+										<index>24640</index>
+										<subIndex>0</subIndex>
+										<bitLength>16</bitLength>
+										<name>ControlWord</name>
+									</value2>
+								</entries>
+							</value0>
+						</pdos>
+					</value2>
+					<value3>
+						<index>3</index>
+						<direction>2</direction>
+						<watchdog>0</watchdog>
+						<pdos size="dynamic">
+							<value0>
+								<index>6656</index>
+								<entries size="dynamic">
+									<value0>
+										<index>24641</index>
+										<subIndex>0</subIndex>
+										<bitLength>16</bitLength>
+										<name>StatusWord</name>
+									</value0>
+									<value1>
+										<index>24676</index>
+										<subIndex>0</subIndex>
+										<bitLength>32</bitLength>
+										<name>ActualPosition</name>
+									</value1>
+									<value2>
+										<index>24673</index>
+										<subIndex>0</subIndex>
+										<bitLength>8</bitLength>
+										<name>dispMode</name>
+									</value2>
+								</entries>
+							</value0>
+						</pdos>
+					</value3>
+				</syncManagers>
+			</value0>
+		</slaves>
+	</ethercatConfig>
+</cereal>
+
