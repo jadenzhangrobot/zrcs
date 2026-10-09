@@ -38,13 +38,20 @@ void PathSimplifier::collapseCollinearWaypoints(std::vector<Point3D>& points,
 
     // 扫描中间点；每个 i 尝试把 [anchor+1 .. i] 都“挂”到弦 [anchor, i+1] 上
     for (size_t i = 1; i + 1 < points.size(); ++i) {
-        bool collinear = true;
-        for (size_t j = anchor + 1; j <= i; ++j) {
-            if (TrajectoryGeometry::pointLineDistance(points[j], points[anchor], points[i + 1]) >
-                collinearTol) {
+        const Point3D chord = pointSub(points[i + 1], points[anchor]);
+        const double chordLengthSquared = pointDot(chord, chord);
+        // 闭合/退化弦不能吞掉折返；投影必须在弦内且按原路径顺序单调前进。
+        bool collinear = chordLengthSquared > 1e-24;
+        double previousProjection = 0.0;
+        for (size_t j = anchor + 1; collinear && j <= i; ++j) {
+            const double projection = pointDot(pointSub(points[j], points[anchor]), chord);
+            if (projection < previousProjection || projection > chordLengthSquared ||
+                TrajectoryGeometry::pointLineDistance(points[j], points[anchor], points[i + 1]) >
+                    collinearTol) {
                 collinear = false;
                 break;
             }
+            previousProjection = projection;
         }
 
         // 进给变化过大则不能跨段合并（工艺语义）

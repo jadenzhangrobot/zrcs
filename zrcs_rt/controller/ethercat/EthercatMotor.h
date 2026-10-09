@@ -58,13 +58,14 @@ class EthercatMotor:public Servo
             if ((status_word & 0x6F) == 0x27) return DriveState::OperationEnabled;
             return DriveState::Unknown;
         }
-        EthercatMotor(int id, EthercatMaster* master):slaveId(id),ethercatMaster(master)
-        {			   
+        EthercatMotor(int id, EthercatMaster* master, const ServoPara& config)
+            : Servo(config), ethercatMaster(master), slaveId(id)
+        {
 		        ModeOffset=findNumberOutputKey("controlMode");
 				ControlOffset=findNumberOutputKey("ControlWord");
 				TargetposOffset=findNumberOutputKey("TargetPosition");
 				ActualPos=findNumberInputKey("ActualPosition");
-				StatusWord=findNumberInputKey("StatusWord");			
+				StatusWord=findNumberInputKey("StatusWord");
         }
 		~EthercatMotor() = default;
 		
@@ -135,10 +136,10 @@ class EthercatMotor:public Servo
         }
         
 		/// @brief 请求清除驱动器故障(Fault Reset)。
-		///        这里只置位请求, 0x80 由 runCycle() 在 Fault 态下发一拍的上升沿。
+		///        这里只置位请求, 0x80 由 cycleRun() 在 Fault 态下发一拍的上升沿。
 		/// @return 无故障可复位时同样返回 true。返回 false 会让 Axis::resetError()
 		///         提前 return, 连轴的软件错误码都清不掉, 调度层会一直卡在 ERROR_STATE。
-		bool resetError(void) override
+		bool reset(void) override
 		{
 			if (getState(statusWord()) == DriveState::Fault)
 			{
@@ -172,7 +173,7 @@ class EthercatMotor:public Servo
 			return false;
 		}
 
-		/// @brief 请求失能: runCycle() 下一拍开始退出 OperationEnabled
+		/// @brief 请求失能: cycleRun() 下一拍开始退出 OperationEnabled
 		///        (OperationEnabled 先 Shutdown 按斜坡停机, 再退到 ReadyToSwitchOn)。
 		/// @return 是否受理。驱动器本来就处于故障/未上电时失能无意义, 同样算受理。
 		bool disable(void) override
@@ -185,28 +186,7 @@ class EthercatMotor:public Servo
 			return false;
 		}
         
-
-      
-		/// 驱动器实时状态是否已真正可运行(Operation Enabled)。
-		/// 注意与 enable() 的区别: 那是"请求是否受理", 这是驱动器上报的瞬时状态,
-		/// 请求之后要过 2~3 拍才会变成 true。
-		bool isEnabled()
-		{
-			if (getState(statusWord()) == DriveState::OperationEnabled)
-			{
-				return true;
-			}
-			return false;
-		}
-		bool isDisabled()
-		{
-			if (getState(statusWord()) == DriveState::SwitchedOn)
-			{
-				return true;
-			}
-			return false;
-		}
-        Servo::ServoState runCycle() override
+        Servo::ServoState cycleRun() override
 		{
 			// 每拍只读一次状态字: 两次 EC 读之间状态可能已变化,
 			// 而且省掉一次无谓的 PDO 读。

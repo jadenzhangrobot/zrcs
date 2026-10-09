@@ -29,7 +29,6 @@
 
 #include <time.h>
 
-#include "controller/HardwareBus.h"
 #include "EthercatParameter.h"
 
 namespace ZrcsHardware {
@@ -49,7 +48,7 @@ namespace ZrcsHardware {
  *   2. RT 循环中调用 send() / receive()
  *   3. 析构 -> ecrt_release_master() 释放主站
  */
-class EthercatMaster : public HardwareBus {
+class EthercatMaster {
 private:
     static inline ec_master_t* master_ = NULL;                  ///< EtherCAT 主站句柄
     static inline ec_master_state_t master_state_ = {};          ///< 主站状态

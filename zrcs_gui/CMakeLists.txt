@@ -81,6 +81,7 @@ set(SOURCES
     modules/mujoco/MujocoFrameServer.cpp
     modules/behavior_tree/BehaviorTreePanel.cpp
     modules/command/CommandPanel.cpp
+    modules/ethercat/EtherCATPanel.cpp
     ${ZRCS_GUI_EXTRA_SOURCES}
 )
 
@@ -96,6 +97,7 @@ set(HEADERS
     modules/mujoco/MujocoFrameServer.h
     modules/behavior_tree/BehaviorTreePanel.h
     modules/command/CommandPanel.h
+    modules/ethercat/EtherCATPanel.h
 )
 
 # UI文件
@@ -106,6 +108,7 @@ set(UI_FILES
     resources/ui/mujoco_panel.ui
     resources/ui/command_panel.ui
     resources/ui/behavior_tree_panel.ui
+    resources/ui/ethercat_panel.ui
 )
 
 # Application resources embedded into the executable.

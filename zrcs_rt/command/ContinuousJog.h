@@ -15,7 +15,7 @@
 
 using namespace ruckig;
 
-class ContinuousJog : public zrcsSystem::OutputNode
+class ContinuousJog : public zrcsSystem::PeriodicNode
 {
 private:
     Ruckig<1> otg_;

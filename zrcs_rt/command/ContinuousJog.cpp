@@ -126,4 +126,4 @@ void ContinuousJog::run()
     }
 }
 
-REGISTEROUTPUT(ContinuousJog);
+REGISTER_PERIODIC(ContinuousJog, OUTPUT, 80);

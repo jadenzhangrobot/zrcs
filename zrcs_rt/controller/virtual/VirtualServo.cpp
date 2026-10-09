@@ -91,12 +91,12 @@ bool virtualServo::disable(void)
     return true;
 }
 
-bool virtualServo::resetError(void)
+bool virtualServo::reset(void)
 {
     return true;
 }
 
-Servo::ServoState virtualServo::runCycle(void)
+Servo::ServoState virtualServo::cycleRun(void)
 {
     // 虚拟实现：运行周期，状态由使能标志推导
     return enabled_ ? Servo::ServoState::Enabled : Servo::ServoState::Disabled;

@@ -94,10 +94,8 @@ public:
     void setConfL(bool enabled) noexcept;
     void setSingAreaMode(uint8_t mode) noexcept;
 
-    // 10. MoveL / MoveLGalvo 运动限制配置
+    // 10. MoveL 运动限制配置
     void setPathMoveConfig(double maxVel, double maxAccel, double maxJerk) noexcept;
-    void setGalvoConfig(int platXId, int platYId, int galvoXId, int galvoYId,
-                        double cutoffHz) noexcept;
 
     // 11. 诊断
     uint64_t droppedCount() const noexcept;

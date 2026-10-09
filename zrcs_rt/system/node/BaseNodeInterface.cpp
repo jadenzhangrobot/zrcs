@@ -1,7 +1,7 @@
 /**
  * @file BaseNodeInterface.cpp
- * @brief Implementation of the CmdNode, OutputNode, and InputNode state
- *        machine dispatchers.
+ * @brief Implementation of the CmdNode and PeriodicNode state machine
+ *        dispatchers.
  */
 
 #include "system/node/BaseNodeInterface.h"
@@ -65,27 +65,7 @@ void CmdNode::execute()
     
 }
 
-void OutputNode::execute()
-{
-    switch (nodeStatus_.load()) 
-    {
-        case NodeStatus::RTINIT:
-            init();
-            INFO_PRINT("%s 初始化成功\n", nodeName_);
-            nodeStatus_.store(NodeStatus::EXECUTING, std::memory_order_release);
-            break;
-        case NodeStatus::EXECUTING:
-            run();
-            break;
-        case NodeStatus::FAILED:
-            ERROR_PRINT("%s 执行失败\n", nodeName_);
-            break;
-        default:
-            break;
-    }
-}
-
-void InputNode::execute()
+void PeriodicNode::execute()
 {
     switch (nodeStatus_.load()) 
     {

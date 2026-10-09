@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLC 变量在线读写（RT ↔ GUI）实施方案 — zrcs</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+    --fg:#d7dbe3; --muted:#8b93a3; --accent:#4ea1ff; --accent2:#7ee787;
+    --warn:#ffb454; --code-bg:#11141a; --mono:"JetBrains Mono","Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.65;font-size:15px}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 24px 80px}
+  header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:8px}
+  header h1{margin:0 0 6px;font-size:28px;letter-spacing:.5px}
+  header .sub{color:var(--muted);font-size:14px}
+  .tag{display:inline-block;margin-top:12px;padding:3px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:14px;font-size:12px;color:var(--accent)}
+  h2{font-size:20px;margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--border);color:var(--fg)}
+  h3{font-size:16px;margin:22px 0 6px;color:var(--accent)}
+  p{margin:8px 0}
+  code{background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:0 5px;font-family:var(--mono);font-size:13px}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre .c{color:#5b6472}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--fg)}
+  tr:nth-child(even) td{background:var(--panel)}
+  .rec{color:var(--accent2);font-weight:600}
+  .warn{color:var(--warn);font-weight:600}
+  .muted{color:var(--muted)}
+  .box{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:12px 14px;margin:12px 0}
+  .flow{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow:auto;white-space:pre}
+  .step{display:flex;gap:8px;margin:6px 0}
+  .step b{color:var(--accent);min-width:52px}
+  ul{margin:6px 0;padding-left:20px}
+  li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>PLC 变量在线读写（RT ↔ GUI）实施方案</h1>
+  <div class="sub">在 zrcs 实时进程与 GUI 之间打通 PLC 变量（IEC 61131-3）的读取上报与写入下发</div>
+  <span class="tag">方案 · 未实施 · 计划阶段</span>
+  <span class="tag">zrcs_rt / zrcs_nrt / zrcs_gui</span>
+</header>
+
+<h2>1. 背景与目标</h2>
+<p>目前 PLC 由三个周期节点按序接入：<code>PlcInputNode</code>（INPUT）写输入，<code>PlcLogicNode</code>（OUTPUT，order=100）扫描，<code>PlcOutputNode</code>（OUTPUT，order=110）读输出。变量位于生成实例 <code>ZRCS__DEMO</code> 中，<span class="warn">只存在于 RT 进程内</span>，GUI 拿不到、也写不进。本方案后续打通「PlcOutputNode → SHM → ZMQ → GUI」的<b>读取上报</b>，与「GUI → ZMQ → SHM → PlcInputNode」的<b>写入下发</b>两条链路，供在线监控与调参。</p>
+<div class="box"><b>当前状态：方案文档（本文件）。</b>评审通过后按本文分阶段实施。</div>
+
+<h2>2. 现状链路（已探明，可直接复用）</h2>
+<h3>2.1 数据流与现成模板</h3>
+<div class="flow">读（PLC→GUI，现成整链）:
+  RT DataPub ──SHM──▶ RtBridge ──▶ StatusCollector ──▶ StatusPublisher(ZMQ PUB :5556, SystemStatus pb)
+      ──▶ GUI ZmqStatusSubscriber ──▶ Qt 信号 ──▶ 面板
+
+写（GUI→PLC，两条可复用模板）:
+  一次性命令: GUI ZMQClient(REQ:5555) → ZmqServer → CommandRouter → RtBridge.sendCommand → SHM cmdQueue → NodeFactory → CmdNode
+  周期参数 : NRT 生产者 push ──SHM ShmSPSC──▶ RT OutputNode 每周期 pop   (MujocoParamUpdate 同款)
+</div>
+<table>
+<tr><th>环节</th><th>落点（文件）</th></tr>
+<tr><td>RT 生产者模板</td><td><code>zrcs_rt/command/DataPub.cpp</code>（AxisFeedback→SHM）；<code>MujocoIdentPub.cpp</code>（消费参数队列）</td></tr>
+<tr><td>PLC 宿主落点</td><td><code>zrcs_rt/plc/PlcInputNode</code> / <code>PlcLogicNode</code> / <code>PlcOutputNode</code>，通过 <code>PlcProgram.h</code> 共享生成实例</td></tr>
+<tr><td>SHM 布局真相源</td><td><code>zrcs_common/shared_memory/ShmLayout.h</code>（<code>kShmVersion=16</code>、ShmSPSC、LockFreeLatest）</td></tr>
+<tr><td>NRT 读/写桥</td><td><code>zrcs_nrt/rtBridge/RtBridge.cpp/.h</code>（readLatestAxisFeedback/sendCommand）</td></tr>
+<tr><td>NRT 中继</td><td><code>zrcs_nrt/status/StatusCollector/StatusPublisher.cpp</code>；<code>zrcs_nrt/command/CommandRouter.cpp</code></td></tr>
+<tr><td>protobuf</td><td><code>zrcs_common/message/message.proto</code>（SystemStatus/AxisFeedbackFrame…）</td></tr>
+<tr><td>GUI 订阅/下发</td><td><code>zrcs_gui/communication/ZmqStatusSubscriber.cpp</code>、<code>ZmqClient.cpp</code>；<code>core/MainWindow.cpp</code></td></tr>
+<tr><td>GUI 面板模板</td><td><code>AlarmPanel</code>(表格)、<code>JogControlPanel</code>(数值)、<code>CommandPanel</code>(写参)</td></tr>
+</table>
+
+<h2>3. 目标架构</h2>
+<div class="flow">══ 读（PLC 变量→GUI）══
+ PlcOutputNode(scan 后) ──lfl_write──▶ SHM: LockFreeLatest&lt;PlcVariableData&gt; plcVariables (kShmVersion→17)
+   ──▶ NRT RtBridge.readPlcVariables() ──▶ StatusCollector.collect ──▶ SystemStatus.plc_variables
+   ──▶ ZMQ:5556 ──▶ ZmqStatusSubscriber ── emit plcVariablesUpdated ──▶ PlcPanel(表格)
+
+══ 写（GUI→PLC 变量）══
+ PlcPanel(值+按钮) ──▶ ZMQClient.sendCommand(REQ:5555) ──▶ ZmqServer ──▶ CommandRouter
+   ──▶ 新增 plc 写处理 ──push──▶ SHM: ShmSPSC&lt;PlcWriteData,kPlcWriteQueueCap&gt; plcWriteQueue
+   ──▶ RT PlcInputNode.run(scan 前) drain ──写──▶ ZRCS__DEMO 输入字段 ──▶ PlcLogicNode 扫描</div>
+
+<h2>4. 分阶段实施</h2>
+<h3>P1 · 底层通道（RT ↔ SHM）——推荐先做</h3>
+<p>只改 <code>zrcs_common</code> + <code>zrcs_rt</code>，NRT/GUI 可后接。最小可验证闭环。</p>
+<div class="step"><b>1.1</b> <code>ShmLayout.h</code>：新增 <code>struct PlcVariableData</code>（见 §5）、<code>struct PlcWriteData</code>；新增容量常量 <code>kPlcWriteQueueCap=128</code>（2 的幂）；<code>SharedBlock</code> 增 <code>LockFreeLatest&lt;PlcVariableData&gt; plcVariables</code> 与 <code>ShmSPSC&lt;PlcWriteData,kPlcWriteQueueCap&gt; plcWriteQueue</code>；<b><code>kShmVersion 16→17</code></b>。</div>
+<div class="step"><b>1.2</b> <code>PlcOutputNode.cpp</code>：按需把生成实例中要暴露的字段收进 <code>PlcVariableData</code>；<code>PlcInputNode.cpp</code> 在扫描前通过 <code>__SET_VAR</code> 写入允许修改的输入字段。</div>
+<div class="step"><b>1.3</b> 在输入/输出节点的 <code>onRegistered</code> 分别建 <code>ShmSPSCConsumer&lt;PlcWriteData&gt;</code> 与 <code>lfl_write</code> 写端；输入节点扫描前有界消费写队列，输出节点扫描后 <code>lfl_write</code> 读变量。</div>
+<div class="step"><b>1.4</b> 构建 + 烟测（进程内写→读回）。</div>
+
+<h3>P2 · NRT 中继（SHM → ZMQ / ZMQ → SHM）</h3>
+<div class="step"><b>2.1</b> <code>RtBridge</code>：<code>readPlcVariables()</code>(lfl_read)、<code>writePlcVariables(PlcWriteData)</code>(push plcWriteQueue)。</div>
+<div class="step"><b>2.2</b> <code>message.proto</code>：<code>SystemStatus</code> 增 <code>repeated PlcVariable plc_variables</code>（或独立 <code>PlcStatus</code>）；写入侧增 PLC 写消息（并入 <code>TypedCommand</code> oneof 或单独 <code>PlcWriteCommand</code>）。</div>
+<div class="step"><b>2.3</b> <code>StatusCollector/StatusPublisher</code> 采集并序列化 <code>plc_variables</code>；<code>CommandRouter</code> 增写 PLC 处理。</div>
+<div class="step"><b>2.4</b> 全量重编译（SHM ABI 变更），联调 NRT+RT。</div>
+
+<h3>P3 · GUI 面板（zrcs_gui）</h3>
+<div class="step"><b>3.1</b> 新增 <code>zrcs_gui/modules/plc/PlcPanel.{h,cpp}</code>：只读表格抄 <code>AlarmPanel</code>、数值/状态抄 <code>JogControlPanel</code>、写参抄 <code>CommandPanel</code>（QDoubleSpinBox+按钮→信号）。</div>
+<div class="step"><b>3.2</b> <code>resources/ui/main_window.ui</code> 的 <code>mainTabs</code> 加 <code>plcTab</code>；<code>MainWindow.cpp</code> <code>findChild</code>+接线；接收新信号 <code>plcVariablesUpdated</code>，写走 <code>sendMotionCommand/ZMQClient</code>。</div>
+<div class="step"><b>3.3</b> <code>zrcs_gui/CMakeLists.txt</code> 追加 SOURCES/HEADERS/UI_FILES。</div>
+
+<h2>5. 数据定义（P1）</h2>
+<pre><span class="c">// ShmLayout.h（示意，含 PLC 当前 I/O 的固定结构，后续可扩展）</span>
+struct PlcVariableData {
+  uint64_t sequence   = 0;
+  int32    axisCount  = 0;          <span class="c">// 生效轴数</span>
+  double   i_axisPos[8];            <span class="c">// ZRCS__DEMO.I_AXISPOS (LREAL，机床→PLC 实位)</span>
+  uint8_t  i_axisEnabled[8];        <span class="c">// ZRCS__DEMO.I_AXISENABLED</span>
+  uint8_t  q_running;               <span class="c">// ZRCS__DEMO.Q_RUNNING (PLC→机床)</span>
+  uint8_t  q_scanAlive;             <span class="c">// ZRCS__DEMO.Q_SCANALIVE</span>
+};
+struct PlcWriteData {
+  uint64_t seq;
+  uint32_t varId;                  <span class="c">// 与固定结构/变量表对齐的下标</span>
+  double   value;
+  uint8_t  valid;
+};
+<span class="c">// SharedBlock 内新增：</span>
+LockFreeLatest&lt;PlcVariableData, ...&gt; plcVariables;   <span class="c">// 读（RT 写/NRT 读）</span>
+ShmSPSC&lt;PlcWriteData, kPlcWriteQueueCap&gt; plcWriteQueue; <span class="c">// 写（NRT 写/RT 读）</span></pre>
+<div class="box"><b>约束：</b>改动 <code>SharedBlock</code> 尺寸即改 ABI，<code>kShmVersion</code> 必须 <code>16→17</code>，且 RT/NRT/GUI（若直连）需<b>同步重编译</b>。GUI 若走 ZMQ（推荐）则无 ABI 负担。</div>
+
+<h2>6. 决策点（本方案采用推荐值，可调整）</h2>
+<table>
+<tr><th>决策点</th><th>推荐</th><th>备选</th></tr>
+<tr><td>交付范围</td><td class="rec">分阶段：P1 底层通道优先</td><td>一次做全（含 GUI）改动面大</td></tr>
+<tr><td>变量定义方式</td><td class="rec">固定结构 PlcVariableData（先打通现有 I/O）</td><td>通用动态变量表（name/类型/权限，工作量大）</td></tr>
+<tr><td>GUI→PLC 写通道</td><td class="rec">SPSC 写队列 + PlcInputNode 周期 pop（同 MujocoParamUpdate）</td><td>一次性 cmdQueue 命令（args 无类型语义）</td></tr>
+<tr><td>GUI 读数据源</td><td class="rec">ZMQ SystemStatus（与全部现有监控一致）</td><td>GUI 直连 SHM（打破现有约定、背 ABI）</td></tr>
+</table>
+<div class="box"><b>写「PLC 内部变量」的限制：</b>matiec 程序内部 <code>VAR</code>（如 <code>MotionThreshold</code>）不能跨进边界直接写；要让 GUI 可写，须在 <code>.st</code> 里把它声明为 <code>VAR_INPUT</code> 或定位变量，再由桥映射。因此“可写变量集”由 <code>.st</code> 暴露面决定，需在使用时注意/在面板标注。</div>
+
+<h2>7. 关键文件改动清单</h2>
+<table>
+<tr><th>层</th><th>文件</th><th>改动</th></tr>
+<tr><td>common</td><td><code>zrcs_common/shared_memory/ShmLayout.h</code></td><td>PlcVariableData / PlcWriteData、队列与 LFL 字段、kShmVersion 17</td></tr>
+<tr><td>rt</td><td><code>zrcs_rt/plc/PlcInputNode.cpp/.h</code>、<code>PlcOutputNode.cpp/.h</code></td><td>生成实例变量读写、写队列消费、读变量 lfl_write</td></tr>
+<tr><td>nrt</td><td><code>zrcs_nrt/rtBridge/RtBridge.cpp/.h</code></td><td>readPlcVariables / writePlcVariables</td></tr>
+<tr><td>nrt</td><td><code>zrcs_nrt/status/StatusCollector.cpp, StatusPublisher.cpp</code></td><td>采集+序列化 plc_variables</td></tr>
+<tr><td>nrt</td><td><code>zrcs_nrt/command/CommandRouter.cpp</code></td><td>PLC 写路由</td></tr>
+<tr><td>common</td><td><code>zrcs_common/message/message.proto</code></td><td>SystemStatus.plc_variables + 写消息</td></tr>
+<tr><td>gui</td><td><code>zrcs_gui/modules/plc/PlcPanel.{h,cpp}</code> <span class="muted">(新增)</span></td><td>监控表格 + 写参控件</td></tr>
+<tr><td>gui</td><td><code>zrcs_gui/communication/ZmqStatusSubscriber.cpp</code></td><td>解析 plc_variables → emit 信号</td></tr>
+<tr><td>gui</td><td><code>zrcs_gui/resources/ui/main_window.ui</code>, <code>core/MainWindow.cpp</code>, <code>CMakeLists.txt</code></td><td>plcTab 注册与接线、构建清单</td></tr>
+</table>
+
+<h2>8. 风险与约束</h2>
+<ul>
+<li><b>SHM ABI</b>：SharedBlock 变更须 kShmVersion↗17 且全员重编；GUI 走 ZMQ 可规避。</li>
+<li><b>实时合规</b>：写队列 drain 限条数（如每周期 ≤8），lfl_write 为无锁取最新，均符合 realtime 规范（无分配/无阻塞）。</li>
+<li><b>变量暴露边界</b>：可写集取决于 <code>.st</code> 的输入/定位声明，需配套 <code>.st</code> 调整。</li>
+<li><b>测试</b>：按项目记忆不改 <code>test/</code>，只列出对测试的影响；新增通道建议附进程内烟测。</li>
+</ul>
+
+<h2>9. 验证</h2>
+<ul>
+<li><b>P1</b>：进程内置一组写值 → drain → 变量回读一致；时间推进单调。</li>
+<li><b>P2</b>：NRT 收 SystemStatus.plc_variables 与 RT 当前值一致；写消息落地后被 RT 消费。</li>
+<li><b>P3</b>：GUI PlcPanel 周期性显示变量、可写变量并回显；与轴/报警面板并行无冲突。</li>
+<li>全程 <code>cmake --build</code>（UCRT64，PATH 含 MSYS /usr/bin）构建通过。</li>
+</ul>
+
+<footer style="margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);padding-top:12px">
+计划文档（HTML）· zrcs PLC 变量在线读写 · 待评审后实施
+</footer>
+</div>
+</body>
+</html>

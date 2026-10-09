@@ -1,4 +1,5 @@
 #include "core/MainWindow.h"
+#include "ethercat/EtherCATPanel.h"
 #include <QApplication>
 #include <QScreen>
 #include <QDebug>
@@ -61,6 +62,7 @@ MainWindowRefactored::MainWindowRefactored(QWidget *parent)
     }
 
     bindBehaviorTreeClient();
+    bindEthercatClient();
     
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainWindowRefactored::onUpdateTimer);
@@ -224,6 +226,7 @@ void MainWindowRefactored::createSettingsPanel() {}
 void MainWindowRefactored::createAdvancedModules()
 {
     behaviorTreePanel = findChild<BehaviorTreePanel*>("behaviorTreePanel");
+    ethercatPanel = findChild<EtherCATPanel*>("etherCATPanel");
 }
 
 void MainWindowRefactored::createQuickActions()
@@ -281,6 +284,25 @@ void MainWindowRefactored::bindBehaviorTreeClient()
             this, [this]() {
                 if (zmqClient) {
                     zmqClient->sendBTCommand("STOP");
+                }
+            });
+}
+
+void MainWindowRefactored::bindEthercatClient()
+{
+    if (!ethercatPanel || !zmqClient) {
+        return;
+    }
+
+    disconnect(ethercatPanel, &EtherCATPanel::applyEthercatRequested, nullptr, nullptr);
+
+    // EtherCAT 组态下发：作为通用命令 ET_CONFIG 发送(携带 XML 内容)。
+    // 若控制器侧约定使用行为树命令通道，可改为 zmqClient->sendBTCommand("ECAT", xml)。
+    connect(ethercatPanel, &EtherCATPanel::applyEthercatRequested,
+            this, [this](const QString &xml) {
+                if (zmqClient) {
+                    zmqClient->sendCommand("ET_CONFIG", QVector<double>{});
+                    qDebug() << "[MainWindow] EtherCAT config issued, len=" << xml.size();
                 }
             });
 }
@@ -500,6 +522,7 @@ void MainWindowRefactored::onConnectClicked()
                 this, &MainWindowRefactored::onCommandPanelCommandRequested);
     }
     bindBehaviorTreeClient();
+    bindEthercatClient();
 
     zmqClient->connectToServer();
     zmqStatusLabel->setText(QString("ZMQ: 连接中 %1:5555").arg(host));

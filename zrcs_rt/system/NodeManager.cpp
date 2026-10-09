@@ -16,7 +16,6 @@ void NodeManager::run()
     rtProcess_->initialize();
 
     auto* block = shm();
-    controller_->bindSharedBlock(block);
 
     // 构造进程内 SPSC 包装器。它们和 NodeManager 生命周期一致，
     // 因此传出去的指针不会悬空。
@@ -27,12 +26,12 @@ void NodeManager::run()
     // 注册日志生产者，使 INFO_PRINT 等宏可以写入共享内存日志队列。
     zrcs::rtlog::setLogQueue(logProducer_.get());
 
-    for (auto& node : factory_.inPutNodes) 
+    for (auto& node : factory_.inputPeriodics) 
     {
         node->registered(controller_.get(), rtProcess_.get());
     }
 
-    for (auto& node : factory_.outPutNodes)
+    for (auto& node : factory_.outputPeriodics)
     {
         node->registered(controller_.get(), rtProcess_.get());
     }
@@ -47,11 +46,11 @@ void NodeManager::run()
             modelConfig_ = std::make_unique<ModelConfig>((configManager.projectDir() / "model.xml").string());
             modelRegistry_.loadFromConfig(*modelConfig_);
             factory_.modelRegistry = &modelRegistry_;
-            for (auto& node : factory_.inPutNodes)
+            for (auto& node : factory_.inputPeriodics)
             {
                 node->modelRegistry_ = &modelRegistry_;
             }
-            for (auto& node : factory_.outPutNodes) 
+            for (auto& node : factory_.outputPeriodics) 
             {
                 node->modelRegistry_ = &modelRegistry_;
             }
@@ -149,23 +148,10 @@ void NodeManager::run()
             enterErrorStateFromAxisFault("轴故障进入 ERROR_STATE");
         }
 
-        // ---- Input nodes ----------------------------------------------------
-           for (auto& node : factory_.inPutNodes)
-            {
-                if (node->getNodeStatus() == NodeStatus::RTINIT)
-                {
-                    node->init();
-                    node->setNodeStatus(NodeStatus::EXECUTING);
-                }
-                else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-                {
-                    node->execute();
-                }
-                else
-                {
-                    ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
-                }
-            }
+        // ---- Input phase (periodic nodes, Phase::INPUT) -------------------
+        // Runs on every task state (outside the RUN switch), matching prior
+        // behaviour of the input node loop.
+        runPeriodicPhase(factory_.inputPeriodics);
         switch (taskScheduling_)
         {
             case zrcs::TaskScheduling::RUN:
@@ -231,22 +217,10 @@ void NodeManager::run()
                         }
                     }
                 }        
-                for (auto& node : factory_.outPutNodes) 
-                {
-                    if (node->getNodeStatus() == NodeStatus::RTINIT) 
-                    {
-                        node->init();
-                        node->setNodeStatus(NodeStatus::EXECUTING);
-                    } 
-                    else if (node->getNodeStatus() == NodeStatus::EXECUTING)
-                    {
-                        node->execute();
-                    }
-                    else
-                    {
-                        ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
-                    }
-                } 
+                // ---- Output phase (periodic nodes, Phase::OUTPUT) ----------
+                // Runs only within RUN (inside the RUN case), matching prior
+                // behaviour of the output node loop.
+                runPeriodicPhase(factory_.outputPeriodics);
                 break;
             case zrcs::TaskScheduling::ERROR_STATE:
                 abortActiveCommand("ERROR_STATE abort active command");
@@ -316,7 +290,33 @@ void NodeManager::run()
         zrcs::lfl_write(shm()->heartbeat, heartbeat);
     });
 
+    // Sort periodic nodes by execOrder_ (within each phase) once, before the
+    // RT thread starts reading them.  Input phase runs before output phase by
+    // construction; this only fixes their internal relative order.
+    factory_.sortPeriodics();
+
     controller_->rtos_->rtos_task_create();
+}
+
+void NodeManager::runPeriodicPhase(
+    const std::vector<std::shared_ptr<zrcsSystem::PeriodicNode>>& nodes)
+{
+    for (auto& node : nodes)
+    {
+        if (node->getNodeStatus() == NodeStatus::RTINIT)
+        {
+            node->init();
+            node->setNodeStatus(NodeStatus::EXECUTING);
+        }
+        else if (node->getNodeStatus() == NodeStatus::EXECUTING)
+        {
+            node->execute();
+        }
+        else
+        {
+            ERROR_PRINT("%s 执行失败\n", node->getNodeName().c_str());
+        }
+    }
 }
 
 } // namespace zrcsSystem

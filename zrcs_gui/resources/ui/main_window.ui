@@ -266,6 +266,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="ethercatTab">
+       <attribute name="title">
+        <string>EtherCAT 组态</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="ethercatLayout">
+        <item>
+         <widget class="EtherCATPanel" name="etherCATPanel"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -346,6 +356,11 @@
    <class>BehaviorTreePanel</class>
    <extends>QWidget</extends>
    <header>behavior_tree/BehaviorTreePanel.h</header>
+  </customwidget>
+  <customwidget>
+   <class>EtherCATPanel</class>
+   <extends>QWidget</extends>
+   <header>ethercat/EtherCATPanel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -18,7 +18,6 @@
 #include "command/MoveExcite.h"
 #include "command/MoveJ.h"
 #include "command/MoveL.h"
-#include "command/MoveLGalvo.h"
 #include "command/MovePath.h"
 #include "command/MoveV.h"
 #include "command/Movehome.h"
@@ -31,6 +30,6 @@
 // 保留 ID（CMD_RESERVE，未实现，仅占 CmdId 槽位）
 
 
-// OutputNode / InputNode（不走 CmdId 路由）
+// PeriodicNode（长期节点，不走 CmdId 路由）
 #include "command/ContinuousJog.h"
 #include "command/DataPub.h"

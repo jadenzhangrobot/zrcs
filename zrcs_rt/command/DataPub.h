@@ -4,7 +4,7 @@
 #include <memory>
 #include "system/node/NodeFactory.h"  // IWYU pragma: keep — provides REGISTERINPUT macro
 
-class DataPub : public zrcsSystem::InputNode
+class DataPub : public zrcsSystem::PeriodicNode
 {
 public:
     void init() override;

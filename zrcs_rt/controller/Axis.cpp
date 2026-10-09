@@ -28,10 +28,9 @@ Axis::~Axis()
     delete config_;
 }
 
-void Axis::pushServo(std::unique_ptr<Servo> servo, const ServoPara& config)
+void Axis::pushServo(std::unique_ptr<Servo> servo)
 {
-    // 伺服参数注入 Servo 内部，Axis 不再另存一份。
-    servo->setServoConfig(config);
+    // 伺服参数已在构造时注入 Servo 内部，Axis 不再另存一份。
     servo_.push_back(std::move(servo));
 }
 
@@ -390,69 +389,31 @@ double Axis::actualVelCmd()
     return axisVelCmd_;
 }
 
-Axis::AxisState Axis::getAxisState(void)
+Axis::AxisState Axis::getAxisState() const
 {
     return axisState_;
 }
 
 MC_ERROR_CODE Axis::setAxisState(Axis::AxisState setState)
 {
-    switch (axisState_)
-    {
-    case AxisState::Standstill:
-    case AxisState::Homing:
-    case AxisState::DiscreteMotion:
-    case AxisState::ContinuousMotion:
-    case AxisState::Stopping:
-        switch (setState)
-        {
-        case AxisState::Stopping:
-        case AxisState::Disabled:
-        case AxisState::ErrorStop:
-        case AxisState::Standstill:
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-        default:
-            ERROR_PRINT("axis%d: invalid transition Stopping->%d\n", axisId_, setState);
-            return MC_ERRORCODE_INVALIDSTATESTIPPING;
-        }
-    case AxisState::ErrorStop:
-        switch (setState)
-        {
-        case AxisState::ErrorStop:
-        case AxisState::Disabled:
-        case AxisState::Standstill:
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-        default:
-            ERROR_PRINT("axis%d: invalid transition ErrorStop->%d\n", axisId_, setState);
-            return MC_ERRORCODE_INVALIDSATATESTOP;
-        }
-    case AxisState::Disabled:
-        switch (setState)
-        {
-        case AxisState::Disabled:
-        case AxisState::ErrorStop:
-        case AxisState::Standstill:
-            axisState_ = setState;
-            return MC_ERRORCODE_GOOD;
-        default:
-            ERROR_PRINT("axis%d: invalid transition Disabled->%d\n", axisId_, setState);
-            return MC_ERRORCODE_INVALIDSTATEDISABLE;
-        }
-    default:
-        break;
-    }
+    // setAxisState 只记录"请求的目标状态"作为意图（上电/回零/急停/复位等），
+    // 不直接改动当前状态；轴状态由周期循环 cyclerun() 聚合伺服真实反馈派生。
+    requestedState_ = setState;
     return MC_ERRORCODE_GOOD;
 }
 
-void Axis::cyclerun()
+MC_ERROR_CODE Axis::cyclerun()
 {
-    bool allEnabled = true;
+    // 先同步各伺服的实时反馈（实际位置/速度/加速度，含多驱同步误差检查），
+    // 再驱动伺服周期并推进轴状态机；轴状态由真实反馈聚合派生。
+    statusSync();
+
+    bool allEnabled = !servo_.empty();
     for (auto& servo : servo_)
     {
-        // 周期驱动各伺服，聚合其真实状态推导轴级使能与故障。
-        Servo::ServoState state = servo->runCycle();
+        // 周期驱动各伺服，聚合其真实使能状态；驱动器故障作为一次
+        // ErrorStop 请求送入轴自身状态机（由轴状态机裁决，不照搬伺服状态）。
+        Servo::ServoState state = servo->cycleRun();
         allEnabled = allEnabled && (state == Servo::ServoState::Enabled);
         if (state == Servo::ServoState::Fault)
         {
@@ -462,13 +423,65 @@ void Axis::cyclerun()
     // 用设备上报的真实使能状态同步轴级上电标志，避免驱动器中途
     // 掉使能后 powerStatus_ 仍停留在 true 与设备脱节。
     powerStatus_ = allEnabled;
+
+    // ── 轴自身状态机：按 setAxisState 的请求目标经迁移表推进 ──
+    switch (axisState_)
+    {
+    case AxisState::Standstill:
+    case AxisState::Homing:
+    case AxisState::DiscreteMotion:
+    case AxisState::ContinuousMotion:
+    case AxisState::Stopping:
+        // 运行态可接受：停止、掉电、错误停机、回停。
+        if (requestedState_ == AxisState::Stopping ||
+            requestedState_ == AxisState::Disabled ||
+            requestedState_ == AxisState::ErrorStop ||
+            requestedState_ == AxisState::Standstill)
+        {
+            axisState_ = requestedState_;
+        }
+        else
+        {
+            return MC_ERRORCODE_INVALIDSTATESTIPPING;
+        }
+        break;
+    case AxisState::ErrorStop:
+        // 错误停机须先复位，仅接受就地保持、掉电、回停。
+        if (requestedState_ == AxisState::ErrorStop ||
+            requestedState_ == AxisState::Disabled ||
+            requestedState_ == AxisState::Standstill)
+        {
+            axisState_ = requestedState_;
+        }
+        else
+        {
+            return MC_ERRORCODE_INVALIDSATATESTOP;
+        }
+        break;
+    case AxisState::Disabled:
+        // 未上电可接受就地保持、错误停机、上电回停。
+        if (requestedState_ == AxisState::Disabled ||
+            requestedState_ == AxisState::ErrorStop ||
+            requestedState_ == AxisState::Standstill)
+        {
+            axisState_ = requestedState_;
+        }
+        else
+        {
+            return MC_ERRORCODE_INVALIDSTATEDISABLE;
+        }
+        break;
+    default:
+        break;
+    }
+    return MC_ERRORCODE_GOOD;
 }
 
 bool Axis::resetError(void)
 {
     for (size_t i = 0; i < servo_.size(); i++)
     {
-        if (!servo_[i]->resetError())
+        if (!servo_[i]->reset())
         {
             ERROR_PRINT("axis%d: servo%zu reset failed\n", axisId_, i);
             return false;
@@ -482,13 +495,10 @@ bool Axis::powerOn()
 {
     for (size_t i = 0; i < servo_.size(); i++)
     {
-        if (!servo_[i]->isEnabled())
+        if (!servo_[i]->enable())
         {
-            if (!servo_[i]->enable())
-            {
-                ERROR_PRINT("axis%d: servo%zu enable failed\n", axisId_, i);
-                return false;
-            }
+            ERROR_PRINT("axis%d: servo%zu enable failed\n", axisId_, i);
+            return false;
         }
     }
     return true;

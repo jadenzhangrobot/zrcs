@@ -1,0 +1,1295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EtherCATPanelUi</class>
+ <widget class="QWidget" name="etherCATPanel">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>820</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <property name="spacing">
+    <number>4</number>
+   </property>
+   <item>
+    <widget class="QToolBar" name="toolBar">
+     <property name="iconSize">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+     <property name="movable">
+      <bool>false</bool>
+     </property>
+     <addaction name="actionAddDevice"/>
+     <addaction name="actionRemoveDevice"/>
+     <addaction name="actionToolbarSep1"/>
+     <addaction name="actionMoveUp"/>
+     <addaction name="actionMoveDown"/>
+     <addaction name="actionToolbarSep2"/>
+     <addaction name="actionImportEsi"/>
+     <addaction name="actionLoadNetwork"/>
+     <addaction name="actionSaveNetwork"/>
+     <addaction name="actionToolbarSep3"/>
+     <addaction name="actionSendToController"/>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="masterTabs">
+     <property name="documentMode">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="busTab">
+      <attribute name="title">
+       <string>Bus</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="busLayout">
+       <property name="spacing">
+        <number>4</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="interfaceRow">
+         <item>
+          <widget class="QLabel" name="lblInterface">
+           <property name="text">
+            <string>网络接口:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="interfaceCombo">
+           <item>
+            <property name="text">
+             <string>eth0</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>eth1</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnScan">
+           <property name="text">
+            <string>Scan</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="interfaceSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QSplitter" name="busSplitter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QWidget" name="scannedHost">
+          <layout class="QVBoxLayout" name="scannedLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblScanned">
+             <property name="text">
+              <string>扫描设备 (Scanned Devices)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTreeWidget" name="scannedTree">
+             <column>
+              <property name="text">
+               <string>Pos</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>名称</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Vendor</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Product</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="configuredHost">
+          <layout class="QVBoxLayout" name="configuredLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="configuredHeader">
+             <item>
+              <widget class="QLabel" name="lblConfigured">
+               <property name="text">
+                <string>已配置设备 (Configured Devices)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="configuredSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAddConfigured">
+               <property name="text">
+                <string>+</string>
+               </property>
+               <property name="fixedWidth">
+                <number>40</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnRemoveConfigured">
+               <property name="text">
+                <string>-</string>
+               </property>
+               <property name="fixedWidth">
+                <number>40</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="deviceTable">
+             <property name="editTriggers">
+              <set>QAbstractItemView::NoEditTriggers</set>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
+             <column>
+              <property name="text">
+               <string>名称</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>类型</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>位置</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>通道 In/Out</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>来源</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="deviceDetailGroup">
+         <property name="title">
+          <string>从站详情 / Device</string>
+         </property>
+         <layout class="QVBoxLayout" name="deviceDetailLayout">
+          <item>
+           <widget class="QTabWidget" name="detailTabs">
+            <property name="documentMode">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="deviceInfoTab">
+             <attribute name="title">
+              <string>Device Info</string>
+             </attribute>
+             <layout class="QGridLayout" name="infoGrid">
+              <item row="0" column="0">
+               <widget class="QLabel" name="lblInfoName">
+                <property name="text">
+                 <string>名称</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="detailName">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="lblInfoType">
+                <property name="text">
+                 <string>类型</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QLabel" name="detailType">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="lblInfoVendor">
+                <property name="text">
+                 <string>厂商</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="detailVendor">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QLabel" name="lblInfoVendorId">
+                <property name="text">
+                 <string>Vendor ID</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QLabel" name="detailVendorId">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="lblInfoProductCode">
+                <property name="text">
+                 <string>Product Code</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="detailProductCode">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QLabel" name="lblInfoRevision">
+                <property name="text">
+                 <string>Revision</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QLabel" name="detailRevision">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="lblInfoGroup">
+                <property name="text">
+                 <string>分组</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLabel" name="detailGroup">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QLabel" name="lblInfoChannels">
+                <property name="text">
+                 <string>通道 In/Out</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="3">
+               <widget class="QLabel" name="detailChannels">
+                <property name="text">
+                 <string>--</string>
+                </property>
+               </widget>
+              </item>
+              <!-- 吸收多余高度：否则行内 QLabel 竖直可增长，富余空间被各行均分、行距被撑开 -->
+              <item row="4" column="0" colspan="4">
+               <spacer name="infoSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="configTab">
+             <attribute name="title">
+              <string>Configuration</string>
+             </attribute>
+             <layout class="QGridLayout" name="configGrid">
+              <item row="0" column="0" colspan="2">
+               <widget class="QGroupBox" name="startupChecksGroup">
+                <property name="title">
+                 <string>Startup Checks</string>
+                </property>
+                <layout class="QHBoxLayout" name="startupChecksLayout">
+                 <item>
+                  <widget class="QCheckBox" name="chkCheckVendor">
+                   <property name="text">
+                    <string>Verify Vendor ID</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="chkCheckProduct">
+                   <property name="text">
+                    <string>Verify Product Code</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <!-- 复选框保持自然宽度靠左，不随分组框拉宽 -->
+                 <item>
+                  <spacer name="startupChecksSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QGroupBox" name="addressingGroup">
+                <property name="title">
+                 <string>Addressing</string>
+                </property>
+                <layout class="QHBoxLayout" name="addressingLayout">
+                 <item>
+                  <widget class="QLabel" name="lblEcatAddress">
+                   <property name="text">
+                    <string>EtherCAT Address</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="spinEcatAddress">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <!-- 标签保持自然宽度，不横向增长把数值框推向右边 -->
+                 <item>
+                  <spacer name="addressingSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QGroupBox" name="timeoutsGroup">
+                <property name="title">
+                 <string>Timeouts (ms)</string>
+                </property>
+                <layout class="QHBoxLayout" name="timeoutsLayout">
+                 <item>
+                  <widget class="QLabel" name="lblSdoTimeout">
+                   <property name="text">
+                    <string>SDO</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="spinSdoTimeout">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>600000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="lblInitPreOp">
+                   <property name="text">
+                    <string>I→P</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="spinInitPreOp">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>600000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="lblSafeOpOp">
+                   <property name="text">
+                    <string>P→S/S→O</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="spinSafeOpOp">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>600000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <!-- 标签保持自然宽度，不横向增长把数值框推向右边 -->
+                 <item>
+                  <spacer name="timeoutsSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QGroupBox" name="watchdogGroup">
+                <property name="title">
+                 <string>Watchdog</string>
+                </property>
+                <layout class="QGridLayout" name="watchdogLayout">
+                 <item row="0" column="0">
+                  <widget class="QCheckBox" name="chkSmWatchdog">
+                   <property name="text">
+                    <string>SM</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="lblSmMs">
+                   <property name="text">
+                    <string>Time (ms)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QSpinBox" name="spinSmMs">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QCheckBox" name="chkPdiWatchdog">
+                   <property name="text">
+                    <string>PDI</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="lblPdiMs">
+                   <property name="text">
+                    <string>Time (ms)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QSpinBox" name="spinPdiMs">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <!-- 标签列保持自然宽度，不横向增长把数值框推向右边 -->
+                 <item row="0" column="3" rowspan="2">
+                  <spacer name="watchdogSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item row="3" column="0" colspan="2">
+               <widget class="QGroupBox" name="dcGroup">
+                <property name="title">
+                 <string>Distributed Clocks (DC)</string>
+                </property>
+                <layout class="QGridLayout" name="dcLayout">
+                 <item row="0" column="0">
+                  <widget class="QCheckBox" name="chkDc">
+                   <property name="text">
+                    <string>Enable DC</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="lblDcSyncUnit">
+                   <property name="text">
+                    <string>Sync Unit Cycle (us)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QSpinBox" name="spinDcSyncUnit">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>1000000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QCheckBox" name="chkSync0">
+                   <property name="text">
+                    <string>SYNC0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="lblSync0Cycle">
+                   <property name="text">
+                    <string>Cycle (us)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QSpinBox" name="spinSync0Cycle">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>1000000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="lblSync0Shift">
+                   <property name="text">
+                    <string>Shift (us)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="4">
+                  <widget class="QSpinBox" name="spinSync0Shift">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>1000000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QCheckBox" name="chkSync1">
+                   <property name="text">
+                    <string>SYNC1</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="lblSync1Cycle">
+                   <property name="text">
+                    <string>Cycle (us)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QSpinBox" name="spinSync1Cycle">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>1000000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLabel" name="lblSync1Shift">
+                   <property name="text">
+                    <string>Shift (us)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="4">
+                  <widget class="QSpinBox" name="spinSync1Shift">
+                   <property name="maximumSize">
+                    <size>
+                     <width>120</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>1000000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <!-- 标签列保持自然宽度，不横向增长把数值框推向右边 -->
+                 <item row="0" column="5" rowspan="3">
+                  <spacer name="dcSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <!-- 应用按钮右对齐、自然宽度，不拉满整行 -->
+              <item row="4" column="0" colspan="2">
+               <layout class="QHBoxLayout" name="applyDeviceRow">
+                <item>
+                 <spacer name="applyDeviceRowSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnApplyDevice">
+                  <property name="text">
+                   <string>应用修改</string>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>120</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <!-- 吸收多余高度：否则行内 QGroupBox 竖直可增长，富余空间被各行均分、分组框被撑高 -->
+              <item row="5" column="0" colspan="2">
+               <spacer name="configSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="channelsTab">
+             <attribute name="title">
+              <string>Channel Mappings</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="channelsLayout">
+              <item>
+               <layout class="QHBoxLayout" name="channelsHeader">
+                <item>
+                 <widget class="QLabel" name="lblChannels">
+                  <property name="text">
+                   <string># / 方向 / IEC 类型 / 地址 / 别名</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="channelsSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnAddChannel">
+                  <property name="text">
+                   <string>+ 通道</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnRemoveChannel">
+                  <property name="text">
+                   <string>删除</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QTableWidget" name="channelTable">
+                <column>
+                 <property name="text">
+                  <string>#</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Dir</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>IEC Type</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Address</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Alias</string>
+                 </property>
+                </column>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="sdoTab">
+             <attribute name="title">
+              <string>Startup Parameters</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="sdoLayout">
+              <item>
+               <layout class="QHBoxLayout" name="sdoHeader">
+                <item>
+                 <widget class="QLabel" name="lblSdo">
+                  <property name="text">
+                   <string>SDO 启动参数</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="sdoSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnAddSdo">
+                  <property name="text">
+                   <string>+ SDO</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnRemoveSdo">
+                  <property name="text">
+                   <string>删除</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QTableWidget" name="sdoTable">
+                <column>
+                 <property name="text">
+                  <string>Index</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Sub Index</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>值</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>类型</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>名称</string>
+                 </property>
+                </column>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="repositoryTab">
+      <attribute name="title">
+       <string>Repository</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="repositoryLayout">
+       <item>
+        <layout class="QHBoxLayout" name="repoHeader">
+         <item>
+          <widget class="QLabel" name="lblRepo">
+           <property name="text">
+            <string>已加载文件 (0) · ESI 设备库</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="repoSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnImportEsi">
+           <property name="text">
+            <string>导入 ESI</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnClearRepo">
+           <property name="text">
+            <string>清空</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="repositoryTable">
+         <column>
+          <property name="text">
+           <string>文件名</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>厂商</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>设备数</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="advancedTab">
+      <attribute name="title">
+       <string>Advanced</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="advancedLayout">
+       <item>
+        <layout class="QGridLayout" name="advancedGrid">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lblMasterEnable">
+           <property name="text">
+            <string>Enable Bus</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QCheckBox" name="chkMasterEnable">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lblInterface2">
+           <property name="text">
+            <string>网络接口</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboInterface">
+           <property name="maximumSize">
+            <size>
+             <width>160</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>eth0</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>eth1</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="lblCycleUs">
+           <property name="text">
+            <string>Cycle Time (us)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="spinCycleUs">
+           <property name="maximumSize">
+            <size>
+             <width>160</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <number>100</number>
+           </property>
+           <property name="maximum">
+            <number>100000</number>
+           </property>
+           <property name="value">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="lblTaskPriority">
+           <property name="text">
+            <string>Task Priority</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="spinTaskPriority">
+           <property name="maximumSize">
+            <size>
+             <width>160</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>31</number>
+           </property>
+           <property name="value">
+            <number>90</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="lblWatchdogCycles">
+           <property name="text">
+            <string>Watchdog Timeout (cycles)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QSpinBox" name="spinWatchdogCycles">
+           <property name="maximumSize">
+            <size>
+             <width>160</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="value">
+            <number>3</number>
+           </property>
+          </widget>
+         </item>
+         <!-- 吸收多余宽度：否则标签列吃掉全部富余宽度，标签与控件被推到两端 -->
+         <item row="0" column="2" rowspan="6">
+          <spacer name="advancedColSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <!-- 应用按钮右对齐、自然宽度，不拉满整行 -->
+         <item row="5" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="applyMasterRow">
+           <item>
+            <spacer name="applyMasterRowSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnApplyMaster">
+             <property name="text">
+              <string>应用主站配置</string>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <!-- 吸收多余高度：否则行内全是竖直 Fixed 的控件，没有行愿意增长，整个网格被垂直居中 -->
+         <item row="6" column="0" colspan="2">
+          <spacer name="advancedSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="ecatStatusLabel">
+     <property name="text">
+      <string>EtherCAT 组态就绪</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+   <action name="actionAddDevice">
+    <property name="text">
+     <string>添加设备</string>
+    </property>
+   </action>
+   <action name="actionRemoveDevice">
+    <property name="text">
+     <string>删除设备</string>
+    </property>
+   </action>
+   <action name="actionToolbarSep1">
+    <property name="separator">
+     <bool>true</bool>
+    </property>
+   </action>
+   <action name="actionMoveUp">
+    <property name="text">
+     <string>上移</string>
+    </property>
+   </action>
+   <action name="actionMoveDown">
+    <property name="text">
+     <string>下移</string>
+    </property>
+   </action>
+   <action name="actionToolbarSep2">
+    <property name="separator">
+     <bool>true</bool>
+    </property>
+   </action>
+   <action name="actionImportEsi">
+    <property name="text">
+     <string>导入 ESI</string>
+    </property>
+   </action>
+   <action name="actionLoadNetwork">
+    <property name="text">
+     <string>加载网络</string>
+    </property>
+   </action>
+   <action name="actionSaveNetwork">
+    <property name="text">
+     <string>保存网络</string>
+    </property>
+   </action>
+   <action name="actionToolbarSep3">
+    <property name="separator">
+     <bool>true</bool>
+    </property>
+   </action>
+   <action name="actionSendToController">
+    <property name="text">
+     <string>下发到控制器</string>
+    </property>
+   </action>
+  </widget>
+  <resources/>
+  <connections/>
+ </ui>

@@ -27,6 +27,7 @@
 #include "command/CommandPanel.h"
 
 class BehaviorTreePanel;
+class EtherCATPanel;
 
 class StatusIndicator : public QWidget {
     Q_OBJECT
@@ -141,6 +142,7 @@ private:
     void createAdvancedModules();
     void createQuickActions();
     void bindBehaviorTreeClient();
+    void bindEthercatClient();
     
     // UI Components
     StatusIndicator *globalStatus;
@@ -160,6 +162,7 @@ private:
     QTabWidget *advancedTabs;
     MujocoPanel *mujocoPanel;
     BehaviorTreePanel *behaviorTreePanel;
+    EtherCATPanel *ethercatPanel;
     CommandPanel *commandPanel;
     
     // Backend

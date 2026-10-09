@@ -59,4 +59,4 @@ void DataPub::publishFeedback()
     zrcs::lfl_write(shm()->axisPositions, pos);
 }
 
-REGISTERINPUT(DataPub);
+REGISTER_PERIODIC(DataPub, INPUT, 10);

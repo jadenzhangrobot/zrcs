@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<root main_tree_to_execute="Cmd_NcSphereHexGrid">
+<root main_tree_to_execute="Cmd_NcPath">
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_Disable">
         <Sequence>
@@ -13,15 +13,16 @@
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
+    <!-- Cartesian demos: controller SI m / m/s -->
     <BehaviorTree ID="Cmd_JogJ">
         <Sequence>
-            <Action AxisId="0" ID="JogJ" TargetPosition="0.01"/>
+            <Action AxisId="0" ID="JogJ" TargetPosition="0.005"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_JogabsJ">
         <Sequence>
-            <Action AxisId="0" ID="JogabsJ" TargetPosition="0.05"/>
+            <Action AxisId="0" ID="JogabsJ" TargetPosition="0.01"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -33,14 +34,13 @@
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveAbsJ">
         <Sequence>
-            <Action Count="6" ID="MoveAbsJ" J1="0" J2="10" J3="20" J4="30" J5="40" J6="50"/>
+            <Action Count="6" ID="MoveAbsJ" J1="0" J2="0.17" J3="0.35" J4="0.52" J5="0.70" J6="0.87"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
-    <!-- Cartesian demos use controller SI: m / m/s (5axis soft limits ~±0.4 m) -->
     <BehaviorTree ID="Cmd_MoveC">
         <Sequence>
-            <Action EndX="0.10" EndY="0" EndZ="0.10" ID="MoveC" Vel="0.05" ViaX="0.05" ViaY="0.05" ViaZ="0.10"/>
+            <Action EndX="0.10" EndY="0" EndZ="0" ID="MoveC" Vel="0.05" ViaX="0.05" ViaY="0.05" ViaZ="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -52,90 +52,31 @@
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0.10" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0.10"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveL" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveLGalvo">
         <Sequence>
-            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0.10" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0.10"/>
+            <Action CurrentQ1="1" CurrentQ2="0" CurrentQ3="0" CurrentQ4="0" CurrentX="0" CurrentY="0" CurrentZ="0" ID="MoveLGalvo" Q1="1" Q2="0" Q3="0" Q4="0" TargetVel="0.0" Vel="0.10" X="0.10" Y="0" Z="0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_MoveL_Batch">
         <Sequence>
-            <Action ID="BatchCmd" command="MoveL" segments="0,0,0.10,1,0,0,0, 0.02,0,0.10,1,0,0,0, 0.05,0|0.02,0,0.10,1,0,0,0, 0.04,0,0.10,1,0,0,0, 0.05,0|0.04,0,0.10,1,0,0,0, 0.06,0,0.10,1,0,0,0, 0.05,0|0.06,0,0.10,1,0,0,0, 0.08,0,0.10,1,0,0,0, 0.05,0|0.08,0,0.10,1,0,0,0, 0.10,0,0.10,1,0,0,0, 0.05,0"/>
+            <Action ID="BatchCmd" command="MoveL" segments="0,0,0,1,0,0,0, 0.02,0,0,1,0,0,0, 0.05,0|0.02,0,0,1,0,0,0, 0.04,0,0,1,0,0,0, 0.05,0|0.04,0,0,1,0,0,0, 0.06,0,0,1,0,0,0, 0.05,0|0.06,0,0,1,0,0,0, 0.08,0,0,1,0,0,0, 0.05,0|0.08,0,0,1,0,0,0, 0.10,0,0,1,0,0,0, 0.05,0"/>
             <Action AxisId="0.0" ID="JogabsJ" TargetPosition="0.0"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
     <BehaviorTree ID="Cmd_NcPath">
         <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/demo_butterfly.nc"
+            <Action ID="NcParse" filePath="config/3axis/program/nc/demo_rect.nc"
                     waypoints="{path_pts}" feedrates="{path_feeds}"/>
             <!-- PathMove units: m / m/s (NcParse: G21 mm→m, F mm/s→m/s) -->
             <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
-                    rx="0.0" ry="0.0" rz="0.0"
-                    endRx="0.5" endRy="0.0" endRz="1.57"
-                    maxVel="1.2" maxAccel="2.5" maxJerk="15.0"
-                    cornerTol="0.001" minSegLen="0.00005"/>
-        </Sequence>
-    </BehaviorTree>
-    <!-- ////////// -->
-    <!-- Simultaneous XYZAC butterfly engraving with tool axis normal to the R40 sphere -->
-    <BehaviorTree ID="Cmd_NcMapleCarve">
-        <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/maple.nc"
-                    waypoints="{path_pts}" orientations="{path_orientations}"
-                    feedrates="{path_feeds}"/>
-            <Action ID="PathMove" waypoints="{path_pts}"
-                    orientations="{path_orientations}" feedrates="{path_feeds}"
-                    rx="0.0" ry="0.0" rz="0.0"
-                    endRx="0.0" endRy="0.0" endRz="0.0"
-                    maxVel="0.03" maxAccel="0.5" maxJerk="5.0"
-                    cornerTol="0.00002" minSegLen="0.0"/>
-        </Sequence>
-    </BehaviorTree>
-    <!-- ////////// -->
-    <!-- Continuous RTCP hex grid over the reachable R40 upper hemisphere -->
-    <BehaviorTree ID="Cmd_NcSphereHexGrid">
-        <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/sphere_hex_grid.nc"
-                    waypoints="{path_pts}" orientations="{path_orientations}"
-                    feedrates="{path_feeds}"/>
-            <Action ID="PathMove" waypoints="{path_pts}"
-                    orientations="{path_orientations}" feedrates="{path_feeds}"
-                    rx="0.0" ry="0.0" rz="0.0"
-                    endRx="0.0" endRy="0.0" endRz="0.0"
-                    maxVel="0.03" maxAccel="0.5" maxJerk="5.0"
-                    cornerTol="0.0" minSegLen="0.0"/>
-        </Sequence>
-    </BehaviorTree>
-    <!-- ////////// -->
-    <!-- Hexagonal spiral carved on R40 sphere -->
-    <BehaviorTree ID="Cmd_NcHexagonCarve">
-        <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/hexagon.nc"
-                    waypoints="{path_pts}" feedrates="{path_feeds}"/>
-            <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
-                    rx="0.0" ry="0.0" rz="0.0"
-                    endRx="0.0" endRy="0.0" endRz="0.0"
-                    maxVel="0.08" maxAccel="0.8" maxJerk="8.0"
-                    cornerTol="0.0002" minSegLen="0.00005"/>
-        </Sequence>
-    </BehaviorTree>
-    <!-- ////////// -->
-    <!-- Sphere-surface carve: spiral + latitude rings + meridians + polar rosette -->
-    <BehaviorTree ID="Cmd_NcSphereCarve">
-        <Sequence>
-            <Action ID="NcParse" filePath="config/5axis/program/demo_sphere_carve.nc"
-                    waypoints="{path_pts}" feedrates="{path_feeds}"/>
-            <!-- Keep A/C fixed (tool normal ~ -Z); path already lies on R=40 mm sphere -->
-            <Action ID="PathMove" waypoints="{path_pts}" feedrates="{path_feeds}"
-                    rx="0.0" ry="0.0" rz="0.0"
-                    endRx="0.0" endRy="0.0" endRz="0.0"
-                    maxVel="0.8" maxAccel="2.0" maxJerk="12.0"
-                    cornerTol="0.0005" minSegLen="0.00005"/>
+                    maxVel="0.1" maxAccel="0.3" maxJerk="3.0"
+                    cornerTol="0.00025" minSegLen="0.00005"/>
         </Sequence>
     </BehaviorTree>
     <!-- ////////// -->
@@ -172,22 +113,17 @@
             <input_port name="filePath" type="std::string">Path to .nc / G-code file</input_port>
             <input_port default="0.0002" name="arcChordTol" type="double">Arc sampling chord height (m)</input_port>
             <output_port name="waypoints">Parsed path points (m)</output_port>
-            <output_port name="orientations">Per-waypoint A/B/C orientation (rad)</output_port>
             <output_port name="feedrates">Per-edge feedrates (m/s)</output_port>
         </Action>
         <Action ID="PathMove">
             <input_port name="waypoints">Path points from NcParse (m)</input_port>
-            <input_port name="orientations">Optional per-waypoint A/B/C orientation (rad)</input_port>
             <input_port name="feedrates">Optional per-edge feedrates from NcParse (m/s)</input_port>
-            <input_port default="0.0" name="rx" type="double">Start RX / A (rad)</input_port>
-            <input_port default="0.0" name="ry" type="double">Start RY (rad)</input_port>
-            <input_port default="0.0" name="rz" type="double">Start RZ / C (rad)</input_port>
-            <input_port default="0.0" name="endRx" type="double">End RX / A (rad)</input_port>
-            <input_port default="0.0" name="endRy" type="double">End RY (rad)</input_port>
-            <input_port default="0.0" name="endRz" type="double">End RZ / C (rad)</input_port>
-            <input_port default="0.15" name="maxVel" type="double">Max path velocity (m/s)</input_port>
-            <input_port default="0.8" name="maxAccel" type="double">Max path acceleration</input_port>
-            <input_port default="8.0" name="maxJerk" type="double">Max path jerk</input_port>
+            <input_port default="0.0" name="rx" type="double">Constant orientation RX (rad)</input_port>
+            <input_port default="0.0" name="ry" type="double">Constant orientation RY (rad)</input_port>
+            <input_port default="0.0" name="rz" type="double">Constant orientation RZ (rad)</input_port>
+            <input_port default="0.1" name="maxVel" type="double">Max path velocity (m/s)</input_port>
+            <input_port default="0.3" name="maxAccel" type="double">Max path acceleration (m/s^2)</input_port>
+            <input_port default="3.0" name="maxJerk" type="double">Max path jerk (m/s^3)</input_port>
             <input_port default="0.00025" name="cornerTol" type="double">Corner blend tolerance (m)</input_port>
             <input_port default="0.00005" name="minSegLen" type="double">Minimum retained line length (m)</input_port>
         </Action>

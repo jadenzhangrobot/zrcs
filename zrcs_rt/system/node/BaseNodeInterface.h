@@ -5,7 +5,7 @@
  *
  * Defines the type hierarchy for all nodes that participate in the RT control
  * loop: Basenode (common base), CmdNode (command-driven, stateful execution),
- * OutputNode and InputNode (periodic data-plane nodes).
+ * PeriodicNode (always-on, phase-ordered data-plane nodes).
  *
  * @author zhangyongjing@oetsky.com
  * @date 2024-01-08
@@ -72,7 +72,7 @@ public:
         onRegistered();
     }
 
-    /// Register the node for periodic execution (InputNode / OutputNode path).
+    /// Register the node for periodic execution (PeriodicNode path).
     /// @param ct        Hardware controller.
     /// @param rtProcess RT process handle.
     void registered(ZrcsHardware::Controller* ct, RTProcess* rtProcess)
@@ -173,17 +173,33 @@ enum class NodeStatus {
 };
 
 /**
- * @brief Periodic output node (data publishing, status reporting, etc.).
+ * @brief Execution phase of a periodic node within the RT cycle.
  *
- * The execute() method runs init() once, then calls run() every subsequent
- * cycle.  If the node enters FAILED state, a diagnostic is logged.
+ * Hard constraint: all INPUT nodes run before the command / trajectory phase,
+ * and all OUTPUT nodes run after it.  Guarantees a deterministic
+ * "acquire data -> plan -> publish data" ordering within each cycle.
  */
-class OutputNode : public Basenode {
-public:
-    std::atomic<NodeStatus> nodeStatus_;  ///< Current run status.
+enum class NodePhase {
+    INPUT,      ///< Data acquisition / sensor polling (before commands).
+    OUTPUT      ///< Data publishing / IO driving (after commands).
+};
 
-    OutputNode() : nodeStatus_(NodeStatus::RTINIT) {}
-    virtual ~OutputNode() = default;
+/**
+ * @brief Periodic (always-on) node: data acquisition, publishing, etc.
+ *
+ * Replaces the former InputNode and OutputNode.  Each cycle execute()
+ * runs init() once, then run() every subsequent cycle.  Execution order
+ * within a phase is governed by execOrder_ (ascending); cross-phase order
+ * is fixed by phase_ (INPUT before OUTPUT).
+ */
+class PeriodicNode : public Basenode {
+public:
+    std::atomic<NodeStatus> nodeStatus_{NodeStatus::RTINIT};  ///< Current run status.
+    NodePhase phase_{NodePhase::INPUT};   ///< Hard phase: INPUT runs before OUTPUT.
+    uint32_t  execOrder_{0};              ///< Relative order within phase, ascending.
+
+    PeriodicNode() = default;
+    virtual ~PeriodicNode() = default;
 
     /// One-time initialisation.
     virtual void init() = 0;
@@ -195,45 +211,14 @@ public:
     void execute();
 
     /// @return Current node status.
-    NodeStatus getNodeStatus() const {
+    NodeStatus getNodeStatus() const 
+    {
         return nodeStatus_.load(std::memory_order_acquire);
     }
 
     /// @param status New node status.
-    void setNodeStatus(NodeStatus status) {
-        nodeStatus_.store(status, std::memory_order_release);
-    }
-};
-
-/**
- * @brief Periodic input node (data acquisition, sensor polling, etc.).
- *
- * Mirrors OutputNode in structure; separated to allow the scheduler to
- * process inputs and outputs in distinct phases.
- */
-class InputNode : public Basenode {
-public:
-    std::atomic<NodeStatus> nodeStatus_;  ///< Current run status.
-
-    InputNode() : nodeStatus_(NodeStatus::RTINIT) {}
-    virtual ~InputNode() = default;
-
-    /// One-time initialisation.
-    virtual void init() = 0;
-
-    /// Per-cycle work function.
-    virtual void run() = 0;
-
-    /// Dispatcher: calls init() or run() based on current status.
-    virtual void execute();
-
-    /// @return Current node status.
-    NodeStatus getNodeStatus() const {
-        return nodeStatus_.load(std::memory_order_acquire);
-    }
-
-    /// @param status New node status.
-    void setNodeStatus(NodeStatus status) {
+    void setNodeStatus(NodeStatus status) 
+    {
         nodeStatus_.store(status, std::memory_order_release);
     }
 };

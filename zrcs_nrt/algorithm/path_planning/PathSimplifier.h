@@ -21,7 +21,8 @@ public:
     /// @param sourceIds  可选，N-1 段源 block id；非空时与 feedrates 同步折叠
     ///
     /// 规则：中间点到 [anchor, 候选终点] 的垂距均 ≤ collinearTol，
-    /// 且相邻进给足够接近时，才丢弃中间点。
+    /// 投影位于弦内且沿原路径顺序单调前进，相邻进给足够接近时才丢弃中间点。
+    /// 闭合/退化弦与反向折返不做折叠。
     static void collapseCollinearWaypoints(std::vector<Point3D>& points,
                                            std::vector<double>& feedrates,
                                            double collinearTol,

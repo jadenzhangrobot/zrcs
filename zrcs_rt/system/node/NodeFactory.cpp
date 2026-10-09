@@ -1,5 +1,6 @@
 #include "system/node/NodeFactory.h"
 #include "config/CmdDefine.h"
+#include <algorithm>
 #include <cstring>
 
 namespace zrcsSystem {
@@ -38,10 +39,19 @@ NodeFactory::NodeFactory()
     }
 
     for (auto& p : pendingOutputs())
-        outPutNodes.push_back(p.node);
+        outputPeriodics.push_back(p.node);
 
     for (auto& p : pendingInputs())
-        inPutNodes.push_back(p.node);
+        inputPeriodics.push_back(p.node);
+}
+
+void NodeFactory::sortPeriodics()
+{
+    const auto byOrder = [](const Periodic& a, const Periodic& b) {
+        return a->execOrder_ < b->execOrder_;
+    };
+    std::stable_sort(inputPeriodics.begin(),  inputPeriodics.end(),  byOrder);
+    std::stable_sort(outputPeriodics.begin(), outputPeriodics.end(), byOrder);
 }
 
 bool NodeFactory::exist(std::string_view name) const

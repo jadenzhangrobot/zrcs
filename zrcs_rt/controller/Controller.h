@@ -5,10 +5,10 @@
  * 职责：
  * 1. 每 RT 周期调用 sendData()/receiveData() 完成数据收发
  * 2. sendData(): 对每个轴执行 cmdsProcessing() → updateMotionCmdsToServo() → 总线 send()
- * 3. receiveData(): 总线 receive() → 对每个轴执行 statusSync() → cycleRun()
+ * 3. receiveData(): 总线 receive() → 对每个轴执行 cycleRun()（内含 statusSync）
  *
  * 设计原则：
- * - 依赖注入构造：通过构造函数注入 AxisConfig、Rtos 和 HardwareBus
+ * - 依赖注入构造：通过构造函数注入 AxisConfig、Rtos 和具体传输（EtherCAT/MuJoCo）
  * - 禁止拷贝/赋值：Controller 持有 unique_ptr，不可拷贝
  * - 轴/IO/激光器通过 add*() 方法动态添加
  */
@@ -21,8 +21,15 @@
 #include "Config.h"
 #include "Io.h"
 #include "Osal.h"
-#include "HardwareBus.h"
 #include "shared_memory/ShmLayout.h"
+
+// 传输层按编译期互斥模式选取具体类：REALTIME=EtherCAT 主站，SIMULATION=MuJoCo 总线，
+// 其余模式无总线（send/receive 为空）。取消运行时多态，避免抽象层与 nullptr 死分支。
+#ifdef REALTIME
+#include "ethercat/EthercatMaster.h"
+#elif defined(SIMULATION)
+#include "mujoco/MujocoBus.h"
+#endif
 
 namespace ZrcsHardware {
 
@@ -35,13 +42,24 @@ public:
     /// 依赖注入构造函数
     /// @param config 轴参数配置（从 axis.xml 解析）
     /// @param rtos   实时线程封装（Xenomai/PreemptRt/Nativelinux）
-    /// @param bus    硬件总线（EtherCAT 等），可为 nullptr
+    /// @param bus    硬件总线传输（EtherCAT/MuJoCo，由编译模式决定；其余模式无总线），可为空
     Controller(std::unique_ptr<AxisConfig> config,
-               std::shared_ptr<Rtos> rtos,
-               std::unique_ptr<HardwareBus> bus = nullptr)
+               std::shared_ptr<Rtos> rtos
+#ifdef REALTIME
+               ,
+               std::unique_ptr<EthercatMaster> bus = nullptr
+#elif defined(SIMULATION)
+               ,
+               std::unique_ptr<MujocoBus> bus = nullptr
+#endif
+    )
         : rtos_(rtos)
         , axisConfig_(std::move(config))
+#if defined(REALTIME) || defined(SIMULATION)
         , hardwareBus_(std::move(bus)) {}
+#else
+    {}
+#endif
 
     ~Controller() = default;
 
@@ -62,11 +80,13 @@ public:
     /// 每周期前端：接收总线数据 → 同步轴状态
     void receiveData();
 
-    void bindSharedBlock(zrcs::SharedBlock* block) {
-        if (hardwareBus_) {
-            hardwareBus_->bindSharedBlock(block);
-        }
+#ifdef SIMULATION
+    /// 供仿真数据节点（MujocoIdentPub 等）获取底层仿真对象；无 MuJoCo 时返回空。
+    std::shared_ptr<MujocoSimulation> mujocoSimulation() const
+    {
+        return hardwareBus_ ? hardwareBus_->simulation() : nullptr;
     }
+#endif
 
     void readIo() {}
     void writeIo() {}
@@ -81,7 +101,11 @@ public:
 
 private:
     std::unique_ptr<AxisConfig>      axisConfig_;
-    std::unique_ptr<HardwareBus>     hardwareBus_;
+#ifdef REALTIME
+    std::unique_ptr<EthercatMaster>  hardwareBus_;
+#elif defined(SIMULATION)
+    std::unique_ptr<MujocoBus>       hardwareBus_;
+#endif
 };
 
 } // namespace ZrcsHardware

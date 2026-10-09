@@ -32,12 +32,10 @@ void CornerBlender::buildCornerBlends(const std::vector<Point3D>& raw,
         // 几何：半角 α = θ/2
         // 路径偏差 δ 与截断距 d、半径 R 关系：
         //   R = d / tan(α)
-        //   δ = R * (1/cos(α) - 1)  →  d = δ * cos(α)/(1-cos(α))
+        //   δ = R * (1/cos(α) - 1)  →  d = δ * sin(α)/(1-cos(α))
+        // 用等价式 d = δ / tan(α/2)，避免小角度下 1-cos(α) 的相消误差。
         const double alpha = theta * 0.5;
-        const double cosA = std::cos(alpha);
-        const double dTol = (1.0 - cosA) > 1e-9
-                              ? cornerTol * cosA / (1.0 - cosA)
-                              : 1e6;
+        const double dTol = cornerTol / std::tan(alpha * 0.5);
         // 两侧各最多用半段，且至少留 minRemain
         const double dMax = std::max(0.0, 0.5 * std::min(lIn, lOut) - std::max(0.0, minRemain));
         const double d = std::min(dTol, dMax);

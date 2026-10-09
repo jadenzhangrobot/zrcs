@@ -1,4 +1,4 @@
-﻿
+
 # ZRCS
 
 ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++ 工程，采用“GUI / NRT / RT / Common”分层架构，支持标准模式、仿真模式和实时模式，覆盖共享内存通信、ZMQ 通信、机器人模型、轨迹命令、EtherCAT/虚拟控制器接入以及 Qt 上位机界面。
@@ -177,9 +177,9 @@ RT 侧主调度器是 `NodeManager`，核心循环大致为：
 
 ```text
 receiveData
--> InputNodes
+-> input phase (PeriodicNode)
 -> CmdNode
--> OutputNodes
+-> output phase (PeriodicNode)
 -> sendData
 -> heartbeat update
 ```
@@ -545,7 +545,7 @@ bash ./package_installer.sh
 - 共享内存 ABI：`zrcs_common/shared_memory/ShmLayout.h`
 - 命令定义：`zrcs_common/config/CmdDefine.h`
 - RT 调度器：`zrcs_rt/system/NodeManager.cpp`
-- 控制器抽象：`zrcs_rt/controller/`（Axis.h、Servo.h、Osal.h、Io.h、Sensor.h、HardwareBus.h、Controller.h）
+- 控制器抽象：`zrcs_rt/controller/`（Axis.h、Servo.h、Osal.h、Io.h、Sensor.h、Controller.h）
 - RT 命令汇总：`zrcs_rt/command/CmdHead.h`
 - NRT 主程序：`zrcs_nrt/main.cpp`
 - ZMQ 服务端：`zrcs_nrt/zmq_server/ZmqServer.h`

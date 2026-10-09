@@ -21,12 +21,11 @@ enum CmdId      {
     MoveL        = 11,
     MoveC        = 12,
     Movehome     = 13,
-    MoveLGalvo   = 14,
-    MoveCurve    = 15,
-    MovePath     = 16,
-    MoveExcite   = 17,
-    MoveV        = 18,
-    SENTINEL     = 19
+    MoveCurve    = 14,
+    MovePath     = 15,
+    MoveExcite   = 16,
+    MoveV        = 17,
+    SENTINEL     = 18
 };
 
 enum class EnableArg : std::size_t { AxisId = 0 };
@@ -43,7 +42,6 @@ enum class MoveVArg : std::size_t { Count = 0, V1, V2, V3, V4, V5, V6 };
 enum class MoveJArg : std::size_t { X = 0, Y, Z, RX, RY, RZ, Vel };
 enum class MoveLArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, TargetVel, Sync};
 enum class MoveCArg : std::size_t { ViaX = 0, ViaY, ViaZ, EndX, EndY, EndZ, Vel };
-enum class MoveLGalvoArg : std::size_t {CurrentX = 0, CurrentY, CurrentZ, CurrentQ1, CurrentQ2, CurrentQ3, CurrentQ4, X, Y, Z, Q1, Q2, Q3, Q4, Vel, TargetVel, Sync};
 enum class MoveCurveArg : std::size_t {
     X0 = 0, X1, X2, X3,
     Y0, Y1, Y2, Y3,
@@ -121,7 +119,6 @@ enum class MoveExciteArg : std::size_t {
     X(MoveL,      MoveLArg)          \
     X(MoveC,      MoveCArg)          \
     X(Movehome,   void)              \
-    X(MoveLGalvo, MoveLGalvoArg)     \
     X(MoveCurve,  MoveCurveArg)      \
     X(MovePath,   MovePathArg)       \
     X(MoveExcite, MoveExciteArg)     \

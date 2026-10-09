@@ -75,7 +75,7 @@ bool Servo::writeVal(int /*index*/, double /*value*/)
     return false;
 }
 
-bool Servo::resetError()
+bool Servo::reset()
 {
     return true;
 }

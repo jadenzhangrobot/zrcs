@@ -11,7 +11,8 @@ namespace ZrcsHardware {
 class MujocoServo : public Servo {
 public:
     MujocoServo(std::shared_ptr<MujocoSimulation> simulation,
-                uint32_t slaveId);
+                uint32_t slaveId,
+                const ServoPara& config);
     ~MujocoServo() override = default;
 
     MC_SERVO_CODE setPos(int32_t pos) override;
@@ -37,10 +38,8 @@ public:
     bool writeVal(int index, double value) override;
     bool enable() override;
     bool disable() override;
-    bool isEnabled() override { return enabled_; }
-    bool isDisabled() override { return !enabled_; }
-    bool resetError() override;
-    Servo::ServoState runCycle() override;
+    bool reset() override;
+    Servo::ServoState cycleRun() override;
     void emergStop() override;
 
 private:

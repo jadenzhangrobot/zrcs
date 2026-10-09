@@ -186,6 +186,9 @@ private:
     double lastAxisVelCmd_ = 0;
     double axisTorCmd_ = 0;
     AxisState axisState_ = AxisState::Disabled;
+    /// setAxisState 记录的"请求目标状态"；轴自身状态机在 cyclerun() 中
+    /// 按其迁移表推进，不照搬伺服状态。
+    AxisState requestedState_ = AxisState::Disabled;
     MC_ERROR_CODE axisError_ = MC_ERRORCODE_GOOD;
 
     bool powerStatus_ = false;
@@ -201,7 +204,6 @@ public:
     virtual ~Axis();
 
     void pushServo(std::unique_ptr<Servo> servo);
-    void pushServo(std::unique_ptr<Servo> servo, const ServoPara& config);
 
     size_t servoCount() const;
 
@@ -226,10 +228,12 @@ public:
     double actualPosCmd();
     double actualVelCmd();
 
-    AxisState getAxisState(void);
+    AxisState getAxisState() const;
     MC_ERROR_CODE setAxisState(AxisState setState);
 
-    void cyclerun();
+    /// 周期驱动各伺服并推进轴自身状态机；返回本次请求迁移是否被接受
+    /// （非法迁移返回对应错误码，轴状态保持不变）。
+    MC_ERROR_CODE cyclerun();
     bool resetError(void);
 
     bool powerOn();

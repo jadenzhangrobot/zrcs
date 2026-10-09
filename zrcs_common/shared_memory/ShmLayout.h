@@ -379,7 +379,8 @@ struct CaptureData     { double pos[kAxisMax] = {}; };
 // 所有可变共享数组均通过 LockFreeLatest 保护，消除数据竞争 UB。
 // 进程本地 SPSC 包装器（ShmSPSCProducer/Consumer）引用队列字段，不在此结构体中。
 
-struct alignas(64) SharedBlock {
+struct alignas(64) SharedBlock 
+{
 
     // ── 命令队列（NRT→RT，单消费者：RT 循环）────────────────────────────
     ShmSPSC<Command,    kCmdQueueCap> cmdQueue;
@@ -431,23 +432,13 @@ struct alignas(64) SharedBlock {
     alignas(64) std::atomic<bool>   probeTriggered{false};
     alignas(64) std::atomic<bool>   captureTriggered{false};
 
-    // ── MoveL / MoveLGalvo 标量运动限制配置（NRT→RT）────────────────────
+    // ── MoveL 标量运动限制配置（NRT→RT）──────────────────────────────────
     struct alignas(64) PathMoveConfig {
         std::atomic<double> maxVel{0.1};     // m/s（与轴配置 motion/maxVel 一致）
         std::atomic<double> maxAccel{0.3};   // m/s²（与轴配置 motion/maxAcc 一致）
         std::atomic<double> maxJerk{3.0};    // m/s³（与轴配置 motion/maxJerk 一致）
     };
     PathMoveConfig pathMoveCfg;
-
-    // ── 振镜-平台联动配置（NRT→RT）──────────────────────────────────────
-    struct alignas(64) GalvoConfig {
-        std::atomic<int32_t> platXId{0};       // 平台 X 轴 ID
-        std::atomic<int32_t> platYId{1};       // 平台 Y 轴 ID
-        std::atomic<int32_t> galvoXId{2};      // 振镜 X 轴 ID
-        std::atomic<int32_t> galvoYId{3};      // 振镜 Y 轴 ID
-        std::atomic<double>  cutoffHz{5.0};    // LPF 截止频率 (Hz)
-    };
-    GalvoConfig galvoCfg;
 };
 
 // 内存边界检查

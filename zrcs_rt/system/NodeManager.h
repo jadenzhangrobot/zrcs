@@ -70,6 +70,11 @@ public:
 private:
     /// @brief Convenience accessor for the shared-memory block.
     zrcs::SharedBlock* shm() const noexcept { return rtProcess_->sharedBlock(); }
+
+    /// Run a pre-sorted phase of periodic nodes once: init-on-first-call,
+    /// then execute() each cycle.  Called twice per RT cycle (input phase,
+    /// then output phase) at their respective call sites.
+    void runPeriodicPhase(const std::vector<std::shared_ptr<zrcsSystem::PeriodicNode>>& nodes);
     zrcs::TaskScheduling taskScheduling_;
     // ---- Owned objects -------------------------------------------------------
     std::string                                 projectName_;

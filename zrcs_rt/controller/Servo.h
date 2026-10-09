@@ -12,7 +12,8 @@
 // ── 全局作用域枚举（与全局头文件历史一致，全工程无前缀引用）──
 
 /* Servo error code */
-typedef enum {
+typedef enum 
+{
     SERVONOERROR                = 0,
     SERVOFIELDBUSINITERROR      = 1,
     SERVOPOWERERROR             = 2,
@@ -84,6 +85,10 @@ public:
         Fault      // 故障
     };
     Servo() = default;
+    /// 构造即注入运行时伺服参数：伺服子类在构造时接收 ServoPara 并应用，
+    /// 避免「已创建但未配置」的中间态。行为与 setServoConfig 一致（含
+    /// encoderCountPerUnit=0 的兜底）。
+    explicit Servo(const ServoPara& config) { setServoConfig(config); }
     virtual ~Servo() = default;
 
     virtual bool enable();
@@ -112,11 +117,9 @@ public:
 
     virtual bool readVal(int index, double& value);
     virtual bool writeVal(int index, double value);
-    virtual bool resetError();
+    virtual bool reset();
     virtual void emergStop() = 0;
-    virtual ServoState runCycle() = 0;
-    virtual bool isEnabled() = 0;
-    virtual bool isDisabled() = 0;
+    virtual ServoState cycleRun() = 0;
 
 protected:
     int32_t turnsToEncoderCount(double turns) const;

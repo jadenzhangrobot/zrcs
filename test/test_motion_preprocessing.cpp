@@ -1,5 +1,6 @@
 #include "config/CmdDefine.h"
 #include "algorithm/path_planning/MotionPlanner.h"
+#include "algorithm/path_planning/PathSimplifier.h"
 #include "behavior_tree/nodes/motion/PathMoveSupport.h"
 #include "rtBridge/RtBridge.h"
 #include "algorithm/path_planning/LookAheadPlanner.h"
@@ -725,6 +726,110 @@ void test_collinear_waypoints_are_collapsed()
     assert(lineCount <= 3);
 }
 
+void test_collinear_simplification_preserves_reversals()
+{
+    const std::vector<std::vector<double>> paths = {
+        {0.0, 0.01, 0.005},
+        {0.0, 0.01, -0.005},
+        {0.0, -0.005, 0.01},
+        {0.0, 0.01, 0.005, 0.02},
+        {0.0, 0.01, 0.0},
+        {0.0, 0.00001, 0.0}, // 闭合折返即使小于容差也必须保留
+    };
+    const std::vector<Point3D> directions = {
+        {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
+        pointNormalize({1.0, 2.0, -2.0}),
+    };
+    for (const auto& direction : directions) {
+        for (const auto& path : paths) {
+            std::vector<Point3D> raw;
+            for (double s : path) {
+                raw.push_back(pointAdd({0.02, -0.03, 0.04}, pointScale(direction, s)));
+            }
+            auto points = raw;
+            std::vector<double> feeds(raw.size() - 1, 0.1);
+            std::vector<int> sourceIds;
+            for (size_t i = 0; i < feeds.size(); ++i) {
+                sourceIds.push_back(static_cast<int>(i) + 10);
+            }
+            const auto expectedIds = sourceIds;
+            PathSimplifier::collapseCollinearWaypoints(points, feeds, 0.00025, &sourceIds);
+            assert(points.size() == raw.size());
+            assert(feeds == std::vector<double>(raw.size() - 1, 0.1));
+            assert(sourceIds == expectedIds);
+            for (size_t i = 0; i < raw.size(); ++i) {
+                assert(is_same_point(points[i], raw[i], 1e-12));
+            }
+
+            const auto segments = MotionPlanner::buildGeometry(make_blocks(raw, 0.1), 0.00025);
+            assert(segments.size() + 1 == raw.size());
+            for (size_t i = 0; i < segments.size(); ++i) {
+                assert(segments[i].type == TrajectorySegmentType::Line);
+                assert(is_same_point(evaluateSegment(segments[i], 0.0), raw[i], 1e-12));
+                assert(is_same_point(evaluateSegment(segments[i], 1.0), raw[i + 1], 1e-12));
+                assert(is_near(segments[i].length, pointDistance(raw[i], raw[i + 1]), 1e-12));
+            }
+        }
+    }
+}
+
+void test_collinear_runs_still_collapse_around_reversal()
+{
+    std::vector<Point3D> points = {
+        {0.0, 0.0, 0.0}, {0.005, 0.0, 0.0}, {0.01, 0.0, 0.0},
+        {0.0075, 0.0, 0.0}, {0.0025, 0.0, 0.0},
+    };
+    std::vector<double> feeds(4, 0.1);
+    std::vector<int> sourceIds = {10, 11, 12, 13};
+    PathSimplifier::collapseCollinearWaypoints(points, feeds, 0.00025, &sourceIds);
+    assert(points.size() == 3);
+    assert(is_same_point(points[0], {0.0, 0.0, 0.0}, 1e-12));
+    assert(is_same_point(points[1], {0.01, 0.0, 0.0}, 1e-12));
+    assert(is_same_point(points[2], {0.0025, 0.0, 0.0}, 1e-12));
+    assert(feeds == std::vector<double>({0.1, 0.1}));
+    assert(sourceIds == std::vector<int>({10, 12}));
+}
+
+void test_corner_blend_respects_tolerance_across_angles()
+{
+    constexpr double pi = 3.14159265358979323846;
+    constexpr double cornerTol = 0.00025;
+    constexpr double minSegLen = 0.00005;
+    const Point3D vertex = {0.02, -0.03, 0.04};
+    const Point3D incoming = pointNormalize({1.0, 1.0, 0.0});
+    for (double degrees : {1.0, 10.0, 30.0, 60.0, 90.0, 120.0, 150.0, 178.0}) {
+        for (double turn : {-1.0, 1.0}) {
+            const double theta = degrees * pi / 180.0;
+            const Point3D outgoing = pointAdd(pointScale(incoming, std::cos(theta)),
+                                               {0.0, 0.0, turn * std::sin(theta)});
+            const std::vector<Point3D> raw = {
+                pointSub(vertex, pointScale(incoming, 0.1)), vertex,
+                pointAdd(vertex, pointScale(outgoing, 0.1)),
+            };
+            // 禁用减点，单独检验圆角阶段的容差和长度约束。
+            const auto segments = MotionPlanner::buildGeometry(
+                make_blocks(raw, 0.1), cornerTol, 0.0, minSegLen);
+            assert(segments.size() == 3);
+            assert(segments[1].type == TrajectorySegmentType::CircularArc);
+            const double deviation = pointDistance(evaluateSegment(segments[1], 0.5), vertex);
+            assert(deviation <= cornerTol + 1e-12);
+            if (degrees >= 10.0) {
+                // 弦长足够时应达到给定容差，而非在钝角处过度缩小圆角。
+                assert(is_near(deviation, cornerTol, 1e-12));
+            }
+            assert(segments.front().length >= minSegLen - 1e-12);
+            assert(segments.back().length >= minSegLen - 1e-12);
+            assert(is_same_point(evaluateSegment(segments.front(), 0.0), raw.front(), 1e-12));
+            assert(is_same_point(evaluateSegment(segments.back(), 1.0), raw.back(), 1e-12));
+            for (size_t i = 1; i < segments.size(); ++i) {
+                assert(is_same_point(evaluateSegment(segments[i - 1], 1.0),
+                                     evaluateSegment(segments[i], 0.0), 1e-12));
+            }
+            assert_segment_tangents_are_continuous(segments);
+        }
+    }
+}
+
 void test_corner_blend_keeps_min_line_remainder()
 {
     // 密集折线 + 较大 cornerTol 时，残段不得被圆角吃到亚毫米微段
@@ -1004,6 +1109,9 @@ int main()
 {
     test_line_block_generates_single_segment();
     test_collinear_waypoints_are_collapsed();
+    test_collinear_simplification_preserves_reversals();
+    test_collinear_runs_still_collapse_around_reversal();
+    test_corner_blend_respects_tolerance_across_angles();
     test_corner_blend_keeps_min_line_remainder();
     test_corner_blend_fits_butterfly_segments();
     test_velocity_lookahead_on_segments();

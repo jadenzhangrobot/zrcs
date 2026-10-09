@@ -17,21 +17,24 @@ void Controller::sendData()
         }
         axis->updateMotionCmdsToServo();
     }
-    if (hardwareBus_) 
+#if defined(REALTIME) || defined(SIMULATION)
+    if (hardwareBus_)
     {
         hardwareBus_->send();
     }
+#endif
 }
 
 void Controller::receiveData()
 {
-    if (hardwareBus_) 
+#if defined(REALTIME) || defined(SIMULATION)
+    if (hardwareBus_)
     {
         hardwareBus_->receive();
     }
-    for (auto& axis : axes_) 
+#endif
+    for (auto& axis : axes_)
     {
-        axis->statusSync();
         axis->cyclerun();
     }
 }

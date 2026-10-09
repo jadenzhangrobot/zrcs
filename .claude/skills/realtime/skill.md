@@ -223,8 +223,7 @@ spdlog::info(...);  // 第三方日志库通常不是 RT-safe 的
 ```
 receiveData()          ← 从硬件总线接收伺服反馈
   ├─ hardwareBus_->receive()
-  ├─ axis->statusSync()      ← 更新轴的实际位置/速度/加速度
-  └─ axis->cyclerun()        ← 伺服周期处理
+  └─ axis->cyclerun()        ← 伺服周期处理（内含 statusSync：同步实际位置/速度/加速度）
 
 [节点调度器执行 CmdNode/OutputNode/InputNode 的 run()]
 

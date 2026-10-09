@@ -23,8 +23,10 @@ int32_t clampToInt32(double value)
 } // namespace
 
 MujocoServo::MujocoServo(std::shared_ptr<MujocoSimulation> simulation,
-                         uint32_t slaveId)
-    : simulation_(std::move(simulation)),
+                         uint32_t slaveId,
+                         const ServoPara& config)
+    : Servo(config),
+      simulation_(std::move(simulation)),
       slaveId_(slaveId)
 {
     if (!simulation_) {
@@ -141,12 +143,12 @@ bool MujocoServo::disable()
     return true;
 }
 
-bool MujocoServo::resetError()
+bool MujocoServo::reset()
 {
     return true;
 }
 
-Servo::ServoState MujocoServo::runCycle()
+Servo::ServoState MujocoServo::cycleRun()
 {
     return enabled_ ? Servo::ServoState::Enabled : Servo::ServoState::Disabled;
 }

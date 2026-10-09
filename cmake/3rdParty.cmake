@@ -6,6 +6,12 @@ endif()
 # 强制所有第三方库生成静态库
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
 
+# ---- MatIEC (IEC 61131-3 编译器) ----
+# 仅使用其头文件运行时（lib/C/*.h），header-only，故此处只登记不 add_subdirectory。
+# 生成/编译路径在 zrcs_rt/CMakeLists.txt：MatIEC 运行时头 + build 树 plc_generated 产物作为
+# 包含目录加入 zrcsrt。详见 docs/matiec-rt-integration.md。
+# 定位：3rdParty/MatIEC（浅克隆自 https://github.com/thiagoralves/MatIEC，branche openplc-master）
+
 # tinyxml2 只作为 MuJoCo 核心的私有依赖编译（mujoco-main 无条件链接它，
 # 并借 FindOrFetch 命中现有 target 避免联网 fetch）。第一方业务代码不再使用。
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/tinyxml2)

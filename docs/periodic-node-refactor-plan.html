@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZRCS RT 节点架构重构计划书 — PeriodicNode 合并方案</title>
+<style>
+  :root{
+    --bg:#f6f8fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --accent:#2563eb; --accent-soft:#e0eaff; --border:#e5e7eb;
+    --code-bg:#0f172a; --code-ink:#e2e8f0; --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:40px 32px}
+  header .wrap{max-width:1000px;margin:0 auto}
+  header h1{margin:0 0 8px;font-size:26px}
+  header p{margin:0;opacity:.92;font-size:14px}
+  .tags{margin-top:14px}
+  .tag{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:2px 10px;border-radius:20px;font-size:12px;margin-right:8px}
+  main{max-width:1000px;margin:0 auto;padding:28px 16px 60px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px 28px;margin-bottom:22px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  h2{font-size:20px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--accent-soft);color:#111827}
+  h3{font-size:15px;margin:22px 0 10px;color:#111827}
+  p,li{font-size:14px}
+  ul,ol{padding-left:22px;margin:8px 0}
+  li{margin:5px 0}
+  code{background:#eef2f7;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:Consolas,Menlo,monospace;font-size:12.5px;color:#0f172a}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:16px 18px;overflow:auto;font-size:12.5px;line-height:1.55}
+  pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+  .cls{color:#7dd3fc}.kw{color:#c4b5fd}.cm{color:#94a3b8}.st{color:#86efac}.nm{color:#fca5a5}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600}
+  .badge{display:inline-block;padding:1px 8px;border-radius:12px;font-size:11.5px;font-weight:600}
+  .b-keep{background:#d1fae5;color:var(--ok)}
+  .b-new{background:#dbeafe;color:#1d4ed8}
+  .b-move{background:#fef3c7;color:var(--warn)}
+  .b-rem{background:#fee2e2;color:var(--bad)}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;background:var(--accent-soft);color:#1d4ed8;font-weight:600}
+  .warnbox{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid var(--warn);padding:12px 16px;border-radius:6px;margin:12px 0;font-size:13px}
+  .okbox{background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid var(--ok);padding:12px 16px;border-radius:6px;margin:12px 0;font-size:13px}
+  .stepbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .step{background:var(--accent-soft);color:#1d4ed8;font-weight:700;border-radius:6px;padding:4px 12px;font-size:12.5px}
+  .num{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--accent);color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:6px}
+  .toc{columns:2;column-gap:28px}
+  .toc a{color:var(--accent);text-decoration:none;font-size:13.5px}
+  .toc li{margin:6px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>ZRCS RT 节点架构重构计划书</h1>
+    <p>合并 InputNode / OutputNode → PeriodicNode（Phase + execOrder_ 显式排序），CmdNode 保持不动</p>
+    <div class="tags">
+      <span class="tag">RT 实时控制</span>
+      <span class="tag">zrcs_rt</span>
+      <span class="tag">架构重构</span>
+      <span class="tag">计划书 v1.0</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 目录 ============ -->
+<div class="card">
+  <h2>目录</h2>
+  <ol class="toc">
+    <li><a href="#bg">背景与问题</a></li>
+    <li><a href="#goal">目标与不做的事</a></li>
+    <li><a href="#design">目标架构设计</a></li>
+    <li><a href="#api">API 定义</a></li>
+    <li><a href="#registry">注册机制与宏改造</a></li>
+    <li><a href="#scheduler">调度器改造（NodeManager）— 详细</a></li>
+    <li><a href="#mapping">现有节点归类与顺序</a></li>
+    <li><a href="#migration">迁移步骤</a></li>
+    <li><a href="#risk">风险与验证</a></li>
+    <li><a href="#roi">收益与回滚</a></li>
+  </ol>
+</div>
+
+<!-- ============ 1 背景 ============ -->
+<div class="card" id="bg">
+  <h2>1. 背景与问题</h2>
+
+  <h3>1.1 现状</h3>
+  <p>当前 <code>zrcs_rt</code> 定义了三种节点类型（<code>BaseNodeInterface.h</code>）：</p>
+  <ul>
+    <li><strong>CmdNode</strong> — 事件/命令驱动，按 <code>CmdId</code> 路由，有 <code>INIT→RUNNING→EXIT</code> 状态机（Enable/Disable/MoveL/MoveJ…）。</li>
+    <li><strong>OutputNode</strong> — 周期驱动，调度在周期后半段（PlcLogicNode、MujocoIdentPub、ContinuousJog）。</li>
+    <li><strong>InputNode</strong> — 周期驱动，调度在周期前半段（DataPub）。</li>
+  </ul>
+
+  <h3>1.2 核心矛盾</h3>
+  <ul>
+    <li><strong>OutputNode 与 InputNode 结构几乎完全相同</strong>：同样只有 <code>std::atomic&lt;NodeStatus&gt; nodeStatus_</code>，同样的 <code>init()/run()/execute()</code> 状态机，重复代码见 <code>BaseNodeInterface.h</code> L181-239。</li>
+    <li><strong>"长期节点"被硬拆成两个名字</strong>，但二者本质都是"每周期常驻执行"。</li>
+    <li><strong>组内执行顺序不可控</strong>：<code>NodeFactory</code> 按静态注册顺序（链接顺序）填充 vector，没有优先级字段，顺序"看缘分"。</li>
+    <li><strong>语义混乱实证</strong>：<code>ContinuousJog</code> 名字像命令、会做 Ruckig 速度规划，却因用标志位触发而继承了 <code>OutputNode</code>——"Input/Output/Command"三个名字无法刻画"常驻 + 会规划"。</li>
+    <li><strong>执行顺序现状</strong>：跨组（先输入后输出）是 <code>NodeManager.cpp</code> 里写死的两段循环（L152 / L233）；组内无显式排序。</li>
+  </ul>
+
+  <h3>1.3 诊断结论</h3>
+  <p>真正的本质差别只有一个正交维度：</p>
+  <ul>
+    <li><strong>触发方式</strong>：命令事件（CmdNode） vs 每周期常驻（长期节点）。</li>
+  </ul>
+  <p>因此把长期节点统一为 <strong>PeriodicNode</strong>，并用 <strong>Phase（硬相位）+ execOrder_（组内软排序）</strong> 表达顺序，是贴合语义且低成本的最优解。<code>CmdNode</code> 是真正的第二类，保持不动。</p>
+</div>
+
+<!-- ============ 2 目标 ============ -->
+<div class="card" id="goal">
+  <h2>2. 目标与不做的事</h2>
+
+  <h3>2.1 目标</h3>
+  <ol>
+    <li>消掉 <code>InputNode</code>/<code>OutputNode</code> 的类型重复，统一为 <code>PeriodicNode</code>。</li>
+    <li>让长期节点的执行顺序<strong>显式、可读、可维护</strong>（Phase 硬约束 + execOrder_ 软排序）。</li>
+    <li>保持 1ms RT 硬实时约束：无分配、无异常、无阻塞。</li>
+    <li>保持现有行为语义不变（先采后发的相位次序不回归）。</li>
+  </ol>
+
+  <h3>2.2 明确不做（范围外）</h3>
+  <ul>
+    <li><span class="badge b-keep">保持</span> <strong>CmdNode 完全不动</strong>——事件驱动与周期驱动是正交语义，合并反而错误。</li>
+    <li><span class="badge b-rem">不做</span> 不引入数据流 DAG / 拓扑排序（对 1ms 硬实时负担过重）。</li>
+    <li><span class="badge b-rem">不做</span> 不把 PLC 拆成独立实时线程（见 1.2 既定结论）。</li>
+    <li><span class="badge b-rem">不做</span> 不改调度相位总顺序：输入 → 命令 → 输出。</li>
+  </ol>
+</div>
+
+<!-- ============ 3 架构设计 ============ -->
+<div class="card" id="design">
+  <h2>3. 目标架构设计</h2>
+
+  <h3>3.1 类型层次</h3>
+<pre><code><span class="cm">// BaseNodeInterface.h</span>
+<span class="kw">class</span> <span class="cls">Basenode</span> { <span class="cm">/* …现有公共基类不变… */</span> };
+
+<span class="kw">enum class</span> <span class="cls">NodePhase</span> { <span class="nm">INPUT</span>, <span class="nm">OUTPUT</span> };  <span class="cm">// 硬相位</span>
+
+<span class="kw">class</span> <span class="cls">PeriodicNode</span> : <span class="kw">public</span> <span class="cls">Basenode</span> {
+<span class="kw">public</span>:
+    std::atomic&lt;<span class="cls">NodeStatus</span>&gt; nodeStatus_{<span class="cls">NodeStatus</span>::<span class="nm">RTINIT</span>};
+    <span class="cls">NodePhase</span>   phase_{<span class="cls">NodePhase</span>::<span class="nm">INPUT</span>};  <span class="cm">// 由子类或宏指定</span>
+    <span class="nm">uint32_t</span>    execOrder_{0};                     <span class="cm">// 组内相对顺序，越小越先</span>
+
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">init</span>() = <span class="nm">0</span>;
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">run</span>()  = <span class="nm">0</span>;
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">execute</span>();   <span class="cm">// 状态机：RTINIT→EXECUTING→FAILED</span>
+};
+
+<span class="cm">// 命令节点独立保留（事件驱动）</span>
+<span class="kw">class</span> <span class="cls">CmdNode</span> : <span class="kw">public</span> <span class="cls">Basenode</span> { <span class="cm">/* …不并入 PeriodicNode… */</span> };</pre></code>
+
+  <h3>3.2 顺序模型：Phase（硬）+ execOrder_（软）</h3>
+  <ul>
+    <li><strong>Phase 是硬约束</strong>：所有 <code>INPUT</code> 必然先于所有 <code>OUTPUT</code>，中间夹速度规划命令。保证"先采数据 → 再规划 → 再发数据"的确定性。</li>
+    <li><strong>execOrder_ 是组内软排序</strong>：同一相位内按 <code>execOrder_</code> 升序执行，同值用注册顺序兜底（<code>stable_sort</code>）。</li>
+    <li><strong>排序只发生一次</strong>：在 <code>NodeManager::run()</code> 启动前对两个（或一个）vector 排序，RT 循环内不再排序（零运行时开销）。</li>
+  </ul>
+  <div class="okbox">
+    排序时机放在 <strong>RT 任务启动之前</strong>（与 <code>registered()</code>、<code>prepare()</code> 同阶段），RT 循环内严格线性遍历，满足实时规范。
+  </div>
+</div>
+
+<!-- ============ 4 API ============ -->
+<div class="card" id="api">
+  <h2>4. API 定义</h2>
+
+  <h3>4.1 基类接口（BaseNodeInterface.h）</h3>
+<pre><code><span class="kw">class</span> <span class="cls">PeriodicNode</span> : <span class="kw">public</span> <span class="cls">Basenode</span> {
+<span class="kw">public</span>:
+    std::atomic&lt;<span class="cls">NodeStatus</span>&gt; nodeStatus_{<span class="cls">NodeStatus</span>::<span class="nm">RTINIT</span>};
+    <span class="cls">NodePhase</span> phase_{<span class="cls">NodePhase</span>::<span class="nm">INPUT</span>};
+    <span class="nm">uint32_t</span>  execOrder_{0};
+
+    <span class="kw">PeriodicNode</span>() = <span class="kw">default</span>;
+    <span class="kw">virtual</span> ~<span class="cls">PeriodicNode</span>() = <span class="kw">default</span>;
+
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">init</span>() = <span class="nm">0</span>;
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">run</span>()  = <span class="nm">0</span>;
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="nf">execute</span>();   <span class="cm">// 单例实现，取代 OutputNode::execute 与 InputNode::execute</span>
+
+    <span class="cls">NodeStatus</span> getNodeStatus() <span class="kw">const</span>;
+    <span class="kw">void</span> <span class="nf">setNodeStatus</span>(<span class="cls">NodeStatus</span>);
+};</pre></code>
+
+  <h3>4.2 变更对照表</h3>
+  <table>
+    <tr><th>现状类型</th><th>动作</th><th>目标</th><th>说明</th></tr>
+    <tr><td><code>InputNode</code></td><td><span class="badge b-rem">废弃</span></td><td>→ <code>PeriodicNode</code></td><td>子类设 <code>phase_=INPUT</code></td></tr>
+    <tr><td><code>OutputNode</code></td><td><span class="badge b-rem">废弃</span></td><td>→ <code>PeriodicNode</code></td><td>子类设 <code>phase_=OUTPUT</code></td></tr>
+    <tr><td><code>InputNode::execute</code></td><td><span class="badge b-rem">删除</span></td><td>→ <code>PeriodicNode::execute</code></td><td>两份重复实现合一</td></tr>
+    <tr><td><code>OutputNode::execute</code></td><td><span class="badge b-rem">删除</span></td><td>→ <code>PeriodicNode::execute</code></td><td>—</td></tr>
+    <tr><td><code>CmdNode</code></td><td><span class="badge b-keep">保持</span></td><td><code>CmdNode</code></td><td>不并入</td></tr>
+  </table>
+</div>
+
+<!-- ============ 5 注册 ============ -->
+<div class="card" id="registry">
+  <h2>5. 注册机制与宏改造（NodeFactory）</h2>
+
+  <h3>5.1 存储结构：两个容器 vs 一个容器</h3>
+  <p>为保证调度仍走"输入段 / 输出段"两段（保留相位硬约束），保留<strong>两个 vector</strong>，只是元素类型统一为 <code>PeriodicNode</code>。</p>
+<pre><code><span class="kw">class</span> <span class="cls">NodeFactory</span> {
+<span class="kw">public</span>:
+    std::vector&lt;std::shared_ptr&lt;<span class="cls">PeriodicNode</span>&gt;&gt; inputPeriodics;   <span class="cm">// Phase::INPUT</span>
+    std::vector&lt;std::shared_ptr&lt;<span class="cls">PeriodicNode</span>&gt;&gt; outputPeriodics;  <span class="cm">// Phase::OUTPUT</span>
+
+    <span class="cm">// 仅用于命令节点（保持现状）</span>
+    <span class="cls">Creator</span> getNodePtr(<span class="cls">CmdId</span> id) <span class="kw">const</span>;
+    <span class="cm">// 启动前调用一次，按 execOrder_ stable_sort 两组 vector</span>
+    <span class="kw">void</span> <span class="nf">sortPeriodics</span>();
+};</pre></code>
+
+  <h3>5.2 宏定义（NodeFactory.h）</h3>
+<pre><code><span class="cm">// 新宏：注册一个长期节点，显式指定相位与组内顺序</span>
+<span class="cp">#define REGISTER_PERIODIC(className, phase, order)                              \
+    static ::zrcsSystem::RegisterPeriodic&lt;class className&gt; reg_##className(       \
+        ::zrcsSystem::NodePhase::phase, static_cast&lt;::std::uint32_t&gt;(order))</span>
+
+<span class="cm">// 旧宏保留为兼容薄封装（内部转发到 REGISTER_PERIODIC，便于渐进迁移）</span>
+<span class="cp">#define REGISTERINPUT(className)  REGISTER_PERIODIC(className, INPUT, 10)
+#define REGISTEROUTPUT(className) REGISTER_PERIODIC(className, OUTPUT, 10)</span></pre></code>
+
+  <h3>5.3 注册 helper（NodeFactory.cpp）</h3>
+<pre><code><span class="kw">template</span>&lt;<span class="kw">typename</span> <span class="cls">T</span>&gt;
+<span class="kw">class</span> <span class="cls">RegisterPeriodic</span> {
+<span class="kw">public</span>:
+    <span class="cls">RegisterPeriodic</span>(<span class="cls">NodePhase</span> phase, <span class="nm">uint32_t</span> order) {
+        <span class="kw">auto</span> node = <span class="nf">std::make_shared</span>&lt;T&gt;();
+        node-&gt;phase_     = phase;
+        node-&gt;execOrder_ = order;
+        <span class="kw">if</span> (phase == <span class="cls">NodePhase</span>::<span class="nm">INPUT</span>)  <span class="cls">NodeFactory</span>::pendingInputs().push_back(std::move(node));
+        <span class="kw">else</span>                              <span class="cls">NodeFactory</span>::pendingOutputs().push_back(std::move(node));
+    }
+};</pre></code>
+  <div class="warnbox">
+    <strong>注意：</strong><code>std::make_shared</code> 目前发生在静态初始化期（与现状一致）。RT 规约要求"RT 循环内无分配"——静态期分配合规，但需保持 <code>NodeFactory</code> 构造期完成 drain，切勿把分配挪进 <code>run()</code>。
+  </div>
+</div>
+
+<!-- ============ 6 调度器 ============ -->
+<div class="card" id="scheduler">
+  <h2>6. 调度器改造（NodeManager）— 详细</h2>
+
+  <h3>6.1 现状调度器结构（改造前，必须先精确掌握）</h3>
+  <p>唯一的 RT 实时线程跑 <code>NodeManager::run()</code> 里 <code>real_task</code> 注册的回调（NodeManager.cpp L83-316），每个周期严格按以下顺序执行：</p>
+<pre><code><span class="cm">// ── RT 周期（1ms）顶层顺序 ─────────────────────────────────────</span>
+<span class="nm">L85</span>  controller_-&gt;receiveData();                  <span class="cm">// ① 读总线/反馈</span>
+<span class="nm">L86</span>  读 shm()-&gt;taskSched（观测状态）→ taskScheduling_
+<span class="nm">L146</span> 轴故障检测 → 可能切 ERROR_STATE
+<span class="nm">L152</span> ── 输入段 INPUT（Phase 前置，switch 之外，<b>所有状态都执行</b>）──
+<span class="nm">L168</span> switch (taskScheduling_)
+    <span class="nm">L170</span> case RUN:
+        <span class="nm">L171</span> 命令节点调度（取命令 → execute → 结果/失败处理）
+        <span class="nm">L233</span> ── 输出段 OUTPUT（case RUN 之内，<b>仅 RUN 执行</b>）──
+<span class="nm">L296</span> taskSched 回写（compare_exchange）
+<span class="nm">L302</span> controller_-&gt;sendData();                    <span class="cm">// ⑥ 下发位置指令（所有状态）</span>
+<span class="nm">L306</span> sendData 后故障补检 + 心跳</pre></code>
+
+  <div class="warnbox">
+    <strong>必须保留的不对称语义（本次重构不能改变）：</strong>
+    <ul style="margin:6px 0">
+      <li><strong>输入段（INPUT）在 <code>switch</code> 之外</strong> → 对 <code>STOP/ERROR/RESET/IDLE/RUN</code> 全部执行。</li>
+      <li><strong>输出段（OUTPUT）在 <code>case RUN</code> 内部</strong> → <strong>仅 <code>RUN</code> 状态执行</strong>（这点符合 PLC/联锁"运行期才输出"的现状设计）。</li>
+      <li><strong>命令段同样仅 <code>RUN</code></strong>；<code>sendData()</code> 对所有状态执行。</li>
+    </ul>
+  </div>
+
+  <h3>6.2 目标时序（改造后）：排序只做一次，相位语义完全不变</h3>
+  <p>改造后周期结构仍在同一位置调用同一遍历逻辑，只是：</p>
+  <ol>
+    <li>启动前新增一次 <code>sortPeriodics()</code>，把两组节点按 <code>execOrder_</code> 排好序；</li>
+    <li>输入/输出两段遍历统一调用同一个 <code>runPeriodicPhase()</code>，但<strong>调用位置保持现状</strong>：输入段放 <code>switch</code> 外，输出段放 <code>case RUN</code> 内。</li>
+  </ol>
+<pre><code><span class="cm">// ── 改造后的 RT 周期 ────────────────────────────────────────────</span>
+receiveData();
+<span class="cm">// … reads taskSched, axis-fault 前置检测（原样） …
+runPeriodicPhase(factory_.inputPeriodics);        <span class="cm">// INPUT：switch 外，所有状态（位置同 L152）</span></span>
+switch (taskScheduling_) {
+  case RUN:
+    <span class="cm">// …命令节点调度（原样 L171-232）…
+    runPeriodicPhase(factory_.outputPeriodics);    // OUTPUT：case RUN 内，仅 RUN（位置同 L233）</span>
+    break;
+  <span class="cm">// …其余 case 原样…</span>
+}
+<span class="cm">// …taskSched 回写 + sendData() + 心跳（原样）…</span></pre></code>
+
+  <h3>6.3 新增 <code>sortPeriodics()</code>（NodeFactory）</h3>
+  <p>只在 <code>run()</code> 启动前调用一次（RT 线程 <code>rtos_task_create()</code> 之前），热路径零开销；<code>stable_sort</code> 保证 <code>execOrder_</code> 相等时保持注册顺序。</p>
+<pre><code><span class="cm">// NodeFactory.cpp</span>
+<span class="cp">#include &lt;algorithm&gt;
+<span class="kw">void</span> <span class="cls">NodeFactory</span>::<span class="nf">sortPeriodics</span>() {
+    <span class="kw">const auto</span> byOrder = [](<span class="kw">const auto</span>&amp; a, <span class="kw">const auto</span>&amp; b) {
+        <span class="kw">return</span> a-&gt;execOrder_ &lt; b-&gt;execOrder_;
+    };
+    <span class="nf">std::stable_sort</span>(inputPeriodics.begin(),  inputPeriodics.end(),  byOrder);
+    <span class="nf">std::stable_sort</span>(outputPeriodics.begin(), outputPeriodics.end(), byOrder);
+}</span></pre></code>
+  <div class="okbox">
+    <strong>调用时机：</strong><code>sortPeriodics()</code> 必须放在 <code>registered()/modelRegistry_ 注入</code> 之后、<code>rtos_task_create()</code> 之前，位于 <code>NodeManager::run()</code>。它<strong>不属于</strong> RT 回调，因此不违反实时约束。
+  </div>
+
+  <h3>6.4 新增 <code>runPeriodicPhase()</code>（NodeManager 私有辅助）</h3>
+  <p>把 L152-167 与 L233-248 两段复制粘贴循环抽成唯一实现（含"首次 init + 每周期 execute + 失败诊断"）。</p>
+<pre><code><span class="cm">// NodeManager.h 私有成员</span>
+<span class="kw">void</span> <span class="nf">runPeriodicPhase</span>(<span class="kw">const</span> std::vector&lt;std::shared_ptr&lt;<span class="cls">PeriodicNode</span>&gt;&gt;&amp; nodes);
+
+<span class="cm">// NodeManager.cpp</span>
+<span class="kw">void</span> <span class="cls">NodeManager</span>::<span class="nf">runPeriodicPhase</span>(<span class="kw">const</span> std::vector&lt;std::shared_ptr&lt;<span class="cls">PeriodicNode</span>&gt;&gt;&amp; nodes) {
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; node : nodes) {
+        <span class="kw">if</span> (node-&gt;getNodeStatus() == <span class="cls">NodeStatus</span>::<span class="nm">RTINIT</span>) {
+            node-&gt;init();
+            node-&gt;setNodeStatus(<span class="cls">NodeStatus</span>::<span class="nm">EXECUTING</span>);
+        } <span class="kw">else if</span> (node-&gt;getNodeStatus() == <span class="cls">NodeStatus</span>::<span class="nm">EXECUTING</span>) {
+            node-&gt;execute();
+        } <span class="kw">else</span> {
+            ERROR_PRINT(<span class="st">"%s 执行失败\n"</span>, node-&gt;getNodeName().c_str());
+        }
+    }
+}</pre></code>
+
+  <h3>6.5 组件差异：只有"分层"与"控制位置"</h3>
+  <table>
+    <tr><th>组件</th><th>改造前</th><th>改造后</th><th>执行条件</th></tr>
+    <tr><td>receiveData / sendData</td><td>Controller</td><td>Controller（不动）</td><td>所有状态</td></tr>
+    <tr><td>输入段</td><td><code>inPutNodes</code> 手写循环</td><td><code>runPeriodicPhase(inputPeriodics)</code></td><td>所有状态（switch 外）</td></tr>
+    <tr><td>命令段</td><td><code>cmdNode_-&gt;execute()</code></td><td>不变</td><td>仅 RUN</td></tr>
+    <tr><td>输出段</td><td><code>outPutNodes</code> 手写循环</td><td><code>runPeriodicPhase(outputPeriodics)</code></td><td>仅 RUN（case RUN 内）</td></tr>
+  </table>
+
+  <h3>6.6 组内顺序生效示例</h3>
+  <p><code>execOrder_</code> 只影响<strong>同一相位内部</strong>先后，不改变跨相位次序。例如 OUTPUT 相位按 <code>80→90→100</code> 执行：</p>
+<pre><code><span class="nm">receiveData</span>
+  → INPUT:  DataPub(10)                    <span class="cm">// 采集/读反馈</span>
+  → 命令段: 速度规划（Ruckig）             <span class="cm">// 若 RUN 且有活动命令</span>
+  → OUTPUT: ContinuousJog(80) → MujocoIdentPub(90) → PlcLogicNode(100)
+  → sendData</pre></code>
+
+  <h3>6.7 需要同步改动的两处周边</h3>
+  <ol>
+    <li><strong>启动注入</strong>（NodeManager.cpp L29-37、L49-56）：把对 <code>inPutNodes/outPutNodes</code> 的 <code>registered()</code> 与 <code>modelRegistry_</code> 注入，改为遍历 <code>inputPeriodics/outputPeriodics</code>。字段名与类型调整即可，逻辑不变。</li>
+    <li><strong>命令准备段</strong>（L65-77）：仅涉及 CmdNode，保持不动。</li>
+  </ol>
+
+  <div class="okbox">
+    结论：调度器改造 = <strong>① 启动前一次 <code>sortPeriodics()</code> + ② 两段循环抽成 <code>runPeriodicPhase()</code> + ③ 容器指向新字段</strong>。RT 回调的<strong>调用位置与执行条件逐条保持现状</strong>，相位总顺序（输入→命令→输出→sendData）与"输入段全状态、输出段仅 RUN"的不对称语义均<strong>不回归</strong>。
+  </div>
+</div>
+
+<!-- ============ 7 归类 ============ -->
+<div class="card" id="mapping">
+  <h2>7. 现有节点归类与推荐顺序</h2>
+
+  <h3>7.1 长期节点迁移表</h3>
+  <table>
+    <tr><th>节点</th><th>现状</th><th>目标相位</th><th>推荐 execOrder_</th><th>说明</th></tr>
+    <tr><td><code>DataPub</code></td><td><span class="badge b-move">INPUT</span></td><td><span class="pill">INPUT</span></td><td>10</td><td>读数据/采集，最前</td></tr>
+    <tr><td><code>ContinuousJog</code></td><td><span class="badge b-move">OUTPUT</span></td><td><span class="pill">OUTPUT</span></td><td>80</td><td>常驻点动（会规划），输出相位</td></tr>
+    <tr><td><code>MujocoIdentPub</code></td><td><span class="badge b-move">OUTPUT</span></td><td><span class="pill">OUTPUT</span></td><td>90</td><td>可仿真，发布采样</td></tr>
+    <tr><td><code>PlcLogicNode</code></td><td><span class="badge b-move">OUTPUT</span></td><td><span class="pill">OUTPUT</span></td><td>100</td><td>PLC 逻辑/联锁层，最后</td></tr>
+  </table>
+
+  <h3>7.2 顺序约定建议</h3>
+  <ul>
+    <li><strong>INPUT 相位</strong>：采集 / 读反馈优先（DataPub）。</li>
+    <li><strong>OUTPUT 相位</strong>：运动生成（ContinuousJog，80）→ 数据发布/观测（MujocoIdentPub，90）→ 逻辑/联锁（PLC，100）。</li>
+    <li><strong>用 10 的倍数</strong>留出插入空间；同值稳定靠注册顺序。</li>
+  </ul>
+
+  <h3>7.3 命令节点（保持不动）</h3>
+  <p>Enable / Disable / JogJ / MoveAbs / MoveL / MoveJ / MoveC / MovePath / Movehome / MoveSine / MoveV / MoveExcite / MoveCurve / Reset / Setmode / SetZero … 全部继续用 <code>REGISTERCMD</code> + <code>CmdNode</code>，零改动。</p>
+</div>
+
+<!-- ============ 8 迁移 ============ -->
+<div class="card" id="migration">
+  <h2>8. 迁移步骤</h2>
+
+  <div class="stepbar"><span class="step">步骤 1</span><span class="step">步骤 2</span><span class="step">步骤 3</span><span class="step">步骤 4</span><span class="step">步骤 5</span><span class="step">步骤 6</span></div>
+
+  <ol>
+    <li><strong>基类改造</strong>：在 <code>BaseNodeInterface.h</code> 新增 <code>NodePhase</code> 枚举与 <code>PeriodicNode</code> 类；实现 <code>PeriodicNode::execute()</code>（取 <code>OutputNode::execute</code>/<code>InputNode::execute</code> 的唯一实现）。暂时保留旧类作别名或占位，便于编译期渐进。</li>
+    <li><strong>注册机制</strong>：在 <code>NodeFactory.h/.cpp</code> 新增 <code>RegisterPeriodic</code> 模板 + <code>REGISTER_PERIODIC</code> 宏；新增 <code>sortPeriodics()</code>，容器类型改为 <code>shared_ptr&lt;PeriodicNode&gt;</code>。旧宏 <code>REGISTERINPUT/OUTPUT</code> 暂时转发到新宏（默认 order=10）。</li>
+    <li><strong>子类迁移</strong>：<code>DataPub</code>、<code>MujocoIdentPub</code>、<code>PlcLogicNode</code>、<code>ContinuousJog</code> 改继承 <code>PeriodicNode</code>，并把注册宏换成 <code>REGISTER_PERIODIC(…, INPUT/OUTPUT, order)</code>（见 §7.1 表格）。逐个文件改，单一提交可控。</li>
+    <li><strong>调度器</strong>：<code>NodeManager::run()</code> 启动前调用 <code>factory_.sortPeriodics()</code>（§6.3）；新增 <code>runPeriodicPhase()</code> 统一两段循环（§6.4），改遍历 <code>inputPeriodics/outputPeriodics</code>（§6.5、§6.7）。<strong>调用位置与执行条件逐条保留</strong>——输入段仍在 <code>switch</code> 外（全状态），输出段仍在 <code>case RUN</code> 内（仅 RUN），见 §6.1。</li>
+    <li><strong>清理旧类</strong>：确认无引用后删除 <code>InputNode</code>/<code>OutputNode</code> 及重复 <code>execute()</code> 实现，删除 / 收窄旧宏。</li>
+    <li><strong>文档与回归</strong>：更新本计划书状态、<code>CMakeLists</code> 注释、相关头文件注释；跑现有测试。</li>
+  </ol>
+
+  <div class="warnbox">
+    <strong>兼容策略：</strong>步骤 1-4 期间新旧宏可并存（旧宏转发到新宏），实现平滑迁移、随时可回退。第 5 步删除旧类前，务必全局 <code>grep</code> 确认无 <code>InputNode/OutputNode</code> 引用。
+  </div>
+</div>
+
+<!-- ============ 9 风险 ============ -->
+<div class="card" id="risk">
+  <h2>9. 风险与验证</h2>
+
+  <table>
+    <tr><th>风险</th><th>等级</th><th>缓解措施</th></tr>
+    <tr><td>重构改变节点执行顺序 / 相位回归</td><td><span class="badge b-keep">高</span></td><td>排序只在启动前一次；STL <code>stable_sort</code> 保证同值保持注册序；对照 §7.1 顺序核对日志顺序。</td></tr>
+    <tr><td>RT 循环内意外引入分配/排序</td><td><span class="badge b-warn">中</span></td><td><code>sortPeriodics()</code> 只在 <code>run()</code> 启动前调用；RT 回调内保持线性遍历。</td></tr>
+    <tr><td>静态初始化顺序不确定导致排序结果抖动</td><td><span class="badge b-warn">低</span></td><td>稳定靠 <code>execOrder_</code> 显式值而非注册序；<code>separate</code> 不依赖跨 TU 静态初始化次序（NodeFactory 运行时构建时 drain）。</td></tr>
+    <tr><td>旧宏兼容层长期残留</td><td><span class="badge b-warn">低</span></td><td>迁移完成（步骤 5）后删除旧宏，收敛到单一 <code>REGISTER_PERIODIC</code>。</td></tr>
+    <tr><td>ContinuousJog 语义归属争议</td><td><span class="badge b-warn">中</span></td><td>归入 OUTPUT 相位（<code>execOrder_=80</code>），不改变其行为；如需真正"命令化"可后续单独立项，不在本重构内。</td></tr>
+  </table>
+
+  <h3>验证清单</h3>
+  <ol>
+    <li>编建通过（含 MatIEC PLC 生成路径，若启用）。</li>
+    <li>仿真模式跑通：确认周期顺序仍为 输入→命令→输出→sendData。</li>
+    <li>用日志 / 观测确认 <code>DataPub</code> 先于 <code>PlcLogicNode</code>。</li>
+    <li>修改某节点 <code>execOrder_</code> 后确认顺序随之变化（验证排序生效）。</li>
+    <li>确认 RT 循环内无分配 / 无异常 / 无阻塞（静态扫描）。</li>
+  </ol>
+</div>
+
+<!-- ============ 10 收益 ============ -->
+<div class="card" id="roi">
+  <h2>10. 收益与回滚</h2>
+
+  <h3>10.1 收益</h3>
+  <ul>
+    <li><strong>消除重复</strong>：<code>InputNode</code>/<code>OutputNode</code> 两份相同实现合一，减少 ~50 行重复。</li>
+    <li><strong>顺序可控</strong>：从"链接看缘分"变为"<code>execOrder_</code> 显式定义"，新增节点可插入任意位置而不影响他人。</li>
+    <li><strong>语义清晰</strong>：两维（触发 / 相位）正交，CODING 时归类不再凭感觉。</li>
+    <li><strong>RT 合规</strong>：排序移出热路径，循环内仍是线性遍历，开销零。</li>
+  </ul>
+
+  <h3>10.2 回滚策略</h3>
+  <p>因采用"新旧并存 + 渐进迁移"，任一步骤失败均可通过恢复对应 <code>git</code> 提交回滚。建议每个迁移步骤<strong>独立提交</strong>，便于二分定位。</p>
+
+  <h3>10.3 后续可选方向（不在本计划内）</h3>
+  <ul>
+    <li>把 <code>ContinuousJog</code> 正式"命令化"（从常驻标志位改为 CmdNode 事件驱动）。</li>
+    <li>为 PLC 引入"浅入深出"的 pre/post 双相位（并入本 plan 的 Phase 扩展，需额外设计）。</li>
+  </ul>
+</div>
+
+<footer style="text-align:center;color:var(--muted);font-size:12px;padding:20px 0">
+  ZRCS RT 节点架构重构计划书 · PeriodicNode 合并方案 v1.0 · 2024
+</footer>
+
+</main>
+</body>
+</html>

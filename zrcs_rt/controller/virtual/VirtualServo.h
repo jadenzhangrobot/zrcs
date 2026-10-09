@@ -22,7 +22,8 @@ namespace ZrcsHardware
         bool enabled_ = false;      // 使能状态
 
     public:
-        virtualServo(int slaveId) : position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
+        virtualServo(int slaveId, const ServoPara& config = {})
+            : Servo(config), position_(0.0),lastPosition_(0.0), velocity_(0.0), acceleration_(0.0), torque_(0.0), mode_(Cia402Mode::CYCLIC_SYNCHRONOUS_POSITION)
         {
 
         }
@@ -42,10 +43,8 @@ namespace ZrcsHardware
         virtual bool writeVal(int index, double value) override;
         virtual bool enable(void) override;
         virtual bool disable(void) override;
-        virtual bool isEnabled(void) override { return enabled_; }
-        virtual bool isDisabled(void) override { return !enabled_; }
-        virtual bool resetError(void) override;
-        virtual Servo::ServoState runCycle(void) override;
+        virtual bool reset(void) override;
+        virtual Servo::ServoState cycleRun(void) override;
         virtual void emergStop(void) override;
     };
 }

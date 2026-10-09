@@ -2,17 +2,24 @@
  * @file NodeFactory.h
  * @brief Node factory and static-registration helpers.
  *
- * Command, output, and input nodes are registered via macros (REGISTERCMD,
- * REGISTEROUTPUT, REGISTERINPUT) that write shared_ptr instances into
- * function-local static pending lists.  At construction, the NodeFactory
- * drains those lists into its internal registries.
+ * Command and periodic nodes are registered via macros (REGISTERCMD,
+ * REGISTER_PERIODIC, with thin REGISTERINPUT/REGISTEROUTPUT aliases) that
+ * write shared_ptr instances into function-local static pending lists.  At
+ * construction, the NodeFactory drains those lists into its internal
+ * registries.
  *
  * Lookup is O(1): command nodes are indexed directly by CmdId enum value.
+ *
+ * Ordering: periodic nodes keep two containers - inputPeriodics
+ * (NodePhase::INPUT, run before commands) and outputPeriodics
+ * (NodePhase::OUTPUT, run after commands).  Each is stable-sorted by
+ * execOrder_ once, before the RT task starts, via sortPeriodics().
  */
 
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -34,13 +41,14 @@ namespace zrcsSystem {
 class NodeFactory {
 public:
     using Creator = std::shared_ptr<CmdNode>;
-    using Output  = std::shared_ptr<OutputNode>;
-    using Input   = std::shared_ptr<InputNode>;
+    using Periodic = std::shared_ptr<PeriodicNode>;
 
-    /// Registered output nodes (executed in insertion order).
-    std::vector<Output> outPutNodes;
-    /// Registered input nodes (executed in insertion order).
-    std::vector<Input>  inPutNodes;
+    /// Registered periodic nodes with Phase::OUTPUT (executed in the output
+    /// phase, after commands), in execOrder_ ascending order.
+    std::vector<Periodic> outputPeriodics;
+    /// Registered periodic nodes with Phase::INPUT (executed in the input
+    /// phase, before commands), in execOrder_ ascending order.
+    std::vector<Periodic>  inputPeriodics;
 
     /// Back-pointers injected after construction by NodeManager.
     ZrcsHardware::Controller* control       = nullptr;
@@ -61,6 +69,10 @@ public:
         return registry_[idx];
     }
 
+    /// stable-sort inputPeriodics and outputPeriodics by execOrder_ ascending.
+    /// Call once before the RT task starts (not on the RT hot path).
+    void sortPeriodics();
+
     /// Check whether a command with the given @p name has been registered.
     bool exist(std::string_view name) const;
 
@@ -71,10 +83,10 @@ public:
     struct PendingCmd    { std::string_view name; Creator creator; };
     /// Pending registration by (CmdId, creator) pair -- preferred path.
     struct PendingCmdById { CmdId cmdId; Creator creator; };
-    /// Pending output-node registration.
-    struct PendingOutput { Output node; };
-    /// Pending input-node registration.
-    struct PendingInput  { Input  node; };
+    /// Pending periodic-node registration for the output phase.
+    struct PendingOutput { Periodic node; };
+    /// Pending periodic-node registration for the input phase.
+    struct PendingInput  { Periodic node; };
 
     static std::vector<PendingCmd>&     pendingCmds();
     static std::vector<PendingCmdById>& pendingCmdsById();
@@ -124,28 +136,22 @@ public:
 };
 
 /**
- * @brief Register an OutputNode subclass.
- * @tparam T OutputNode subclass to register.
+ * @brief Register a PeriodicNode subclass with an explicit phase and order.
+ * @tparam T PeriodicNode subclass to register.
  */
 template <typename T>
-class registerAndAddOutputNode {
+class RegisterPeriodic {
 public:
-    registerAndAddOutputNode()
+    explicit RegisterPeriodic(NodePhase phase, std::uint32_t order)
     {
-        NodeFactory::pendingOutputs().push_back({std::make_shared<T>()});
-    }
-};
-
-/**
- * @brief Register an InputNode subclass.
- * @tparam T InputNode subclass to register.
- */
-template <typename T>
-class registerAndAddInputNode {
-public:
-    registerAndAddInputNode()
-    {
-        NodeFactory::pendingInputs().push_back({std::make_shared<T>()});
+        auto node = std::make_shared<T>();
+        node->phase_     = phase;
+        node->execOrder_ = order;
+        if (phase == NodePhase::INPUT) {
+            NodeFactory::pendingInputs().push_back({std::move(node)});
+        } else {
+            NodeFactory::pendingOutputs().push_back({std::move(node)});
+        }
     }
 };
 
@@ -167,15 +173,31 @@ public:
         CmdId::className);
 
 /**
- * @def REGISTEROUTPUT(className)
- * @brief Register an OutputNode subclass.
+ * @def REGISTER_PERIODIC(className, phase, order)
+ * @brief Register a PeriodicNode subclass with an explicit phase and within-
+ *        phase execution order (ascending; smaller runs first).
+ *
+ * Examples:
+ *   REGISTER_PERIODIC(DataPub,        INPUT,  10);
+ *   REGISTER_PERIODIC(PlcLogicNode,   OUTPUT, 100);
  */
-#define REGISTEROUTPUT(className) \
-    static zrcsSystem::registerAndAddOutputNode<class className> register_##className;
+#define REGISTER_PERIODIC(className, phase, order)                        \
+    static ::zrcsSystem::RegisterPeriodic<class className> reg_##className( \
+        ::zrcsSystem::NodePhase::phase,                                     \
+        static_cast< ::std::uint32_t>(order))
 
 /**
  * @def REGISTERINPUT(className)
- * @brief Register an InputNode subclass.
+ * @brief Register a PeriodicNode subclass in the input phase (default order).
+ *        Thin alias kept for gradual migration; prefer REGISTER_PERIODIC.
  */
 #define REGISTERINPUT(className) \
-    static zrcsSystem::registerAndAddInputNode<class className> register_##className;
+    REGISTER_PERIODIC(className, INPUT, 10)
+
+/**
+ * @def REGISTEROUTPUT(className)
+ * @brief Register a PeriodicNode subclass in the output phase (default order).
+ *        Thin alias kept for gradual migration; prefer REGISTER_PERIODIC.
+ */
+#define REGISTEROUTPUT(className) \
+    REGISTER_PERIODIC(className, OUTPUT, 10)

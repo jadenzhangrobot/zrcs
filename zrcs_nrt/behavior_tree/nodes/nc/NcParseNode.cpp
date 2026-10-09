@@ -40,7 +40,7 @@ BT::NodeStatus NcParseNode::tick()
         return BT::NodeStatus::FAILURE;
     }
 
-    // XML 里写 config/<proj>/program/*.nc（相对工程根）；NRT 常在 build/bin 下运行
+    // XML 里写 config/<proj>/program/nc/*.nc（相对工程根）；NRT 常在 build/bin 下运行
     const std::string resolved = zrcs::ProjectConfig::resolvePath(*filePath);
 
     NcParser::Config cfg;
