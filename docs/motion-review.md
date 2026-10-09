@@ -3,6 +3,32 @@
 > 审查范围: `zrcs_nrt/motion/` 三个头文件 + RT 侧 `MoveL`/`MoveLGalvo` 命令实现
 > 日期: 2026/04/24
 
+> ## ⚠️ 文档状态（2026-10-09 核对）：部分条目已失效，勿直接照此施工
+>
+> 本文写于 `MoveLGalvo`、`PathPreprocessor`、`MotionPreprocessor`、`VelocityPlanner3D`
+> 仍然存在的时期。这些文件**现已从仓库删除**（全仓仅 `build/` 残留 `.obj`/`.idx`），
+> 因此涉及它们的条目**已无法按原文的文件与行号定位**：
+>
+> - 原 §2「PathPreprocessor — 路径拟合」整节：代码已删除，死代码问题随之消失。
+> - 原 §3「MotionPreprocessor — 集成与参数传递」整节：代码已删除；现役规划管线为
+>   `zrcs_nrt/algorithm/path_planning/` 下的 `MotionPlanner`（PathSimplifier → CornerBlender →
+>   ShortSegmentMerger → LookAheadPlanner）。
+> - 原 §4.2「`MoveLGalvo` 轴 0 速度指令为调试残码」曾被评为 **P0（轴 0 失控）**：随文件删除已一并消失，
+>   **不再是待修问题**（原 §5 优先级表首行已失效）。
+> - 原 §4.3「`MoveLGalvo::firstSegment_` 未使用」：同上。
+>
+> **仍然有效**的条目（已核对当前代码）：
+>
+> | 条目 | 当前状态 |
+> | --- | --- |
+> | §1.1 拐角速度公式不符合 GRBL 标准 | **仍有效**：`LookAheadPlanner.cpp:119` 仍是 `v² ≈ a * cornerTol / (1 - cosθ)` |
+> | §4.1 `CurrentVel`/`CurrentAcc` 未被使用 | **仍有效**：`MoveL.cpp` 仅在 `Sync` 时重置 `current_velocity`，否则依赖 Ruckig 状态接力 |
+> | §3.2 RT 侧无 Ruckig 状态反馈 | **仍有效**：NRT 无法监控 RT 侧 Ruckig 状态 |
+> | §4.4 `maxAccel`/`maxJerk` 经 SHM `pathMoveCfg` 读取 | **仍有效**：`MoveL.cpp:120-121` 仍从 `shm()->pathMoveCfg` 读取 |
+>
+> 当前完整的缺口清单见 [architecture-analysis.md](architecture-analysis.md) 第 11 节。
+> 文档索引见 [README.md](../README.md)。
+
 ---
 
 ## 目录
@@ -106,6 +132,9 @@ path[i].acceleration = (v1 * v1 - v0 * v0) / (2.0 * ds);
 
 ## 2. PathPreprocessor — 路径拟合
 
+> ⚠️ **本节已失效（2026-10-09）**：`PathPreprocessor.h` 已从仓库删除，"死代码"问题随之消失。
+> 以下内容仅作历史记录保留，请勿按此定位代码。
+
 ### 2.1 全类死代码（P1）
 
 **位置**: `MotionPreprocessor.h:111`, `PathPreprocessor.h` 全文件
@@ -137,6 +166,11 @@ path[i].acceleration = (v1 * v1 - v0 * v0) / (2.0 * ds);
 ---
 
 ## 3. MotionPreprocessor — 集成与参数传递
+
+> ⚠️ **本节已失效（2026-10-09）**：`MotionPreprocessor` 已从仓库删除，现役规划管线为
+> `zrcs_nrt/algorithm/path_planning/MotionPlanner`（PathSimplifier → CornerBlender →
+> ShortSegmentMerger → LookAheadPlanner），行号引用均无法按原文定位。
+> 其中 §3.2「NRT 无法监控 RT 侧 Ruckig 状态」在架构上仍然成立，见文首状态说明。
 
 ### 3.1 `segmentMaxVel` 未按段优化（P3）
 
@@ -182,6 +216,8 @@ NRT 的 `MotionPreprocessor` 在命令参数中传入了 `start.velocity`（Curr
 
 ### 4.2 `MoveLGalvo` 轴 0 速度指令为调试残码（P1）
 
+> ⚠️ **已失效（2026-10-09）**：`MoveLGalvo.cpp` 已从仓库删除，本缺陷随之消失，无需修复。
+
 **位置**: `MoveLGalvo.cpp:69-71`
 
 ```cpp
@@ -199,6 +235,8 @@ controller_->axiss[0]->setAxisVelocityCmd(vel);
 **建议**: 立即删除或注释掉 `line 69-71` 的速度指令。如果弧长速度需要输出用于调试，应写入共享内存的调试通道而非轴指令。
 
 ### 4.3 `MoveLGalvo::firstSegment_` 未使用（P3）
+
+> ⚠️ **已失效（2026-10-09）**：`MoveLGalvo.h` 已从仓库删除。
 
 `MoveLGalvo.h:36` 声明了 `bool firstSegment_`，构造函数中初始化为 `true`，但 `initTrajectory()` 从未检查或修改此标志。由于 Ruckig 实例在构造时创建且在段间通过 `pass_to_input` 状态接力，该标志是多余的。
 
@@ -229,23 +267,23 @@ double maxJerk  = shm()->pathMoveCfg.maxJerk.load(std::memory_order_acquire);
 
 ### 优先级排序
 
-| 优先级 | 问题 | 影响 | 工作量 |
-|--------|------|------|--------|
-| **P0** | MoveLGalvo 轴 0 调试残码 ([4.2](#42-movelgalvo-轴-0-速度指令为调试残码p1)) | 轴 0 失控 | 1 行 |
-| **P1** | 拐角速度公式不符合 GRBL 标准 ([1.1](#11-拐角速度公式与行业标准-grbl-存在偏差p1)) | 小角度不安全 x4.6，大角度过保守 | 1 行 |
-| **P1** | CurrentVel 参数未被使用 ([4.1](#41-currentvel--currentacc-参数被完全忽略p1)) | NRT 规划精度未充分利用 | 2-5 行 |
-| **P1** | PathPreprocessor 死代码 ([2.1](#21-全类死代码p1)) | 代码维护负担 | 文件删除 |
-| **P2** | 方向因子重复约束 ([1.2](#12-方向因子与向心加速度双重约束p2)) | 90° 以上速度归零 | 1 行 |
-| **P2** | RT 侧无 Ruckig 状态反馈 ([3.2](#32-nrt-无法监控-rt-侧-ruckig-状态p2)) | 调试困难、不可恢复 | 中等 |
-| **P2** | 加速度使用匀加速近似 ([1.3](#13-calculateaccelerations-使用匀加速近似p2)) | 加速度监控失准 | 注释 |
-| **P2** | 配置通路不一致 ([4.3](#43-rt-侧-maxaccelmaxjerk-通过-shm-读取p2)) | 配置同步风险 | 中等 |
+| 优先级 | 问题 | 影响 | 工作量 | 当前状态（2026-10-09） |
+|--------|------|------|--------|--------|
+| ~~**P0**~~ | MoveLGalvo 轴 0 调试残码 ([4.2](#42-movelgalvo-轴-0-速度指令为调试残码p1)) | 轴 0 失控 | 1 行 | **已失效**：文件已删除 |
+| **P1** | 拐角速度公式不符合 GRBL 标准 ([1.1](#11-拐角速度公式与行业标准-grbl-存在偏差p1)) | 小角度不安全 x4.6，大角度过保守 | 1 行 | **仍待修** |
+| **P1** | CurrentVel 参数未被使用 ([4.1](#41-currentvel--currentacc-参数被完全忽略p1)) | NRT 规划精度未充分利用 | 2-5 行 | **仍待修** |
+| ~~**P1**~~ | PathPreprocessor 死代码 ([2.1](#21-全类死代码p1)) | 代码维护负担 | 文件删除 | **已解决**：文件已删除 |
+| **P2** | 方向因子重复约束 ([1.2](#12-方向因子与向心加速度双重约束p2)) | 90° 以上速度归零 | 1 行 | **仍待修** |
+| **P2** | RT 侧无 Ruckig 状态反馈 ([3.2](#32-nrt-无法监控-rt-侧-ruckig-状态p2)) | 调试困难、不可恢复 | 中等 | **仍待修** |
+| **P2** | 加速度使用匀加速近似 ([1.3](#13-calculateaccelerations-使用匀加速近似p2)) | 加速度监控失准 | 注释 | **仍待修** |
+| **P2** | 配置通路不一致 ([4.3](#43-rt-侧-maxaccelmaxjerk-通过-shm-读取p2)) | 配置同步风险 | 中等 | **仍待修** |
 
 ### 总体评价
 
 **速度前瞻**核心算法（backward/forward scan、dMinTransition）经与 Ruckig 实际输出对比验证正确。但拐角限速公式使用 `1/(1-cosθ)` 而非工业标准的 `sin(θ/2)/(1-sin(θ/2))`（GRBL 算法），在小角度时高估 4.6 倍（不安全），大角度时低估 0.5 倍（保守）。叠加方向因子后，90° 以上速度强制归零，进一步偏离 GRBL 标准行为。
 
-**拐角速度公式修正为 GRBL 标准是最高优先级的算法修正**，不仅影响效率，还涉及小角度时的安全性。
+**拐角速度公式修正为 GRBL 标准是当前最高优先级的算法修正**，不仅影响效率，还涉及小角度时的安全性。
 
-**路径拟合**（PathPreprocessor）在当前代码路径中未被使用，是死代码。其包含的 Bezier 角点混合算法本身质量较好，如需启用，需配合调整 VelocityPlanner 的拐角限速策略。
+**路径拟合**（PathPreprocessor）已随文件删除，相关死代码问题不再存在，无需处理。
 
-**NRT→RT 参数传递**存在"NRT 精心计算，RT 部分忽略"的问题（CurrentVel），以及 MoveLGalvo 有一个明确的生产缺陷（轴 0 速度指令）。建议优先修复 P0 和 P1 问题。
+**NRT→RT 参数传递**仍存在"NRT 精心计算，RT 部分忽略"的问题（CurrentVel）。原提到的 MoveLGalvo 生产缺陷已随文件删除消失。建议优先修复拐角速度公式与 CurrentVel 两项 P1。

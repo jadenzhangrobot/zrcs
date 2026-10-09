@@ -9,19 +9,18 @@ ZRCS（Zhang Real-time Control System）是一个面向运动控制场景的 C++
 - `zrcs_nrt`：非实时进程，负责桥接 RT、对外提供命令接口、发布状态、消费 RT 日志
 - `zrcs_common`：共享代码，包括共享内存结构、项目配置、命令定义等
 - `zrcs_gui`：主 Qt 图形界面，面向综合控制、状态展示和扩展功能
-- `motionGui`：轻量级运动调试界面
 - `config/`：按项目拆分的轴、模型、EtherCAT 等配置
-- `3rdParty/`：内置第三方依赖，如 `ruckig`、`tinyxml2`、`spdlog`、`cppzmq`、`abseil-cpp`、`BehaviorTree.CPP`、`MuJoCo` 等
+- `3rdParty/`：内置第三方依赖，如 `ruckig`、`tinyxml2`、`spdlog`、`cppzmq`、`abseil-cpp`、`BehaviorTree.CPP`、`MuJoCo`、`MatIEC` 等
 
 ## 主要特性
 
 - 多进程分层：GUI、NRT、RT 解耦，适合将非实时逻辑与实时控制隔离
 - 共享内存桥接：NRT 和 RT 通过无锁共享内存结构交换命令、日志、反馈和配置
 - 网络通信：GUI 与 NRT 通过 ZMQ + Protobuf 通信
-- 轨迹控制：支持 `MoveAbs`、`MoveAbsJ`、`MoveJ`、`MoveL`、`MoveC`、`Movehome`、`MoveLGalvo`、`JogJ`、`JogabsJ`、连续点动等命令
+- 轨迹控制：支持 `MoveAbs`、`MoveAbsJ`、`MoveJ`、`MoveL`、`MoveC`、`MoveCurve`、`MovePath`、`Movehome`、`MoveV`、`MoveExcite`、`JogJ`、`JogabsJ`、连续点动等命令
+- PLC 集成：内嵌 MatIEC 软 PLC（IEC 61131-3 ST），以周期节点接入 RT 控制循环，当前为 P0 演示级，详见 `docs/matiec-rt-integration.md`
 - 模型支持：包含串联机器人、并联机器人、笛卡尔机器人模型与 FK/IK 能力
-- 多构建模式：支持 `standard`、`simulation`、`realtime`
-- 多界面入口：提供主 GUI 与轻量调试 GUI
+- 多构建模式：支持 `standard`、`simulation`、`realtime`（`realtime` 当前无法构建，见「构建模式」）
 - 项目化配置：通过 `config/project.txt` 切换当前机型/项目
 - Windows 打包：仓库内已经提供安装包脚本
 
@@ -33,8 +32,7 @@ zrcs-dev/
 |- zrcs_nrt/         非实时进程：ZMQ、状态发布、RT 桥接、终端控制
 |- zrcs_rt/          实时进程：控制器、模型、命令、调度器
 |- zrcs_gui/         主 Qt GUI
-|- motionGui/        轻量级运动控制 GUI
-|- config/           项目配置（3axis、5axis、demo、ur5 等）
+|- config/           项目配置（3axis、5axis、hg-5axis、single-axis、ur5、garmi）
 |- docs/             补充文档
 |- test/             测试源码
 |- 3rdParty/         第三方依赖
@@ -49,7 +47,6 @@ zrcs-dev/
 公共基础库，主要负责：
 
 - 共享内存布局定义
-- 项目配置解析
 - 项目配置解析
 - 命令 ID 与参数定义
 - NRT/RT 进程共享的数据结构
@@ -92,18 +89,19 @@ Qt6 主界面，负责：
 
 - 连接 NRT 命令服务和状态发布服务
 - 展示系统状态、轴状态、日志、报警
-- 提供命令面板、点动控制、IO 控制、轨迹可视化、GCode、远程监控、插件等功能
+- 提供命令面板、点动控制、行为树编辑器、EtherCAT 组态面板、MuJoCo 仿真可视化
 
-### `motionGui`
+当前实际构建的界面模块（见 `zrcs_gui/CMakeLists.txt`）：
 
-更加轻量，适合快速调试运动系统，重点覆盖：
-
-- 连接管理
-- 轴使能/失能
-- 回零/复位
-- 点动/Jog
-- 速度倍率
-- 基本状态展示
+| 模块 | 说明 |
+| --- | --- |
+| `StatusIndicator` | 全局状态指示（调度状态、ZMQ/EtherCAT 连接、归零、伺服） |
+| `JogAndIOPanel` | 点动与 IO 面板 |
+| `AlarmPanel` | 告警日志 |
+| `CommandPanel` | 预设命令面板（按 `CmdDefine.h` 校验命令名后下发） |
+| `BehaviorTreePanel` | 行为树编辑器（基于 Groot） |
+| `EtherCATPanel` | EtherCAT 主站组态；当前设备库与在线扫描为模拟数据，不读真实总线 |
+| `MujocoVisualizer` / `MujocoFrameServer` | MuJoCo 仿真可视化 |
 
 ## 整体架构
 
@@ -116,7 +114,7 @@ ZRCS 采用三层通信链路：
 可简化理解为：
 
 ```text
-zrcsgui / motiongui
+zrcsgui
         |
         |  ZMQ + Protobuf
         v
@@ -126,7 +124,7 @@ zrcsgui / motiongui
         v
       zrcsrt
         |
-        |  Controller / Model / EtherCAT / Virtual Servo
+        |  Controller / Model / EtherCAT / Virtual Servo / MatIEC PLC
         v
       Hardware / Simulation
 ```
@@ -169,7 +167,7 @@ NRT 与 RT 之间使用共享内存，核心结构定义在 `zrcs_common/shared_
 - `taskSched`：系统调度状态
 - `lastCmdSeq / lastCmdResult`：命令完成跟踪
 - `axisPositions / fkResult / heartbeat`：最新值通道
-- `pathMoveCfg / galvoCfg`：路径运动与振镜配置
+- `pathMoveCfg`：路径运动限制（`maxVel / maxAccel / maxJerk`），由 NRT 的 `RtBridge::setPathMoveConfig()` 写入
 
 ### 3. RT 主循环
 
@@ -177,14 +175,18 @@ RT 侧主调度器是 `NodeManager`，核心循环大致为：
 
 ```text
 receiveData
--> input phase (PeriodicNode)
+-> input phase (PeriodicNode，含 PlcInputNode)
 -> CmdNode
--> output phase (PeriodicNode)
+-> output phase (PeriodicNode，含 PlcLogicNode → PlcOutputNode)
 -> sendData
 -> heartbeat update
 ```
 
 同时根据 `taskSched` 管理 `RUN / STOP / RESET / ERROR_STATE / SHUTDOWN` 等全局状态。
+
+PLC 作为周期节点嵌入上述循环，不新增线程：`PlcInputNode`(INPUT,100) 采样轴反馈 →
+`PlcLogicNode`(OUTPUT,100) 推进 MatIEC 时间并扫描 → `PlcOutputNode`(OUTPUT,110) 读取扫描结果。
+三个节点均带 `TaskScheduling::RUN` 门控，非 RUN 状态冻结扫描。详见 `docs/matiec-rt-integration.md`。
 
 ## 命令链路
 
@@ -211,13 +213,18 @@ receiveData
 - `MoveJ`
 - `MoveL`
 - `MoveC`
+- `MoveCurve`
+- `MovePath`
 - `Movehome`
-- `MoveLGalvo`
+- `MoveExcite`
 - `MoveV`（关节速度控制，参数为 `[count,v1,...,vN]`）
 - `JogJ`
 - `JogabsJ`
 - `ContinuousJog`
 - `DataPub`
+
+命令名、`CmdId`、参数枚举与行为树别名的唯一事实源是 `zrcs_common/config/CmdDefine.h` 中的
+`ZRCS_MOTION_COMMAND_TABLE`，上表与之一一对应（`CmdHead.h` 为 RT 侧注册入口）。
 
 如果需要新增命令，可以参考：
 
@@ -234,14 +241,32 @@ receiveData
 - 回零 `Movehome`
 - 连续点动 `ContinuousJog`
 - 多轴速度控制 `MoveV`（Ruckig 速度接口，非零目标持续运行）
-- 平台 + 振镜联动 `MoveLGalvo`
+- 参数曲线运动 `MoveCurve`
+- 几何路径运动 `MovePath`（直线/圆弧，带 `TargetVel`/`TargetAcc` 段间接力）
+- 激励运动 `MoveExcite`（用于动力学辨识）
 - Ruckig jerk-limited 轨迹生成
 - 基本轴状态机、软限位、方向限制、多驱同步误差检查
 - EtherCAT 和虚拟伺服双形态控制器抽象
 
 相关运动审查文档可参考：
 
-- `docs/motion-review.md`
+- `docs/motion-review.md`（注意：该文档写于 `MoveLGalvo`/`PathPreprocessor` 被删除之前，
+  部分条目的代码位置已失效，见文档开头的状态说明）
+
+## PLC（MatIEC 软 PLC）
+
+PLC 逻辑用 IEC 61131-3 ST 编写，由 MatIEC 编译成 C 后链入 `zrcsrt`，在 RT 控制循环内
+以三个周期节点同步扫描（无独立线程）：
+
+| 层 | 位置 |
+| --- | --- |
+| ST 源码 | `config/<active>/program/plc/plc.st`（随工程版本控制） |
+| 生成物 | `build/zrcs_rt/plc_generated/`（构建产物，不入库） |
+| 宿主节点 | `zrcs_rt/plc/Plc{Input,Logic,Output}Node.{h,cpp}` |
+
+当前落地范围为 P0 演示闭环：只读取轴位置/使能作为 `%I`，输出仅做边沿日志，**尚未驱动物理 IO**，
+也没有 GUI 在线读写通道。完整映射、安全仲裁与变量通道见 `docs/matiec-rt-integration.md`
+与 `docs/plc-variable-channel.html`。
 
 ## 项目配置体系
 
@@ -250,18 +275,19 @@ ZRCS 采用项目化配置方式。当前激活项目由 `config/project.txt` �
 当前仓库内该文件内容为：
 
 ```text
-3axis
+5axis
 ```
 
-这意味着系统默认会从 `config/3axis/` 目录中读取相关配置文件。
+这意味着系统默认会从 `config/5axis/` 目录中读取相关配置文件。
 
 典型项目配置包括：
 
 - `axis.xml`：轴参数、限位、伺服配置
 - `model.xml`：机器人模型参数
-- `ethercat.xml`：EtherCAT 从站配置
-- `io.xml`：部分项目中用于 IO 定义
-- `laser.xml`：激光相关配置（特定项目）
+- `ethercat.xml`：EtherCAT 从站配置（`garmi` 项目缺此文件）
+- `servo.xml`：伺服参数
+- `mujoco.xml`：MuJoCo 仿真配置
+- `program/`：行为树（`bt/`）、NC 程序（`nc/`）、PLC 逻辑（`plc/`）
 
 已有示例项目包括：
 
@@ -282,7 +308,15 @@ ZRCS 采用项目化配置方式。当前激活项目由 `config/project.txt` �
 
 - `standard`：标准模式，默认模式
 - `simulation`：仿真模式，使用进程内虚拟伺服；MuJoCo 支持库可供后续仿真后端接入
-- `realtime`：实时模式，接入 Xenomai/EtherCAT
+- `realtime`：实时模式，接入 Xenomai/EtherCAT（**当前无法构建，见下方警告**）
+
+> **警告：`realtime` 模式目前无法配置/构建。**
+> 顶层 `CMakeLists.txt` 在 `BUILD_MODE=realtime` 时链接 `ethercat_rtdm`，但该目标在仓库内
+> **没有任何定义**（`cmake/` 下无 target，也没有对应的库文件），因此生成构建系统即失败。
+> 另外 `cmake/controller.cmake` 硬编码了 Linux 下的 `/usr/xenomai/bin/xeno-config`，
+> 在 Windows 上同样无法产出 realtime 二进制。EtherCAT 后端代码（`zrcs_rt/controller/ethercat/`）
+> 因此从未被编译链接过，也从未在真实硬件上验证。相关缺口清单见
+> `docs/architecture-analysis.md` 的「未完成功能」章节。
 
 注意：这比旧 README 中的 `-Drealtime=YES -Dethercat=YES` 更接近当前代码的真实构建方式。旧写法可以视为历史用法说明，不建议继续作为主文档命令使用。
 
@@ -320,7 +354,7 @@ sudo apt install libncurses-dev libncursesw5-dev
 实时模式还需要：
 
 - Xenomai
-- `ethercat_rtdm`
+- `ethercat_rtdm`（仓库内无定义，因此 realtime 模式当前不可构建）
 
 ### Windows / MSYS2 依赖
 
@@ -384,12 +418,11 @@ cmake --build build
 - `build/bin/zrcsnrt`
 - `build/bin/zrcsrt`
 - `build/bin/zrcsgui`
-- `build/bin/motiongui`
 
 说明：
 
-- `realtime` 模式下通常只构建 `zrcsnrt` 和 `zrcsrt`
-- 非 `realtime` 模式下还会构建 `zrcsgui` 和 `motiongui`
+- `realtime` 模式下通常只构建 `zrcsnrt` 和 `zrcsrt`（当前该模式无法构建）
+- 非 `realtime` 模式下还会构建 `zrcsgui`
 
 ## 运行方式
 
@@ -397,7 +430,6 @@ cmake --build build
 
 1. 启动 `zrcsnrt`
 2. 启动 `zrcsgui`
-3. 如果需要，也可以启动 `motiongui`
 
 通常后端只需要手动启动 `zrcsnrt`，因为它会自动拉起 `zrcsrt` 子进程。
 
@@ -432,25 +464,13 @@ Linux / MSYS2 / PowerShell 下都可以按产物路径直接运行，例如：
 
 主 GUI，适合综合操作与状态监控，包含：
 
-- 主状态面板
+- 主状态面板（调度状态、ZMQ/EtherCAT 连接、归零、伺服）
 - 点动与 IO 面板
 - 报警面板
 - 命令面板
-- GCode 编辑
-- 轨迹可视化
-- 插件管理
-- 远程监控
-
-### `motiongui`
-
-更轻量，适合本地快速调试与单机验证，包含：
-
-- 连接控制
-- 各轴基本状态展示
-- Enable / Disable / Reset / ErrorClear
-- Jog
-- Home
-- 速度倍率调整
+- 行为树编辑器
+- EtherCAT 组态面板（设备库与在线扫描当前为模拟数据）
+- MuJoCo 仿真可视化
 
 ## 打包
 
@@ -465,7 +485,7 @@ Linux / MSYS2 / PowerShell 下都可以按产物路径直接运行，例如：
 该脚本会自动：
 
 - 复制 `build/bin/zrcsgui.exe`
-- 复制必需的 `zrcsnrt.exe`、`zrcsrt.exe`，并在存在时附带 `motiongui.exe`
+- 复制必需的 `zrcsnrt.exe`、`zrcsrt.exe`，并在存在时附带 `motiongui.exe`（该程序已不存在于仓库，脚本会跳过）
 - 使用 `windeployqt6` 收集 Qt 依赖
 - 使用 `ldd` 递归补齐并校验主程序、后端和 Qt 插件的 MSYS2 运行时 DLL
 - 校验 Release 构建及 `Qt6Core.dll`、`platforms/qwindows.dll` 等关键文件
@@ -524,12 +544,28 @@ bash ./package_installer.sh
 
 - `test/`
 
-当前可见的测试目标包括：
+当前可见的测试目标包括（完整清单见 `test/CMakeLists.txt`）：
 
 - `test_spsc`
 - `test_command`
 - `test_config_manager`
+- `test_axis_direction`
+- `test_cartesian_rtcp`
+- `test_motion_preprocessing`
+- `test_xyzac_nc_path`
 - `test_zmq_comm`
+- `test_move_v_command_client`
+- `test_windows_thread_period`
+
+以下源文件存在但**未加入 `test/CMakeLists.txt`**，属于孤儿测试，不会参与构建：
+
+- `test/ethercat.cpp`（EtherCAT 主站无自动化验证）
+- `test/nrtcmd.cpp`
+- `test_axis_status.cpp`
+
+目前**没有任何 PLC 相关测试**。`docs/architecture-analysis.md` 建议新增的
+`test_shm_abi`、`test_command_registry`、`test_status_pubsub`、`test_gui_comm_worker`
+均尚未建立。
 
 需要注意的是：
 
@@ -543,13 +579,14 @@ bash ./package_installer.sh
 - 顶层构建入口：`CMakeLists.txt`
 - 项目配置选择：`config/project.txt`
 - 共享内存 ABI：`zrcs_common/shared_memory/ShmLayout.h`
-- 命令定义：`zrcs_common/config/CmdDefine.h`
+- 命令定义：`zrcs_common/config/CmdDefine.h`（`ZRCS_MOTION_COMMAND_TABLE` 为唯一事实源）
 - RT 调度器：`zrcs_rt/system/NodeManager.cpp`
 - 控制器抽象：`zrcs_rt/controller/`（Axis.h、Servo.h、Osal.h、Io.h、Sensor.h、Controller.h）
 - RT 命令汇总：`zrcs_rt/command/CmdHead.h`
+- PLC 宿主节点：`zrcs_rt/plc/`、`zrcs_rt/plc/PlcProgram.h`
 - NRT 主程序：`zrcs_nrt/main.cpp`
-- ZMQ 服务端：`zrcs_nrt/zmq_server/ZmqServer.h`
-- 状态发布器：`zrcs_nrt/statusPublisher/StatusPublisher.h`
+- ZMQ 服务端：`zrcs_nrt/nrtServer/zmq/ZmqServer.h`
+- 状态发布器：`zrcs_nrt/status/StatusPublisher.h`
 - 主 GUI 入口：`zrcs_gui/core/main.cpp`
 
 ## 文档索引
@@ -557,7 +594,11 @@ bash ./package_installer.sh
 仓库中已有几份值得优先阅读的文档：
 
 - `docs/add_command_guide.md`：新增命令的完整链路说明
-- `docs/motion-review.md`：路径预处理与 RT 运动链路审查
+- `docs/architecture-analysis.md`：全项目架构分析与未完成功能清单
+- `docs/motion-review.md`：路径预处理与 RT 运动链路审查（部分内容已过时）
+- `docs/matiec-rt-integration.md`：MatIEC 软 PLC 接入说明与后续设计
+- `docs/plc-variable-channel.html`：PLC 变量在线读写方案（未实施）
+- `docs/rtcp.html`、`docs/path-planning-pipeline.html`、`docs/5axis_pose_interpolation.html`：运动学与插补设计
 
 ## 常见问题
 
@@ -615,7 +656,7 @@ pacman -S mingw-w64-ucrt-x86_64-nsis
 - `zrcsnrt.exe`
 - `zrcsrt.exe`
 
-`motiongui.exe` 当前不是仓库中的构建目标。若 `build/bin/motiongui.exe` 存在，脚本会
+`motiongui.exe` 当前不是仓库中的构建目标（`motionGui` 模块已从仓库移除）。若 `build/bin/motiongui.exe` 存在，脚本会
 将它作为可选工具加入安装包；不存在时会打印警告但不会中止。
 
 如果需要增加必需或可选的可执行文件，可以修改脚本中的 `REQUIRED_EXES` 或
@@ -625,7 +666,7 @@ pacman -S mingw-w64-ucrt-x86_64-nsis
 
 ## 备注
 
-- 当前默认项目是 `3axis`
+- 当前默认项目是 `5axis`（由 `config/project.txt` 指定）
 - 如果你在 Windows 上开发，建议优先使用 MSYS2 UCRT64 环境
 - 如果你在 Linux 上进行实时控制部署，需要额外准备 Xenomai、EtherCAT 和实时运行环境
 - 如果你的目标是继续扩展命令链路，优先从 `CmdDefine.h`、`CmdHead.h`、`NodeManager.cpp` 和 `RtBridge.h` 入手

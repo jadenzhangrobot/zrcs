@@ -6,7 +6,7 @@
  * 新增命令时，在此添加对应的 #include，并同步更新 config/CmdDefine.h。
  */
 
-// 已实现的命令（CMD_DEFINE，含 REGISTERCMD 静态注册）
+// 已实现的命令（REGISTERCMD 静态注册，宏会将类名绑定到同名 CmdId）
 #include "command/Disable.h"
 #include "command/Enable.h"
 #include "command/JogJ.h"
@@ -27,8 +27,7 @@
 #include "command/SetZero.h"
 #include "command/Setmode.h"
 
-// 保留 ID（CMD_RESERVE，未实现，仅占 CmdId 槽位）
-
+// 注意：CmdId 目前没有保留槽位（不存在 CMD_RESERVE 枚举值）。
 
 // PeriodicNode（长期节点，不走 CmdId 路由）
 #include "command/ContinuousJog.h"

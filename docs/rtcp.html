@@ -311,7 +311,7 @@ ShmVersion 已从 14 升到 15。升级后务必重新编译并重启 NRT 与 RT
 </p>
 
 <h3>RtBridge 接口</h3>
-<p><span class="file">zrcs_nrt/command/RtBridge.h</span> 新增 RTCP 的 setter/getter（直接读写共享内存原子量）：</p>
+<p><span class="file">zrcs_nrt/rtBridge/RtBridge.h</span> 新增 RTCP 的 setter/getter（直接读写共享内存原子量）：</p>
 <table>
   <tr><th>方法</th><th>作用</th></tr>
   <tr><td><code>setRtcpEnabled(bool)</code></td><td>写 <code>rtcpCtrl.enabled</code></td></tr>
@@ -344,7 +344,7 @@ ShmVersion 已从 14 升到 15。升级后务必重新编译并重启 NRT 与 RT
   <tr><td><span class="file">zrcs_rt/command/ContinuousJog.h/.cpp</span></td><td>格式整理（含头文件顺序、构造函数排版）</td></tr>
   <tr><td><span class="file">zrcs_rt/controller/Controller.h/.cpp</span></td><td>bindSharedBlock 移到 cpp；新增 sharedBlock_</td></tr>
   <tr><td><span class="file">zrcs_nrt/command/CommandDispatcher.h</span></td><td>SYS_RTCP_ENABLE 透传为 Rtcp 命令</td></tr>
-  <tr><td><span class="file">zrcs_nrt/command/RtBridge.h</span></td><td>新增 RTCP setter/getter</td></tr>
+  <tr><td><span class="file">zrcs_nrt/rtBridge/RtBridge.h</span></td><td>新增 RTCP setter/getter</td></tr>
   <tr><td><span class="file">zrcs_gui/components/JogAndIOPanel.cpp</span></td><td>新增 RTCP 演示勾选框</td></tr>
   <tr><td><span class="file">zrcs_gui/core/MainWindow.h/.cpp</span></td><td>rtcpToggled 信号 + onRtcpToggled 槽</td></tr>
   <tr><td><span class="file">config/5axis/axis.xml · robot.xml</span></td><td>Z 轴方向注释 · 5 轴模型几何</td></tr>

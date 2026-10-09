@@ -344,9 +344,13 @@ __CURRENT_TIME.tv_nsec = nowNsec;
 
 ## 13. 风险与未决项
 
-- **定位变量符号名未固化**：需先跑一个最小 ST 工程确认（§6.1），这是最大的不确定点。
+- ~~**定位变量符号名未固化**：需先跑一个最小 ST 工程确认（§6.1），这是最大的不确定点。~~
+  **已确认（2026-10-09）**：经 `iec2c.exe` 实测，符号命名规则已固化 ——
+  POU 类型 = PROGRAM 名大写（`PROGRAM plc` → `PLC`），实例 = `<RESOURCE>__<PROGRAM 实例名>` 大写
+  （`RESOURCE ZRCS` + `PROGRAM Demo` → `ZRCS__DEMO`），生成文件名 = ST 中的原始拼写
+  （`CONFIGURATION zrcs_plc` → `zrcs_plc.c/.h`，`RESOURCE ZRCS` → `ZRCS.c`）。
+  约束：RESOURCE 名不得与已声明 POU 名相同（大小写不敏感）。详见 `config/5axis/program/plc/plc.st` 注释与 `.workbuddy/memory/2026-10-09.md`。
 - **`config_` 大结构体性能**：按 §6.2 规避，若 ST 工程很大仍需量测。
 - **PLC 直接驱动使能/点位的安全边界**：默认收紧（逻辑层 + 仲裁），如后续开放直控需评审。
 - **MatIEC 版本锁定**：`3rdParty/MatIEC` 应固定版本 tag，避免生成物接口漂移。
 - **布尔位寻址**：`%IX0.0` 这类位寻址在不同版本排布规则可能不同，映射生成需与具体版本对齐。
-```

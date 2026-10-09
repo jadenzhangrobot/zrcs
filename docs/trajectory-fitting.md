@@ -41,12 +41,15 @@ dynamic fields.
 
 ## Fitting Flow
 
-`PathPreprocessor::fitCornerBlendSegments()` accepts line move blocks:
+`CornerBlender::fitCornerBlendSegments()` is the current entry point for corner fitting
+(it consumes the simplified point list produced by `PathSimplifier::collapseCollinearWaypoints`):
 
 ```cpp
-std::vector<TrajectorySegment> segments =
-    fitter.fitCornerBlendSegments(blocks, sampleStep, cornerTol);
+std::vector<TrajectorySegment> segments = CornerBlender::fitCornerBlendSegments(
+    points, feedrates, sourceIds, cornerTol, minSegLen, minChordForBlend, rx, ry, rz);
 ```
+
+See `zrcs_nrt/algorithm/path_planning/CornerBlender.h` for the full parameter list.
 
 The current implementation keeps long line portions as `Line` segments. At active
 corners, it inserts a local clamped cubic B-spline transition and splits that
@@ -61,10 +64,10 @@ The first three axes are `x/y/z`; the remaining axes are reserved for pose.
 
 ## Velocity Lookahead
 
-`VelocityPlanner3D::planSegments()` mutates the same segment vector:
+`LookAheadPlanner::planSegments()` mutates the same segment vector:
 
 ```cpp
-VelocityPlanner3D planner;
+LookAheadPlanner planner;
 planner.setConfig(maxVel, maxAccel, startVel, endVel, cornerTol, maxJerk);
 planner.planSegments(segments);
 ```

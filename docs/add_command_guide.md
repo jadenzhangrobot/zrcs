@@ -8,9 +8,13 @@
 - NRT 转发链路，位于 `zrcs_nrt`
 - GUI/上位机发送入口，位于 `zrcs_gui`
 
-- `zrcs_rt/system/CmdMeta.h`
-- `zrcs_rt/system/CmdIds.h`
-- `zrcs_rt/command/CmdHead.h`
+> **路径核对（2026-10-09）**：本文原先引用的 `zrcs_rt/system/CmdMeta.h` 与
+> `zrcs_rt/system/CmdIds.h` **已不存在**。命令名、`CmdId`、参数枚举、`cmdIdToName()`/
+> `cmdNameToId()` 已统一收敛到 **`zrcs_common/config/CmdDefine.h`**，其中
+> `ZRCS_MOTION_COMMAND_TABLE` 是唯一事实源（表条目数由 `static_assert` 与 `CmdId` 数量绑定）。
+> RT 节点注册宏 `REGISTERCMD`/`REGISTER_PERIODIC` 位于 `zrcs_rt/system/node/NodeFactory.h`。
+> 本文各处路径均已按当前目录结构更新，但**加命令的步骤以第 2 节与
+> `CmdDefine.h` 的注释为准**。
 
 ## 1. 命令整体链路
 
@@ -19,20 +23,22 @@
 1. GUI 通过 `ZMQClient` 发送 `MotionCommand`
 2. NRT 的 `ZMQServer` 在 `5555` 端口接收命令
 3. `ZMQServer` 调用 `RtBridge::sendCommand()`
-4. `RtBridge` 根据命令名在 `cmdNameToId()` 中查找 `CmdId`
+4. `RtBridge` 通过 `cmdNameToId()`（`CmdDefine.h`）把命令名解析为 `CmdId`
 5. NRT 把命令写入共享内存 `cmdQueue`
 6. RT 的 `NodeManager` 从 `cmdQueue` 取出命令
 7. `NodeFactory` 根据 `CmdId` 找到对应的 `CmdNode`
 8. RT 执行该命令的 `init() / run() / exit()`
 
-对应代码位置：
+对应代码位置（当前路径）：
 
 - GUI 发送：`zrcs_gui/communication/ZmqClient.cpp`
 - GUI 面板按钮：`zrcs_gui/modules/command/CommandPanel.cpp`
-- NRT 接收与路由：`zrcs_nrt/zmq_server/ZmqServer.h`
-- NRT 到 RT 桥接：`zrcs_nrt/rt_bridge/RtBridge.h`
+- 命令名/ID/参数枚举唯一事实源：`zrcs_common/config/CmdDefine.h`
+- NRT 接收与路由：`zrcs_nrt/nrtServer/zmq/ZmqServer.h`
+- NRT 到 RT 桥接：`zrcs_nrt/rtBridge/RtBridge.h`
 - RT 调度执行：`zrcs_rt/system/NodeManager.cpp`
-- RT 命令工厂注册：`zrcs_rt/system/NodeFactory.h`
+- RT 节点工厂与注册宏：`zrcs_rt/system/node/NodeFactory.h`
+- RT 命令头汇总：`zrcs_rt/command/CmdHead.h`
 
 ## 2. 第一步：在 RT 新建命令类
 
@@ -51,32 +57,34 @@
 头文件里需要：
 
 - 继承 `zrcsSystem::CmdNode`
-- 在 `public` 区域使用 `CMD_DEFINE(...)`
-- 声明 `init()`、`run()`、`exit()`
-- 在构造函数中设置 `nodeName_`
+- 声明 `init()` / `run()` / `exit()`
+- 在构造函数中设置 `nodeName_`（必须与 `CmdId` 名一致，`REGISTERCMD` 约定同名）
+
+> **注意**：旧版文档中的 `CMD_DEFINE(...)` 宏与 `PARAM(...)` 写法**已不存在**，
+> 示例里 include 的 `config/CmdArgs.h`、`system/CmdMeta.h`、`system/base/BaseNodeInterface.h`
+> 也都不是当前路径。当前真实写法如下（参照 `zrcs_rt/command/SetZero.h`）。
 
 示例：
 
 ```cpp
 #pragma once
 
-#include "config/CmdArgs.h"
-#include "system/base/BaseNodeInterface.h"
-#include "system/CmdMeta.h"
+#include <cstring>
+
+#include "system/node/BaseNodeInterface.h"
+#include "system/node/NodeFactory.h"
 
 class MyCommand : public zrcsSystem::CmdNode
 {
 public:
-    CMD_DEFINE(60, PARAM(AxisId) PARAM(Value))
-
     MyCommand()
     {
         std::strcpy(nodeName_, "MyCommand");
     }
 
-    void init() override;
-    void run() override;
-    void exit() override;
+    bool init() override;
+    zrcsSystem::RunResult run() override;
+    bool exit() override;
 
 private:
     int axisId_{0};
@@ -84,34 +92,44 @@ private:
 };
 ```
 
+参数下标来自 `zrcs_common/config/CmdDefine.h` 中的参数枚举，例如
+`enum class MyCommandArg : std::size_t { Target, Vel };`，
+在实现里用 `command_->args[static_cast<size_t>(MyCommandArg::Target)]` 取值。
+
 说明：
 
-- `CMD_DEFINE(60, ...)` 里的 `60` 是命令 ID，必须全局唯一
-- `PARAM(AxisId)`、`PARAM(Value)` 会展开成参数下标枚举，可直接用于 `command_->args[AxisId]`
+- 命令 ID（`CmdId` 枚举值）在 `CmdDefine.h` 中定义，必须全局唯一
+- 参数下标由 `CmdDefine.h` 的参数枚举给出，用 `static_cast<size_t>(枚举项)` 索引 `command_->args[]`
 
 ### 2.2 源文件写法
 
-`.cpp` 中实现命令逻辑，并在文件底部使用 `REGISTERCMD(MyCommand)` 注册到 `NodeFactory`
+`.cpp` 中实现命令逻辑，并在文件底部使用 `REGISTERCMD(MyCommand)` 注册到 `NodeFactory`。
+该宏会绑定 `MyCommand` 类与同名的 `CmdId::MyCommand`，名字不一致时编译期即报错。
 
 示例：
 
 ```cpp
 #include "command/MyCommand.h"
 
-void MyCommand::init()
+using zrcsSystem::RunResult;
+
+bool MyCommand::init()
 {
-    axisId_ = static_cast<int>(command_->args[AxisId]);
-    value_ = command_->args[Value];
+    axisId_ = static_cast<int>(command_->args[static_cast<size_t>(MyCommandArg::AxisId)]);
+    value_   = command_->args[static_cast<size_t>(MyCommandArg::Value)];
+    return true;
 }
 
-void MyCommand::run()
+RunResult MyCommand::run()
 {
     // 在这里写实际执行逻辑
     setCmdStatus(zrcsSystem::CmdStatus::EXIT);
+    return RunResult::RUNNING;
 }
 
-void MyCommand::exit()
+bool MyCommand::exit()
 {
+    return true;
 }
 
 REGISTERCMD(MyCommand);
@@ -127,49 +145,49 @@ REGISTERCMD(MyCommand);
 
 ## 3. 第二步：把命令加入 RT 命令表
 
-仅新增 `.h/.cpp` 还不够，当前项目还需要手工维护两处命令表。
+仅新增 `.h/.cpp` 还不够，当前项目需要手工维护两处：命令定义表与 RT 注册头。
 
-### 3.1 更新 `CmdIds.h`
+### 3.1 更新 `CmdDefine.h`
 
 文件：
 
-- `zrcs_rt/system/CmdIds.h`
+- `zrcs_common/config/CmdDefine.h`
 
 这里需要同步改 3 个地方：
 
-1. `enum class CmdId` 增加枚举项
-2. `cmdIdToName()` 的 `kTable` 增加名称
-3. `cmdNameToId()` 的 `kMap` 增加映射
+1. `enum CmdId` 增加枚举项（显式数字，协议依赖，保持手写）
+2. 为该命令定义参数枚举 `MyCommandArg`
+3. 在 `ZRCS_MOTION_COMMAND_TABLE` 中加一行 `X(MyCommand, MyCommandArg)`
 
-例如增加：
-
-```cpp
-MyCommand = 60,
-```
-
-并同步：
+例如：
 
 ```cpp
-"MyCommand",    // 60
+enum CmdId {
+    ...
+    MoveV        = 17,
+    MyCommand    = 18,
+    SENTINEL     = 19
+};
+
+enum class MyCommandArg : std::size_t { Target, Vel };
+
+#define ZRCS_MOTION_COMMAND_TABLE(X) \
+    ...
+    X(MoveV,     MoveVArg)           \
+    X(MyCommand, MyCommandArg)
 ```
 
-以及：
+说明：
 
-```cpp
-{"MyCommand", CmdId::MyCommand},
-```
-
-最后别忘了更新：
-
-```cpp
-SENTINEL = 61
-```
+- `cmdIdToName()` / `cmdNameToId()` 由 `magic_enum` 从 `CmdId` 自动生成，**无需再手工维护名称表**（旧版本文档要求的 `kTable`/`kMap` 已不存在）。
+- 表条目数必须与 `CmdId` 可用值数量一致，否则 `CmdDefine.h` 末尾的 `static_assert` 会在编译期报错。
+- 行为树侧的 typed alias 由 `ZRCS_MOTION_COMMAND_TABLE` 宏展开自动注册（`zrcs_nrt/behavior_tree/core/RegisterNodes.cpp`），无需单独改。
 
 要求：
 
 - `CmdId` 必须唯一
 - `SENTINEL` 必须始终等于最大 ID + 1
-- 名字必须和 GUI/NRT 发送时使用的字符串完全一致
+- 名字必须和 GUI/NRT 发送时使用的字符串完全一致（大小写敏感，由 `magic_enum` 匹配）
 
 ### 3.2 更新 `CmdHead.h`
 
@@ -221,8 +239,8 @@ SENTINEL = 61
 
 关键文件：
 
-- `zrcs_nrt/zmq_server/ZmqServer.h`
-- `zrcs_nrt/rt_bridge/RtBridge.h`
+- `zrcs_nrt/nrtServer/zmq/ZmqServer.h`
+- `zrcs_nrt/rtBridge/RtBridge.h`
 
 ### 5.1 普通命令
 
@@ -243,7 +261,7 @@ SENTINEL = 61
 
 也就是说，只要：
 
-- `CmdIds.h` 里有名字到 ID 的映射
+- `CmdDefine.h` 的 `CmdId` 枚举里有该名字（`cmdNameToId()` 由 `magic_enum` 自动生成）
 - RT 侧有命令实现并注册
 
 NRT 就能自动转发。
@@ -260,7 +278,7 @@ NRT 就能自动转发。
 
 那么要在：
 
-- `zrcs_nrt/zmq_server/ZmqServer.h`
+- `zrcs_nrt/nrtServer/zmq/ZmqServer.h`
 
 的 `handleMotionCommand()` 里添加专门分支。
 
@@ -284,12 +302,11 @@ NRT 就能自动转发。
 
 那么还要修改：
 
-- `zrcs_nrt/rt_bridge/RtBridge.h`
+- `zrcs_nrt/rtBridge/RtBridge.h`
 
 典型例子：
 
 - `setPathMoveConfig()`
-- `setGalvoConfig()`
 - `startContinuousMotion()`
 - `waitForCompletion()`
 
@@ -431,7 +448,7 @@ Unknown command 'MyCommand', not registered in cmdNameToId
 
 说明你漏改了：
 
-- `zrcs_rt/system/CmdIds.h`
+- `zrcs_common/config/CmdDefine.h`（`CmdId` 枚举）
 
 ### 8.4 查看 RT 日志
 
@@ -470,17 +487,16 @@ RT 执行后会更新共享内存中的：
 
 - 已新增 `zrcs_rt/command/MyCommand.h`
 - 已新增 `zrcs_rt/command/MyCommand.cpp`
-- 头文件中已写 `CMD_DEFINE(...)`
+- 类继承 `zrcsSystem::CmdNode`，`init()/run()/exit()` 签名与基类一致
 - 源文件底部已写 `REGISTERCMD(MyCommand);`
-- `nodeName_` 与命令名一致
-- `zrcs_rt/system/CmdIds.h` 已加入枚举项
-- `zrcs_rt/system/CmdIds.h` 已加入 `cmdIdToName()` 表项
-- `zrcs_rt/system/CmdIds.h` 已加入 `cmdNameToId()` 映射
-- `zrcs_rt/system/CmdIds.h` 已更新 `SENTINEL`
+- `nodeName_` 与命令名一致（`REGISTERCMD` 要求与 `CmdId` 枚举同名）
+- `zrcs_common/config/CmdDefine.h` 的 `enum CmdId` 已加入枚举项，并更新 `SENTINEL`
+- `zrcs_common/config/CmdDefine.h` 已加入对应参数枚举
+- `zrcs_common/config/CmdDefine.h` 的 `ZRCS_MOTION_COMMAND_TABLE` 已加一行（否则 `static_assert` 编译失败）
 - `zrcs_rt/command/CmdHead.h` 已加入头文件
-- 如果 GUI 需要预设按钮，已修改 `zrcs_gui/modules/command/CommandPanel.cpp`
-- 如果是系统控制类命令，已修改 `zrcs_nrt/zmq_server/ZmqServer.h`
-- 如果需要新的共享内存桥接能力，已修改 `zrcs_nrt/rt_bridge/RtBridge.h`
+- 如果 GUI 需要预设按钮，已修改 `zrcs_gui/resources/ui/command_panel.ui`（`presetCommand` 属性）与 `zrcs_gui/modules/command/CommandPanel.cpp`
+- 如果是系统控制类命令，已修改 `zrcs_nrt/nrtServer/zmq/ZmqServer.h`
+- 如果需要新的共享内存桥接能力，已修改 `zrcs_nrt/rtBridge/RtBridge.h`
 - 已重新编译并做实际发送验证
 
 ## 10. 一个最常见的问题
@@ -489,23 +505,23 @@ RT 执行后会更新共享内存中的：
 
 优先检查：
 
-1. 是否在 `CmdIds.h` 中加入了该命令名和 ID
+1. 是否在 `CmdDefine.h` 中加入了该命令名和 ID
 2. 是否在 `CmdHead.h` 中加入了该命令头文件
-3. `.cpp` 底部是否写了 `REGISTERCMD(YourCommand);`
-4. 命令名字符串是否完全一致，包括大小写
+3. `.cpp` 底部是否写了 `REGISTERCMD(YourCommand);`（宏会校验类名与 `CmdId` 名一致）
+4. 命令名字符串是否完全一致，包括大小写（`magic_enum` 名称匹配区分大小写）
 
 ### 问题：NRT 提示 `Unknown command`
 
 优先检查：
 
-1. `cmdNameToId()` 是否加入了映射
+1. `CmdDefine.h` 的 `CmdId` 枚举是否包含该名字（`cmdNameToId()` 由 `magic_enum` 自动生成）
 2. GUI 发送的字符串是否拼写正确
 
 ### 问题：RT 收到命令但参数不对
 
 优先检查：
 
-1. `CMD_DEFINE(... PARAM(...))` 的参数顺序
+1. `CmdDefine.h` 中参数枚举的**声明顺序**（决定 `args[]` 下标）
 2. GUI 发送参数顺序
 3. `init()` 中读取 `command_->args[...]` 的下标是否正确
 
@@ -515,24 +531,29 @@ RT 执行后会更新共享内存中的：
 
 - RT 命令示例：`zrcs_rt/command/SetZero.h`
 - RT 命令实现：`zrcs_rt/command/SetZero.cpp`
-- 命令注册宏：`zrcs_rt/system/CmdMeta.h`
-- 命令 ID 表：`zrcs_rt/system/CmdIds.h`
+- 命令名/ID/参数枚举唯一事实源：`zrcs_common/config/CmdDefine.h`
+- 命令注册宏 `REGISTERCMD` / `REGISTER_PERIODIC`：`zrcs_rt/system/node/NodeFactory.h`
 - 命令头汇总：`zrcs_rt/command/CmdHead.h`
 - RT 调度器：`zrcs_rt/system/NodeManager.cpp`
-- NRT 桥接：`zrcs_nrt/rt_bridge/RtBridge.h`
-- NRT ZMQ 服务端：`zrcs_nrt/zmq_server/ZmqServer.h`
+- NRT 桥接：`zrcs_nrt/rtBridge/RtBridge.h`
+- NRT ZMQ 服务端：`zrcs_nrt/nrtServer/zmq/ZmqServer.h`
 - GUI 命令面板：`zrcs_gui/modules/command/CommandPanel.cpp`
 - GUI ZMQ 客户端：`zrcs_gui/communication/ZmqClient.cpp`
 
-## 12. 补充说明：关于 `tool/gen_cmd_registry.py`
+## 12. 补充说明：关于命令注册表的自动生成
 
-仓库中仍存在：
+当前代码路径为**手工维护**：
 
-- `tool/gen_cmd_registry.py`
+- `zrcs_common/config/CmdDefine.h`（`CmdId` + 参数枚举 + 命令表）
+- `zrcs_rt/command/CmdHead.h`（RT 侧 `REGISTERCMD` 触发头）
 
-它代表的是旧的自动生成方案思路，但当前实际代码路径已经切到手工维护：
+`CmdHead.h` 开头注明它"替代原先由 `tool/gen_cmd_registry.py` 生成的 `CmdHead_gen.h`"，
+但该脚本**在使用它的位置上已不存在**，`CMakeLists.txt` 中残留的
+`${CMAKE_BINARY_DIR}/generated` 包含路径也没有生成者。
 
-- `CmdIds.h`
-- `CmdHead.h`
+这带来一个真实风险：漏把命令加进 `CmdHead.h` 时，`CmdDefine.h` 的 `static_assert`
+不会报错（它只校验表与枚举数量一致），也没有测试覆盖，只在运行时报
+`未注册的命令`。补齐校验可参考 `architecture-analysis.md` 第 11 节
+"测试与死代码"与建议新增的 `test_command_registry`。
 
-因此，当前新增命令时应以手工维护这两处为准，不要只改生成脚本或只等生成文件变化。
+因此，当前新增命令时应以手工维护 `CmdDefine.h` 与 `CmdHead.h` 这两处为准。
