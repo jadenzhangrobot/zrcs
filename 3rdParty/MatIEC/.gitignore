@@ -11,8 +11,11 @@ iec2iec
 *.a
 autom4te.cache/*
 config/*
-stage1_2/*.cc
-stage1_2/*.hh
+# 仅忽略 flex/bison 生成的 parser/scanner 输出；手写源文件
+# (stage1_2.cc/.hh、stage1_2_priv.hh、create_enumtype_conversion_functions.*) 必须入库。
+stage1_2/iec_flex.cc
+stage1_2/iec_bison.cc
+stage1_2/iec_bison.hh
 
 # zrcs 工程附加忽略：
 #   不保留 Windows 编译产物 iec2c.exe（ST->C 编译器）/ iec2iec.exe：
