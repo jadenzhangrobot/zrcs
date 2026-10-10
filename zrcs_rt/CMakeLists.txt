@@ -29,19 +29,10 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 #       更换激活工程的 PLC 逻辑时改下面 PLC_ST_FILE 指向即可。
 # 详见 docs/matiec-rt-integration.md §9。
 # ============================================================================
-if(CMAKE_HOST_WIN32)
-    set(_matiec_name iec2c.exe)
-else()
-    set(_matiec_name iec2c)
-endif()
-set(ZRCS_MATIEC_EXE "${CMAKE_SOURCE_DIR}/3rdParty/MatIEC/${_matiec_name}"
-    CACHE FILEPATH "matiec IEC61131-3 ST->C 编译器")
+# 定位/自动构建 MatIEC 编译器，见 cmake/matiec.cmake。
+include(${CMAKE_SOURCE_DIR}/cmake/matiec.cmake)
 set(PLC_ST_FILE   "${CMAKE_SOURCE_DIR}/config/5axis/program/plc/plc.st")
 set(PLC_GEN_DIR   "${CMAKE_CURRENT_BINARY_DIR}/plc_generated")
-
-if(NOT EXISTS "${ZRCS_MATIEC_EXE}")
-    message(FATAL_ERROR "[PLC] matiec 编译器缺失 (${ZRCS_MATIEC_EXE})。请先构建 3rdParty/MatIEC 或设置 ZRCS_MATIEC_EXE。")
-endif()
 
 # 一份 ST 同时包含 PROGRAM 和 CONFIGURATION；周期由 controller.cmake 按模式选择。
 # configure_file 自动跟踪该源文件，ST 修改或模式切换后会更新构建目录中的完整 ST。
