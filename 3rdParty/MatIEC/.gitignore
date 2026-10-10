@@ -1,0 +1,29 @@
+aclocal.m4
+config.log
+config.status
+configure
+iec2c
+iec2iec
+*.o
+**/Makefile
+**/Makefile.in
+*.Po
+*.a
+autom4te.cache/*
+config/*
+stage1_2/*.cc
+stage1_2/*.hh
+
+# zrcs 工程附加忽略：
+#   不保留 Windows 编译产物 iec2c.exe（ST->C 编译器）/ iec2iec.exe：
+#   MatIEC 源码需跨平台（含 Linux），各平台按 README.build 用 autotools 自行编译，
+#   CMake 里 WIN32 用 iec2c.exe、Linux 用 iec2c。
+iec2c.exe
+iec2iec.exe
+# 调试用临时 ST 文件（工程正式 ST 在 config/<active>/program/plc/）
+/v[0-9].st
+# Eclipse / 构建辅助目录
+.settings/
+.deps/
+# macOS 系统文件
+.DS_Store
