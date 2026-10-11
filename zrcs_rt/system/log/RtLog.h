@@ -15,9 +15,13 @@
 #include <cobalt/stdio.h>
 #define RT_PRINTF rt_printf
 #else
-#include <cstdio>  // IWYU pragma: keep — printf is used via RT_PRINTF macro
 #define RT_PRINTF printf
 #endif
+
+// <cstdio> 两条分支都需要：INFO_PRINT / WARN_PRINT / ERROR_PRINT 用 std::snprintf
+// 在栈上格式化，而 cobalt/stdio.h 只提供 rt_printf，并不声明 std::snprintf。
+// 早先把 <cstdio> 放在非 realtime 分支里，会让 REALTIME 构建编译失败。
+#include <cstdio>  // IWYU pragma: keep — std::snprintf / RT_PRINTF
 
 #ifdef ZRCS_ENABLE_CONTROLLER_CONSOLE_LOG
 #define ZRCS_CONTROLLER_PRINTF(fmt, ...) \
